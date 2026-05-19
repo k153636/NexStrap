@@ -43,6 +43,8 @@ public partial class App : Application
         services.AddSingleton<ModService>();
         services.AddSingleton<DiscordRpcService>();
         services.AddSingleton<ProfileService>();
+        services.AddSingleton<RobloxLogWatcher>();
+        services.AddSingleton<RobloxApiService>();
 
         services.AddTransient<MainWindowViewModel>();
         services.AddTransient<HomeViewModel>();

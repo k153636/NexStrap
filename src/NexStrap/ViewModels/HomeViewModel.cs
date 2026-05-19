@@ -11,6 +11,8 @@ public partial class HomeViewModel : ViewModelBase
     private readonly ModService _mods;
     private readonly SettingsService _settings;
     private readonly DiscordRpcService _discord;
+    private readonly RobloxLogWatcher _logWatcher;
+    private readonly RobloxApiService _robloxApi;
 
     [ObservableProperty] private bool _isRobloxRunning;
     [ObservableProperty] private bool _isLaunching;
@@ -23,13 +25,17 @@ public partial class HomeViewModel : ViewModelBase
         FastFlagService fastFlags,
         ModService mods,
         SettingsService settings,
-        DiscordRpcService discord)
+        DiscordRpcService discord,
+        RobloxLogWatcher logWatcher,
+        RobloxApiService robloxApi)
     {
         _roblox = roblox;
         _fastFlags = fastFlags;
         _mods = mods;
         _settings = settings;
         _discord = discord;
+        _logWatcher = logWatcher;
+        _robloxApi = robloxApi;
 
         IsRobloxInstalled = roblox.IsInstalled();
         var versionPath = roblox.RobloxVersionPath;
@@ -42,13 +48,30 @@ public partial class HomeViewModel : ViewModelBase
             IsLaunching = status == RobloxStatus.Launching;
             StatusText = status switch
             {
-                RobloxStatus.Running => "Roblox 起動中",
+                RobloxStatus.Running   => "Roblox 起動中",
                 RobloxStatus.Launching => "起動しています...",
-                RobloxStatus.Updating => "アップデート中...",
+                RobloxStatus.Updating  => "アップデート中...",
                 RobloxStatus.NotInstalled => "Roblox が見つかりません",
                 _ => "準備完了"
             };
         };
+
+        // ゲーム参加時：Roblox APIからゲーム名・アイコンを取得してRPCに反映
+        _logWatcher.PlaceJoined += async (_, placeId) =>
+        {
+            var (name, iconUrl) = await _robloxApi.GetGameInfoAsync(placeId);
+            _discord.SetInGamePresence(name, iconUrl);
+            StatusText = $"プレイ中: {name}";
+        };
+
+        // ゲーム退出時：ページ表示に戻す
+        _logWatcher.GameLeft += (_, _) =>
+        {
+            _discord.SetPagePresence("ホーム");
+            StatusText = "準備完了";
+        };
+
+        _logWatcher.Start();
     }
 
     [RelayCommand]
@@ -63,7 +86,7 @@ public partial class HomeViewModel : ViewModelBase
         await _mods.ApplyEnabledModsAsync();
 
         StatusText = "Roblox を起動中...";
-        _discord.SetInGamePresence("Roblox");
+        _discord.SetLaunchingPresence();
         await _roblox.LaunchAsync();
     }
 

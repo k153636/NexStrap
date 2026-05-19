@@ -71,13 +71,13 @@ public class DiscordRpcService : IDisposable
         );
     }
 
-    public void SetInGamePresence(string gameName)
+    public void SetInGamePresence(string gameName, string? gameIconUrl = null)
     {
         SetPresence(
             details: gameName,
             state: "プレイ中",
-            largeImage: "roblox_logo",
-            largeText: "Roblox",
+            largeImage: gameIconUrl ?? "roblox_logo",
+            largeText: gameName,
             smallImage: "nexstrap_logo",
             smallText: "NexStrap"
         );
