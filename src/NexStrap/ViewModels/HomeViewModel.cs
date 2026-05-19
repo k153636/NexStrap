@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NexStrap.Core.Services;
@@ -47,14 +48,17 @@ public partial class HomeViewModel : ViewModelBase
 
         roblox.StatusChanged += (_, status) =>
         {
-            IsLaunching     = status == RobloxStatus.Launching;
-            StatusText = status switch
+            Dispatcher.UIThread.InvokeAsync(() =>
             {
-                RobloxStatus.Launching    => "起動しています...",
-                RobloxStatus.Updating     => "アップデート中...",
-                RobloxStatus.NotInstalled => "Roblox が見つかりません",
-                _ => StatusText  // Running / Idle は logWatcher 側で制御
-            };
+                IsLaunching = status == RobloxStatus.Launching;
+                StatusText  = status switch
+                {
+                    RobloxStatus.Launching    => "起動しています...",
+                    RobloxStatus.Updating     => "アップデート中...",
+                    RobloxStatus.NotInstalled => "Roblox が見つかりません",
+                    _ => StatusText
+                };
+            });
         };
 
         // ゲーム参加 — API でゲーム名・アイコン取得
@@ -65,9 +69,13 @@ public partial class HomeViewModel : ViewModelBase
 
             var (name, iconUrl) = await _robloxApi.GetGameInfoAsync(placeId);
             _discord.SetInGamePresence(name, iconUrl);
-            StatusText      = $"プレイ中: {name}";
-            IsRobloxRunning = true;
-            IsLaunching     = false;
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                StatusText      = $"プレイ中: {name}";
+                IsRobloxRunning = true;
+                IsLaunching     = false;
+            });
         };
 
         // ゲーム退出
@@ -75,8 +83,11 @@ public partial class HomeViewModel : ViewModelBase
         {
             _gameDetected = false;
             _discord.SetPagePresence("ホーム");
-            StatusText      = "準備完了";
-            IsRobloxRunning = false;
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                StatusText      = "準備完了";
+                IsRobloxRunning = false;
+            });
         };
 
         _logWatcher.Start();
@@ -138,17 +149,23 @@ public partial class HomeViewModel : ViewModelBase
                 if (RobloxLogWatcher.IsRobloxRunning())
                 {
                     _discord.SetInGamePresence("Roblox", null);
-                    StatusText      = "Roblox をプレイ中";
-                    IsRobloxRunning = true;
-                    IsLaunching     = false;
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        StatusText      = "Roblox をプレイ中";
+                        IsRobloxRunning = true;
+                        IsLaunching     = false;
+                    });
                 }
                 else
                 {
                     // 起動に失敗 or すでに終了
-                    IsLaunching     = false;
-                    IsRobloxRunning = false;
-                    StatusText      = "準備完了";
                     _discord.SetPagePresence("ホーム");
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        IsLaunching     = false;
+                        IsRobloxRunning = false;
+                        StatusText      = "準備完了";
+                    });
                 }
             }
             catch (TaskCanceledException) { }
