@@ -62,7 +62,7 @@ public class DiscordRpcService : IDisposable
     public void SetPagePresence(string pageName)
     {
         SetPresence(
-            details: "テスト",
+            details: "Test Build",
             state: pageName,
             largeImage: "nexstrap_logo",
             largeText: "NexStrap",
