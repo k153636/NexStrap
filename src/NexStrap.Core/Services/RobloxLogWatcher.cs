@@ -43,11 +43,11 @@ public class RobloxLogWatcher : IDisposable
     {
         if (!Directory.Exists(LogDir)) return;
 
-        // 既存の最新ログを監視開始
+        // 既存ログは末尾から監視（過去セッションのplaceIdを読まない）
         var latest = GetLatestLogFile();
-        if (latest != null) StartWatchingFile(latest);
+        if (latest != null) StartWatchingFile(latest, fromEnd: true);
 
-        // 新しいログファイル（Roblox起動時に作成）を検知
+        // 新しいログファイル（Roblox起動時に作成）は先頭から読む
         _dirWatcher = new FileSystemWatcher(LogDir)
         {
             Filter = "*",
@@ -56,7 +56,7 @@ public class RobloxLogWatcher : IDisposable
         _dirWatcher.Created += (_, e) =>
         {
             if (e.FullPath.EndsWith(".log", StringComparison.OrdinalIgnoreCase))
-                StartWatchingFile(e.FullPath);
+                StartWatchingFile(e.FullPath, fromEnd: false);
         };
 
         // ログファイルをポーリング（1秒ごと）
@@ -76,11 +76,20 @@ public class RobloxLogWatcher : IDisposable
         _processTimer = null;
     }
 
-    private void StartWatchingFile(string path)
+    private void StartWatchingFile(string path, bool fromEnd = false)
     {
         _watchedFile = path;
-        _filePosition = 0;
         _lastPlaceId = 0;
+
+        if (fromEnd)
+        {
+            try { _filePosition = new FileInfo(path).Length; }
+            catch { _filePosition = 0; }
+        }
+        else
+        {
+            _filePosition = 0;
+        }
     }
 
     private void PollLogFile()
