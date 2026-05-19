@@ -56,19 +56,22 @@ public partial class HomeViewModel : ViewModelBase
             };
         };
 
-        // ゲーム参加時：Roblox APIからゲーム名・アイコンを取得してRPCに反映
+        // ゲーム参加：APIでゲーム名・アイコン取得 → Discord更新
         _logWatcher.PlaceJoined += async (_, placeId) =>
         {
             var (name, iconUrl) = await _robloxApi.GetGameInfoAsync(placeId);
             _discord.SetInGamePresence(name, iconUrl);
             StatusText = $"プレイ中: {name}";
+            IsRobloxRunning = true;
+            IsLaunching = false;
         };
 
-        // ゲーム退出時：ページ表示に戻す
+        // ゲーム退出：ホーム表示に戻す
         _logWatcher.GameLeft += (_, _) =>
         {
             _discord.SetPagePresence("ホーム");
             StatusText = "準備完了";
+            IsRobloxRunning = false;
         };
 
         _logWatcher.Start();
