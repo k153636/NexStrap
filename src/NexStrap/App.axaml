@@ -42,5 +42,31 @@
 
     <Application.Styles>
         <fa:FluentAvaloniaTheme/>
+
+        <!-- Global button: iOS 26-style spring animation -->
+        <Style Selector="Button">
+            <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform"
+                        Duration="0:0:0.35" Easing="BackEaseOut"/>
+                    <DoubleTransition Property="Opacity"
+                        Duration="0:0:0.12" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.94)"/>
+            <Setter Property="Opacity" Value="0.75"/>
+        </Style>
+        <Style Selector="Button:pointerover">
+            <Setter Property="Opacity" Value="0.85"/>
+        </Style>
+
+        <!-- ToggleSwitch cursor -->
+        <Style Selector="ToggleSwitch">
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
     </Application.Styles>
 </Application>

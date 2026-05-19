@@ -4,26 +4,26 @@
              Background="#080808">
 
     <ScrollViewer>
-        <StackPanel Spacing="24" Margin="32,28">
+        <StackPanel Spacing="32" Margin="48,40">
 
             <!-- Header -->
-            <StackPanel Spacing="4">
-                <TextBlock Text="ブラウザ" FontSize="24" FontWeight="Bold" Foreground="#FFFFFF"/>
+            <StackPanel Spacing="6">
+                <TextBlock Text="ブラウザ" FontSize="36" FontWeight="Bold" Foreground="#FFFFFF"/>
                 <TextBlock Text="ゲームをプレイしながら好きなサイトを開きましょう"
-                           FontSize="13" Foreground="#888888"/>
+                           FontSize="14" Foreground="#505050"/>
             </StackPanel>
 
             <!-- URL Bar -->
             <Grid ColumnDefinitions="*,12,Auto">
                 <TextBox Grid.Column="0" x:Name="UrlBar"
                          Background="#141414" Foreground="#FFFFFF"
-                         BorderBrush="#2E2E2E" CornerRadius="8"
-                         Padding="14,10" FontSize="14"
+                         BorderBrush="#2E2E2E" CornerRadius="14"
+                         Padding="18,13" FontSize="14"
                          Watermark="URL を入力... (例: https://youtube.com)"/>
                 <Button Grid.Column="2" x:Name="GoButton"
-                        Padding="16,10" CornerRadius="8"
+                        Padding="20,13" CornerRadius="14"
                         Background="#FFFFFF" Foreground="#080808">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
                         <PathIcon Data="{StaticResource IconGlobe}" Width="14" Height="14" Foreground="#080808"/>
                         <TextBlock Text="ブラウザで開く" FontWeight="SemiBold" FontSize="13"/>
                     </StackPanel>
@@ -31,80 +31,92 @@
             </Grid>
 
             <!-- Quick Links -->
-            <StackPanel Spacing="12">
-                <TextBlock Text="クイックリンク" FontSize="13" FontWeight="SemiBold"
-                           Foreground="#888888"/>
+            <StackPanel Spacing="16">
+                <TextBlock Text="クイックリンク" FontSize="12" FontWeight="SemiBold"
+                           Foreground="#505050" Margin="4,0"/>
                 <WrapPanel Orientation="Horizontal">
 
                     <Button x:Name="YoutubeButton" Margin="0,0,12,12"
-                            Padding="20,16" CornerRadius="10" Background="#141414">
-                        <StackPanel Spacing="8" HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconPlay}" Width="28" Height="28"
+                            Padding="24,20" CornerRadius="18" Background="#141414">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center">
+                            <PathIcon Data="{StaticResource IconPlay}" Width="26" Height="26"
                                       Foreground="#FFFFFF" HorizontalAlignment="Center"/>
-                            <TextBlock Text="YouTube" FontSize="13" Foreground="#FFFFFF"
-                                       HorizontalAlignment="Center"/>
-                            <TextBlock Text="動画・アニメを視聴" FontSize="11"
-                                       Foreground="#888888" HorizontalAlignment="Center"/>
+                            <StackPanel Spacing="3" HorizontalAlignment="Center">
+                                <TextBlock Text="YouTube" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="#FFFFFF" HorizontalAlignment="Center"/>
+                                <TextBlock Text="動画・アニメを視聴" FontSize="11"
+                                           Foreground="#505050" HorizontalAlignment="Center"/>
+                            </StackPanel>
                         </StackPanel>
                     </Button>
 
                     <Button x:Name="NicoButton" Margin="0,0,12,12"
-                            Padding="20,16" CornerRadius="10" Background="#141414">
-                        <StackPanel Spacing="8" HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconVideo}" Width="28" Height="28"
+                            Padding="24,20" CornerRadius="18" Background="#141414">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center">
+                            <PathIcon Data="{StaticResource IconVideo}" Width="26" Height="26"
                                       Foreground="#FFFFFF" HorizontalAlignment="Center"/>
-                            <TextBlock Text="ニコニコ動画" FontSize="13" Foreground="#FFFFFF"
-                                       HorizontalAlignment="Center"/>
-                            <TextBlock Text="動画・生放送" FontSize="11"
-                                       Foreground="#888888" HorizontalAlignment="Center"/>
+                            <StackPanel Spacing="3" HorizontalAlignment="Center">
+                                <TextBlock Text="ニコニコ" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="#FFFFFF" HorizontalAlignment="Center"/>
+                                <TextBlock Text="動画・生放送" FontSize="11"
+                                           Foreground="#505050" HorizontalAlignment="Center"/>
+                            </StackPanel>
                         </StackPanel>
                     </Button>
 
                     <Button x:Name="TwitterButton" Margin="0,0,12,12"
-                            Padding="20,16" CornerRadius="10" Background="#141414">
-                        <StackPanel Spacing="8" HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconChat}" Width="28" Height="28"
+                            Padding="24,20" CornerRadius="18" Background="#141414">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center">
+                            <PathIcon Data="{StaticResource IconChat}" Width="26" Height="26"
                                       Foreground="#FFFFFF" HorizontalAlignment="Center"/>
-                            <TextBlock Text="X (Twitter)" FontSize="13" Foreground="#FFFFFF"
-                                       HorizontalAlignment="Center"/>
-                            <TextBlock Text="タイムラインを確認" FontSize="11"
-                                       Foreground="#888888" HorizontalAlignment="Center"/>
+                            <StackPanel Spacing="3" HorizontalAlignment="Center">
+                                <TextBlock Text="X (Twitter)" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="#FFFFFF" HorizontalAlignment="Center"/>
+                                <TextBlock Text="タイムライン" FontSize="11"
+                                           Foreground="#505050" HorizontalAlignment="Center"/>
+                            </StackPanel>
                         </StackPanel>
                     </Button>
 
                     <Button x:Name="DiscordButton" Margin="0,0,12,12"
-                            Padding="20,16" CornerRadius="10" Background="#141414">
-                        <StackPanel Spacing="8" HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconChat}" Width="28" Height="28"
+                            Padding="24,20" CornerRadius="18" Background="#141414">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center">
+                            <PathIcon Data="{StaticResource IconChat}" Width="26" Height="26"
                                       Foreground="#CCCCCC" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Discord" FontSize="13" Foreground="#FFFFFF"
-                                       HorizontalAlignment="Center"/>
-                            <TextBlock Text="フレンドとチャット" FontSize="11"
-                                       Foreground="#888888" HorizontalAlignment="Center"/>
+                            <StackPanel Spacing="3" HorizontalAlignment="Center">
+                                <TextBlock Text="Discord" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="#FFFFFF" HorizontalAlignment="Center"/>
+                                <TextBlock Text="フレンドとチャット" FontSize="11"
+                                           Foreground="#505050" HorizontalAlignment="Center"/>
+                            </StackPanel>
                         </StackPanel>
                     </Button>
 
                     <Button x:Name="SpotifyButton" Margin="0,0,12,12"
-                            Padding="20,16" CornerRadius="10" Background="#141414">
-                        <StackPanel Spacing="8" HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconMusic}" Width="28" Height="28"
+                            Padding="24,20" CornerRadius="18" Background="#141414">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center">
+                            <PathIcon Data="{StaticResource IconMusic}" Width="26" Height="26"
                                       Foreground="#FFFFFF" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Spotify" FontSize="13" Foreground="#FFFFFF"
-                                       HorizontalAlignment="Center"/>
-                            <TextBlock Text="音楽を聴きながら" FontSize="11"
-                                       Foreground="#888888" HorizontalAlignment="Center"/>
+                            <StackPanel Spacing="3" HorizontalAlignment="Center">
+                                <TextBlock Text="Spotify" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="#FFFFFF" HorizontalAlignment="Center"/>
+                                <TextBlock Text="音楽を聴きながら" FontSize="11"
+                                           Foreground="#505050" HorizontalAlignment="Center"/>
+                            </StackPanel>
                         </StackPanel>
                     </Button>
 
                     <Button x:Name="RobloxButton" Margin="0,0,12,12"
-                            Padding="20,16" CornerRadius="10" Background="#141414">
-                        <StackPanel Spacing="8" HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconGlobe}" Width="28" Height="28"
+                            Padding="24,20" CornerRadius="18" Background="#141414">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center">
+                            <PathIcon Data="{StaticResource IconGlobe}" Width="26" Height="26"
                                       Foreground="#FFFFFF" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Roblox.com" FontSize="13" Foreground="#FFFFFF"
-                                       HorizontalAlignment="Center"/>
-                            <TextBlock Text="ゲームを探す" FontSize="11"
-                                       Foreground="#888888" HorizontalAlignment="Center"/>
+                            <StackPanel Spacing="3" HorizontalAlignment="Center">
+                                <TextBlock Text="Roblox.com" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="#FFFFFF" HorizontalAlignment="Center"/>
+                                <TextBlock Text="ゲームを探す" FontSize="11"
+                                           Foreground="#505050" HorizontalAlignment="Center"/>
+                            </StackPanel>
                         </StackPanel>
                     </Button>
 
@@ -112,17 +124,17 @@
             </StackPanel>
 
             <!-- Tip -->
-            <Border Background="#141414" CornerRadius="10" Padding="16,12">
-                <StackPanel Spacing="6">
+            <Border Background="#141414" CornerRadius="16" Padding="24,20">
+                <StackPanel Spacing="10">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <PathIcon Data="{StaticResource IconInfo}" Width="14" Height="14"
-                                  Foreground="#888888"/>
-                        <TextBlock Text="使い方のヒント" FontSize="13" FontWeight="SemiBold"
-                                   Foreground="#888888"/>
+                        <PathIcon Data="{StaticResource IconInfo}" Width="13" Height="13"
+                                  Foreground="#505050"/>
+                        <TextBlock Text="使い方のヒント" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="#505050"/>
                     </StackPanel>
-                    <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" FontSize="13">
+                    <TextBlock TextWrapping="Wrap" Foreground="#888888" FontSize="13" LineHeight="22">
                         ブラウザで開いたサイトは Roblox と並べて表示できます。
-                        Windows キー + ← / → でウィンドウをスナップして、片方でゲーム・もう片方で動画を再生しましょう。
+                        Windows キー + ← / → でスナップして、片方でゲーム・もう片方で動画を再生しましょう。
                     </TextBlock>
                 </StackPanel>
             </Border>
