@@ -51,4 +51,17 @@ public class RobloxApiService
         var obj = JObject.Parse(json);
         return obj["data"]?[0]?["imageUrl"]?.Value<string>();
     }
+
+    public async Task<string?> GetUserAvatarHeadshotAsync(long userId)
+    {
+        try
+        {
+            var url = $"https://thumbnails.roblox.com/v1/users/avatar-headshot" +
+                      $"?userIds={userId}&size=150x150&format=Png&isCircular=false";
+            var json = await Http.GetStringAsync(url);
+            var obj = JObject.Parse(json);
+            return obj["data"]?[0]?["imageUrl"]?.Value<string>();
+        }
+        catch { return null; }
+    }
 }

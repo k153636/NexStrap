@@ -17,6 +17,7 @@ public partial class HomeViewModel : ViewModelBase
 
     private CancellationTokenSource? _launchFallbackCts;
     private bool _gameDetected;
+    private string? _userAvatarUrl;
 
     [ObservableProperty] private bool _isRobloxRunning;
     [ObservableProperty] private bool _isLaunching;
@@ -61,6 +62,16 @@ public partial class HomeViewModel : ViewModelBase
             });
         };
 
+        // ユーザーID検出 → アバター URL 取得してキャッシュ
+        _logWatcher.UserIdDetected += async (_, userId) =>
+        {
+            _settings.Update(s => s.CachedRobloxUserId = userId);
+            _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(userId);
+            // ホーム画面にいる場合はプレゼンスを即更新
+            if (!IsRobloxRunning && !IsLaunching)
+                _discord.SetPagePresence("ホーム", _userAvatarUrl);
+        };
+
         // ゲーム参加 — API でゲーム名・アイコン取得
         _logWatcher.PlaceJoined += async (_, placeId) =>
         {
@@ -68,7 +79,7 @@ public partial class HomeViewModel : ViewModelBase
             CancelFallback();
 
             var (name, iconUrl) = await _robloxApi.GetGameInfoAsync(placeId);
-            _discord.SetInGamePresence(name, iconUrl);
+            _discord.SetInGamePresence(name, iconUrl, _userAvatarUrl);
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -82,7 +93,7 @@ public partial class HomeViewModel : ViewModelBase
         _logWatcher.GameLeft += (_, _) =>
         {
             _gameDetected = false;
-            _discord.SetPagePresence("ホーム");
+            _discord.SetPagePresence("ホーム", _userAvatarUrl);
             Dispatcher.UIThread.InvokeAsync(() =>
             {
                 StatusText      = "準備完了";
@@ -91,6 +102,17 @@ public partial class HomeViewModel : ViewModelBase
         };
 
         _logWatcher.Start();
+
+        // 前回セッションのユーザーIDが保存済みならアバターを取得
+        var cachedUserId = _settings.Settings.CachedRobloxUserId;
+        if (cachedUserId > 0)
+        {
+            _ = Task.Run(async () =>
+            {
+                _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(cachedUserId);
+                _discord.SetPagePresence("ホーム", _userAvatarUrl);
+            });
+        }
     }
 
     [RelayCommand]
@@ -106,7 +128,7 @@ public partial class HomeViewModel : ViewModelBase
         await _mods.ApplyEnabledModsAsync();
 
         StatusText = "起動しています...";
-        _discord.SetLaunchingPresence();
+        _discord.SetLaunchingPresence(_userAvatarUrl);
         await _roblox.LaunchAsync();
 
         // ログ検知が失敗した場合のフォールバック（40秒後）
@@ -148,7 +170,7 @@ public partial class HomeViewModel : ViewModelBase
 
                 if (RobloxLogWatcher.IsRobloxRunning())
                 {
-                    _discord.SetInGamePresence("Roblox", null);
+                    _discord.SetInGamePresence("Roblox", null, _userAvatarUrl);
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         StatusText      = "Roblox をプレイ中";
@@ -159,7 +181,7 @@ public partial class HomeViewModel : ViewModelBase
                 else
                 {
                     // 起動に失敗 or すでに終了
-                    _discord.SetPagePresence("ホーム");
+                    _discord.SetPagePresence("ホーム", _userAvatarUrl);
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         IsLaunching     = false;

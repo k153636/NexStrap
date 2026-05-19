@@ -59,39 +59,39 @@ public class DiscordRpcService : IDisposable
     }
 
     // ページ切り替え時に呼ぶ — タイマーはそのまま
-    public void SetPagePresence(string pageName)
+    public void SetPagePresence(string pageName, string? userAvatarUrl = null)
     {
         SetPresence(
             details: "Test Build",
             state: pageName,
             largeImage: "nexstrap_logo",
             largeText: "NexStrap",
-            smallImage: null,
-            smallText: null
+            smallImage: userAvatarUrl,
+            smallText: userAvatarUrl != null ? "プロフィール" : null
         );
     }
 
-    public void SetInGamePresence(string gameName, string? gameIconUrl = null)
+    public void SetInGamePresence(string gameName, string? gameIconUrl = null, string? userAvatarUrl = null)
     {
         SetPresence(
             details: gameName,
             state: "プレイ中",
             largeImage: gameIconUrl ?? "roblox_logo",
             largeText: gameName,
-            smallImage: "nexstrap_logo",
-            smallText: "NexStrap"
+            smallImage: userAvatarUrl ?? "nexstrap_logo",
+            smallText: userAvatarUrl != null ? "プロフィール" : "NexStrap"
         );
     }
 
-    public void SetLaunchingPresence()
+    public void SetLaunchingPresence(string? userAvatarUrl = null)
     {
         SetPresence(
             details: "起動中...",
             state: "NexStrap",
             largeImage: "roblox_logo",
             largeText: "Roblox",
-            smallImage: "nexstrap_logo",
-            smallText: "NexStrap"
+            smallImage: userAvatarUrl ?? "nexstrap_logo",
+            smallText: userAvatarUrl != null ? "プロフィール" : "NexStrap"
         );
     }
 

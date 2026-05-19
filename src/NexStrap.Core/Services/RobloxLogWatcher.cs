@@ -13,6 +13,7 @@ public class RobloxLogWatcher : IDisposable
     private long _lastPlaceId;
 
     public event EventHandler<long>? PlaceJoined;
+    public event EventHandler<long>? UserIdDetected;
     public event EventHandler? GameLeft;
 
     private static readonly Regex[] PlaceIdPatterns =
@@ -26,6 +27,12 @@ public class RobloxLogWatcher : IDisposable
         // "placeId" : 123  (JSON format)
         new(@"""placeId""\s*:\s*(\d+)",   RegexOptions.IgnoreCase | RegexOptions.Compiled),
     ];
+
+    // GameJoinLoadTime 行に含まれる userid:XXXXXXXXXX
+    private static readonly Regex UserIdPattern =
+        new(@"\buserid:(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private long _detectedUserId;
 
     private static readonly string[] LeaveKeywords =
     [
@@ -52,12 +59,9 @@ public class RobloxLogWatcher : IDisposable
         {
             if (IsRobloxRunning())
             {
-                var placeId = ScanForLastPlaceId(latest);
-                if (placeId > 0)
-                {
-                    _lastPlaceId = placeId;
-                    PlaceJoined?.Invoke(this, placeId);
-                }
+                var (placeId, userId) = ScanForLastPlaceIdAndUser(latest);
+                if (userId > 0) { _detectedUserId = userId; UserIdDetected?.Invoke(this, userId); }
+                if (placeId > 0) { _lastPlaceId = placeId; PlaceJoined?.Invoke(this, placeId); }
             }
             StartWatchingFile(latest, fromEnd: true);
         }
@@ -99,9 +103,9 @@ public class RobloxLogWatcher : IDisposable
         _filePosition = fromEnd ? GetFileLength(path) : 0;
     }
 
-    private static long ScanForLastPlaceId(string path)
+    private (long placeId, long userId) ScanForLastPlaceIdAndUser(string path)
     {
-        long found = 0;
+        long foundPlace = 0, foundUser = 0;
         try
         {
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -113,15 +117,18 @@ public class RobloxLogWatcher : IDisposable
                 {
                     var m = pattern.Match(line);
                     if (m.Success && long.TryParse(m.Groups[1].Value, out var id) && id > 0)
-                    {
-                        found = id;
-                        break;
-                    }
+                    { foundPlace = id; break; }
+                }
+                if (foundUser == 0)
+                {
+                    var um = UserIdPattern.Match(line);
+                    if (um.Success && long.TryParse(um.Groups[1].Value, out var uid) && uid > 0)
+                        foundUser = uid;
                 }
             }
         }
         catch { }
-        return found;
+        return (foundPlace, foundUser);
     }
 
     private void PollLogFile()
@@ -145,6 +152,17 @@ public class RobloxLogWatcher : IDisposable
 
     private void ProcessLine(string line)
     {
+        // userid: 抽出 (GameJoinLoadTime 行に含まれる)
+        if (_detectedUserId == 0)
+        {
+            var um = UserIdPattern.Match(line);
+            if (um.Success && long.TryParse(um.Groups[1].Value, out var uid) && uid > 0)
+            {
+                _detectedUserId = uid;
+                UserIdDetected?.Invoke(this, uid);
+            }
+        }
+
         foreach (var pattern in PlaceIdPatterns)
         {
             var m = pattern.Match(line);

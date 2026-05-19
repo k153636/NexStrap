@@ -16,4 +16,5 @@ public class AppSettings
     public string BrowserHomepage { get; set; } = "https://www.youtube.com";
     public bool HotReloadEnabled { get; set; } = true;
     public string Language { get; set; } = "ja";
+    public long CachedRobloxUserId { get; set; } = 0;
 }
