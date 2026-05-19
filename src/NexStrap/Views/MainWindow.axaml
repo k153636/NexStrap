@@ -1,0 +1,101 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="using:FluentAvalonia.UI.Controls"
+        xmlns:vm="using:NexStrap.ViewModels"
+        xmlns:pages="using:NexStrap.Views.Pages"
+        x:Class="NexStrap.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="NexStrap"
+        Width="1100" Height="720"
+        MinWidth="900" MinHeight="600"
+        Background="#0D1117"
+        TransparencyLevelHint="AcrylicBlur"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="-1">
+
+    <Grid RowDefinitions="32,*">
+
+        <!-- Title Bar -->
+        <Grid Grid.Row="0" Background="#161B22">
+            <StackPanel Orientation="Horizontal" Margin="12,0,0,0"
+                        VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="Nex" FontWeight="Bold" FontSize="14"
+                           Foreground="#0078D4" VerticalAlignment="Center"/>
+                <TextBlock Text="Strap" FontSize="14"
+                           Foreground="#8B949E" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Navigation + Content -->
+        <ui:NavigationView Grid.Row="1"
+                           x:Name="NavView"
+                           IsPaneOpen="True"
+                           PaneDisplayMode="Left"
+                           OpenPaneLength="200"
+                           IsBackButtonVisible="False"
+                           IsSettingsVisible="False"
+                           IsPaneToggleButtonVisible="False"
+                           Background="Transparent"
+                           SelectionChanged="NavView_SelectionChanged">
+
+            <ui:NavigationView.MenuItems>
+                <ui:NavigationViewItem Content="ホーム" Tag="Home">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Home"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="Fast Flags" Tag="FastFlags">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Filter"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="Mods" Tag="Mods">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Add"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="ブラウザ" Tag="Browser">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Globe"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.MenuItems>
+
+            <ui:NavigationView.FooterMenuItems>
+                <ui:NavigationViewItem Content="設定" Tag="Settings">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Settings"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.FooterMenuItems>
+
+            <!-- Page Content -->
+            <Border Background="#0D1117">
+                <ContentControl x:Name="PageContent"
+                                Content="{Binding CurrentPage}">
+                    <ContentControl.DataTemplates>
+                        <DataTemplate DataType="vm:HomeViewModel">
+                            <pages:HomePage/>
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:FastFlagsViewModel">
+                            <pages:FastFlagsPage/>
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:ModsViewModel">
+                            <pages:ModsPage/>
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:SettingsViewModel">
+                            <pages:SettingsPage/>
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:BrowserViewModel">
+                            <pages:BrowserPage/>
+                        </DataTemplate>
+                    </ContentControl.DataTemplates>
+                </ContentControl>
+            </Border>
+        </ui:NavigationView>
+    </Grid>
+</Window>

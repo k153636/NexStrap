@@ -1,0 +1,168 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:vm="using:NexStrap.ViewModels"
+             x:Class="NexStrap.Views.Pages.FastFlagsPage"
+             x:DataType="vm:FastFlagsViewModel"
+             Background="#080808">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="32,28,32,16" Spacing="4">
+            <TextBlock Text="Fast Flags エディター" FontSize="24" FontWeight="Bold"
+                       Foreground="#FFFFFF"/>
+            <TextBlock Text="{Binding SavePath, StringFormat='保存先: {0}'}"
+                       FontSize="11" Foreground="#505050" FontFamily="Consolas,monospace"
+                       IsVisible="{Binding SavePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <TextBlock Text="Roblox が見つかりません — インストールを確認してください"
+                       FontSize="12" Foreground="#888888"
+                       IsVisible="{Binding SavePath, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
+        </StackPanel>
+
+        <!-- Controls Bar -->
+        <Grid Grid.Row="1" Margin="32,0,32,16" ColumnDefinitions="*,12,Auto,12,Auto,12,Auto,12,Auto">
+
+            <!-- Search -->
+            <TextBox Grid.Column="0" Text="{Binding SearchText}"
+                     Watermark="フラグを検索..."
+                     Background="#141414" BorderBrush="#2E2E2E"
+                     Foreground="#FFFFFF" CornerRadius="8"/>
+
+            <!-- Category Filter -->
+            <ComboBox Grid.Column="2" ItemsSource="{Binding Categories}"
+                      SelectedItem="{Binding SelectedCategory}"
+                      Background="#141414" Foreground="#FFFFFF"
+                      MinWidth="130"/>
+
+            <!-- Presets -->
+            <Button Grid.Column="4" Content="プリセット適用"
+                    Command="{Binding ApplyPresetsAsyncCommand}"
+                    Background="#202020" Foreground="#FFFFFF"
+                    Padding="12,8" CornerRadius="8"/>
+
+            <!-- Hot Reload -->
+            <Button Grid.Column="6"
+                    Command="{Binding HotReloadCommand}"
+                    Background="#202020" Foreground="#FFFFFF"
+                    Padding="12,8" CornerRadius="8">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <PathIcon Data="{StaticResource IconFlash}" Width="14" Height="14" Foreground="#FFFFFF"/>
+                    <TextBlock Text="ホットリロード" Foreground="#FFFFFF" FontSize="13"/>
+                </StackPanel>
+            </Button>
+
+            <!-- Save -->
+            <Button Grid.Column="8"
+                    Command="{Binding SaveCommand}"
+                    IsEnabled="{Binding !IsSaving}"
+                    Background="#FFFFFF" Foreground="#080808"
+                    Padding="16,8" CornerRadius="8">
+                <TextBlock Text="保存" FontWeight="SemiBold" FontSize="13"/>
+            </Button>
+        </Grid>
+
+        <!-- FPS Quick Control -->
+        <Border Grid.Row="1" Background="#141414" CornerRadius="8"
+                Margin="32,56,32,0" Padding="16,10">
+            <Grid ColumnDefinitions="Auto,*,Auto,12,Auto">
+                <TextBlock Grid.Column="0" Text="FPS 上限:" Foreground="#888888"
+                           VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <Slider Grid.Column="1" Minimum="30" Maximum="360"
+                        Value="{Binding FpsTarget}"
+                        TickFrequency="30" IsSnapToTickEnabled="True"/>
+                <TextBlock Grid.Column="2" Text="{Binding FpsTarget}"
+                           Foreground="#FFFFFF" FontWeight="Bold" Width="40"
+                           VerticalAlignment="Center" Margin="8,0"/>
+                <Button Grid.Column="4" Content="適用"
+                        Command="{Binding SetFpsTargetCommand}"
+                        Background="#202020" Foreground="#FFFFFF"
+                        Padding="12,6" CornerRadius="6"/>
+            </Grid>
+        </Border>
+
+        <!-- Flags List -->
+        <Border Grid.Row="2" Margin="32,80,32,0" Background="#141414" CornerRadius="12">
+            <Grid RowDefinitions="Auto,*">
+                <!-- Column Headers -->
+                <Border Grid.Row="0" Background="#202020">
+                <Grid ColumnDefinitions="*,200,100,40"
+                      Margin="16,10">
+                    <TextBlock Grid.Column="0" Text="フラグ名"
+                               FontSize="12" FontWeight="SemiBold" Foreground="#888888"/>
+                    <TextBlock Grid.Column="1" Text="値"
+                               FontSize="12" FontWeight="SemiBold" Foreground="#888888"/>
+                    <TextBlock Grid.Column="2" Text="カテゴリ"
+                               FontSize="12" FontWeight="SemiBold" Foreground="#888888"/>
+                    <TextBlock Grid.Column="3" Text=""
+                               FontSize="12" FontWeight="SemiBold" Foreground="#888888"/>
+                </Grid>
+                </Border>
+
+                <ListBox Grid.Row="1" ItemsSource="{Binding Flags}"
+                         SelectedItem="{Binding SelectedFlag}"
+                         Background="Transparent" BorderThickness="0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="vm:FlagEntry">
+                            <Grid ColumnDefinitions="*,200,100,40"
+                                  Margin="0,2">
+                                <StackPanel Grid.Column="0" Spacing="2" Margin="4,0">
+                                    <TextBlock Text="{Binding Name}"
+                                               FontSize="13" Foreground="#CCCCCC"
+                                               FontFamily="Consolas,Courier New,monospace"/>
+                                    <TextBlock Text="{Binding Description}"
+                                               FontSize="11" Foreground="#505050"
+                                               IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+
+                                <TextBox Grid.Column="1" Text="{Binding Value}"
+                                         Background="#080808" Foreground="#FFFFFF"
+                                         BorderBrush="#2E2E2E" Padding="8,4"
+                                         CornerRadius="6" FontFamily="Consolas,Courier New,monospace"
+                                         FontSize="13" Margin="4,2"/>
+
+                                <Border Grid.Column="2" Background="#202020" CornerRadius="10"
+                                        Padding="8,3" Margin="4,0" VerticalAlignment="Center"
+                                        HorizontalAlignment="Left">
+                                    <TextBlock Text="{Binding Category}"
+                                               FontSize="11" Foreground="#888888"/>
+                                </Border>
+
+                                <Button Grid.Column="3"
+                                        Command="{Binding $parent[UserControl].((vm:FastFlagsViewModel)DataContext).RemoveFlagCommand}"
+                                        CommandParameter="{Binding}"
+                                        Padding="4,4"
+                                        Background="Transparent"
+                                        Foreground="#888888"
+                                        CornerRadius="4">
+                                    <TextBlock Text="✕" FontSize="13"/>
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <!-- Add Flag + Status Bar -->
+        <Grid Grid.Row="3" Margin="32,12,32,24" ColumnDefinitions="*,12,120,12,80,*,Auto">
+            <TextBox Grid.Column="0" Text="{Binding NewFlagName}"
+                     Watermark="新しいフラグ名 (例: FFlagXxx)"
+                     Background="#141414" Foreground="#FFFFFF"
+                     BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,8"/>
+            <TextBox Grid.Column="2" Text="{Binding NewFlagValue}"
+                     Watermark="値"
+                     Background="#141414" Foreground="#FFFFFF"
+                     BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,8"/>
+            <Button Grid.Column="4" Content="+ 追加"
+                    Command="{Binding AddFlagCommand}"
+                    Background="#FFFFFF" Foreground="#080808"
+                    Padding="12,8" CornerRadius="8" FontWeight="SemiBold"
+                    HorizontalAlignment="Stretch"/>
+            <TextBlock Grid.Column="6" Text="{Binding StatusMessage}"
+                       Foreground="{Binding IsStatusError, Converter={StaticResource BoolToStringConverter}, ConverterParameter='#FF6B6B,#CCCCCC'}"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+        </Grid>
+    </Grid>
+</UserControl>
