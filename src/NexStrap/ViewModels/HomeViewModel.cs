@@ -14,6 +14,9 @@ public partial class HomeViewModel : ViewModelBase
     private readonly RobloxLogWatcher _logWatcher;
     private readonly RobloxApiService _robloxApi;
 
+    private CancellationTokenSource? _launchFallbackCts;
+    private bool _gameDetected;
+
     [ObservableProperty] private bool _isRobloxRunning;
     [ObservableProperty] private bool _isLaunching;
     [ObservableProperty] private bool _isRobloxInstalled;
@@ -29,13 +32,13 @@ public partial class HomeViewModel : ViewModelBase
         RobloxLogWatcher logWatcher,
         RobloxApiService robloxApi)
     {
-        _roblox = roblox;
+        _roblox    = roblox;
         _fastFlags = fastFlags;
-        _mods = mods;
-        _settings = settings;
-        _discord = discord;
+        _mods      = mods;
+        _settings  = settings;
+        _discord   = discord;
         _logWatcher = logWatcher;
-        _robloxApi = robloxApi;
+        _robloxApi  = robloxApi;
 
         IsRobloxInstalled = roblox.IsInstalled();
         var versionPath = roblox.RobloxVersionPath;
@@ -44,33 +47,35 @@ public partial class HomeViewModel : ViewModelBase
 
         roblox.StatusChanged += (_, status) =>
         {
-            IsRobloxRunning = status == RobloxStatus.Running;
-            IsLaunching = status == RobloxStatus.Launching;
+            IsLaunching     = status == RobloxStatus.Launching;
             StatusText = status switch
             {
-                RobloxStatus.Running   => "Roblox 起動中",
-                RobloxStatus.Launching => "起動しています...",
-                RobloxStatus.Updating  => "アップデート中...",
+                RobloxStatus.Launching    => "起動しています...",
+                RobloxStatus.Updating     => "アップデート中...",
                 RobloxStatus.NotInstalled => "Roblox が見つかりません",
-                _ => "準備完了"
+                _ => StatusText  // Running / Idle は logWatcher 側で制御
             };
         };
 
-        // ゲーム参加：APIでゲーム名・アイコン取得 → Discord更新
+        // ゲーム参加 — API でゲーム名・アイコン取得
         _logWatcher.PlaceJoined += async (_, placeId) =>
         {
+            _gameDetected = true;
+            CancelFallback();
+
             var (name, iconUrl) = await _robloxApi.GetGameInfoAsync(placeId);
             _discord.SetInGamePresence(name, iconUrl);
-            StatusText = $"プレイ中: {name}";
+            StatusText      = $"プレイ中: {name}";
             IsRobloxRunning = true;
-            IsLaunching = false;
+            IsLaunching     = false;
         };
 
-        // ゲーム退出：ホーム表示に戻す
+        // ゲーム退出
         _logWatcher.GameLeft += (_, _) =>
         {
+            _gameDetected = false;
             _discord.SetPagePresence("ホーム");
-            StatusText = "準備完了";
+            StatusText      = "準備完了";
             IsRobloxRunning = false;
         };
 
@@ -82,15 +87,19 @@ public partial class HomeViewModel : ViewModelBase
     {
         if (IsLaunching || IsRobloxRunning) return;
 
-        IsLaunching = true;
-        StatusText = "フラグを適用中...";
+        IsLaunching   = true;
+        _gameDetected = false;
+        StatusText    = "フラグを適用中...";
 
         await _fastFlags.SaveAsync();
         await _mods.ApplyEnabledModsAsync();
 
-        StatusText = "Roblox を起動中...";
+        StatusText = "起動しています...";
         _discord.SetLaunchingPresence();
         await _roblox.LaunchAsync();
+
+        // ログ検知が失敗した場合のフォールバック（40秒後）
+        StartLaunchFallback();
     }
 
     [RelayCommand]
@@ -98,6 +107,7 @@ public partial class HomeViewModel : ViewModelBase
     {
         await _fastFlags.SaveAsync();
         await _roblox.LaunchMultipleInstanceAsync();
+        StartLaunchFallback();
     }
 
     [RelayCommand]
@@ -107,6 +117,47 @@ public partial class HomeViewModel : ViewModelBase
         await _fastFlags.HotReloadAsync(flags);
         StatusText = "Fast Flags をホットリロードしました";
         await Task.Delay(2000);
-        StatusText = "準備完了";
+        StatusText = IsRobloxRunning ? $"プレイ中" : "準備完了";
+    }
+
+    // ログ検知が 40 秒以内に起きなかった場合、プロセス確認で補完
+    private void StartLaunchFallback()
+    {
+        CancelFallback();
+        _launchFallbackCts = new CancellationTokenSource();
+        var token = _launchFallbackCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(40_000, token);
+                if (token.IsCancellationRequested) return;
+                if (_gameDetected) return;
+
+                if (RobloxLogWatcher.IsRobloxRunning())
+                {
+                    _discord.SetInGamePresence("Roblox", null);
+                    StatusText      = "Roblox をプレイ中";
+                    IsRobloxRunning = true;
+                    IsLaunching     = false;
+                }
+                else
+                {
+                    // 起動に失敗 or すでに終了
+                    IsLaunching     = false;
+                    IsRobloxRunning = false;
+                    StatusText      = "準備完了";
+                    _discord.SetPagePresence("ホーム");
+                }
+            }
+            catch (TaskCanceledException) { }
+        });
+    }
+
+    private void CancelFallback()
+    {
+        _launchFallbackCts?.Cancel();
+        _launchFallbackCts = null;
     }
 }

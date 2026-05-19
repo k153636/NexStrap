@@ -15,14 +15,14 @@ public class RobloxLogWatcher : IDisposable
     public event EventHandler<long>? PlaceJoined;
     public event EventHandler? GameLeft;
 
-    // Roblox ログに現れる placeId のパターン（複数形式に対応）
     private static readonly Regex[] PlaceIdPatterns =
     [
-        new(@"placeId[=:](\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"place_id[=:](\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"place id[=: ]+(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"PlaceId\s*=\s*(\d+)", RegexOptions.Compiled),
-        new(@"placeid:(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"placeId[=:](\d+)",          RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"place_id[=:](\d+)",         RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"place id[=: ]+(\d+)",       RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"PlaceId\s*=\s*(\d+)",       RegexOptions.Compiled),
+        new(@"placeid:(\d+)",             RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"""placeId""\s*:\s*(\d+)",   RegexOptions.IgnoreCase | RegexOptions.Compiled),
     ];
 
     private static readonly string[] LeaveKeywords =
@@ -32,7 +32,8 @@ public class RobloxLogWatcher : IDisposable
         "game left",
         "reportGameDisconnect",
         "Game disconnect",
-        "Disconnecting"
+        "Disconnecting",
+        "leaving game"
     ];
 
     private static readonly string LogDir = Path.Combine(
@@ -43,11 +44,25 @@ public class RobloxLogWatcher : IDisposable
     {
         if (!Directory.Exists(LogDir)) return;
 
-        // 既存ログは末尾から監視（過去セッションのplaceIdを読まない）
         var latest = GetLatestLogFile();
-        if (latest != null) StartWatchingFile(latest, fromEnd: true);
+        if (latest != null)
+        {
+            if (IsRobloxRunning())
+            {
+                // 既に起動中 → ログ全体から最新placeIdを取得してRPCを即反映
+                var placeId = ScanForLastPlaceId(latest);
+                if (placeId > 0)
+                {
+                    _lastPlaceId = placeId;
+                    PlaceJoined?.Invoke(this, placeId);
+                }
+            }
 
-        // 新しいログファイル（Roblox起動時に作成）は先頭から読む
+            // 今後の新規ログ行は末尾から監視（過去分はスキップ）
+            StartWatchingFile(latest, fromEnd: true);
+        }
+
+        // Roblox起動時に作成される新ログファイルを検知
         _dirWatcher = new FileSystemWatcher(LogDir)
         {
             Filter = "*",
@@ -59,10 +74,7 @@ public class RobloxLogWatcher : IDisposable
                 StartWatchingFile(e.FullPath, fromEnd: false);
         };
 
-        // ログファイルをポーリング（1秒ごと）
-        _pollTimer = new Timer(_ => PollLogFile(), null, 1000, 1000);
-
-        // Robloxプロセス監視（退出フォールバック用、5秒ごと）
+        _pollTimer  = new Timer(_ => PollLogFile(),      null, 1000, 1000);
         _processTimer = new Timer(_ => CheckProcessExit(), null, 5000, 5000);
     }
 
@@ -71,25 +83,42 @@ public class RobloxLogWatcher : IDisposable
         _pollTimer?.Dispose();
         _dirWatcher?.Dispose();
         _processTimer?.Dispose();
-        _pollTimer = null;
-        _dirWatcher = null;
+        _pollTimer    = null;
+        _dirWatcher   = null;
         _processTimer = null;
     }
 
     private void StartWatchingFile(string path, bool fromEnd = false)
     {
-        _watchedFile = path;
-        _lastPlaceId = 0;
+        _watchedFile  = path;
+        _lastPlaceId  = 0;
+        _filePosition = fromEnd ? GetFileLength(path) : 0;
+    }
 
-        if (fromEnd)
+    // ログ全体を読み、最後に現れたplaceIdを返す
+    private static long ScanForLastPlaceId(string path)
+    {
+        long found = 0;
+        try
         {
-            try { _filePosition = new FileInfo(path).Length; }
-            catch { _filePosition = 0; }
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(fs);
+            string? line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                foreach (var pattern in PlaceIdPatterns)
+                {
+                    var m = pattern.Match(line);
+                    if (m.Success && long.TryParse(m.Groups[1].Value, out var id) && id > 0)
+                    {
+                        found = id;
+                        break;
+                    }
+                }
+            }
         }
-        else
-        {
-            _filePosition = 0;
-        }
+        catch { }
+        return found;
     }
 
     private void PollLogFile()
@@ -115,7 +144,6 @@ public class RobloxLogWatcher : IDisposable
 
     private void ProcessLine(string line)
     {
-        // ゲーム参加検知
         foreach (var pattern in PlaceIdPatterns)
         {
             var match = pattern.Match(line);
@@ -128,37 +156,39 @@ public class RobloxLogWatcher : IDisposable
             return;
         }
 
-        // ゲーム退出検知
         if (_lastPlaceId != 0)
         {
             foreach (var keyword in LeaveKeywords)
             {
-                if (line.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                {
-                    _lastPlaceId = 0;
-                    GameLeft?.Invoke(this, EventArgs.Empty);
-                    return;
-                }
+                if (!line.Contains(keyword, StringComparison.OrdinalIgnoreCase)) continue;
+                _lastPlaceId = 0;
+                GameLeft?.Invoke(this, EventArgs.Empty);
+                return;
             }
         }
     }
 
-    // Robloxプロセスが終了していたら退出イベントを発火（フォールバック）
+    // Robloxプロセス終了を検知（ログが退出を記録しなかった場合のフォールバック）
     private void CheckProcessExit()
     {
         if (_lastPlaceId == 0) return;
-
-        try
+        if (!IsRobloxRunning())
         {
-            var running = Process.GetProcessesByName("RobloxPlayerBeta")
-                .Any(p => !p.HasExited);
-            if (!running)
-            {
-                _lastPlaceId = 0;
-                GameLeft?.Invoke(this, EventArgs.Empty);
-            }
+            _lastPlaceId = 0;
+            GameLeft?.Invoke(this, EventArgs.Empty);
         }
-        catch { }
+    }
+
+    public static bool IsRobloxRunning()
+    {
+        try { return Process.GetProcessesByName("RobloxPlayerBeta").Any(p => !p.HasExited); }
+        catch { return false; }
+    }
+
+    private static long GetFileLength(string path)
+    {
+        try { return new FileInfo(path).Length; }
+        catch { return 0; }
     }
 
     private static string? GetLatestLogFile()
