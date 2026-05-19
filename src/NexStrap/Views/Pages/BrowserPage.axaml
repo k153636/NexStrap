@@ -4,11 +4,11 @@
              Background="#080808">
 
     <ScrollViewer>
-        <StackPanel Spacing="32" Margin="48,40">
+        <StackPanel Spacing="20" Margin="32,28">
 
             <!-- Header -->
             <StackPanel Spacing="6">
-                <TextBlock Text="ブラウザ" FontSize="36" FontWeight="Bold" Foreground="#FFFFFF"/>
+                <TextBlock Text="ブラウザ" FontSize="28" FontWeight="Bold" Foreground="#FFFFFF"/>
                 <TextBlock Text="ゲームをプレイしながら好きなサイトを開きましょう"
                            FontSize="14" Foreground="#505050"/>
             </StackPanel>

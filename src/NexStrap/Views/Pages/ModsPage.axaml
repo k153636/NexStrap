@@ -9,14 +9,14 @@
     <Grid RowDefinitions="Auto,Auto,*">
 
         <!-- Header -->
-        <StackPanel Grid.Row="0" Margin="48,40,48,24" Spacing="6">
-            <TextBlock Text="Mods" FontSize="36" FontWeight="Bold" Foreground="#FFFFFF"/>
+        <StackPanel Grid.Row="0" Margin="32,28,32,16" Spacing="6">
+            <TextBlock Text="Mods" FontSize="28" FontWeight="Bold" Foreground="#FFFFFF"/>
             <TextBlock Text="テクスチャ・サウンド・フォントなどのカスタムアセットを管理"
                        FontSize="14" Foreground="#505050"/>
         </StackPanel>
 
         <!-- Action Bar -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12" Margin="48,0,48,28">
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12" Margin="32,0,32,16">
             <Button Content="+ Mod をインポート"
                     Command="{Binding ImportModCommand}"
                     Background="#FFFFFF" Foreground="#080808" FontWeight="SemiBold"
@@ -32,7 +32,7 @@
         </StackPanel>
 
         <!-- Mods Grid -->
-        <ScrollViewer Grid.Row="2" Margin="48,0,48,0">
+        <ScrollViewer Grid.Row="2" Margin="32,0,32,0">
             <ItemsControl ItemsSource="{Binding Mods}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>

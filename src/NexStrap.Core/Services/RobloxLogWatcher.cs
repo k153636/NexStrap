@@ -5,8 +5,8 @@ namespace NexStrap.Core.Services;
 
 public class RobloxLogWatcher : IDisposable
 {
-    private FileSystemWatcher? _dirWatcher;
     private Timer? _pollTimer;
+    private Timer? _scanTimer;
     private Timer? _processTimer;
     private string? _watchedFile;
     private long _filePosition;
@@ -17,11 +17,13 @@ public class RobloxLogWatcher : IDisposable
 
     private static readonly Regex[] PlaceIdPatterns =
     [
-        new(@"placeId[=:](\d+)",          RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"place_id[=:](\d+)",         RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"place id[=: ]+(\d+)",       RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"PlaceId\s*=\s*(\d+)",       RegexOptions.Compiled),
+        // placeid:123456789  (GameJoinLoadTime log line)
         new(@"placeid:(\d+)",             RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        // placeId=123  or  placeId:123
+        new(@"placeId[=:](\d+)",          RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        // ! Joining game '...' place 123456789 at ...
+        new(@"\bplace\s+(\d{7,})\b",      RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        // "placeId" : 123  (JSON format)
         new(@"""placeId""\s*:\s*(\d+)",   RegexOptions.IgnoreCase | RegexOptions.Compiled),
     ];
 
@@ -33,7 +35,8 @@ public class RobloxLogWatcher : IDisposable
         "reportGameDisconnect",
         "Game disconnect",
         "Disconnecting",
-        "leaving game"
+        "leaving game",
+        "returnToLuaApp",
     ];
 
     private static readonly string LogDir = Path.Combine(
@@ -49,7 +52,6 @@ public class RobloxLogWatcher : IDisposable
         {
             if (IsRobloxRunning())
             {
-                // 既に起動中 → ログ全体から最新placeIdを取得してRPCを即反映
                 var placeId = ScanForLastPlaceId(latest);
                 if (placeId > 0)
                 {
@@ -57,45 +59,46 @@ public class RobloxLogWatcher : IDisposable
                     PlaceJoined?.Invoke(this, placeId);
                 }
             }
-
-            // 今後の新規ログ行は末尾から監視（過去分はスキップ）
             StartWatchingFile(latest, fromEnd: true);
         }
 
-        // Roblox起動時に作成される新ログファイルを検知
-        _dirWatcher = new FileSystemWatcher(LogDir)
-        {
-            Filter = "*",
-            EnableRaisingEvents = true
-        };
-        _dirWatcher.Created += (_, e) =>
-        {
-            if (e.FullPath.EndsWith(".log", StringComparison.OrdinalIgnoreCase))
-                StartWatchingFile(e.FullPath, fromEnd: false);
-        };
+        // ログ行ポーリング（1秒ごと）
+        _pollTimer = new Timer(_ => PollLogFile(), null, 1000, 1000);
 
-        _pollTimer  = new Timer(_ => PollLogFile(),      null, 1000, 1000);
+        // 新ログファイル検知（FileSystemWatcherの代わりに定期スキャン、2秒ごと）
+        _scanTimer = new Timer(_ => CheckForNewLogFile(), null, 2000, 2000);
+
+        // プロセス終了フォールバック（5秒ごと）
         _processTimer = new Timer(_ => CheckProcessExit(), null, 5000, 5000);
     }
 
     public void Stop()
     {
         _pollTimer?.Dispose();
-        _dirWatcher?.Dispose();
+        _scanTimer?.Dispose();
         _processTimer?.Dispose();
         _pollTimer    = null;
-        _dirWatcher   = null;
+        _scanTimer    = null;
         _processTimer = null;
     }
 
-    private void StartWatchingFile(string path, bool fromEnd = false)
+    // 現在監視中のファイルより新しいログファイルがあれば切り替える
+    private void CheckForNewLogFile()
+    {
+        var latest = GetLatestLogFile();
+        if (latest == null || latest == _watchedFile) return;
+
+        // 新しいファイルに切り替え（先頭から読む）
+        StartWatchingFile(latest, fromEnd: false);
+    }
+
+    private void StartWatchingFile(string path, bool fromEnd)
     {
         _watchedFile  = path;
         _lastPlaceId  = 0;
         _filePosition = fromEnd ? GetFileLength(path) : 0;
     }
 
-    // ログ全体を読み、最後に現れたplaceIdを返す
     private static long ScanForLastPlaceId(string path)
     {
         long found = 0;
@@ -124,7 +127,6 @@ public class RobloxLogWatcher : IDisposable
     private void PollLogFile()
     {
         if (_watchedFile == null || !File.Exists(_watchedFile)) return;
-
         try
         {
             using var fs = new FileStream(_watchedFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -132,7 +134,6 @@ public class RobloxLogWatcher : IDisposable
 
             fs.Seek(_filePosition, SeekOrigin.Begin);
             using var reader = new StreamReader(fs);
-
             string? line;
             while ((line = reader.ReadLine()) != null)
                 ProcessLine(line);
@@ -146,9 +147,9 @@ public class RobloxLogWatcher : IDisposable
     {
         foreach (var pattern in PlaceIdPatterns)
         {
-            var match = pattern.Match(line);
-            if (!match.Success) continue;
-            if (!long.TryParse(match.Groups[1].Value, out var placeId)) continue;
+            var m = pattern.Match(line);
+            if (!m.Success) continue;
+            if (!long.TryParse(m.Groups[1].Value, out var placeId)) continue;
             if (placeId <= 0 || placeId == _lastPlaceId) continue;
 
             _lastPlaceId = placeId;
@@ -168,7 +169,6 @@ public class RobloxLogWatcher : IDisposable
         }
     }
 
-    // Robloxプロセス終了を検知（ログが退出を記録しなかった場合のフォールバック）
     private void CheckProcessExit()
     {
         if (_lastPlaceId == 0) return;
@@ -181,7 +181,11 @@ public class RobloxLogWatcher : IDisposable
 
     public static bool IsRobloxRunning()
     {
-        try { return Process.GetProcessesByName("RobloxPlayerBeta").Any(p => !p.HasExited); }
+        try
+        {
+            return Process.GetProcessesByName("RobloxPlayerBeta").Any(p => !p.HasExited)
+                || Process.GetProcessesByName("RobloxPlayer").Any(p => !p.HasExited);
+        }
         catch { return false; }
     }
 

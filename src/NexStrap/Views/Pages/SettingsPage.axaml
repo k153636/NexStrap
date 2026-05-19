@@ -6,12 +6,12 @@
              Background="#080808">
 
     <ScrollViewer>
-        <StackPanel Spacing="20" Margin="48,40">
+        <StackPanel Spacing="16" Margin="32,28">
 
-            <TextBlock Text="設定" FontSize="36" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,12"/>
+            <TextBlock Text="設定" FontSize="28" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,4"/>
 
             <!-- Discord RPC -->
-            <Border Background="#141414" CornerRadius="18" Padding="28,24">
+            <Border Background="#141414" CornerRadius="14" Padding="20,16">
                 <StackPanel Spacing="20">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <TextBlock Text="Discord Rich Presence" FontSize="13" FontWeight="SemiBold"
@@ -50,7 +50,7 @@
             </Border>
 
             <!-- Performance -->
-            <Border Background="#141414" CornerRadius="18" Padding="28,24">
+            <Border Background="#141414" CornerRadius="14" Padding="20,16">
                 <StackPanel Spacing="20">
                     <TextBlock Text="パフォーマンス" FontSize="13" FontWeight="SemiBold" Foreground="#888888"/>
 
@@ -86,7 +86,7 @@
             </Border>
 
             <!-- Roblox -->
-            <Border Background="#141414" CornerRadius="18" Padding="28,24">
+            <Border Background="#141414" CornerRadius="14" Padding="20,16">
                 <StackPanel Spacing="20">
                     <TextBlock Text="Roblox" FontSize="13" FontWeight="SemiBold" Foreground="#888888"/>
 
@@ -120,7 +120,7 @@
             </Border>
 
             <!-- App -->
-            <Border Background="#141414" CornerRadius="18" Padding="28,24">
+            <Border Background="#141414" CornerRadius="14" Padding="20,16">
                 <StackPanel Spacing="20">
                     <TextBlock Text="アプリケーション" FontSize="13" FontWeight="SemiBold" Foreground="#888888"/>
 
