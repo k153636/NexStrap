@@ -6,6 +6,7 @@
         x:Class="NexStrap.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="NexStrap"
+        Icon="avares://NexStrap/Assets/nexstrap.png"
         Width="900" Height="620"
         MinWidth="780" MinHeight="520"
         Background="#080808"

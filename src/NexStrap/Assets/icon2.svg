@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g"
+                    x1="0" y1="0" x2="512" y2="512"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#FFFFFF"/>
+    </linearGradient>
+    <linearGradient id="gback"
+                    x1="0" y1="0" x2="512" y2="512"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#3C3C3C"/>
+      <stop offset="100%" stop-color="#141414"/>
+    </linearGradient>
+    <filter id="blur-shadow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+
+  <!-- Outer soft drop shadow -->
+  <g transform="rotate(20,256,256) translate(10,18)">
+    <rect x="56" y="56" width="400" height="400" fill="black" opacity="0.50"
+          filter="url(#blur-shadow)"/>
+  </g>
+
+  <!-- Dark center plate -->
+  <g transform="rotate(20,256,256)">
+    <rect x="76" y="76" width="360" height="360" fill="url(#gback)"/>
+  </g>
+
+  <!-- Cast shadow from logo onto dark plate (sharp, offset down-right = top-left light) -->
+  <g transform="rotate(20,256,256) translate(7,10)">
+    <path fill="black" fill-opacity="0.75" fill-rule="evenodd" d="
+      M 56,56  L 456,56  L 456,456 L 56,456  Z
+
+      M 116,116 L 176,116 L 176,396 L 116,396 Z
+      M 176,116 L 236,116 L 396,396 L 336,396 Z
+      M 336,116 L 396,116 L 396,396 L 336,396 Z
+      M 336,291 L 336,396 L 396,396 Z
+
+      M 206,206 L 306,206 L 306,306 L 206,306 Z
+
+      M 236,56  L 276,56  L 276,206 L 236,206 Z
+      M 236,306 L 276,306 L 276,456 L 236,456 Z
+      M 56,236  L 206,236 L 206,276 L 56,276  Z
+      M 306,236 L 456,236 L 456,276 L 306,276 Z
+
+      M 236,116 L 276,186 L 276,206 L 236,206 Z
+      M 306,239 L 327,276 L 306,276 Z
+      M 227,206 L 287,206 L 306,239 L 306,306 L 285,306 Z
+    "/>
+  </g>
+
+  <!-- Main white logo -->
+  <g transform="rotate(20,256,256)">
+    <path fill="url(#g)" fill-rule="evenodd" d="
+      M 56,56  L 456,56  L 456,456 L 56,456  Z
+
+      M 116,116 L 176,116 L 176,396 L 116,396 Z
+      M 176,116 L 236,116 L 396,396 L 336,396 Z
+      M 336,116 L 396,116 L 396,396 L 336,396 Z
+      M 336,291 L 336,396 L 396,396 Z
+
+      M 206,206 L 306,206 L 306,306 L 206,306 Z
+
+      M 236,56  L 276,56  L 276,206 L 236,206 Z
+      M 236,306 L 276,306 L 276,456 L 236,456 Z
+      M 56,236  L 206,236 L 206,276 L 56,276  Z
+      M 306,236 L 456,236 L 456,276 L 306,276 Z
+
+      M 236,116 L 276,186 L 276,206 L 236,206 Z
+      M 306,239 L 327,276 L 306,276 Z
+      M 227,206 L 287,206 L 306,239 L 306,306 L 285,306 Z
+    "/>
+  </g>
+</svg>
