@@ -1,32 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!--
     NexStrap icon
-    Background: dark tilted square (#111111)
-    Frame:      4-corner brackets in white
-    Mark:       Geometric N in white
-    Rotation:   15° (Roblox-inspired)
+    - Roblox-proportioned square, 15° tilt, stroke only (no fill)
+    - N mark as 3 strokes inside
+    - White, transparent background
   -->
+  <g transform="rotate(15,256,256)"
+     fill="none" stroke="#FFFFFF" stroke-width="28"
+     stroke-linecap="round" stroke-linejoin="round">
 
-  <g transform="rotate(15,256,256)">
+    <!-- Outer square — Roblox logo shape, outline only -->
+    <rect x="72" y="72" width="368" height="368" rx="40"/>
 
-    <!-- Dark square base -->
-    <rect x="76" y="76" width="360" height="360" rx="72" fill="#111111"/>
-
-    <!-- Corner brackets -->
-    <g fill="none" stroke="#FFFFFF" stroke-width="28"
-       stroke-linecap="round" stroke-linejoin="round">
-      <path d="M 156,76 L 76,76 L 76,156"/>
-      <path d="M 356,76 L 436,76 L 436,156"/>
-      <path d="M 436,356 L 436,436 L 356,436"/>
-      <path d="M 76,356 L 76,436 L 156,436"/>
-    </g>
-
-    <!-- N letterform -->
-    <g fill="#FFFFFF">
-      <rect x="140" y="156" width="44" height="200"/>
-      <polygon points="184,156 228,156 372,356 328,356"/>
-      <rect x="328" y="156" width="44" height="200"/>
-    </g>
+    <!-- N mark: left bar / diagonal / right bar -->
+    <line x1="152" y1="152" x2="152" y2="360"/>
+    <line x1="152" y1="152" x2="360" y2="360"/>
+    <line x1="360" y1="152" x2="360" y2="360"/>
 
   </g>
 </svg>
