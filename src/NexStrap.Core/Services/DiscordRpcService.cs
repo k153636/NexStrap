@@ -61,16 +61,16 @@ public class DiscordRpcService : IDisposable
         catch { }
     }
 
-    // ホーム・ページ切り替え時 — アバターがあれば大アイコンとして表示
+    // ホーム・ページ切り替え時 — Robloxロゴが大、アバターが小
     public void SetPagePresence(string pageName, string? userAvatarUrl = null)
     {
         SetPresence(
             details: "Test Build",
             state: pageName,
-            largeImage: userAvatarUrl ?? "roblox_logo",
-            largeText: "プロフィール",
-            smallImage: null,
-            smallText: null
+            largeImage: "roblox_logo",
+            largeText: "Roblox",
+            smallImage: userAvatarUrl,
+            smallText: userAvatarUrl != null ? "プロフィール" : null
         );
     }
 
@@ -87,16 +87,16 @@ public class DiscordRpcService : IDisposable
         );
     }
 
-    // 起動中 — アバターがあれば大アイコン、なければ roblox_logo
+    // 起動中 — Robloxロゴが大、アバターが小
     public void SetLaunchingPresence(string? userAvatarUrl = null)
     {
         SetPresence(
             details: "起動中...",
             state: "Roblox を起動しています",
-            largeImage: userAvatarUrl ?? "roblox_logo",
+            largeImage: "roblox_logo",
             largeText: "Roblox",
-            smallImage: null,
-            smallText: null
+            smallImage: userAvatarUrl,
+            smallText: userAvatarUrl != null ? "プロフィール" : null
         );
     }
 
@@ -111,8 +111,8 @@ public class DiscordRpcService : IDisposable
             {
                 LargeImageKey  = largeImage,
                 LargeImageText = largeText,
-                SmallImageKey  = smallImage ?? string.Empty,
-                SmallImageText = smallText  ?? string.Empty
+                SmallImageKey  = smallImage,
+                SmallImageText = smallText
             },
             Timestamps = _startTimestamp
         };
