@@ -15,6 +15,11 @@ public partial class FlagEntry : ObservableObject
     [ObservableProperty] private string _category = "Custom";
     [ObservableProperty] private string _description = string.Empty;
 
+    public Func<FlagEntry, Task>? DeleteAction { get; set; }
+
+    [RelayCommand]
+    private Task Delete() => DeleteAction?.Invoke(this) ?? Task.CompletedTask;
+
     public FlagEntry(string name, string value)
     {
         _name = name;
@@ -164,8 +169,9 @@ public partial class FastFlagsViewModel : ViewModelBase
             var (desc, cat) = FlagDescriptions.Lookup(kvp.Key);
             return new FlagEntry(kvp.Key, kvp.Value)
             {
-                Description = desc,
-                Category    = cat
+                Description  = desc,
+                Category     = cat,
+                DeleteAction = RemoveFlagAsync
             };
         }).ToList();
 

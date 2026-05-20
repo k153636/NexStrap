@@ -57,7 +57,7 @@
                       Background="#141414" Foreground="#FFFFFF"
                       CornerRadius="12" MinWidth="130"/>
             <Button Grid.Column="4" Content="プリセット"
-                    Command="{Binding ApplyPresetsAsyncCommand}"
+                    Command="{Binding ApplyPresetsCommand}"
                     Background="#141414" Foreground="#CCCCCC"
                     Padding="16,10" CornerRadius="12"/>
             <Button Grid.Column="6" Command="{Binding HotReloadCommand}"
@@ -127,8 +127,7 @@
                                     <TextBlock Text="{Binding Category}" FontSize="11" Foreground="#888888"/>
                                 </Border>
                                 <Button Grid.Column="3"
-                                        Command="{Binding $parent[UserControl].((vm:FastFlagsViewModel)DataContext).RemoveFlagAsyncCommand}"
-                                        CommandParameter="{Binding}"
+                                        Command="{Binding DeleteCommand}"
                                         Padding="4,4" Background="Transparent" Foreground="#505050" CornerRadius="6">
                                     <TextBlock Text="✕" FontSize="12"/>
                                 </Button>
@@ -149,11 +148,11 @@
                      Background="#141414" Foreground="#FFFFFF"
                      BorderBrush="#2E2E2E" CornerRadius="12" Padding="14,10"/>
             <Button Grid.Column="4" Content="+ 追加"
-                    Command="{Binding AddFlagAsyncCommand}"
+                    Command="{Binding AddFlagCommand}"
                     Background="#FFFFFF" Foreground="#080808" FontWeight="SemiBold"
                     Padding="0,10" CornerRadius="12" HorizontalAlignment="Stretch"/>
             <TextBlock Grid.Column="6" Text="{Binding StatusMessage}"
-                       Foreground="{Binding IsStatusError, Converter={StaticResource BoolToStringConverter}, ConverterParameter='#FF6B6B,#888888'}"
+                       Foreground="{Binding IsStatusError, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#FF6B6B,#888888'}"
                        VerticalAlignment="Center"
                        IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
         </Grid>

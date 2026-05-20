@@ -11,8 +11,8 @@ public class BoolToColorConverter : IValueConverter
         var param = parameter?.ToString() ?? "#FFFFFF,#888888";
         var parts = param.Split(',');
         var colorStr = (value is bool b && b) ? parts[0] : (parts.Length > 1 ? parts[1] : "#888888");
-        try { return Color.Parse(colorStr); }
-        catch { return Colors.Gray; }
+        try { return new SolidColorBrush(Color.Parse(colorStr)); }
+        catch { return new SolidColorBrush(Colors.Gray); }
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
