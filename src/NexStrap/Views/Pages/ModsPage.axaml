@@ -16,7 +16,7 @@
         <!-- Action Bar -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="24,0,24,12">
             <Button Content="+ Mod をインポート"
-                    Command="{Binding ImportModCommand}"
+                    Click="ImportButton_Click"
                     Background="#FFFFFF" Foreground="#080808" FontWeight="SemiBold"
                     FontSize="12" Padding="14,8" CornerRadius="10"/>
             <Button Content="全 Mod を適用"
@@ -56,7 +56,10 @@
                                     <TextBlock Grid.Column="0"
                                                Text="{Binding IsEnabled, Converter={StaticResource BoolToStringConverter}, ConverterParameter='有効,無効'}"
                                                FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
-                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsEnabled}"
+                                    <ToggleSwitch Grid.Column="1"
+                                                  IsChecked="{Binding IsEnabled}"
+                                                  Command="{Binding $parent[UserControl].DataContext.ToggleModCommand}"
+                                                  CommandParameter="{Binding}"
                                                   OnContent="" OffContent="" Width="40"/>
                                 </Grid>
                                 <Button Grid.Row="4" Content="削除"

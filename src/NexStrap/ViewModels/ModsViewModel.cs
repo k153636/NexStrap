@@ -28,11 +28,10 @@ public partial class ModsViewModel : ViewModelBase
         Mods = new ObservableCollection<Mod>(_modService.Mods);
     }
 
-    [RelayCommand]
-    private async Task ImportModAsync(IStorageFolder? folder)
+    public async Task ImportModAsync(IStorageFolder folder)
     {
-        if (folder == null) return;
         IsLoading = true;
+        StatusMessage = "インポート中...";
         var mod = await _modService.ImportModAsync(folder.Path.LocalPath);
         StatusMessage = mod != null ? $"{mod.Name} をインポートしました" : "インポートに失敗しました";
         IsLoading = false;
