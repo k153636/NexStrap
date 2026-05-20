@@ -45,6 +45,7 @@ public partial class App : Application
         services.AddSingleton<ProfileService>();
         services.AddSingleton<RobloxLogWatcher>();
         services.AddSingleton<RobloxApiService>();
+        services.AddSingleton<PerformanceMonitorService>();
 
         services.AddTransient<MainWindowViewModel>();
         services.AddTransient<HomeViewModel>();

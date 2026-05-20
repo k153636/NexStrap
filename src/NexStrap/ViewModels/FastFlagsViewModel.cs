@@ -24,8 +24,10 @@ public partial class FlagEntry : ObservableObject
 public partial class FastFlagsViewModel : ViewModelBase
 {
     private readonly FastFlagService _service;
+    private readonly ProfileService _profileService;
     private List<FlagEntry> _allFlags = new();
     private CancellationTokenSource? _statusCts;
+    private bool _suppressProfileLoad;
 
     [ObservableProperty] private ObservableCollection<FlagEntry> _flags = new();
     [ObservableProperty] private string _searchText = string.Empty;
@@ -39,17 +41,86 @@ public partial class FastFlagsViewModel : ViewModelBase
     [ObservableProperty] private int _fpsTarget = 144;
     [ObservableProperty] private string _savePath = string.Empty;
 
+    // プロファイル
+    [ObservableProperty] private ObservableCollection<Profile> _profiles = new();
+    [ObservableProperty] private Profile? _selectedProfile;
+    [ObservableProperty] private string _newProfileName = string.Empty;
+
     public List<string> Categories { get; } = new()
     {
-        "すべて", "パフォーマンス", "グラフィックス", "ネットワーク", "UI", "アバター", "Custom"
+        "すべて", "パフォーマンス", "グラフィックス", "ネットワーク", "UI", "アバター", "カスタム"
     };
 
-    public FastFlagsViewModel(FastFlagService service)
+    public FastFlagsViewModel(FastFlagService service, ProfileService profileService)
     {
         _service = service;
+        _profileService = profileService;
         service.FlagsChanged += (_, _) => LoadFlags();
         LoadFlags();
         SavePath = service.GetSavePath();
+        RefreshProfiles();
+    }
+
+    private void RefreshProfiles()
+    {
+        _profileService.LoadProfiles();
+        Profiles = new ObservableCollection<Profile>(_profileService.Profiles);
+    }
+
+    partial void OnSelectedProfileChanged(Profile? value)
+    {
+        if (value == null || _suppressProfileLoad) return;
+        // プロファイルのフラグを読み込む
+        _service.HotReloadAsync(
+            value.FastFlags.Where(f => f.IsEnabled)
+                          .ToDictionary(f => f.Name, f => f.Value)
+        ).ContinueWith(_ => LoadFlags());
+        _ = ShowStatusAsync($"プロファイル「{value.Name}」を読み込みました");
+    }
+
+    [RelayCommand]
+    private async Task SaveAsProfileAsync()
+    {
+        var name = NewProfileName.Trim();
+        if (string.IsNullOrEmpty(name))
+        {
+            await ShowStatusAsync("プロファイル名を入力してください", isError: true);
+            return;
+        }
+        var flags = _allFlags.Select(f => new FastFlag
+        {
+            Name = f.Name, Value = f.Value,
+            Category = f.Category, Description = f.Description,
+            IsEnabled = true, IsPreset = false
+        }).ToList();
+
+        var profile = _profileService.CreateProfile(name);
+        profile.FastFlags = flags;
+        _profileService.UpdateProfile(profile);
+
+        _suppressProfileLoad = true;
+        RefreshProfiles();
+        SelectedProfile = Profiles.FirstOrDefault(p => p.Id == profile.Id);
+        _suppressProfileLoad = false;
+
+        NewProfileName = string.Empty;
+        await ShowStatusAsync($"プロファイル「{name}」を保存しました");
+    }
+
+    [RelayCommand]
+    private async Task DeleteProfileAsync()
+    {
+        if (SelectedProfile == null) return;
+        if (SelectedProfile.IsDefault)
+        {
+            await ShowStatusAsync("デフォルトプロファイルは削除できません", isError: true);
+            return;
+        }
+        var name = SelectedProfile.Name;
+        _profileService.DeleteProfile(SelectedProfile.Id);
+        RefreshProfiles();
+        SelectedProfile = Profiles.FirstOrDefault();
+        await ShowStatusAsync($"プロファイル「{name}」を削除しました");
     }
 
     private async Task ShowStatusAsync(string message, bool isError = false, int durationMs = 3000)
@@ -76,14 +147,23 @@ public partial class FastFlagsViewModel : ViewModelBase
     private void LoadFlags()
     {
         var rawFlags = _service.GetAll();
-        _allFlags = rawFlags.Select(kvp => new FlagEntry(kvp.Key, kvp.Value)).ToList();
+        _allFlags = rawFlags.Select(kvp =>
+        {
+            var (desc, cat) = FlagDescriptions.Lookup(kvp.Key);
+            return new FlagEntry(kvp.Key, kvp.Value)
+            {
+                Description = desc,
+                Category    = cat
+            };
+        }).ToList();
 
+        // プリセット情報で上書き（より詳細な場合）
         foreach (var preset in FastFlagPresets.All)
         {
             var entry = _allFlags.FirstOrDefault(f => f.Name == preset.Name);
             if (entry != null)
             {
-                entry.Category = preset.Category;
+                entry.Category    = preset.Category;
                 entry.Description = preset.Description;
             }
         }

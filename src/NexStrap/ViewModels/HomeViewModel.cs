@@ -18,6 +18,7 @@ public partial class HomeViewModel : ViewModelBase
     private CancellationTokenSource? _launchFallbackCts;
     private bool _gameDetected;
     private string? _userAvatarUrl;
+    public string? UserAvatarUrl => _userAvatarUrl;
 
     [ObservableProperty] private bool _isRobloxRunning;
     [ObservableProperty] private bool _isLaunching;
@@ -123,6 +124,12 @@ public partial class HomeViewModel : ViewModelBase
         IsLaunching   = true;
         _gameDetected = false;
         StatusText    = "フラグを適用中...";
+
+        // FPS Unlock 設定をフラグに反映
+        if (_settings.Settings.FpsUnlockEnabled)
+            _fastFlags.Set("DFIntTaskSchedulerTargetFps", _settings.Settings.TargetFps.ToString());
+        else
+            _fastFlags.Remove("DFIntTaskSchedulerTargetFps");
 
         await _fastFlags.SaveAsync();
         await _mods.ApplyEnabledModsAsync();

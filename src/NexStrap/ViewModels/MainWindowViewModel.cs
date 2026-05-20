@@ -1,6 +1,8 @@
+using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NexStrap.Core.Services;
+using NexStrap.Views;
 
 namespace NexStrap.ViewModels;
 
@@ -9,6 +11,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly DiscordRpcService _discord;
     private readonly SettingsService _settings;
     private readonly EnvService _env;
+    private readonly PerformanceMonitorService _perfMonitor;
+    private PerformanceOverlayWindow? _overlayWindow;
 
     [ObservableProperty] private ViewModelBase _currentPage;
     [ObservableProperty] private bool _isDiscordConnected;
@@ -24,6 +28,7 @@ public partial class MainWindowViewModel : ViewModelBase
         DiscordRpcService discord,
         SettingsService settings,
         EnvService env,
+        PerformanceMonitorService perfMonitor,
         HomeViewModel homeVM,
         FastFlagsViewModel fastFlagsVM,
         ModsViewModel modsVM,
@@ -32,6 +37,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _discord = discord;
         _settings = settings;
         _env = env;
+        _perfMonitor = perfMonitor;
 
         HomeVM = homeVM;
         FastFlagsVM = fastFlagsVM;
@@ -48,7 +54,7 @@ public partial class MainWindowViewModel : ViewModelBase
         discord.ConnectionChanged += (_, connected) =>
             IsDiscordConnected = connected;
 
-        // 設定変更時に RPC を再初期化
+        // 設定変更時に RPC 再初期化 & オーバーレイ制御
         settings.SettingsChanged += (_, s) =>
         {
             var id = env.Get("DISCORD_APP_ID");
@@ -56,7 +62,35 @@ public partial class MainWindowViewModel : ViewModelBase
                 discord.Initialize(id);
             else if (!s.DiscordRpcEnabled)
                 discord.ClearPresence();
+
+            UpdateOverlayVisibility(s.ShowPerformanceOverlay);
         };
+
+        // Roblox 起動/終了でオーバーレイを自動表示/非表示
+        homeVM.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(HomeViewModel.IsRobloxRunning))
+                UpdateOverlayVisibility(settings.Settings.ShowPerformanceOverlay && homeVM.IsRobloxRunning);
+        };
+    }
+
+    private void UpdateOverlayVisibility(bool show)
+    {
+        if (show)
+        {
+            if (_overlayWindow == null || !_overlayWindow.IsVisible)
+            {
+                _perfMonitor.Start();
+                _overlayWindow = new PerformanceOverlayWindow(_perfMonitor);
+                _overlayWindow.Show();
+            }
+        }
+        else
+        {
+            _overlayWindow?.Close();
+            _overlayWindow = null;
+            _perfMonitor.Stop();
+        }
     }
 
     [RelayCommand]
@@ -81,6 +115,8 @@ public partial class MainWindowViewModel : ViewModelBase
             "Settings"  => "設定",
             _           => "ホーム"
         };
-        _discord.SetPagePresence(pageName);
+        // ゲームプレイ中はページ遷移で Discord の in-game 表示を上書きしない
+        if (!HomeVM.IsRobloxRunning)
+            _discord.SetPagePresence(pageName, HomeVM.UserAvatarUrl);
     }
 }
