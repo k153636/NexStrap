@@ -60,14 +60,14 @@ public class DiscordRpcService : IDisposable
         catch { }
     }
 
-    // ホーム・ページ切り替え時 — Robloxロゴが大、アバターが小
+    // ホーム・ページ切り替え時 — NexStrapアイコンが大、アバターが小
     public void SetPagePresence(string pageName, string? userAvatarUrl = null)
     {
         SetPresence(
-            details: "Test Build",
+            details: "NexStrap",
             state: pageName,
-            largeImage: "roblox_logo1",
-            largeText: "Roblox",
+            largeImage: "nexstrap",
+            largeText: "NexStrap",
             smallImage: userAvatarUrl,
             smallText: userAvatarUrl != null ? "プロフィール" : null
         );
