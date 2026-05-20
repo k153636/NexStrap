@@ -219,24 +219,37 @@ public partial class FastFlagsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void AddFlag()
+    private async Task AddFlagAsync()
     {
         if (string.IsNullOrWhiteSpace(NewFlagName)) return;
-        var entry = new FlagEntry(NewFlagName.Trim(), NewFlagValue.Trim());
+        if (string.IsNullOrEmpty(_service.GetSavePath()))
+        {
+            await ShowStatusAsync("Roblox が見つかりません", isError: true);
+            return;
+        }
+        var (desc, cat) = FlagDescriptions.Lookup(NewFlagName.Trim());
+        var entry = new FlagEntry(NewFlagName.Trim(), NewFlagValue.Trim())
+        {
+            Description = desc,
+            Category    = cat
+        };
         _allFlags.Add(entry);
         _service.Set(entry.Name, entry.Value);
         NewFlagName = string.Empty;
         NewFlagValue = string.Empty;
         ApplyFilter();
+        await _service.SaveAsync();
+        await ShowStatusAsync($"{entry.Name} を追加・保存しました");
     }
 
     [RelayCommand]
-    private void RemoveFlag(FlagEntry? flag)
+    private async Task RemoveFlagAsync(FlagEntry? flag)
     {
         if (flag == null) return;
         _allFlags.Remove(flag);
         _service.Remove(flag.Name);
         ApplyFilter();
+        await _service.SaveAsync();
     }
 
     [RelayCommand]

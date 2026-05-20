@@ -127,7 +127,7 @@
                                     <TextBlock Text="{Binding Category}" FontSize="11" Foreground="#888888"/>
                                 </Border>
                                 <Button Grid.Column="3"
-                                        Command="{Binding $parent[UserControl].((vm:FastFlagsViewModel)DataContext).RemoveFlagCommand}"
+                                        Command="{Binding $parent[UserControl].((vm:FastFlagsViewModel)DataContext).RemoveFlagAsyncCommand}"
                                         CommandParameter="{Binding}"
                                         Padding="4,4" Background="Transparent" Foreground="#505050" CornerRadius="6">
                                     <TextBlock Text="✕" FontSize="12"/>
@@ -149,7 +149,7 @@
                      Background="#141414" Foreground="#FFFFFF"
                      BorderBrush="#2E2E2E" CornerRadius="12" Padding="14,10"/>
             <Button Grid.Column="4" Content="+ 追加"
-                    Command="{Binding AddFlagCommand}"
+                    Command="{Binding AddFlagAsyncCommand}"
                     Background="#FFFFFF" Foreground="#080808" FontWeight="SemiBold"
                     Padding="0,10" CornerRadius="12" HorizontalAlignment="Stretch"/>
             <TextBlock Grid.Column="6" Text="{Binding StatusMessage}"
