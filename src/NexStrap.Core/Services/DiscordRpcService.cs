@@ -58,19 +58,20 @@ public class DiscordRpcService : IDisposable
         catch { }
     }
 
-    // ページ切り替え時に呼ぶ — タイマーはそのまま
+    // ホーム・ページ切り替え時 — アバターがあれば大アイコンとして表示
     public void SetPagePresence(string pageName, string? userAvatarUrl = null)
     {
         SetPresence(
             details: "Test Build",
             state: pageName,
-            largeImage: "nexstrap_logo",
-            largeText: "NexStrap",
-            smallImage: userAvatarUrl,
-            smallText: userAvatarUrl != null ? "プロフィール" : null
+            largeImage: userAvatarUrl ?? "roblox_logo",
+            largeText: "プロフィール",
+            smallImage: null,
+            smallText: null
         );
     }
 
+    // ゲームプレイ中 — マップアイコンが大、アバターが右下に小さく
     public void SetInGamePresence(string gameName, string? gameIconUrl = null, string? userAvatarUrl = null)
     {
         SetPresence(
@@ -78,20 +79,21 @@ public class DiscordRpcService : IDisposable
             state: "プレイ中",
             largeImage: gameIconUrl ?? "roblox_logo",
             largeText: gameName,
-            smallImage: userAvatarUrl ?? "nexstrap_logo",
-            smallText: userAvatarUrl != null ? "プロフィール" : "NexStrap"
+            smallImage: userAvatarUrl,
+            smallText: "プロフィール"
         );
     }
 
+    // 起動中 — アバターがあれば大アイコン、なければ roblox_logo
     public void SetLaunchingPresence(string? userAvatarUrl = null)
     {
         SetPresence(
             details: "起動中...",
             state: "NexStrap",
-            largeImage: "roblox_logo",
+            largeImage: userAvatarUrl ?? "roblox_logo",
             largeText: "Roblox",
-            smallImage: userAvatarUrl ?? "nexstrap_logo",
-            smallText: userAvatarUrl != null ? "プロフィール" : "NexStrap"
+            smallImage: null,
+            smallText: null
         );
     }
 
