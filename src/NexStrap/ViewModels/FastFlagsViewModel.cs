@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NexStrap.Core.Models;
@@ -55,7 +56,7 @@ public partial class FastFlagsViewModel : ViewModelBase
     {
         _service = service;
         _profileService = profileService;
-        service.FlagsChanged += (_, _) => LoadFlags();
+        service.FlagsChanged += (_, _) => Dispatcher.UIThread.Post(LoadFlags);
         LoadFlags();
         SavePath = service.GetSavePath();
         RefreshProfiles();
@@ -70,12 +71,17 @@ public partial class FastFlagsViewModel : ViewModelBase
     partial void OnSelectedProfileChanged(Profile? value)
     {
         if (value == null || _suppressProfileLoad) return;
-        // プロファイルのフラグを読み込む
-        _service.HotReloadAsync(
+        _ = LoadProfileAsync(value);
+    }
+
+    private async Task LoadProfileAsync(Profile value)
+    {
+        await _service.HotReloadAsync(
             value.FastFlags.Where(f => f.IsEnabled)
                           .ToDictionary(f => f.Name, f => f.Value)
-        ).ContinueWith(_ => LoadFlags());
-        _ = ShowStatusAsync($"プロファイル「{value.Name}」を読み込みました");
+        );
+        await Dispatcher.UIThread.InvokeAsync(LoadFlags);
+        await ShowStatusAsync($"プロファイル「{value.Name}」を読み込みました");
     }
 
     [RelayCommand]
@@ -129,14 +135,20 @@ public partial class FastFlagsViewModel : ViewModelBase
         _statusCts = new CancellationTokenSource();
         var token = _statusCts.Token;
 
-        IsStatusError = isError;
-        StatusMessage = message;
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            IsStatusError = isError;
+            StatusMessage = message;
+        });
 
         try
         {
             await Task.Delay(durationMs, token);
-            StatusMessage = string.Empty;
-            IsStatusError = false;
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                StatusMessage = string.Empty;
+                IsStatusError = false;
+            });
         }
         catch (TaskCanceledException) { }
     }
@@ -183,7 +195,11 @@ public partial class FastFlagsViewModel : ViewModelBase
         if (SelectedCategory != "すべて")
             filtered = filtered.Where(f => f.Category == SelectedCategory);
 
-        Flags = new ObservableCollection<FlagEntry>(filtered);
+        var result = new ObservableCollection<FlagEntry>(filtered);
+        if (Dispatcher.UIThread.CheckAccess())
+            Flags = result;
+        else
+            Dispatcher.UIThread.Post(() => Flags = result);
     }
 
     [RelayCommand]
