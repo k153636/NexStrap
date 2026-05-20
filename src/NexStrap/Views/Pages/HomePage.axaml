@@ -7,48 +7,49 @@
 
     <Grid RowDefinitions="*,Auto">
 
-        <!-- Center content -->
-        <StackPanel Grid.Row="0" VerticalAlignment="Center"
-                    Margin="24,0" Spacing="16">
+        <StackPanel Grid.Row="0" Margin="24,20,24,0" Spacing="0">
 
-            <!-- Branding -->
-            <StackPanel Spacing="4" HorizontalAlignment="Center">
-                <TextBlock Text="NexStrap" FontSize="22" FontWeight="Bold"
-                           Foreground="#FFFFFF" HorizontalAlignment="Center"/>
-                <StackPanel Orientation="Horizontal" Spacing="5"
-                            HorizontalAlignment="Center">
-                    <Border Background="#111111" CornerRadius="20" Padding="10,4"
-                            BorderBrush="#1E1E1E" BorderThickness="1">
-                        <TextBlock Text="{Binding RobloxVersion}" FontSize="11"
-                                   Foreground="#444444" FontFamily="Consolas,monospace"/>
-                    </Border>
+            <!-- Header: title + badges -->
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+                <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Bottom">
+                    <TextBlock Text="NexStrap" FontSize="22" FontWeight="Bold"
+                               Foreground="#FFFFFF"/>
+                    <TextBlock Text="{Binding RobloxVersion}"
+                               FontSize="11" Foreground="#444444"
+                               FontFamily="Consolas,monospace"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
+                            VerticalAlignment="Bottom">
                     <Border Background="#111111" CornerRadius="20" Padding="10,4"
                             BorderBrush="#1E1E1E" BorderThickness="1"
                             IsVisible="{Binding IsRobloxRunning}">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
                             <Ellipse Width="5" Height="5" Fill="#4ADE80"
                                      VerticalAlignment="Center"/>
-                            <TextBlock Text="実行中" FontSize="11" Foreground="#666666"/>
+                            <TextBlock Text="実行中" FontSize="11" Foreground="#888888"/>
                         </StackPanel>
                     </Border>
                     <Border Background="#111111" CornerRadius="20" Padding="10,4"
                             BorderBrush="#1E1E1E" BorderThickness="1"
                             IsVisible="{Binding IsLaunching}">
                         <TextBlock Text="{Binding StatusText}" FontSize="11"
-                                   Foreground="#444444"/>
+                                   Foreground="#555555"/>
                     </Border>
                 </StackPanel>
-            </StackPanel>
+            </Grid>
 
-            <!-- Launch Button -->
+            <!-- Divider -->
+            <Border Height="1" Background="#141414" Margin="0,0,0,20"/>
+
+            <!-- Launch button -->
             <Button Command="{Binding LaunchRobloxCommand}"
                     IsEnabled="{Binding !IsLaunching}"
                     HorizontalAlignment="Stretch"
-                    Padding="0,14" CornerRadius="12"
+                    Padding="0,14" CornerRadius="10"
                     Background="#FFFFFF">
                 <StackPanel Orientation="Horizontal" Spacing="8"
                             HorizontalAlignment="Center">
-                    <PathIcon Data="{StaticResource IconPlay}" Width="14" Height="14"
+                    <PathIcon Data="{StaticResource IconPlay}" Width="13" Height="13"
                               Foreground="#080808" VerticalAlignment="Center"/>
                     <TextBlock Text="起動" FontSize="13" FontWeight="SemiBold"
                                Foreground="#080808" VerticalAlignment="Center"/>
@@ -57,7 +58,7 @@
 
         </StackPanel>
 
-        <!-- Bottom: Hot Reload -->
+        <!-- Hot Reload pinned to bottom -->
         <Button Grid.Row="1"
                 Command="{Binding HotReloadFlagsCommand}"
                 HorizontalAlignment="Stretch"
