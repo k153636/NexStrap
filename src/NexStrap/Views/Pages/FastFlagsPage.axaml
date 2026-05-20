@@ -8,97 +8,97 @@
     <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
 
         <!-- Header -->
-        <StackPanel Grid.Row="0" Margin="32,28,32,16" Spacing="4">
-            <TextBlock Text="Fast Flags" FontSize="28" FontWeight="Bold" Foreground="#FFFFFF"/>
+        <StackPanel Grid.Row="0" Margin="24,20,24,12" Spacing="3">
+            <TextBlock Text="Fast Flags" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
             <TextBlock Text="{Binding SavePath, StringFormat='保存先: {0}'}"
                        FontSize="11" Foreground="#2E2E2E" FontFamily="Consolas,monospace"
                        IsVisible="{Binding SavePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-            <TextBlock Text="Roblox が見つかりません" FontSize="12" Foreground="#505050"
+            <TextBlock Text="Roblox が見つかりません" FontSize="11" Foreground="#505050"
                        IsVisible="{Binding SavePath, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
         </StackPanel>
 
         <!-- Profile Bar -->
-        <Border Grid.Row="1" Background="#141414" CornerRadius="12"
-                Margin="32,0,32,10" Padding="14,10">
-            <Grid ColumnDefinitions="Auto,12,*,12,Auto,8,Auto,8,Auto">
-                <TextBlock Grid.Column="0" Text="プロファイル" FontSize="12"
+        <Border Grid.Row="1" Background="#141414" CornerRadius="10"
+                Margin="24,0,24,8" Padding="12,8">
+            <Grid ColumnDefinitions="Auto,10,*,10,Auto,6,Auto,6,Auto">
+                <TextBlock Grid.Column="0" Text="プロファイル" FontSize="11"
                            Foreground="#505050" VerticalAlignment="Center"/>
                 <ComboBox Grid.Column="2" ItemsSource="{Binding Profiles}"
                           SelectedItem="{Binding SelectedProfile}"
                           DisplayMemberBinding="{Binding Name}"
                           Background="#202020" Foreground="#FFFFFF"
-                          CornerRadius="8" MinWidth="120" FontSize="13"/>
+                          CornerRadius="7" MinWidth="110" FontSize="12"/>
                 <TextBox Grid.Column="4" Text="{Binding NewProfileName}"
-                         Watermark="新しい名前..." FontSize="12"
+                         Watermark="新しい名前..." FontSize="11"
                          Background="#202020" Foreground="#FFFFFF"
-                         BorderBrush="#2E2E2E" CornerRadius="8"
-                         Padding="10,6" MinWidth="120"/>
+                         BorderBrush="#2E2E2E" CornerRadius="7"
+                         Padding="8,5" MinWidth="110"/>
                 <Button Grid.Column="6" Content="保存"
                         Command="{Binding SaveAsProfileCommand}"
                         Background="#FFFFFF" Foreground="#080808"
-                        FontSize="12" FontWeight="SemiBold"
-                        Padding="14,6" CornerRadius="8"/>
+                        FontSize="11" FontWeight="SemiBold"
+                        Padding="12,5" CornerRadius="7"/>
                 <Button Grid.Column="8" Content="削除"
                         Command="{Binding DeleteProfileCommand}"
                         Background="Transparent" Foreground="#505050"
-                        FontSize="12" BorderBrush="#2E2E2E" BorderThickness="1"
-                        Padding="14,6" CornerRadius="8"/>
+                        FontSize="11" BorderBrush="#2E2E2E" BorderThickness="1"
+                        Padding="12,5" CornerRadius="7"/>
             </Grid>
         </Border>
 
         <!-- Controls -->
-        <Grid Grid.Row="2" Margin="32,0,32,10"
-              ColumnDefinitions="*,12,Auto,12,Auto,12,Auto,12,Auto">
+        <Grid Grid.Row="2" Margin="24,0,24,8"
+              ColumnDefinitions="*,8,Auto,8,Auto,8,Auto,8,Auto">
             <TextBox Grid.Column="0" Text="{Binding SearchText}"
                      Watermark="検索..." Background="#141414" BorderBrush="#2E2E2E"
-                     Foreground="#FFFFFF" CornerRadius="12" Padding="14,10"/>
+                     Foreground="#FFFFFF" CornerRadius="10" Padding="12,7" FontSize="12"/>
             <ComboBox Grid.Column="2" ItemsSource="{Binding Categories}"
                       SelectedItem="{Binding SelectedCategory}"
                       Background="#141414" Foreground="#FFFFFF"
-                      CornerRadius="12" MinWidth="130"/>
+                      CornerRadius="10" MinWidth="120" FontSize="12"/>
             <Button Grid.Column="4" Content="プリセット"
                     Command="{Binding ApplyPresetsCommand}"
                     Background="#141414" Foreground="#CCCCCC"
-                    Padding="16,10" CornerRadius="12"/>
+                    FontSize="12" Padding="12,7" CornerRadius="10"/>
             <Button Grid.Column="6" Command="{Binding HotReloadCommand}"
                     Background="#141414" Foreground="#CCCCCC"
-                    Padding="16,10" CornerRadius="12">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <PathIcon Data="{StaticResource IconFlash}" Width="13" Height="13" Foreground="#CCCCCC"/>
-                    <TextBlock Text="ホットリロード" FontSize="13"/>
+                    Padding="12,7" CornerRadius="10">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <PathIcon Data="{StaticResource IconFlash}" Width="11" Height="11" Foreground="#CCCCCC"/>
+                    <TextBlock Text="ホットリロード" FontSize="12"/>
                 </StackPanel>
             </Button>
             <Button Grid.Column="8" Command="{Binding SaveCommand}"
                     IsEnabled="{Binding !IsSaving}"
                     Background="#FFFFFF" Foreground="#080808"
-                    Padding="20,10" CornerRadius="12">
-                <TextBlock Text="保存" FontWeight="SemiBold" FontSize="13"/>
+                    Padding="16,7" CornerRadius="10">
+                <TextBlock Text="保存" FontWeight="SemiBold" FontSize="12"/>
             </Button>
         </Grid>
 
         <!-- FPS Quick Control -->
-        <Border Grid.Row="3" Background="#141414" CornerRadius="12"
-                Margin="32,0,32,10" Padding="16,10">
-            <Grid ColumnDefinitions="Auto,*,Auto,16,Auto">
+        <Border Grid.Row="3" Background="#141414" CornerRadius="10"
+                Margin="24,0,24,8" Padding="14,8">
+            <Grid ColumnDefinitions="Auto,*,Auto,12,Auto">
                 <TextBlock Grid.Column="0" Text="FPS 上限" Foreground="#888888"
-                           VerticalAlignment="Center" Margin="0,0,16,0" FontSize="13"/>
+                           VerticalAlignment="Center" Margin="0,0,14,0" FontSize="12"/>
                 <Slider Grid.Column="1" Minimum="30" Maximum="360"
                         Value="{Binding FpsTarget}" TickFrequency="30" IsSnapToTickEnabled="True"/>
                 <TextBlock Grid.Column="2" Text="{Binding FpsTarget}"
-                           Foreground="#FFFFFF" FontWeight="Bold" Width="44"
-                           VerticalAlignment="Center" Margin="12,0" FontSize="14"/>
+                           Foreground="#FFFFFF" FontWeight="Bold" Width="40"
+                           VerticalAlignment="Center" Margin="10,0" FontSize="13"/>
                 <Button Grid.Column="4" Content="適用"
                         Command="{Binding SetFpsTargetCommand}"
-                        Background="#202020" Foreground="#FFFFFF"
-                        Padding="16,8" CornerRadius="10"/>
+                        Background="#202020" Foreground="#FFFFFF" FontSize="12"
+                        Padding="14,6" CornerRadius="8"/>
             </Grid>
         </Border>
 
         <!-- Flags List -->
-        <Border Grid.Row="4" Margin="32,0,32,0" Background="#141414" CornerRadius="14">
+        <Border Grid.Row="4" Margin="24,0,24,0" Background="#141414" CornerRadius="12">
             <Grid RowDefinitions="Auto,*">
-                <Border Grid.Row="0" Background="#202020" CornerRadius="16,16,0,0">
-                    <Grid ColumnDefinitions="*,200,100,40" Margin="20,12">
+                <Border Grid.Row="0" Background="#202020" CornerRadius="12,12,0,0">
+                    <Grid ColumnDefinitions="*,200,100,40" Margin="16,8">
                         <TextBlock Grid.Column="0" Text="フラグ名" FontSize="11" FontWeight="SemiBold" Foreground="#505050"/>
                         <TextBlock Grid.Column="1" Text="値" FontSize="11" FontWeight="SemiBold" Foreground="#505050"/>
                         <TextBlock Grid.Column="2" Text="カテゴリ" FontSize="11" FontWeight="SemiBold" Foreground="#505050"/>
@@ -109,27 +109,27 @@
                          Background="Transparent" BorderThickness="0">
                     <ListBox.ItemTemplate>
                         <DataTemplate DataType="vm:FlagEntry">
-                            <Grid ColumnDefinitions="*,200,100,40" Margin="0,3">
-                                <StackPanel Grid.Column="0" Spacing="2" Margin="8,0">
-                                    <TextBlock Text="{Binding Name}" FontSize="13" Foreground="#CCCCCC"
+                            <Grid ColumnDefinitions="*,200,100,40" Margin="0,2">
+                                <StackPanel Grid.Column="0" Spacing="1" Margin="8,0">
+                                    <TextBlock Text="{Binding Name}" FontSize="12" Foreground="#CCCCCC"
                                                FontFamily="Consolas,Courier New,monospace"/>
-                                    <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#505050"
+                                    <TextBlock Text="{Binding Description}" FontSize="10" Foreground="#505050"
                                                IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                 </StackPanel>
                                 <TextBox Grid.Column="1" Text="{Binding Value}"
                                          Background="#080808" Foreground="#FFFFFF"
-                                         BorderBrush="#2E2E2E" Padding="10,6"
-                                         CornerRadius="8" FontFamily="Consolas,Courier New,monospace"
-                                         FontSize="13" Margin="4,2"/>
-                                <Border Grid.Column="2" Background="#202020" CornerRadius="10"
-                                        Padding="10,4" Margin="4,0" VerticalAlignment="Center"
+                                         BorderBrush="#2E2E2E" Padding="8,5"
+                                         CornerRadius="7" FontFamily="Consolas,Courier New,monospace"
+                                         FontSize="12" Margin="4,2"/>
+                                <Border Grid.Column="2" Background="#202020" CornerRadius="8"
+                                        Padding="8,3" Margin="4,0" VerticalAlignment="Center"
                                         HorizontalAlignment="Left">
                                     <TextBlock Text="{Binding Category}" FontSize="11" Foreground="#888888"/>
                                 </Border>
                                 <Button Grid.Column="3"
                                         Command="{Binding DeleteCommand}"
-                                        Padding="4,4" Background="Transparent" Foreground="#505050" CornerRadius="6">
-                                    <TextBlock Text="✕" FontSize="12"/>
+                                        Padding="4,4" Background="Transparent" Foreground="#505050" CornerRadius="5">
+                                    <TextBlock Text="✕" FontSize="11"/>
                                 </Button>
                             </Grid>
                         </DataTemplate>
@@ -139,21 +139,21 @@
         </Border>
 
         <!-- Add Flag + Status -->
-        <Grid Grid.Row="5" Margin="32,12,32,20" ColumnDefinitions="*,10,120,10,70,*,Auto">
+        <Grid Grid.Row="5" Margin="24,8,24,14" ColumnDefinitions="*,8,110,8,60,*,Auto">
             <TextBox Grid.Column="0" Text="{Binding NewFlagName}"
                      Watermark="新しいフラグ名 (例: FFlagXxx)"
-                     Background="#141414" Foreground="#FFFFFF"
-                     BorderBrush="#2E2E2E" CornerRadius="12" Padding="14,10"/>
+                     Background="#141414" Foreground="#FFFFFF" FontSize="12"
+                     BorderBrush="#2E2E2E" CornerRadius="10" Padding="12,7"/>
             <TextBox Grid.Column="2" Text="{Binding NewFlagValue}" Watermark="値"
-                     Background="#141414" Foreground="#FFFFFF"
-                     BorderBrush="#2E2E2E" CornerRadius="12" Padding="14,10"/>
+                     Background="#141414" Foreground="#FFFFFF" FontSize="12"
+                     BorderBrush="#2E2E2E" CornerRadius="10" Padding="12,7"/>
             <Button Grid.Column="4" Content="+ 追加"
                     Command="{Binding AddFlagCommand}"
-                    Background="#FFFFFF" Foreground="#080808" FontWeight="SemiBold"
-                    Padding="0,10" CornerRadius="12" HorizontalAlignment="Stretch"/>
+                    Background="#FFFFFF" Foreground="#080808" FontWeight="SemiBold" FontSize="12"
+                    Padding="0,7" CornerRadius="10" HorizontalAlignment="Stretch"/>
             <TextBlock Grid.Column="6" Text="{Binding StatusMessage}"
                        Foreground="{Binding IsStatusError, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#FF6B6B,#888888'}"
-                       VerticalAlignment="Center"
+                       FontSize="12" VerticalAlignment="Center"
                        IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
         </Grid>
     </Grid>

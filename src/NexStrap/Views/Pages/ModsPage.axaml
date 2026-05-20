@@ -9,28 +9,28 @@
     <Grid RowDefinitions="Auto,Auto,*">
 
         <!-- Header -->
-        <StackPanel Grid.Row="0" Margin="32,28,32,16" Spacing="4">
-            <TextBlock Text="Mods" FontSize="28" FontWeight="Bold" Foreground="#FFFFFF"/>
+        <StackPanel Grid.Row="0" Margin="24,20,24,12" Spacing="3">
+            <TextBlock Text="Mods" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
         </StackPanel>
 
         <!-- Action Bar -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12" Margin="32,0,32,16">
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="24,0,24,12">
             <Button Content="+ Mod をインポート"
                     Command="{Binding ImportModCommand}"
                     Background="#FFFFFF" Foreground="#080808" FontWeight="SemiBold"
-                    Padding="20,12" CornerRadius="14"/>
+                    FontSize="12" Padding="14,8" CornerRadius="10"/>
             <Button Content="全 Mod を適用"
                     Command="{Binding ApplyModsCommand}"
                     IsEnabled="{Binding !IsLoading}"
                     Background="#141414" Foreground="#FFFFFF"
-                    Padding="20,12" CornerRadius="14"/>
-            <TextBlock Text="{Binding StatusMessage}" Foreground="#888888"
+                    FontSize="12" Padding="14,8" CornerRadius="10"/>
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#888888" FontSize="12"
                        VerticalAlignment="Center"
                        IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
         </StackPanel>
 
         <!-- Mods Grid -->
-        <ScrollViewer Grid.Row="2" Margin="32,0,32,0">
+        <ScrollViewer Grid.Row="2" Margin="24,0,24,0">
             <ItemsControl ItemsSource="{Binding Mods}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -39,23 +39,23 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="models:Mod">
-                        <Border Width="210" Margin="0,0,16,16"
-                                Background="#141414" CornerRadius="18" Padding="20">
+                        <Border Width="185" Margin="0,0,12,12"
+                                Background="#141414" CornerRadius="14" Padding="14">
                             <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
-                                <Border Grid.Row="0" Background="#202020" CornerRadius="10"
-                                        Padding="10,5" HorizontalAlignment="Left">
+                                <Border Grid.Row="0" Background="#202020" CornerRadius="8"
+                                        Padding="8,4" HorizontalAlignment="Left">
                                     <TextBlock Text="{Binding TypeLabel}" FontSize="11" Foreground="#888888"/>
                                 </Border>
                                 <TextBlock Grid.Row="1" Text="{Binding Name}"
-                                           FontSize="15" FontWeight="SemiBold" Foreground="#FFFFFF"
-                                           Margin="0,12,0,4" TextWrapping="Wrap"/>
+                                           FontSize="13" FontWeight="SemiBold" Foreground="#FFFFFF"
+                                           Margin="0,8,0,3" TextWrapping="Wrap"/>
                                 <TextBlock Grid.Row="2" Text="{Binding Description}"
-                                           FontSize="12" Foreground="#505050"
-                                           TextWrapping="Wrap" MaxHeight="40"/>
-                                <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,14,0,0">
+                                           FontSize="11" Foreground="#505050"
+                                           TextWrapping="Wrap" MaxHeight="36"/>
+                                <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,10,0,0">
                                     <TextBlock Grid.Column="0"
                                                Text="{Binding IsEnabled, Converter={StaticResource BoolToStringConverter}, ConverterParameter='有効,無効'}"
-                                               FontSize="12" Foreground="#888888" VerticalAlignment="Center"/>
+                                               FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
                                     <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsEnabled}"
                                                   OnContent="" OffContent="" Width="40"/>
                                 </Grid>
@@ -64,8 +64,8 @@
                                         CommandParameter="{Binding}"
                                         HorizontalAlignment="Stretch"
                                         Background="Transparent" Foreground="#505050"
-                                        BorderBrush="#2E2E2E" BorderThickness="1"
-                                        Padding="8,6" CornerRadius="10" Margin="0,10,0,0"/>
+                                        BorderBrush="#2E2E2E" BorderThickness="1" FontSize="11"
+                                        Padding="8,5" CornerRadius="8" Margin="0,8,0,0"/>
                             </Grid>
                         </Border>
                     </DataTemplate>
@@ -75,15 +75,15 @@
 
         <!-- Empty State -->
         <StackPanel Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center"
-                    Spacing="16"
+                    Spacing="12"
                     IsVisible="{Binding Mods.Count, Converter={StaticResource IntToZeroConverter}}">
-            <PathIcon Data="{StaticResource IconPackage}" Width="52" Height="52"
+            <PathIcon Data="{StaticResource IconPackage}" Width="40" Height="40"
                       Foreground="#2E2E2E" HorizontalAlignment="Center"/>
-            <StackPanel Spacing="6" HorizontalAlignment="Center">
-                <TextBlock Text="Mod がありません" FontSize="16" Foreground="#505050"
+            <StackPanel Spacing="4" HorizontalAlignment="Center">
+                <TextBlock Text="Mod がありません" FontSize="14" Foreground="#505050"
                            HorizontalAlignment="Center"/>
                 <TextBlock Text="「+ Mod をインポート」でフォルダを追加してください"
-                           FontSize="13" Foreground="#2E2E2E" HorizontalAlignment="Center"/>
+                           FontSize="12" Foreground="#2E2E2E" HorizontalAlignment="Center"/>
             </StackPanel>
         </StackPanel>
 

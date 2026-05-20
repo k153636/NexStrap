@@ -6,41 +6,41 @@
              Background="#080808">
 
     <ScrollViewer>
-        <StackPanel Spacing="16" Margin="32,28">
+        <StackPanel Spacing="10" Margin="24,20">
 
-            <TextBlock Text="設定" FontSize="28" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,4"/>
+            <TextBlock Text="設定" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,2"/>
 
             <!-- Discord RPC -->
-            <Border Background="#141414" CornerRadius="14" Padding="20,16">
-                <StackPanel Spacing="20">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <TextBlock Text="Discord Rich Presence" FontSize="13" FontWeight="SemiBold"
+            <Border Background="#141414" CornerRadius="12" Padding="16,12">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="Discord Rich Presence" FontSize="12" FontWeight="SemiBold"
                                    Foreground="#888888" VerticalAlignment="Center"/>
-                        <Border CornerRadius="10" Padding="10,4" Background="#202020">
+                        <Border CornerRadius="8" Padding="8,3" Background="#202020">
                             <TextBlock FontSize="11"
                                        Text="{Binding DiscordAppIdConfigured, Converter={StaticResource BoolToStringConverter}, ConverterParameter='.env 設定済み,.env 未設定'}"
                                        Foreground="{Binding DiscordAppIdConfigured, Converter={StaticResource BoolToStringConverter}, ConverterParameter='#FFFFFF,#505050'}"/>
                         </Border>
                     </StackPanel>
 
-                    <Border Background="#202020" CornerRadius="12" Padding="16,14"
+                    <Border Background="#202020" CornerRadius="10" Padding="14,10"
                             IsVisible="{Binding !DiscordAppIdConfigured}">
-                        <StackPanel Spacing="8">
+                        <StackPanel Spacing="6">
                             <TextBlock Text="DISCORD_APP_ID が .env に設定されていません"
-                                       Foreground="#CCCCCC" FontSize="13" FontWeight="SemiBold"/>
-                            <TextBlock TextWrapping="Wrap" Foreground="#888888" FontSize="12" LineHeight="20">
+                                       Foreground="#CCCCCC" FontSize="12" FontWeight="SemiBold"/>
+                            <TextBlock TextWrapping="Wrap" Foreground="#888888" FontSize="11" LineHeight="18">
                                 プロジェクトルートの .env ファイルを開き、DISCORD_APP_ID=あなたのID を設定してください。
                             </TextBlock>
                             <TextBlock Text="DISCORD_APP_ID=1234567890123456789"
-                                       Foreground="#CCCCCC" FontSize="12" FontFamily="Consolas,monospace"/>
+                                       Foreground="#CCCCCC" FontSize="11" FontFamily="Consolas,monospace"/>
                         </StackPanel>
                     </Border>
 
                     <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="5">
-                            <TextBlock Text="Discord RPC を有効化" Foreground="#FFFFFF" FontSize="14"/>
+                        <StackPanel Grid.Column="0" Spacing="3">
+                            <TextBlock Text="Discord RPC を有効化" Foreground="#FFFFFF" FontSize="13"/>
                             <TextBlock Text="プレイ中のゲーム情報を Discord に表示します"
-                                       Foreground="#505050" FontSize="12"/>
+                                       Foreground="#505050" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding DiscordRpcEnabled}"
                                       IsEnabled="{Binding DiscordAppIdConfigured}"
@@ -50,15 +50,15 @@
             </Border>
 
             <!-- Performance -->
-            <Border Background="#141414" CornerRadius="14" Padding="20,16">
-                <StackPanel Spacing="20">
-                    <TextBlock Text="パフォーマンス" FontSize="13" FontWeight="SemiBold" Foreground="#888888"/>
+            <Border Background="#141414" CornerRadius="12" Padding="16,12">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="パフォーマンス" FontSize="12" FontWeight="SemiBold" Foreground="#888888"/>
 
                     <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="5">
-                            <TextBlock Text="FPS アンロック" Foreground="#FFFFFF" FontSize="14"/>
+                        <StackPanel Grid.Column="0" Spacing="3">
+                            <TextBlock Text="FPS アンロック" Foreground="#FFFFFF" FontSize="13"/>
                             <TextBlock Text="DFIntTaskSchedulerTargetFps を自動設定"
-                                       Foreground="#505050" FontSize="12"/>
+                                       Foreground="#505050" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding FpsUnlockEnabled}"
                                       OnContent="有効" OffContent="無効"/>
@@ -66,18 +66,18 @@
 
                     <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding FpsUnlockEnabled}">
                         <TextBlock Grid.Column="0" Text="FPS 上限" Foreground="#888888"
-                                   VerticalAlignment="Center" Margin="0,0,16,0" FontSize="13"/>
+                                   VerticalAlignment="Center" Margin="0,0,14,0" FontSize="12"/>
                         <Slider Grid.Column="1" Minimum="30" Maximum="360"
                                 Value="{Binding TargetFps}" TickFrequency="30" IsSnapToTickEnabled="True"/>
                         <TextBlock Grid.Column="2" Text="{Binding TargetFps}"
-                                   Foreground="#FFFFFF" FontWeight="Bold" Width="44"
-                                   VerticalAlignment="Center" Margin="12,0" FontSize="14"/>
+                                   Foreground="#FFFFFF" FontWeight="Bold" Width="40"
+                                   VerticalAlignment="Center" Margin="10,0" FontSize="13"/>
                     </Grid>
 
                     <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="5">
-                            <TextBlock Text="パフォーマンスオーバーレイ" Foreground="#FFFFFF" FontSize="14"/>
-                            <TextBlock Text="FPS・CPU・メモリをゲーム上に表示" Foreground="#505050" FontSize="12"/>
+                        <StackPanel Grid.Column="0" Spacing="3">
+                            <TextBlock Text="パフォーマンスオーバーレイ" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="FPS・CPU・メモリをゲーム上に表示" Foreground="#505050" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowPerformanceOverlay}"
                                       OnContent="有効" OffContent="無効"/>
@@ -86,32 +86,32 @@
             </Border>
 
             <!-- Roblox -->
-            <Border Background="#141414" CornerRadius="14" Padding="20,16">
-                <StackPanel Spacing="20">
-                    <TextBlock Text="Roblox" FontSize="13" FontWeight="SemiBold" Foreground="#888888"/>
+            <Border Background="#141414" CornerRadius="12" Padding="16,12">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Roblox" FontSize="12" FontWeight="SemiBold" Foreground="#888888"/>
 
                     <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="5">
-                            <TextBlock Text="マルチインスタンス" Foreground="#FFFFFF" FontSize="14"/>
-                            <TextBlock Text="Roblox を複数同時に起動できる" Foreground="#505050" FontSize="12"/>
+                        <StackPanel Grid.Column="0" Spacing="3">
+                            <TextBlock Text="マルチインスタンス" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Roblox を複数同時に起動できる" Foreground="#505050" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding MultiInstanceEnabled}"
                                       OnContent="有効" OffContent="無効"/>
                     </Grid>
 
                     <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="5">
-                            <TextBlock Text="自動アップデート" Foreground="#FFFFFF" FontSize="14"/>
-                            <TextBlock Text="Roblox のアップデートを自動実行" Foreground="#505050" FontSize="12"/>
+                        <StackPanel Grid.Column="0" Spacing="3">
+                            <TextBlock Text="自動アップデート" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Roblox のアップデートを自動実行" Foreground="#505050" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoUpdateRoblox}"
                                       OnContent="有効" OffContent="無効"/>
                     </Grid>
 
                     <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="5">
-                            <TextBlock Text="Fast Flags ホットリロード" Foreground="#FFFFFF" FontSize="14"/>
-                            <TextBlock Text="起動中に Flags を変更・即時反映" Foreground="#505050" FontSize="12"/>
+                        <StackPanel Grid.Column="0" Spacing="3">
+                            <TextBlock Text="Fast Flags ホットリロード" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="起動中に Flags を変更・即時反映" Foreground="#505050" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding HotReloadEnabled}"
                                       OnContent="有効" OffContent="無効"/>
@@ -120,41 +120,41 @@
             </Border>
 
             <!-- App -->
-            <Border Background="#141414" CornerRadius="14" Padding="20,16">
-                <StackPanel Spacing="20">
-                    <TextBlock Text="アプリケーション" FontSize="13" FontWeight="SemiBold" Foreground="#888888"/>
+            <Border Background="#141414" CornerRadius="12" Padding="16,12">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="アプリケーション" FontSize="12" FontWeight="SemiBold" Foreground="#888888"/>
 
                     <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="5">
-                            <TextBlock Text="トレイに最小化" Foreground="#FFFFFF" FontSize="14"/>
-                            <TextBlock Text="閉じるボタンでトレイに格納" Foreground="#505050" FontSize="12"/>
+                        <StackPanel Grid.Column="0" Spacing="3">
+                            <TextBlock Text="トレイに最小化" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="閉じるボタンでトレイに格納" Foreground="#505050" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding MinimizeToTray}"
                                       OnContent="有効" OffContent="無効"/>
                     </Grid>
 
-                    <StackPanel Spacing="10">
-                        <TextBlock Text="ブラウザのホームページ" Foreground="#FFFFFF" FontSize="14"/>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="ブラウザのホームページ" Foreground="#FFFFFF" FontSize="13"/>
                         <TextBox Text="{Binding BrowserHomepage}" Background="#080808" Foreground="#FFFFFF"
-                                 BorderBrush="#2E2E2E" CornerRadius="12" Padding="14,10"/>
+                                 BorderBrush="#2E2E2E" CornerRadius="10" Padding="12,7" FontSize="12"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
 
             <!-- Buttons -->
-            <Grid ColumnDefinitions="*,12,Auto" Margin="0,8,0,0">
+            <Grid ColumnDefinitions="*,10,Auto" Margin="0,4,0,0">
                 <Button Grid.Column="0" Content="デフォルトに戻す"
                         Command="{Binding ResetToDefaultsCommand}"
-                        Background="#141414" Foreground="#505050"
-                        Padding="20,12" CornerRadius="14" HorizontalAlignment="Left"/>
+                        Background="#141414" Foreground="#505050" FontSize="12"
+                        Padding="14,8" CornerRadius="10" HorizontalAlignment="Left"/>
                 <Button Grid.Column="2" Content="設定を保存"
                         Command="{Binding SaveCommand}"
-                        Background="#FFFFFF" Foreground="#080808" FontWeight="SemiBold"
-                        Padding="28,12" CornerRadius="14"/>
+                        Background="#FFFFFF" Foreground="#080808" FontWeight="SemiBold" FontSize="12"
+                        Padding="20,8" CornerRadius="10"/>
             </Grid>
 
-            <TextBlock Text="{Binding StatusMessage}" Foreground="#888888" FontSize="13"
-                       HorizontalAlignment="Center" Margin="0,0,0,16"
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#888888" FontSize="12"
+                       HorizontalAlignment="Center" Margin="0,0,0,12"
                        IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
         </StackPanel>
