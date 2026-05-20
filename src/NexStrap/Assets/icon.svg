@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!--
+    NexStrap icon
+    Shape: Roblox-inspired tilted square (15°), white fill, transparent bg
+    Mark:  Geometric N in near-black (#0D0D0D)
+    All elements centered at (256,256)
+  -->
+  <defs>
+    <!-- Subtle gradient: pure white top-left → warm off-white bottom-right -->
+    <linearGradient id="sq" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#EBEBEB"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Tilted square + N mark, rotated together so N aligns with square axes -->
+  <g transform="rotate(15,256,256)">
+
+    <!-- Square base — large rounded corners give premium icon feel -->
+    <rect x="76" y="76" width="360" height="360" rx="72"
+          fill="url(#sq)"/>
+
+    <!-- ── N letterform ── -->
+    <!-- Three shapes share the same fill; overlaps are invisible -->
+    <!-- Left vertical bar -->
+    <rect x="136" y="156" width="50" height="200" fill="#0D0D0D"/>
+
+    <!-- Diagonal stroke — parallelogram from top-right of left bar
+         to bottom-left of right bar (both slopes identical → perfect parallel) -->
+    <polygon points="186,156 236,156 376,356 326,356" fill="#0D0D0D"/>
+
+    <!-- Right vertical bar -->
+    <rect x="326" y="156" width="50" height="200" fill="#0D0D0D"/>
+
+  </g>
+</svg>
