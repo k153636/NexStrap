@@ -9,10 +9,8 @@
     <Grid RowDefinitions="Auto,Auto,*">
 
         <!-- Header -->
-        <StackPanel Grid.Row="0" Margin="32,28,32,16" Spacing="6">
+        <StackPanel Grid.Row="0" Margin="32,28,32,16" Spacing="4">
             <TextBlock Text="Mods" FontSize="28" FontWeight="Bold" Foreground="#FFFFFF"/>
-            <TextBlock Text="テクスチャ・サウンド・フォントなどのカスタムアセットを管理"
-                       FontSize="14" Foreground="#505050"/>
         </StackPanel>
 
         <!-- Action Bar -->
@@ -62,7 +60,7 @@
                                                   OnContent="" OffContent="" Width="40"/>
                                 </Grid>
                                 <Button Grid.Row="4" Content="削除"
-                                        Command="{Binding $parent[UserControl].((vm:ModsViewModel)DataContext).RemoveModCommand}"
+                                        Command="{Binding $parent[UserControl].DataContext.RemoveModCommand}"
                                         CommandParameter="{Binding}"
                                         HorizontalAlignment="Stretch"
                                         Background="Transparent" Foreground="#505050"

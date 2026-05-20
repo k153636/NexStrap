@@ -5,7 +5,7 @@
              x:DataType="vm:FastFlagsViewModel"
              Background="#080808">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="32,28,32,16" Spacing="4">
@@ -47,7 +47,7 @@
         </Border>
 
         <!-- Controls -->
-        <Grid Grid.Row="2" Margin="32,0,32,14"
+        <Grid Grid.Row="2" Margin="32,0,32,10"
               ColumnDefinitions="*,12,Auto,12,Auto,12,Auto,12,Auto">
             <TextBox Grid.Column="0" Text="{Binding SearchText}"
                      Watermark="検索..." Background="#141414" BorderBrush="#2E2E2E"
@@ -77,8 +77,8 @@
         </Grid>
 
         <!-- FPS Quick Control -->
-        <Border Grid.Row="2" Background="#141414" CornerRadius="12"
-                Margin="32,52,32,0" Padding="16,10">
+        <Border Grid.Row="3" Background="#141414" CornerRadius="12"
+                Margin="32,0,32,10" Padding="16,10">
             <Grid ColumnDefinitions="Auto,*,Auto,16,Auto">
                 <TextBlock Grid.Column="0" Text="FPS 上限" Foreground="#888888"
                            VerticalAlignment="Center" Margin="0,0,16,0" FontSize="13"/>
@@ -95,7 +95,7 @@
         </Border>
 
         <!-- Flags List -->
-        <Border Grid.Row="3" Margin="32,72,32,0" Background="#141414" CornerRadius="14">
+        <Border Grid.Row="4" Margin="32,0,32,0" Background="#141414" CornerRadius="14">
             <Grid RowDefinitions="Auto,*">
                 <Border Grid.Row="0" Background="#202020" CornerRadius="16,16,0,0">
                     <Grid ColumnDefinitions="*,200,100,40" Margin="20,12">
@@ -139,7 +139,7 @@
         </Border>
 
         <!-- Add Flag + Status -->
-        <Grid Grid.Row="4" Margin="32,12,32,20" ColumnDefinitions="*,10,120,10,70,*,Auto">
+        <Grid Grid.Row="5" Margin="32,12,32,20" ColumnDefinitions="*,10,120,10,70,*,Auto">
             <TextBox Grid.Column="0" Text="{Binding NewFlagName}"
                      Watermark="新しいフラグ名 (例: FFlagXxx)"
                      Background="#141414" Foreground="#FFFFFF"
