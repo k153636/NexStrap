@@ -8,8 +8,11 @@ public class DiscordRpcService : IDisposable
     private DiscordRpcClient? _client;
     private bool _isConnected;
     private string _currentAppId = string.Empty;
-    // 起動時に一度だけ記録 — ページ切り替えでリセットしない
     private Timestamps? _startTimestamp;
+    private readonly object _lock = new();
+    // デバウンス: 最後のプレゼンス更新から300ms以内の重複を抑制
+    private Timer? _debounceTimer;
+    private RichPresence? _pendingPresence;
 
     public bool IsConnected => _isConnected;
     public event EventHandler<bool>? ConnectionChanged;
@@ -100,27 +103,45 @@ public class DiscordRpcService : IDisposable
     private void SetPresence(string details, string state, string largeImage, string largeText,
         string? smallImage, string? smallText)
     {
-        if (_client == null || !_client.IsInitialized) return;
-
-        _client.SetPresence(new RichPresence
+        var presence = new RichPresence
         {
             Details = details,
-            State = state,
-            Assets = new Assets
+            State   = state,
+            Assets  = new Assets
             {
-                LargeImageKey = largeImage,
+                LargeImageKey  = largeImage,
                 LargeImageText = largeText,
-                SmallImageKey = smallImage ?? string.Empty,
-                SmallImageText = smallText ?? string.Empty
+                SmallImageKey  = smallImage ?? string.Empty,
+                SmallImageText = smallText  ?? string.Empty
             },
-            Timestamps = _startTimestamp  // 起動時のタイムスタンプを使い回す
-        });
+            Timestamps = _startTimestamp
+        };
+
+        lock (_lock)
+        {
+            _pendingPresence = presence;
+            _debounceTimer?.Dispose();
+            _debounceTimer = new Timer(_ => FlushPresence(), null, 300, Timeout.Infinite);
+        }
     }
 
-    public void ClearPresence() => _client?.ClearPresence();
+    private void FlushPresence()
+    {
+        RichPresence? presence;
+        lock (_lock) { presence = _pendingPresence; _pendingPresence = null; }
+        if (presence == null) return;
+        try { _client?.SetPresence(presence); } catch { }
+    }
+
+    public void ClearPresence()
+    {
+        lock (_lock) { _debounceTimer?.Dispose(); _debounceTimer = null; _pendingPresence = null; }
+        _client?.ClearPresence();
+    }
 
     public void Dispose()
     {
+        lock (_lock) { _debounceTimer?.Dispose(); _debounceTimer = null; }
         _client?.ClearPresence();
         _client?.Dispose();
     }

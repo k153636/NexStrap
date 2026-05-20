@@ -12,6 +12,7 @@ public class RobloxLogWatcher : IDisposable
     private long _filePosition;
     private long _lastPlaceId;
     private bool _wasRunning;
+    private readonly object _lock = new();
 
     public event EventHandler<long>? PlaceJoined;
     public event EventHandler<long>? UserIdDetected;
@@ -92,13 +93,20 @@ public class RobloxLogWatcher : IDisposable
     private void CheckForNewLogFile()
     {
         var latest = GetLatestLogFile();
-        if (latest == null || latest == _watchedFile) return;
-
-        // 新しいファイルに切り替え（先頭から読む）
-        StartWatchingFile(latest, fromEnd: false);
+        if (latest == null) return;
+        lock (_lock)
+        {
+            if (latest == _watchedFile) return;
+            StartWatchingFileUnsafe(latest, fromEnd: false);
+        }
     }
 
     private void StartWatchingFile(string path, bool fromEnd)
+    {
+        lock (_lock) { StartWatchingFileUnsafe(path, fromEnd); }
+    }
+
+    private void StartWatchingFileUnsafe(string path, bool fromEnd)
     {
         _watchedFile  = path;
         _lastPlaceId  = 0;
@@ -135,75 +143,90 @@ public class RobloxLogWatcher : IDisposable
 
     private void PollLogFile()
     {
-        if (_watchedFile == null || !File.Exists(_watchedFile)) return;
+        string? file;
+        long position;
+        lock (_lock) { file = _watchedFile; position = _filePosition; }
+
+        if (file == null || !File.Exists(file)) return;
         try
         {
-            using var fs = new FileStream(_watchedFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            if (fs.Length <= _filePosition) return;
+            using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            if (fs.Length <= position) return;
 
-            fs.Seek(_filePosition, SeekOrigin.Begin);
+            fs.Seek(position, SeekOrigin.Begin);
             using var reader = new StreamReader(fs);
             string? line;
             while ((line = reader.ReadLine()) != null)
                 ProcessLine(line);
 
-            _filePosition = fs.Position;
+            lock (_lock)
+            {
+                // ファイルが切り替わっていなければ位置を更新
+                if (_watchedFile == file)
+                    _filePosition = fs.Position;
+            }
         }
         catch { }
     }
 
     private void ProcessLine(string line)
     {
-        // userid: 抽出 (GameJoinLoadTime 行に含まれる)
-        if (_detectedUserId == 0)
+        long fireUserId = 0;
+        long firePlaceId = 0;
+        bool fireLeave = false;
+
+        lock (_lock)
         {
-            var um = UserIdPattern.Match(line);
-            if (um.Success && long.TryParse(um.Groups[1].Value, out var uid) && uid > 0)
+            if (_detectedUserId == 0)
             {
-                _detectedUserId = uid;
-                UserIdDetected?.Invoke(this, uid);
+                var um = UserIdPattern.Match(line);
+                if (um.Success && long.TryParse(um.Groups[1].Value, out var uid) && uid > 0)
+                {
+                    _detectedUserId = uid;
+                    fireUserId = uid;
+                }
+            }
+
+            foreach (var pattern in PlaceIdPatterns)
+            {
+                var m = pattern.Match(line);
+                if (!m.Success) continue;
+                if (!long.TryParse(m.Groups[1].Value, out var placeId)) continue;
+                if (placeId <= 0 || placeId == _lastPlaceId) continue;
+                _lastPlaceId = placeId;
+                firePlaceId = placeId;
+                break;
+            }
+
+            if (firePlaceId == 0 && _lastPlaceId != 0)
+            {
+                foreach (var keyword in LeaveKeywords)
+                {
+                    if (!line.Contains(keyword, StringComparison.OrdinalIgnoreCase)) continue;
+                    _lastPlaceId = 0;
+                    fireLeave = true;
+                    break;
+                }
             }
         }
 
-        foreach (var pattern in PlaceIdPatterns)
-        {
-            var m = pattern.Match(line);
-            if (!m.Success) continue;
-            if (!long.TryParse(m.Groups[1].Value, out var placeId)) continue;
-            if (placeId <= 0 || placeId == _lastPlaceId) continue;
-
-            _lastPlaceId = placeId;
-            PlaceJoined?.Invoke(this, placeId);
-            return;
-        }
-
-        if (_lastPlaceId != 0)
-        {
-            foreach (var keyword in LeaveKeywords)
-            {
-                if (!line.Contains(keyword, StringComparison.OrdinalIgnoreCase)) continue;
-                _lastPlaceId = 0;
-                GameLeft?.Invoke(this, EventArgs.Empty);
-                return;
-            }
-        }
+        // イベント発火はロック外で行う（デッドロック防止）
+        if (fireUserId > 0) UserIdDetected?.Invoke(this, fireUserId);
+        if (firePlaceId > 0) PlaceJoined?.Invoke(this, firePlaceId);
+        if (fireLeave) GameLeft?.Invoke(this, EventArgs.Empty);
     }
 
     private void CheckProcessExit()
     {
         var running = IsRobloxRunning();
-        if (running)
+        bool shouldFireLeave;
+        lock (_lock)
         {
-            _wasRunning = true;
-            return;
+            if (running) { _wasRunning = true; return; }
+            shouldFireLeave = _wasRunning;
+            if (_wasRunning) { _wasRunning = false; _lastPlaceId = 0; }
         }
-        // プロセスが終了し、かつ以前は動いていた場合
-        if (_wasRunning)
-        {
-            _wasRunning   = false;
-            _lastPlaceId  = 0;
-            GameLeft?.Invoke(this, EventArgs.Empty);
-        }
+        if (shouldFireLeave) GameLeft?.Invoke(this, EventArgs.Empty);
     }
 
     public static bool IsRobloxRunning()
