@@ -9,14 +9,13 @@
 
         <!-- Center content -->
         <StackPanel Grid.Row="0" VerticalAlignment="Center"
-                    Margin="32,0" Spacing="32">
+                    Margin="24,0" Spacing="16">
 
             <!-- Branding -->
-            <StackPanel Spacing="6" HorizontalAlignment="Center">
-                <TextBlock Text="NexStrap" FontSize="28" FontWeight="Bold"
-                           Foreground="#FFFFFF" HorizontalAlignment="Center"
-                           LetterSpacing="0.5"/>
-                <StackPanel Orientation="Horizontal" Spacing="6"
+            <StackPanel Spacing="4" HorizontalAlignment="Center">
+                <TextBlock Text="NexStrap" FontSize="22" FontWeight="Bold"
+                           Foreground="#FFFFFF" HorizontalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" Spacing="5"
                             HorizontalAlignment="Center">
                     <Border Background="#111111" CornerRadius="20" Padding="10,4"
                             BorderBrush="#1E1E1E" BorderThickness="1">
@@ -26,7 +25,7 @@
                     <Border Background="#111111" CornerRadius="20" Padding="10,4"
                             BorderBrush="#1E1E1E" BorderThickness="1"
                             IsVisible="{Binding IsRobloxRunning}">
-                        <StackPanel Orientation="Horizontal" Spacing="5">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
                             <Ellipse Width="5" Height="5" Fill="#4ADE80"
                                      VerticalAlignment="Center"/>
                             <TextBlock Text="実行中" FontSize="11" Foreground="#666666"/>
@@ -45,13 +44,14 @@
             <Button Command="{Binding LaunchRobloxCommand}"
                     IsEnabled="{Binding !IsLaunching}"
                     HorizontalAlignment="Stretch"
-                    Padding="0,20" CornerRadius="16"
+                    Padding="0,14" CornerRadius="12"
                     Background="#FFFFFF">
-                <StackPanel Spacing="8" HorizontalAlignment="Center">
-                    <PathIcon Data="{StaticResource IconPlay}" Width="18" Height="18"
-                              Foreground="#080808" HorizontalAlignment="Center"/>
-                    <TextBlock Text="起動" FontSize="14" FontWeight="SemiBold"
-                               Foreground="#080808" HorizontalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" Spacing="8"
+                            HorizontalAlignment="Center">
+                    <PathIcon Data="{StaticResource IconPlay}" Width="14" Height="14"
+                              Foreground="#080808" VerticalAlignment="Center"/>
+                    <TextBlock Text="起動" FontSize="13" FontWeight="SemiBold"
+                               Foreground="#080808" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
 
@@ -61,15 +61,15 @@
         <Button Grid.Row="1"
                 Command="{Binding HotReloadFlagsCommand}"
                 HorizontalAlignment="Stretch"
-                Margin="32,0,32,24"
-                Padding="16,10" CornerRadius="12"
+                Margin="24,0,24,20"
+                Padding="14,8" CornerRadius="10"
                 Background="#0D0D0D" BorderBrush="#1A1A1A" BorderThickness="1">
             <Grid ColumnDefinitions="Auto,*">
                 <PathIcon Grid.Column="0" Data="{StaticResource IconFlash}"
-                          Width="12" Height="12" Foreground="#3A3A3A"/>
+                          Width="11" Height="11" Foreground="#3A3A3A"/>
                 <TextBlock Grid.Column="1" Text="Fast Flags をホットリロード"
                            FontSize="11" Foreground="#3A3A3A"
-                           Margin="10,0,0,0" VerticalAlignment="Center"/>
+                           Margin="8,0,0,0" VerticalAlignment="Center"/>
             </Grid>
         </Button>
 
