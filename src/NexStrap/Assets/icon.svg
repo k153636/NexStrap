@@ -1,49 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!--
-    NexStrap icon  —  transparent bg, white, 15° tilt
-    Frame: 4-corner brackets only (Roblox-tilted-square, intentionally broken)
-    Mark:  Geometric N centered at (256,256)
+    NexStrap icon
+    Background: dark tilted square (#111111)
+    Frame:      4-corner brackets in white
+    Mark:       Geometric N in white
+    Rotation:   15° (Roblox-inspired)
   -->
 
   <g transform="rotate(15,256,256)">
 
-    <!-- ── Corner brackets ──────────────────────────────────────────
-         Virtual square: 76..436 × 76..436  (360 × 360)
-         Arm length: 80px  ≈ 22% of side  →  gap ≈ 56% (feels open, not broken)
-         stroke-linecap="round"  : polished end-caps
-         stroke-linejoin="round" : soft corner at the L-joint
-    ───────────────────────────────────────────────────────────────── -->
-    <g fill="none" stroke="#FFFFFF" stroke-width="30"
+    <!-- Dark square base -->
+    <rect x="76" y="76" width="360" height="360" rx="72" fill="#111111"/>
+
+    <!-- Corner brackets -->
+    <g fill="none" stroke="#FFFFFF" stroke-width="28"
        stroke-linecap="round" stroke-linejoin="round">
-
-      <!-- top-left -->
       <path d="M 156,76 L 76,76 L 76,156"/>
-      <!-- top-right -->
       <path d="M 356,76 L 436,76 L 436,156"/>
-      <!-- bottom-right -->
       <path d="M 436,356 L 436,436 L 356,436"/>
-      <!-- bottom-left -->
       <path d="M 76,356 L 76,436 L 156,436"/>
-
     </g>
 
-    <!-- ── N letterform ────────────────────────────────────────────
-         Total width:  232px  (140..372), centered at 256
-         Total height: 200px  (156..356), centered at 256
-         Bar width:     44px
-         Diagonal: parallelogram — both slopes identical (Δx=144, Δy=200)
-    ───────────────────────────────────────────────────────────────── -->
+    <!-- N letterform -->
     <g fill="#FFFFFF">
-
-      <!-- left bar -->
       <rect x="140" y="156" width="44" height="200"/>
-
-      <!-- diagonal stroke (parallelogram) -->
       <polygon points="184,156 228,156 372,356 328,356"/>
-
-      <!-- right bar -->
       <rect x="328" y="156" width="44" height="200"/>
-
     </g>
 
   </g>
