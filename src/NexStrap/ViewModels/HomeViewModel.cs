@@ -161,14 +161,6 @@ public partial class HomeViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task LaunchMultipleAsync()
-    {
-        await _fastFlags.SaveAsync();
-        await _roblox.LaunchMultipleInstanceAsync();
-        StartLaunchFallback();
-    }
-
-    [RelayCommand]
     private async Task HotReloadFlagsAsync()
     {
         var flags = _fastFlags.GetAll();

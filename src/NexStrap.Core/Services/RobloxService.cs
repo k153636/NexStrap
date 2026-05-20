@@ -91,36 +91,6 @@ public class RobloxService
         return Task.FromResult(true);
     }
 
-    public async Task LaunchMultipleInstanceAsync()
-    {
-        await SetMultiInstanceRegistryAsync(true);
-        await LaunchAsync();
-    }
-
-    private static async Task SetMultiInstanceRegistryAsync(bool enable)
-    {
-        await Task.Run(() =>
-        {
-            try
-            {
-                using var key = Registry.CurrentUser.OpenSubKey(
-                    @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers", true);
-                var localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                var robloxVersions = Path.Combine(localApp, "Roblox", "Versions");
-                var playerPath = Directory.GetDirectories(robloxVersions)
-                    .Select(d => Path.Combine(d, "RobloxPlayerBeta.exe"))
-                    .FirstOrDefault(File.Exists);
-                if (playerPath == null) return;
-
-                if (enable)
-                    key?.SetValue(playerPath, "~ DISABLEUSERCALLBACKEXCEPTION");
-                else
-                    key?.DeleteValue(playerPath, false);
-            }
-            catch { }
-        });
-    }
-
     private async Task MonitorProcessAsync(Process process)
     {
         await Task.Run(() => process.WaitForExit());

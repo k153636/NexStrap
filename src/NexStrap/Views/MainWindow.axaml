@@ -6,25 +6,21 @@
         x:Class="NexStrap.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="NexStrap"
-        Width="1100" Height="720"
-        MinWidth="900" MinHeight="600"
-        Background="#0D1117"
+        Width="900" Height="620"
+        MinWidth="780" MinHeight="520"
+        Background="#080808"
         TransparencyLevelHint="AcrylicBlur"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="PreferSystemChrome"
         ExtendClientAreaTitleBarHeightHint="-1">
 
-    <Grid RowDefinitions="32,*">
+    <Grid RowDefinitions="30,*">
 
         <!-- Title Bar -->
-        <Grid Grid.Row="0" Background="#161B22">
-            <StackPanel Orientation="Horizontal" Margin="12,0,0,0"
-                        VerticalAlignment="Center" Spacing="2">
-                <TextBlock Text="Nex" FontWeight="Bold" FontSize="14"
-                           Foreground="#0078D4" VerticalAlignment="Center"/>
-                <TextBlock Text="Strap" FontSize="14"
-                           Foreground="#8B949E" VerticalAlignment="Center"/>
-            </StackPanel>
+        <Grid Grid.Row="0" Background="#0D0D0D">
+            <TextBlock Text="NexStrap" FontSize="12" FontWeight="SemiBold"
+                       Foreground="#3A3A3A" VerticalAlignment="Center"
+                       HorizontalAlignment="Center"/>
         </Grid>
 
         <!-- Navigation + Content -->
@@ -32,7 +28,7 @@
                            x:Name="NavView"
                            IsPaneOpen="True"
                            PaneDisplayMode="Left"
-                           OpenPaneLength="200"
+                           OpenPaneLength="180"
                            IsBackButtonVisible="False"
                            IsSettingsVisible="False"
                            IsPaneToggleButtonVisible="False"
@@ -73,11 +69,13 @@
                 </ui:NavigationViewItem>
             </ui:NavigationView.FooterMenuItems>
 
-            <!-- Page Content -->
-            <Border Background="#0D1117">
-                <ContentControl x:Name="PageContent"
-                                Content="{Binding CurrentPage}">
-                    <ContentControl.DataTemplates>
+            <!-- Page Content with smooth CrossFade transition -->
+            <Border Background="#080808">
+                <TransitioningContentControl Content="{Binding CurrentPage}">
+                    <TransitioningContentControl.PageTransition>
+                        <CrossFade Duration="0:0:0.12"/>
+                    </TransitioningContentControl.PageTransition>
+                    <TransitioningContentControl.DataTemplates>
                         <DataTemplate DataType="vm:HomeViewModel">
                             <pages:HomePage/>
                         </DataTemplate>
@@ -93,8 +91,8 @@
                         <DataTemplate DataType="vm:BrowserViewModel">
                             <pages:BrowserPage/>
                         </DataTemplate>
-                    </ContentControl.DataTemplates>
-                </ContentControl>
+                    </TransitioningContentControl.DataTemplates>
+                </TransitioningContentControl>
             </Border>
         </ui:NavigationView>
     </Grid>

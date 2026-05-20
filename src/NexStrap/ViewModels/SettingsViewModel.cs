@@ -13,7 +13,6 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty] private bool _discordRpcEnabled;
     [ObservableProperty] private bool _discordAppIdConfigured;
-    [ObservableProperty] private bool _multiInstanceEnabled;
     [ObservableProperty] private bool _showPerformanceOverlay;
     [ObservableProperty] private bool _autoUpdateRoblox;
     [ObservableProperty] private bool _minimizeToTray;
@@ -32,7 +31,6 @@ public partial class SettingsViewModel : ViewModelBase
         var s = settingsService.Settings;
         _discordRpcEnabled = s.DiscordRpcEnabled;
         _discordAppIdConfigured = env.Get("DISCORD_APP_ID") != null;
-        _multiInstanceEnabled = s.MultiInstanceEnabled;
         _showPerformanceOverlay = s.ShowPerformanceOverlay;
         _autoUpdateRoblox = s.AutoUpdateRoblox;
         _minimizeToTray = s.MinimizeToTray;
@@ -60,7 +58,6 @@ public partial class SettingsViewModel : ViewModelBase
         _settingsService.Update(s =>
         {
             s.DiscordRpcEnabled = DiscordRpcEnabled;
-            s.MultiInstanceEnabled = MultiInstanceEnabled;
             s.ShowPerformanceOverlay = ShowPerformanceOverlay;
             s.AutoUpdateRoblox = AutoUpdateRoblox;
             s.MinimizeToTray = MinimizeToTray;
@@ -77,7 +74,6 @@ public partial class SettingsViewModel : ViewModelBase
     {
         var defaults = new AppSettings();
         DiscordRpcEnabled = defaults.DiscordRpcEnabled;
-        MultiInstanceEnabled = defaults.MultiInstanceEnabled;
         ShowPerformanceOverlay = defaults.ShowPerformanceOverlay;
         AutoUpdateRoblox = defaults.AutoUpdateRoblox;
         MinimizeToTray = defaults.MinimizeToTray;

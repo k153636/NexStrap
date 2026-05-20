@@ -5,7 +5,6 @@ public class AppSettings
     public string Theme { get; set; } = "Dark";
     public string AccentColor { get; set; } = "#0078D4";
     public bool DiscordRpcEnabled { get; set; } = true;
-    public bool MultiInstanceEnabled { get; set; } = false;
     public bool ShowPerformanceOverlay { get; set; } = false;
     public bool AutoUpdateRoblox { get; set; } = true;
     public bool MinimizeToTray { get; set; } = true;
