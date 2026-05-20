@@ -41,7 +41,6 @@ public class DiscordRpcService : IDisposable
             {
                 _isConnected = true;
                 ConnectionChanged?.Invoke(this, true);
-                SetPagePresence("ホーム");
             };
 
             _client.OnClose += (_, _) =>

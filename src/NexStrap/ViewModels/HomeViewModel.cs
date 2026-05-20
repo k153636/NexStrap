@@ -113,6 +113,13 @@ public partial class HomeViewModel : ViewModelBase
             });
         };
 
+        // Discord 接続時にアバター付きでプレゼンスを設定
+        _discord.ConnectionChanged += (_, connected) =>
+        {
+            if (connected)
+                _discord.SetPagePresence("ホーム", _userAvatarUrl);
+        };
+
         _logWatcher.Start();
 
         // 前回セッションのユーザーIDが保存済みならアバターを取得
