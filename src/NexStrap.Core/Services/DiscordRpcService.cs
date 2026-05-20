@@ -67,7 +67,7 @@ public class DiscordRpcService : IDisposable
         SetPresence(
             details: "Test Build",
             state: pageName,
-            largeImage: "roblox_logo",
+            largeImage: "roblox_logo1",
             largeText: "Roblox",
             smallImage: userAvatarUrl,
             smallText: userAvatarUrl != null ? "プロフィール" : null
@@ -80,7 +80,7 @@ public class DiscordRpcService : IDisposable
         SetPresence(
             details: gameName,
             state: "プレイ中",
-            largeImage: gameIconUrl ?? "roblox_logo",
+            largeImage: gameIconUrl ?? "roblox_logo1",
             largeText: gameName,
             smallImage: userAvatarUrl,
             smallText: "プロフィール"
@@ -93,7 +93,7 @@ public class DiscordRpcService : IDisposable
         SetPresence(
             details: "起動中...",
             state: "Roblox を起動しています",
-            largeImage: "roblox_logo",
+            largeImage: "roblox_logo1",
             largeText: "Roblox",
             smallImage: userAvatarUrl,
             smallText: userAvatarUrl != null ? "プロフィール" : null
