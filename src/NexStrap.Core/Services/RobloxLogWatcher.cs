@@ -11,6 +11,7 @@ public class RobloxLogWatcher : IDisposable
     private string? _watchedFile;
     private long _filePosition;
     private long _lastPlaceId;
+    private bool _wasRunning;
 
     public event EventHandler<long>? PlaceJoined;
     public event EventHandler<long>? UserIdDetected;
@@ -59,6 +60,7 @@ public class RobloxLogWatcher : IDisposable
         {
             if (IsRobloxRunning())
             {
+                _wasRunning = true;
                 var (placeId, userId) = ScanForLastPlaceIdAndUser(latest);
                 if (userId > 0) { _detectedUserId = userId; UserIdDetected?.Invoke(this, userId); }
                 if (placeId > 0) { _lastPlaceId = placeId; PlaceJoined?.Invoke(this, placeId); }
@@ -189,10 +191,17 @@ public class RobloxLogWatcher : IDisposable
 
     private void CheckProcessExit()
     {
-        if (_lastPlaceId == 0) return;
-        if (!IsRobloxRunning())
+        var running = IsRobloxRunning();
+        if (running)
         {
-            _lastPlaceId = 0;
+            _wasRunning = true;
+            return;
+        }
+        // プロセスが終了し、かつ以前は動いていた場合
+        if (_wasRunning)
+        {
+            _wasRunning   = false;
+            _lastPlaceId  = 0;
             GameLeft?.Invoke(this, EventArgs.Empty);
         }
     }

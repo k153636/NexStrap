@@ -181,6 +181,8 @@ public partial class HomeViewModel : ViewModelBase
                     if (RobloxLogWatcher.IsRobloxRunning())
                     {
                         // プロセス確認できた → ホーム画面にいる状態
+                        // GameLeft イベントが IsRobloxRunning=false に戻すので、
+                        // ここではフラグを立てるだけで監視は LogWatcher に委譲
                         _discord.SetPagePresence("ホーム", _userAvatarUrl);
                         await Dispatcher.UIThread.InvokeAsync(() =>
                         {
