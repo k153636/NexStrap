@@ -18,6 +18,7 @@ public partial class HomeViewModel : ViewModelBase
     private CancellationTokenSource? _launchFallbackCts;
     private bool _gameDetected;
     private string? _userAvatarUrl;
+    private long _joinSequence;
     public string? UserAvatarUrl => _userAvatarUrl;
 
     [ObservableProperty] private bool _isRobloxRunning;
@@ -66,28 +67,38 @@ public partial class HomeViewModel : ViewModelBase
         // ユーザーID検出 → アバター URL 取得してキャッシュ
         _logWatcher.UserIdDetected += async (_, userId) =>
         {
-            _settings.Update(s => s.CachedRobloxUserId = userId);
-            _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(userId);
-            // ホーム画面にいる場合はプレゼンスを即更新
-            if (!IsRobloxRunning && !IsLaunching)
-                _discord.SetPagePresence("ホーム", _userAvatarUrl);
+            try
+            {
+                _settings.Update(s => s.CachedRobloxUserId = userId);
+                _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(userId);
+                if (!IsRobloxRunning && !IsLaunching)
+                    _discord.SetPagePresence("ホーム", _userAvatarUrl);
+            }
+            catch { }
         };
 
-        // ゲーム参加 — API でゲーム名・アイコン取得
+        // ゲーム参加 — API でゲーム名・アイコン取得（高速切り替え時の競合を sequence で防ぐ）
         _logWatcher.PlaceJoined += async (_, placeId) =>
         {
             _gameDetected = true;
             CancelFallback();
+            var seq = Interlocked.Increment(ref _joinSequence);
 
-            var (name, iconUrl) = await _robloxApi.GetGameInfoAsync(placeId);
-            _discord.SetInGamePresence(name, iconUrl, _userAvatarUrl);
-
-            await Dispatcher.UIThread.InvokeAsync(() =>
+            try
             {
-                StatusText      = $"プレイ中: {name}";
-                IsRobloxRunning = true;
-                IsLaunching     = false;
-            });
+                var (name, iconUrl) = await _robloxApi.GetGameInfoAsync(placeId);
+                if (Interlocked.Read(ref _joinSequence) != seq) return;
+
+                _discord.SetInGamePresence(name, iconUrl, _userAvatarUrl);
+
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    StatusText      = $"プレイ中: {name}";
+                    IsRobloxRunning = true;
+                    IsLaunching     = false;
+                });
+            }
+            catch { }
         };
 
         // ゲーム退出

@@ -15,11 +15,10 @@ public enum RobloxStatus
 public class RobloxService
 {
     private Process? _robloxProcess;
-    private FileSystemWatcher? _watcher;
+    private string? _cachedVersionFolder;
 
     public RobloxStatus Status { get; private set; } = RobloxStatus.Idle;
     public event EventHandler<RobloxStatus>? StatusChanged;
-    public event EventHandler<int>? FpsChanged;
 
     public string? RobloxPlayerPath => FindRobloxPath();
     public string? RobloxVersionPath => FindVersionFolder();
@@ -54,22 +53,27 @@ public class RobloxService
 
     private string? FindVersionFolder()
     {
+        if (_cachedVersionFolder != null &&
+            Directory.Exists(_cachedVersionFolder) &&
+            File.Exists(Path.Combine(_cachedVersionFolder, "RobloxPlayerBeta.exe")))
+            return _cachedVersionFolder;
+
         var localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var robloxVersions = Path.Combine(localApp, "Roblox", "Versions");
         if (!Directory.Exists(robloxVersions)) return null;
 
-        var dirs = Directory.GetDirectories(robloxVersions)
+        _cachedVersionFolder = Directory.GetDirectories(robloxVersions)
             .Where(d => File.Exists(Path.Combine(d, "RobloxPlayerBeta.exe")))
             .OrderByDescending(d => new DirectoryInfo(d).LastWriteTime)
-            .ToArray();
+            .FirstOrDefault();
 
-        return dirs.FirstOrDefault();
+        return _cachedVersionFolder;
     }
 
-    public async Task<bool> LaunchAsync(string? launchArgs = null)
+    public Task<bool> LaunchAsync(string? launchArgs = null)
     {
         var playerPath = RobloxPlayerPath;
-        if (playerPath == null) return false;
+        if (playerPath == null) return Task.FromResult(false);
 
         SetStatus(RobloxStatus.Launching);
 
@@ -80,11 +84,11 @@ public class RobloxService
         };
 
         _robloxProcess = Process.Start(startInfo);
-        if (_robloxProcess == null) { SetStatus(RobloxStatus.Idle); return false; }
+        if (_robloxProcess == null) { SetStatus(RobloxStatus.Idle); return Task.FromResult(false); }
 
         _ = MonitorProcessAsync(_robloxProcess);
         SetStatus(RobloxStatus.Running);
-        return true;
+        return Task.FromResult(true);
     }
 
     public async Task LaunchMultipleInstanceAsync()
@@ -93,7 +97,7 @@ public class RobloxService
         await LaunchAsync();
     }
 
-    private async Task SetMultiInstanceRegistryAsync(bool enable)
+    private static async Task SetMultiInstanceRegistryAsync(bool enable)
     {
         await Task.Run(() =>
         {
@@ -101,7 +105,11 @@ public class RobloxService
             {
                 using var key = Registry.CurrentUser.OpenSubKey(
                     @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers", true);
-                var playerPath = RobloxPlayerPath;
+                var localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                var robloxVersions = Path.Combine(localApp, "Roblox", "Versions");
+                var playerPath = Directory.GetDirectories(robloxVersions)
+                    .Select(d => Path.Combine(d, "RobloxPlayerBeta.exe"))
+                    .FirstOrDefault(File.Exists);
                 if (playerPath == null) return;
 
                 if (enable)
@@ -118,16 +126,6 @@ public class RobloxService
         await Task.Run(() => process.WaitForExit());
         SetStatus(RobloxStatus.Idle);
         _robloxProcess = null;
-    }
-
-    public bool IsRobloxRunning()
-    {
-        try
-        {
-            var processes = Process.GetProcessesByName("RobloxPlayerBeta");
-            return processes.Any(p => !p.HasExited);
-        }
-        catch { return false; }
     }
 
     public bool IsInstalled() => RobloxPlayerPath != null;

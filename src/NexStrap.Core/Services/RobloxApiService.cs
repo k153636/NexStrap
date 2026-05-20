@@ -9,17 +9,24 @@ public class RobloxApiService
         Timeout = TimeSpan.FromSeconds(10)
     };
 
+    private readonly Dictionary<long, (string name, string? iconUrl)> _gameCache = new();
+    private readonly Dictionary<long, string?> _avatarCache = new();
+
     public async Task<(string name, string? iconUrl)> GetGameInfoAsync(long placeId)
     {
+        if (_gameCache.TryGetValue(placeId, out var cached)) return cached;
+
         try
         {
             var universeId = await GetUniverseIdAsync(placeId);
             if (universeId == null) return ("Roblox", null);
 
-            var name = await GetGameNameAsync(universeId.Value);
+            var name    = await GetGameNameAsync(universeId.Value);
             var iconUrl = await GetGameIconUrlAsync(universeId.Value);
 
-            return (name ?? "Roblox", iconUrl);
+            var result = (name ?? "Roblox", iconUrl);
+            _gameCache[placeId] = result;
+            return result;
         }
         catch
         {
@@ -54,13 +61,17 @@ public class RobloxApiService
 
     public async Task<string?> GetUserAvatarHeadshotAsync(long userId)
     {
+        if (_avatarCache.TryGetValue(userId, out var cached)) return cached;
+
         try
         {
             var url = $"https://thumbnails.roblox.com/v1/users/avatar-headshot" +
                       $"?userIds={userId}&size=150x150&format=Png&isCircular=false";
             var json = await Http.GetStringAsync(url);
             var obj = JObject.Parse(json);
-            return obj["data"]?[0]?["imageUrl"]?.Value<string>();
+            var imageUrl = obj["data"]?[0]?["imageUrl"]?.Value<string>();
+            _avatarCache[userId] = imageUrl;
+            return imageUrl;
         }
         catch { return null; }
     }

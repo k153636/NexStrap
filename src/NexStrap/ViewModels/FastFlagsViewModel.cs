@@ -69,7 +69,6 @@ public partial class FastFlagsViewModel : ViewModelBase
 
     private void RefreshProfiles()
     {
-        _profileService.LoadProfiles();
         Profiles = new ObservableCollection<Profile>(_profileService.Profiles);
     }
 

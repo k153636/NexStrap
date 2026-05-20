@@ -14,6 +14,7 @@ public class PerformanceMonitorService : IDisposable
 
     public void Start()
     {
+        if (_timer != null) return;
         _timer = new Timer(_ => Measure(), null, 1000, 1000);
     }
 

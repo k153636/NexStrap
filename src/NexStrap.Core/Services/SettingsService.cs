@@ -23,7 +23,7 @@ public class SettingsService
 
     public void Load()
     {
-        if (!File.Exists(_settingsPath)) { Save(); return; }
+        if (!File.Exists(_settingsPath)) { WriteFile(); return; }
         try
         {
             var json = File.ReadAllText(_settingsPath);
@@ -34,9 +34,14 @@ public class SettingsService
 
     public void Save()
     {
+        WriteFile();
+        SettingsChanged?.Invoke(this, _settings);
+    }
+
+    private void WriteFile()
+    {
         var json = JsonConvert.SerializeObject(_settings, Formatting.Indented);
         File.WriteAllText(_settingsPath, json);
-        SettingsChanged?.Invoke(this, _settings);
     }
 
     public void Update(Action<AppSettings> update)

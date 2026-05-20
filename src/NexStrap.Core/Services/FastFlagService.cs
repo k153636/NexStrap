@@ -31,11 +31,8 @@ public class FastFlagService
 
     public string GetSavePath() => ClientSettingsFile;
 
-    public Dictionary<string, string> GetAll()
-    {
-        LoadFlags();
-        return new Dictionary<string, string>(_currentFlags);
-    }
+    public Dictionary<string, string> GetAll() =>
+        new Dictionary<string, string>(_currentFlags);
 
     public void Set(string name, string value)
     {
