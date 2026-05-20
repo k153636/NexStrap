@@ -160,7 +160,7 @@ public partial class HomeViewModel : ViewModelBase
         StatusText = IsRobloxRunning ? $"プレイ中" : "準備完了";
     }
 
-    // ログ検知が 40 秒以内に起きなかった場合、プロセス確認で補完
+    // Roblox プロセスを 2 秒ごとにポーリング — 検出次第即座に「プレイ中」へ
     private void StartLaunchFallback()
     {
         CancelFallback();
@@ -171,23 +171,30 @@ public partial class HomeViewModel : ViewModelBase
         {
             try
             {
-                await Task.Delay(40_000, token);
-                if (token.IsCancellationRequested) return;
-                if (_gameDetected) return;
+                var deadline = DateTime.UtcNow.AddSeconds(90);
 
-                if (RobloxLogWatcher.IsRobloxRunning())
+                while (!token.IsCancellationRequested && DateTime.UtcNow < deadline)
                 {
-                    _discord.SetInGamePresence("Roblox", null, _userAvatarUrl);
-                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    await Task.Delay(2000, token);
+                    if (_gameDetected) return; // PlaceJoined が先に処理済み
+
+                    if (RobloxLogWatcher.IsRobloxRunning())
                     {
-                        StatusText      = "Roblox をプレイ中";
-                        IsRobloxRunning = true;
-                        IsLaunching     = false;
-                    });
+                        // プロセス確認できた → ホーム画面にいる状態
+                        _discord.SetPagePresence("ホーム", _userAvatarUrl);
+                        await Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            StatusText      = "Roblox を起動中";
+                            IsRobloxRunning = true;
+                            IsLaunching     = false;
+                        });
+                        return;
+                    }
                 }
-                else
+
+                // タイムアウト — 起動失敗
+                if (!token.IsCancellationRequested && !_gameDetected)
                 {
-                    // 起動に失敗 or すでに終了
                     _discord.SetPagePresence("ホーム", _userAvatarUrl);
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {

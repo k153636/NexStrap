@@ -89,7 +89,7 @@ public class DiscordRpcService : IDisposable
     {
         SetPresence(
             details: "起動中...",
-            state: "NexStrap",
+            state: "Roblox を起動しています",
             largeImage: userAvatarUrl ?? "roblox_logo",
             largeText: "Roblox",
             smallImage: null,
