@@ -27,20 +27,14 @@ public partial class App : Application
 
         JumpListService.Initialize();
 
-        // Handle --launch-game {placeId} from jump list shortcuts
+        // --launch-game {placeId}: フラグ/Mod適用 → ゲーム起動 → 即終了
         var args = Environment.GetCommandLineArgs();
         var idx  = Array.IndexOf(args, "--launch-game");
         if (idx >= 0 && idx + 1 < args.Length && long.TryParse(args[idx + 1], out var placeId))
         {
-            try
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName        = $"roblox://experiences/start?placeId={placeId}",
-                    UseShellExecute = true
-                });
-            }
-            catch { }
+            HandleJumpLaunchAsync(placeId).GetAwaiter().GetResult();
+            Environment.Exit(0);
+            return;
         }
 
         // Wire friend online → toast notification
@@ -56,6 +50,43 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private async Task HandleJumpLaunchAsync(long placeId)
+    {
+        try
+        {
+            var fastFlags = Services.GetRequiredService<FastFlagService>();
+            var settings  = Services.GetRequiredService<SettingsService>();
+            var mods      = Services.GetRequiredService<ModService>();
+
+            if (settings.Settings.FpsUnlockEnabled)
+            {
+                fastFlags.Set("DFIntTaskSchedulerTargetFps", "9999");
+                fastFlags.Set("FFlagTaskSchedulerLimitTargetFpsTo2402", "False");
+            }
+            else
+            {
+                fastFlags.Remove("DFIntTaskSchedulerTargetFps");
+                fastFlags.Remove("FFlagTaskSchedulerLimitTargetFpsTo2402");
+            }
+
+            if (settings.Settings.MultiThreadingEnabled)
+            {
+                fastFlags.Set("FIntRuntimeMaxNumOfThreads", "2400");
+                fastFlags.Set("DFIntTaskSchedulerThreadCount", Environment.ProcessorCount.ToString());
+            }
+
+            await fastFlags.SaveAsync();
+            await mods.ApplyEnabledModsAsync();
+
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName        = $"roblox://experiences/start?placeId={placeId}",
+                UseShellExecute = true
+            });
+        }
+        catch { }
     }
 
     private void OnTrayIconClicked(object? sender, EventArgs e) => ShowMainWindow();

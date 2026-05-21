@@ -33,13 +33,14 @@ internal static class JumpListService
             var collection = (IObjectCollection)Activator.CreateInstance(
                 Type.GetTypeFromCLSID(new Guid("2D3468C1-36A7-43B6-AC24-D3F02FD9607A"))!)!;
 
-            var exe  = Environment.ProcessPath ?? string.Empty;
+            var exe       = Environment.ProcessPath ?? string.Empty;
             var iObjArray = new Guid("92CA9DCD-5622-4BBA-A805-5E9F541BD8C9");
 
             destList.SetAppID(AppId);
             destList.BeginList(out var maxSlots, ref iObjArray, out _);
 
-            foreach (var (placeId, name) in favorites.Take((int)maxSlots))
+            var items = favorites.Take((int)maxSlots).ToList();
+            foreach (var (placeId, name) in items)
             {
                 var link = (IShellLinkW)Activator.CreateInstance(
                     Type.GetTypeFromCLSID(new Guid("00021401-0000-0000-C000-000000000046"))!)!;
@@ -50,7 +51,7 @@ internal static class JumpListService
 
                 var ps   = (IPropertyStore)link;
                 var pkey = new PropertyKey(new Guid("F29F85E0-4FF9-1068-AB91-08002B27B3D9"), 2);
-                var pv = new PropVariant(name);
+                var pv   = new PropVariant(name);
                 ps.SetValue(ref pkey, ref pv);
                 ps.Commit();
                 pv.Dispose();
@@ -59,12 +60,22 @@ internal static class JumpListService
                 Marshal.ReleaseComObject(link);
             }
 
-            destList.AppendCategory("お気に入りゲーム", (IObjectArray)collection);
+            if (items.Count > 0)
+                destList.AddUserTasks((IObjectArray)collection);
+
             destList.CommitList();
             Marshal.ReleaseComObject(collection);
             Marshal.ReleaseComObject(destList);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            try
+            {
+                var log = Path.Combine(Path.GetTempPath(), "nexstrap_jumplist.log");
+                File.AppendAllText(log, $"[{DateTime.Now:HH:mm:ss}] {ex}\n");
+            }
+            catch { }
+        }
     }
 
     // ── COM Interfaces ──────────────────────────────────────────────────────

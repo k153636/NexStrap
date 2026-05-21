@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!--
+    NexStrap — dark ring concept
+
+    Two separate layers (not evenodd tricks):
+      1. Dark gradient ring  — outer 400×400 square with 260×260 hollow punched
+         through via evenodd. Creates a thick dark border that frames the N.
+      2. White gradient N    — solid letterform drawn inside the hollow.
+         The triangular negative-space gaps between bars are transparent,
+         letting the app's #080808 background breathe through.
+
+    Intent: inversion of the original. Where the original is a white card with
+    N cut out of it, this is a dark frame with the N lit up inside. The two
+    designs are meant to feel like day / night of the same identity.
+  -->
+  <defs>
+    <linearGradient id="ring"
+                    x1="0" y1="0" x2="512" y2="512"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#2E2E2E"/>
+      <stop offset="100%" stop-color="#0C0C0C"/>
+    </linearGradient>
+    <linearGradient id="letter"
+                    x1="0" y1="0" x2="512" y2="512"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#C8CDD6"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="rotate(20,256,256)">
+
+    <path fill="url(#ring)" fill-rule="evenodd" d="
+      M 56,56  L 456,56  L 456,456 L 56,456  Z
+      M 126,126 L 386,126 L 386,386 L 126,386 Z
+    "/>
+
+    <path fill="url(#letter)" d="
+      M 146,146 L 198,146 L 198,366 L 146,366 Z
+      M 198,146 L 250,146 L 366,366 L 314,366 Z
+      M 314,146 L 366,146 L 366,366 L 314,366 Z
+    "/>
+
+  </g>
+</svg>
