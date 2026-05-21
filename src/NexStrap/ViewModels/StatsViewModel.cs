@@ -6,6 +6,15 @@ using System.Collections.ObjectModel;
 
 namespace NexStrap.ViewModels;
 
+public class DailyBar
+{
+    public required string DayLabel { get; init; }
+    public required string TimeText { get; init; }
+    public required double Ratio    { get; init; }
+    public required bool   IsToday  { get; init; }
+    public double BarHeight => Ratio > 0 ? Math.Max(4, Ratio * 64) : 0;
+}
+
 public partial class GameStat : ViewModelBase
 {
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(8) };
@@ -63,7 +72,8 @@ public partial class StatsViewModel : ViewModelBase
     [ObservableProperty] private string _topGameName   = "--";
     [ObservableProperty] private string _topGameTime   = "--";
 
-    public ObservableCollection<GameStat> GameStats { get; } = [];
+    public ObservableCollection<GameStat> GameStats  { get; } = [];
+    public ObservableCollection<DailyBar> DailyBars  { get; } = [];
 
     public StatsViewModel(GameHistoryService history)
     {
@@ -96,6 +106,29 @@ public partial class StatsViewModel : ViewModelBase
         var top = grouped.FirstOrDefault();
         TopGameName = top?.Name ?? "--";
         TopGameTime = top?.TotalTimeText ?? "--";
+
+        // Build last-7-day bar chart data
+        var today = DateTime.Today;
+        var last7 = Enumerable.Range(0, 7).Select(i => today.AddDays(-6 + i)).ToList();
+        var byDay = entries
+            .Where(e => e.PlayedAt.Date >= today.AddDays(-6))
+            .GroupBy(e => e.PlayedAt.Date)
+            .ToDictionary(g => g.Key, g => g.Sum(e => e.DurationSeconds));
+        var maxSec = last7.Select(d => byDay.GetValueOrDefault(d, 0)).DefaultIfEmpty(0).Max();
+
+        DailyBars.Clear();
+        foreach (var d in last7)
+        {
+            var sec   = byDay.GetValueOrDefault(d, 0);
+            var ratio = maxSec > 0 ? (double)sec / maxSec : 0;
+            DailyBars.Add(new DailyBar
+            {
+                DayLabel = d.ToString("M/d"),
+                TimeText = sec > 0 ? FormatSeconds(sec) : "",
+                Ratio    = ratio,
+                IsToday  = d == today,
+            });
+        }
     }
 
     private static string FormatSeconds(int s)

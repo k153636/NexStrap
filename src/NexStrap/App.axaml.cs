@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using NexStrap.Core.Services;
+using NexStrap.Services;
 using NexStrap.ViewModels;
 using NexStrap.Views;
 
@@ -23,6 +24,28 @@ public partial class App : Application
         var services = new ServiceCollection();
         ConfigureServices(services);
         Services = services.BuildServiceProvider();
+
+        JumpListService.Initialize();
+
+        // Handle --launch-game {placeId} from jump list shortcuts
+        var args = Environment.GetCommandLineArgs();
+        var idx  = Array.IndexOf(args, "--launch-game");
+        if (idx >= 0 && idx + 1 < args.Length && long.TryParse(args[idx + 1], out var placeId))
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName        = $"roblox://experiences/start?placeId={placeId}",
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+        }
+
+        // Wire friend online → toast notification
+        var friendNotif = Services.GetRequiredService<FriendNotificationService>();
+        friendNotif.FriendCameOnline += (_, e) => NotificationService.ShowFriendOnline(e.DisplayName);
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
@@ -54,6 +77,7 @@ public partial class App : Application
     {
         Services.GetRequiredService<RobloxLogWatcher>().SetBackgroundMode(background);
         Services.GetRequiredService<SmtcService>().SetBackgroundMode(background);
+        Services.GetRequiredService<FriendNotificationService>().SetBackgroundMode(background);
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -70,6 +94,7 @@ public partial class App : Application
         services.AddSingleton<PerformanceMonitorService>();
         services.AddSingleton<SmtcService>();
         services.AddSingleton<GameHistoryService>();
+        services.AddSingleton<FriendNotificationService>();
 
         services.AddTransient<ThemeViewModel>();
         services.AddTransient<StatsViewModel>();

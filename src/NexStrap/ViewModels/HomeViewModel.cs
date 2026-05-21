@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NexStrap.Core.Models;
 using NexStrap.Core.Services;
+using NexStrap.Services;
 
 namespace NexStrap.ViewModels;
 
@@ -18,6 +19,7 @@ public partial class HomeViewModel : ViewModelBase
     private readonly RobloxLogWatcher _logWatcher;
     private readonly RobloxApiService _robloxApi;
     private readonly GameHistoryService _history;
+    private readonly FriendNotificationService _friendNotifications;
 
     private CancellationTokenSource? _launchFallbackCts;
     private bool      _gameDetected;
@@ -50,18 +52,21 @@ public partial class HomeViewModel : ViewModelBase
         DiscordRpcService discord,
         RobloxLogWatcher logWatcher,
         RobloxApiService robloxApi,
-        GameHistoryService history)
+        GameHistoryService history,
+        FriendNotificationService friendNotifications)
     {
-        _roblox     = roblox;
-        _fastFlags  = fastFlags;
-        _mods       = mods;
-        _settings   = settings;
-        _discord    = discord;
-        _logWatcher = logWatcher;
-        _robloxApi  = robloxApi;
-        _history    = history;
+        _roblox               = roblox;
+        _fastFlags            = fastFlags;
+        _mods                 = mods;
+        _settings             = settings;
+        _discord              = discord;
+        _logWatcher           = logWatcher;
+        _robloxApi            = robloxApi;
+        _history              = history;
+        _friendNotifications  = friendNotifications;
 
         RebuildGameLists();
+        UpdateJumpList();
 
         IsRobloxInstalled = roblox.IsInstalled();
         var versionPath = roblox.RobloxVersionPath;
@@ -83,12 +88,13 @@ public partial class HomeViewModel : ViewModelBase
             });
         };
 
-        // ユーザーID検出 → アバター URL 取得してキャッシュ
+        // ユーザーID検出 → アバター URL 取得してキャッシュ、フレンド通知開始
         _logWatcher.UserIdDetected += async (_, userId) =>
         {
             try
             {
                 _settings.Update(s => s.CachedRobloxUserId = userId);
+                _friendNotifications.Start(userId);
                 _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(userId);
                 if (!IsRobloxRunning && !IsLaunching)
                     _discord.SetPagePresence("ホーム", _userAvatarUrl);
@@ -196,10 +202,11 @@ public partial class HomeViewModel : ViewModelBase
         if (RobloxLogWatcher.IsRobloxRunning())
             IsRobloxRunning = true;
 
-        // 前回セッションのユーザーIDが保存済みならアバターを取得
+        // 前回セッションのユーザーIDが保存済みならアバター取得・フレンド通知開始
         var cachedUserId = _settings.Settings.CachedRobloxUserId;
         if (cachedUserId > 0)
         {
+            _friendNotifications.Start(cachedUserId);
             _ = Task.Run(async () =>
             {
                 _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(cachedUserId);
@@ -372,6 +379,13 @@ public partial class HomeViewModel : ViewModelBase
             if (existing != null) FavoriteGames.Remove(existing);
         }
         _settings.Update(_ => { });
+        UpdateJumpList();
+    }
+
+    private void UpdateJumpList()
+    {
+        try { JumpListService.Update(FavoriteGames.Select(g => (g.PlaceId, g.Name))); }
+        catch { }
     }
 
     // "JP → US Server │ 12 Flags" / "US Server │ 12 Flags" / null

@@ -1,4 +1,6 @@
+using System.Text;
 using Newtonsoft.Json.Linq;
+using NexStrap.Core.Models;
 
 namespace NexStrap.Core.Services;
 
@@ -84,6 +86,37 @@ public class RobloxApiService
             return obj["country"]?.Value<string>();
         }
         catch { return null; }
+    }
+
+    public async Task<List<FriendInfo>> GetFriendsAsync(long userId)
+    {
+        try
+        {
+            var url  = $"https://friends.roblox.com/v1/users/{userId}/friends?userSort=0&limit=100";
+            var json = await Http.GetStringAsync(url);
+            var data = JObject.Parse(json)["data"] as JArray ?? [];
+            return [..data.Select(f => new FriendInfo(
+                f["id"]!.Value<long>(),
+                f["displayName"]?.Value<string>() ?? f["name"]?.Value<string>() ?? "Unknown"))];
+        }
+        catch { return []; }
+    }
+
+    public async Task<List<PresenceInfo>> GetUserPresencesAsync(IList<long> userIds)
+    {
+        try
+        {
+            var body    = new JObject { ["userIds"] = new JArray(userIds.Cast<object>().ToArray()) };
+            var content = new StringContent(body.ToString(), Encoding.UTF8, "application/json");
+            var resp    = await Http.PostAsync("https://presence.roblox.com/v1/presence/users", content);
+            if (!resp.IsSuccessStatusCode) return [];
+            var json = await resp.Content.ReadAsStringAsync();
+            var data = JObject.Parse(json)["userPresences"] as JArray ?? [];
+            return [..data.Select(p => new PresenceInfo(
+                p["userId"]!.Value<long>(),
+                p["userPresenceType"]?.Value<int>() ?? 0))];
+        }
+        catch { return []; }
     }
 
     public async Task<string?> GetUserAvatarHeadshotAsync(long userId)
