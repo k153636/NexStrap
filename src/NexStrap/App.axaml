@@ -5,11 +5,29 @@
              x:Class="NexStrap.App"
              RequestedThemeVariant="Dark">
 
+    <TrayIcon.Icons>
+        <TrayIcons>
+            <TrayIcon Icon="avares://NexStrap/Assets/nexstrap.png"
+                      ToolTipText="NexStrap"
+                      Clicked="OnTrayIconClicked">
+                <TrayIcon.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="NexStrapを表示" Click="OnTrayShowClicked"/>
+                        <NativeMenuItemSeparator/>
+                        <NativeMenuItem Header="終了" Click="OnTrayExitClicked"/>
+                    </NativeMenu>
+                </TrayIcon.Menu>
+            </TrayIcon>
+        </TrayIcons>
+    </TrayIcon.Icons>
+
     <Application.Resources>
         <ResourceDictionary>
             <local:BoolToColorConverter x:Key="BoolToColorConverter"/>
             <local:BoolToStringConverter x:Key="BoolToStringConverter"/>
             <local:IntToZeroConverter x:Key="IntToZeroConverter"/>
+            <local:SecondsToTimeConverter x:Key="SecondsToTimeConverter"/>
+            <local:StringToImageConverter x:Key="StringToImageConverter"/>
 
             <!-- Black/White palette -->
             <SolidColorBrush x:Key="BgBrush"        Color="#080808"/>
@@ -20,6 +38,13 @@
             <SolidColorBrush x:Key="SubtextBrush"   Color="#888888"/>
             <SolidColorBrush x:Key="TextBrush"      Color="#CCCCCC"/>
             <SolidColorBrush x:Key="FgBrush"        Color="#FFFFFF"/>
+
+            <!-- Glass-switchable card brushes (updated in code when glass theme toggles) -->
+            <SolidColorBrush x:Key="CardBg"     Color="#111111"/>
+            <SolidColorBrush x:Key="SurfaceBg"  Color="#141414"/>
+            <SolidColorBrush x:Key="ElevatedBg" Color="#202020"/>
+            <SolidColorBrush x:Key="OverlayBg"  Color="#1A1A1A"/>
+            <SolidColorBrush x:Key="InputBg"    Color="#0D0D0D"/>
 
             <!-- SVG path data (StreamGeometry — PathIcon.Data requires Geometry, not string) -->
             <StreamGeometry x:Key="IconHome">M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z</StreamGeometry>

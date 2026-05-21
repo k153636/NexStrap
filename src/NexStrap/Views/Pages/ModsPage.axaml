@@ -4,7 +4,7 @@
              xmlns:models="using:NexStrap.Core.Models"
              x:Class="NexStrap.Views.Pages.ModsPage"
              x:DataType="vm:ModsViewModel"
-             Background="#080808">
+             Background="Transparent">
 
     <Grid RowDefinitions="Auto,Auto,*">
 
@@ -22,7 +22,7 @@
             <Button Content="全 Mod を適用"
                     Command="{Binding ApplyModsCommand}"
                     IsEnabled="{Binding !IsLoading}"
-                    Background="#141414" Foreground="#FFFFFF"
+                    Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF"
                     FontSize="12" Padding="14,8" CornerRadius="10"/>
             <TextBlock Text="{Binding StatusMessage}" Foreground="#888888" FontSize="12"
                        VerticalAlignment="Center"
@@ -40,9 +40,9 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="models:Mod">
                         <Border Width="185" Margin="0,0,12,12"
-                                Background="#141414" CornerRadius="14" Padding="14">
+                                Background="{DynamicResource SurfaceBg}" CornerRadius="14" Padding="14">
                             <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
-                                <Border Grid.Row="0" Background="#202020" CornerRadius="8"
+                                <Border Grid.Row="0" Background="{DynamicResource ElevatedBg}" CornerRadius="8"
                                         Padding="8,4" HorizontalAlignment="Left">
                                     <TextBlock Text="{Binding TypeLabel}" FontSize="11" Foreground="#888888"/>
                                 </Border>
