@@ -5,6 +5,13 @@ namespace NexStrap.Core.Services;
 
 public class ModService
 {
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".png", ".jpg", ".jpeg", ".dds", ".bmp", ".tga",
+        ".ogg", ".mp3", ".wav", ".flac",
+        ".ttf", ".otf"
+    };
+
     private readonly RobloxService _robloxService;
     private readonly string _modsDirectory;
     private List<Mod> _mods = new();
@@ -41,9 +48,27 @@ public class ModService
         ModsChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    private static void ValidateModFiles(string path)
+    {
+        var files = Directory.Exists(path)
+            ? Directory.GetFiles(path, "*", SearchOption.AllDirectories)
+            : new[] { path };
+
+        foreach (var file in files)
+        {
+            var ext = Path.GetExtension(file);
+            if (string.IsNullOrEmpty(ext)) continue;
+            if (!AllowedExtensions.Contains(ext))
+                throw new InvalidOperationException(
+                    $"許可されていないファイル形式です: {Path.GetFileName(file)}\n" +
+                    $"使用可能な形式: テクスチャ (.png .jpg .dds .bmp), サウンド (.ogg .mp3 .wav), フォント (.ttf .otf)");
+        }
+    }
+
     public async Task<Mod?> ImportModAsync(string sourcePath)
     {
         if (!Directory.Exists(sourcePath) && !File.Exists(sourcePath)) return null;
+        ValidateModFiles(sourcePath);
 
         var isDir = Directory.Exists(sourcePath);
         var name = Path.GetFileNameWithoutExtension(sourcePath);
@@ -122,10 +147,9 @@ public class ModService
         var ext = Path.GetExtension(path).ToLower();
         return ext switch
         {
-            ".png" or ".jpg" or ".jpeg" or ".dds" => ModType.Texture,
-            ".ogg" or ".mp3" or ".wav" => ModType.Sound,
+            ".png" or ".jpg" or ".jpeg" or ".dds" or ".bmp" or ".tga" => ModType.Texture,
+            ".ogg" or ".mp3" or ".wav" or ".flac" => ModType.Sound,
             ".ttf" or ".otf" => ModType.Font,
-            ".lua" or ".luau" => ModType.Script,
             _ => ModType.Other
         };
     }

@@ -5,7 +5,6 @@ public enum ModType
     Texture,
     Sound,
     Font,
-    Script,
     Other
 }
 
@@ -27,7 +26,6 @@ public class Mod
         ModType.Texture => "テクスチャ",
         ModType.Sound => "サウンド",
         ModType.Font => "フォント",
-        ModType.Script => "スクリプト",
         _ => "その他"
     };
 }
