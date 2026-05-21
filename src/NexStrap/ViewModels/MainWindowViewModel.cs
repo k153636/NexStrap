@@ -56,7 +56,6 @@ public partial class MainWindowViewModel : ViewModelBase
         DevVM = devVM;
         _currentPage = homeVM;
 
-        browserVM.IsGameActive = () => homeVM.IsRobloxRunning;
 
         var appId = env.Get("DISCORD_APP_ID");
         IsDiscordAppIdMissing = appId == null;
@@ -135,19 +134,20 @@ public partial class MainWindowViewModel : ViewModelBase
             _           => HomeVM
         };
 
-        var pageName = page switch
+        // ブラウザはDiscordプレゼンスを更新しない、ゲームプレイ中も上書きしない
+        if (page != "Browser" && !HomeVM.IsRobloxRunning)
         {
-            "Home"      => "ホーム",
-            "FastFlags" => "Fast Flags",
-            "Mods"      => "Mods",
-            "Browser"   => "ブラウザ",
-            "Theme"     => "テーマ",
-            "Stats"     => "統計",
-            "Settings"  => "設定",
-            _           => "ホーム"
-        };
-        // ゲームプレイ中はページ遷移で Discord の in-game 表示を上書きしない
-        if (!HomeVM.IsRobloxRunning)
+            var pageName = page switch
+            {
+                "Home"      => "ホーム",
+                "FastFlags" => "Fast Flags",
+                "Mods"      => "Mods",
+                "Theme"     => "テーマ",
+                "Stats"     => "統計",
+                "Settings"  => "設定",
+                _           => "ホーム"
+            };
             _discord.SetPagePresence(pageName, HomeVM.UserAvatarUrl);
+        }
     }
 }

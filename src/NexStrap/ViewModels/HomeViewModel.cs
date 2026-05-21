@@ -103,7 +103,7 @@ public partial class HomeViewModel : ViewModelBase
             {
                 _currentServerCode = await _robloxApi.GetServerCountryCodeAsync(ip);
                 if (_gameDetected && _lastGameName != null)
-                    _discord.SetInGamePresence(_lastGameName, _lastGameIconUrl, _userAvatarUrl, FormatServer(), _lastGameCreator);
+                    _discord.SetInGamePresence(_lastGameName, _lastGameIconUrl, _userAvatarUrl, FormatServer(), _lastGameCreator, _lastPlaceId);
             }
             catch { }
         };
@@ -126,7 +126,7 @@ public partial class HomeViewModel : ViewModelBase
                 _lastGameName    = name;
                 _lastGameIconUrl = iconUrl;
                 _lastGameCreator = creator;
-                _discord.SetInGamePresence(name, iconUrl, _userAvatarUrl, FormatServer(), creator);
+                _discord.SetInGamePresence(name, iconUrl, _userAvatarUrl, FormatServer(), creator, placeId);
 
                 // 履歴に追加
                 var entry = new GameHistoryEntry { PlaceId = placeId, Name = name, IconUrl = iconUrl, PlayedAt = DateTime.Now };

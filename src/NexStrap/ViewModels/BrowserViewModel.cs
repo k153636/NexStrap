@@ -6,20 +6,17 @@ namespace NexStrap.ViewModels;
 
 public partial class BrowserViewModel : ViewModelBase
 {
-    private readonly DiscordRpcService _discord;
     private readonly RobloxApiService _robloxApi;
 
     public string? UserAvatarUrl { get; set; }
-    public Func<bool> IsGameActive { get; set; } = () => false;
 
     [ObservableProperty] private string _currentSiteLabel = string.Empty;
 
     private static readonly Regex RobloxGamePattern =
         new(@"roblox\.com/games/(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    public BrowserViewModel(DiscordRpcService discord, RobloxApiService robloxApi)
+    public BrowserViewModel(RobloxApiService robloxApi)
     {
-        _discord = discord;
         _robloxApi = robloxApi;
     }
 
@@ -30,24 +27,17 @@ public partial class BrowserViewModel : ViewModelBase
         {
             try
             {
-                var (name, iconUrl, _) = await _robloxApi.GetGameInfoAsync(placeId);
+                var (name, _, _) = await _robloxApi.GetGameInfoAsync(placeId);
                 CurrentSiteLabel = name;
-                if (!IsGameActive())
-                    _discord.SetBrowsingGamePresence(name, iconUrl, UserAvatarUrl);
             }
             catch
             {
                 CurrentSiteLabel = "roblox.com";
-                if (!IsGameActive())
-                    _discord.SetBrowsingPresence("roblox.com", UserAvatarUrl);
             }
         }
         else
         {
-            var domain = ExtractDomain(url);
-            CurrentSiteLabel = domain;
-            if (!IsGameActive())
-                _discord.SetBrowsingPresence(domain, UserAvatarUrl);
+            CurrentSiteLabel = ExtractDomain(url);
         }
     }
 

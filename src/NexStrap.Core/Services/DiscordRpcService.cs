@@ -76,32 +76,6 @@ public class DiscordRpcService : IDisposable
         );
     }
 
-    // ブラウザでRobloxゲームページを閲覧中
-    public void SetBrowsingGamePresence(string gameName, string? gameIconUrl, string? userAvatarUrl = null)
-    {
-        SetPresence(
-            details: "ゲームページを閲覧中",
-            state: gameName,
-            largeImage: gameIconUrl ?? "nexstrap",
-            largeText: "Roblox.com",
-            smallImage: userAvatarUrl,
-            smallText: userAvatarUrl != null ? "プロフィール" : null
-        );
-    }
-
-    // ブラウザでその他サイトを閲覧中
-    public void SetBrowsingPresence(string domain, string? userAvatarUrl = null)
-    {
-        SetPresence(
-            details: "ブラウザで閲覧中",
-            state: domain,
-            largeImage: "nexstrap",
-            largeText: "NexStrap",
-            smallImage: userAvatarUrl,
-            smallText: userAvatarUrl != null ? "プロフィール" : null
-        );
-    }
-
     // ホーム・ページ切り替え時 — NexStrapアイコンが大、アバターが小
     public void SetPagePresence(string pageName, string? userAvatarUrl = null, string prefix = "NexStrap")
     {
@@ -116,15 +90,20 @@ public class DiscordRpcService : IDisposable
     }
 
     // ゲームプレイ中 — マップアイコンが大、アバターが右下に小さく
-    public void SetInGamePresence(string gameName, string? gameIconUrl = null, string? userAvatarUrl = null, string? state = null, string? creator = null)
+    public void SetInGamePresence(string gameName, string? gameIconUrl = null, string? userAvatarUrl = null, string? state = null, string? creator = null, long placeId = 0)
     {
+        var buttons = placeId > 0
+            ? new Button[] { new() { Label = "Join Game", Url = $"https://www.roblox.com/games/{placeId}" } }
+            : null;
+
         SetPresence(
             details: creator != null ? $"{gameName}・by {creator}" : gameName,
             state: state,
             largeImage: gameIconUrl ?? "roblox_logo1",
             largeText: "Roblox",
             smallImage: userAvatarUrl,
-            smallText: userAvatarUrl != null ? "プロフィール" : null
+            smallText: userAvatarUrl != null ? "プロフィール" : null,
+            buttons: buttons
         );
     }
 
@@ -155,7 +134,7 @@ public class DiscordRpcService : IDisposable
     }
 
     private void SetPresence(string details, string? state, string largeImage, string largeText,
-        string? smallImage, string? smallText)
+        string? smallImage, string? smallText, Button[]? buttons = null)
     {
         var presence = new RichPresence
         {
@@ -168,7 +147,8 @@ public class DiscordRpcService : IDisposable
                 SmallImageKey  = smallImage,
                 SmallImageText = smallText
             },
-            Timestamps = _startTimestamp
+            Timestamps = _startTimestamp,
+            Buttons    = buttons
         };
 
         lock (_lock)
