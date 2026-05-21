@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NexStrap.ViewModels"
+             x:Class="NexStrap.Views.Pages.StatsPage"
+             x:DataType="vm:StatsViewModel"
+             Background="Transparent">
+
+    <ScrollViewer>
+        <StackPanel Spacing="10" Margin="24,20">
+
+            <TextBlock Text="統計" FontSize="22" FontWeight="Bold"
+                       Foreground="#FFFFFF" Margin="0,0,0,2"/>
+
+            <!-- Summary cards -->
+            <Grid ColumnDefinitions="*,8,*,8,*">
+
+                <!-- 総プレイ時間 -->
+                <Border Grid.Column="0" Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="総プレイ時間" FontSize="11" Foreground="#505050"/>
+                        <TextBlock Text="{Binding TotalPlayTime}" FontSize="22"
+                                   FontWeight="Bold" Foreground="#FFFFFF"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- プレイ回数 -->
+                <Border Grid.Column="2" Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="プレイ回数" FontSize="11" Foreground="#505050"/>
+                        <TextBlock Text="{Binding TotalSessions}" FontSize="22"
+                                   FontWeight="Bold" Foreground="#FFFFFF"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 最多プレイ -->
+                <Border Grid.Column="4" Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="最多プレイ" FontSize="11" Foreground="#505050"/>
+                        <TextBlock Text="{Binding TopGameName}" FontSize="13"
+                                   FontWeight="SemiBold" Foreground="#FFFFFF"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding TopGameTime}" FontSize="11"
+                                   Foreground="#505050"/>
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+
+            <!-- Divider + section label -->
+            <Border Height="1" Background="{DynamicResource SurfaceBg}" Margin="0,4,0,0"/>
+            <TextBlock Text="ゲーム別" FontSize="11" FontWeight="SemiBold"
+                       Foreground="#444444" Margin="0,0,0,2"/>
+
+            <!-- Empty state -->
+            <TextBlock Text="プレイ履歴がありません" FontSize="12" Foreground="#2E2E2E"
+                       HorizontalAlignment="Center" Margin="0,24,0,0"
+                       IsVisible="{Binding GameStats.Count,
+                           Converter={StaticResource IntToZeroConverter}}"/>
+
+            <!-- Per-game list -->
+            <ItemsControl ItemsSource="{Binding GameStats}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:GameStat">
+                        <Border Background="{DynamicResource CardBg}" CornerRadius="10" Padding="12,10"
+                                Margin="0,0,0,6">
+                            <Grid ColumnDefinitions="36,*,Auto">
+                                <!-- Icon -->
+                                <Border Grid.Column="0" Width="36" Height="36"
+                                        CornerRadius="8" ClipToBounds="True"
+                                        Background="{DynamicResource OverlayBg}">
+                                    <Image Source="{Binding Icon}" Stretch="UniformToFill"/>
+                                </Border>
+                                <!-- Info -->
+                                <StackPanel Grid.Column="1" Spacing="3" Margin="10,0">
+                                    <TextBlock Text="{Binding Name}" FontSize="13"
+                                               FontWeight="SemiBold" Foreground="#FFFFFF"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding Sessions, StringFormat='{}{0}回'}"
+                                                   FontSize="11" Foreground="#444444"/>
+                                        <TextBlock Text="{Binding LastPlayedText}"
+                                                   FontSize="11" Foreground="#444444"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <!-- Total time -->
+                                <TextBlock Grid.Column="2" Text="{Binding TotalTimeText}"
+                                           FontSize="13" FontWeight="SemiBold"
+                                           Foreground="#888888" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+        </StackPanel>
+    </ScrollViewer>
+
+</UserControl>
