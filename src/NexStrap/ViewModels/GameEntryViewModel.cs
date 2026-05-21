@@ -17,6 +17,7 @@ public partial class GameEntryViewModel : ViewModelBase
     public int      DurationSeconds => Entry.DurationSeconds;
 
     [ObservableProperty] private Bitmap? _icon;
+    [ObservableProperty] private bool _isFavorite;
 
     public GameEntryViewModel(GameHistoryEntry entry)
     {

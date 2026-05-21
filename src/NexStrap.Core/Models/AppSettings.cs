@@ -21,4 +21,5 @@ public class AppSettings
     public string BackgroundImagePath { get; set; } = string.Empty;
     public double BackgroundBlurRadius { get; set; } = 18.0;
     public double BackgroundImageOpacity { get; set; } = 0.85;
+    public List<long> FavoriteGameIds { get; set; } = [];
 }
