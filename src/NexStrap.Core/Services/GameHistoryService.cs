@@ -5,7 +5,7 @@ namespace NexStrap.Core.Services;
 
 public class GameHistoryService
 {
-    private const int MaxEntries = 20;
+    private const int MaxEntries = 500;
 
     private readonly string _path;
     private readonly List<GameHistoryEntry> _entries;
@@ -24,7 +24,6 @@ public class GameHistoryService
 
     public void Add(GameHistoryEntry entry)
     {
-        _entries.RemoveAll(e => e.PlaceId == entry.PlaceId);
         _entries.Insert(0, entry);
         if (_entries.Count > MaxEntries)
             _entries.RemoveRange(MaxEntries, _entries.Count - MaxEntries);
