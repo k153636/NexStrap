@@ -18,6 +18,7 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private bool _minimizeToTray;
     [ObservableProperty] private bool _hotReloadEnabled;
     [ObservableProperty] private bool _fpsUnlockEnabled;
+    [ObservableProperty] private bool _multiThreadingEnabled;
     [ObservableProperty] private int _targetFps;
     [ObservableProperty] private string _browserHomepage = string.Empty;
     [ObservableProperty] private string _statusMessage = string.Empty;
@@ -36,6 +37,7 @@ public partial class SettingsViewModel : ViewModelBase
         _minimizeToTray = s.MinimizeToTray;
         _hotReloadEnabled = s.HotReloadEnabled;
         _fpsUnlockEnabled = s.FpsUnlockEnabled;
+        _multiThreadingEnabled = s.MultiThreadingEnabled;
         _targetFps = s.TargetFps;
         _browserHomepage = s.BrowserHomepage;
     }
@@ -63,6 +65,7 @@ public partial class SettingsViewModel : ViewModelBase
             s.MinimizeToTray = MinimizeToTray;
             s.HotReloadEnabled = HotReloadEnabled;
             s.FpsUnlockEnabled = FpsUnlockEnabled;
+            s.MultiThreadingEnabled = MultiThreadingEnabled;
             s.TargetFps = TargetFps;
             s.BrowserHomepage = BrowserHomepage;
         });
@@ -79,6 +82,7 @@ public partial class SettingsViewModel : ViewModelBase
         MinimizeToTray = defaults.MinimizeToTray;
         HotReloadEnabled = defaults.HotReloadEnabled;
         FpsUnlockEnabled = defaults.FpsUnlockEnabled;
+        MultiThreadingEnabled = defaults.MultiThreadingEnabled;
         TargetFps = defaults.TargetFps;
         BrowserHomepage = defaults.BrowserHomepage;
         Save();

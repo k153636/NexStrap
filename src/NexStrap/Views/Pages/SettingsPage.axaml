@@ -3,7 +3,7 @@
              xmlns:vm="using:NexStrap.ViewModels"
              x:Class="NexStrap.Views.Pages.SettingsPage"
              x:DataType="vm:SettingsViewModel"
-             Background="#080808">
+             Background="Transparent">
 
     <ScrollViewer>
         <StackPanel Spacing="10" Margin="24,20">
@@ -12,19 +12,19 @@
                        Foreground="#FFFFFF" Margin="0,0,0,2"/>
 
             <!-- Discord -->
-            <Border Background="#111111" CornerRadius="12" Padding="16,12">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
                 <StackPanel Spacing="12">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="Discord" FontSize="12" FontWeight="SemiBold"
                                    Foreground="#666666" VerticalAlignment="Center"/>
-                        <Border CornerRadius="8" Padding="8,3" Background="#1A1A1A">
+                        <Border CornerRadius="8" Padding="8,3" Background="{DynamicResource OverlayBg}">
                             <TextBlock FontSize="11"
                                        Text="{Binding DiscordAppIdConfigured, Converter={StaticResource BoolToStringConverter}, ConverterParameter='設定済み,未設定'}"
                                        Foreground="{Binding DiscordAppIdConfigured, Converter={StaticResource BoolToStringConverter}, ConverterParameter='#4ADE80,#505050'}"/>
                         </Border>
                     </StackPanel>
 
-                    <Border Background="#1A1A1A" CornerRadius="10" Padding="14,10"
+                    <Border Background="{DynamicResource OverlayBg}" CornerRadius="10" Padding="14,10"
                             IsVisible="{Binding !DiscordAppIdConfigured}">
                         <StackPanel Spacing="6">
                             <TextBlock Text="DISCORD_APP_ID が未設定です"
@@ -51,30 +51,29 @@
             </Border>
 
             <!-- Performance -->
-            <Border Background="#111111" CornerRadius="12" Padding="16,12">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
                 <StackPanel Spacing="12">
                     <TextBlock Text="パフォーマンス" FontSize="12" FontWeight="SemiBold"
                                Foreground="#666666"/>
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="FPS アンロック" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="DFIntTaskSchedulerTargetFps を自動設定"
+                            <TextBlock Text="FPS アンロック（無制限）" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="DFIntTaskSchedulerTargetFps=9999 を自動設定"
                                        Foreground="#505050" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding FpsUnlockEnabled}"
                                       OnContent="ON" OffContent="OFF"/>
                     </Grid>
 
-                    <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding FpsUnlockEnabled}">
-                        <TextBlock Grid.Column="0" Text="FPS 上限" Foreground="#666666"
-                                   VerticalAlignment="Center" Margin="0,0,14,0" FontSize="12"/>
-                        <Slider Grid.Column="1" Minimum="30" Maximum="360"
-                                Value="{Binding TargetFps}" TickFrequency="30"
-                                IsSnapToTickEnabled="True"/>
-                        <TextBlock Grid.Column="2" Text="{Binding TargetFps}"
-                                   Foreground="#FFFFFF" FontWeight="SemiBold" Width="36"
-                                   VerticalAlignment="Center" Margin="10,0" FontSize="13"/>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="マルチスレッド" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="タスクスケジューラーを全 CPU スレッドで動作させる"
+                                       Foreground="#505050" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding MultiThreadingEnabled}"
+                                      OnContent="ON" OffContent="OFF"/>
                     </Grid>
 
                     <Grid ColumnDefinitions="*,Auto">
@@ -90,7 +89,7 @@
             </Border>
 
             <!-- Roblox -->
-            <Border Background="#111111" CornerRadius="12" Padding="16,12">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Roblox" FontSize="12" FontWeight="SemiBold"
                                Foreground="#666666"/>
@@ -118,7 +117,7 @@
             </Border>
 
             <!-- App -->
-            <Border Background="#111111" CornerRadius="12" Padding="16,12">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
                 <StackPanel Spacing="12">
                     <TextBlock Text="アプリ" FontSize="12" FontWeight="SemiBold"
                                Foreground="#666666"/>
@@ -147,7 +146,7 @@
             <Grid ColumnDefinitions="*,10,Auto" Margin="0,4,0,0">
                 <Button Grid.Column="0" Content="デフォルトに戻す"
                         Command="{Binding ResetToDefaultsCommand}"
-                        Background="#111111" Foreground="#505050" FontSize="12"
+                        Background="{DynamicResource CardBg}" Foreground="#505050" FontSize="12"
                         Padding="14,8" CornerRadius="10" HorizontalAlignment="Left"/>
                 <Button Grid.Column="2" Content="保存"
                         Command="{Binding SaveCommand}"
