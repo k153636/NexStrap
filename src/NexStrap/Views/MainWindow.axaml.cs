@@ -35,13 +35,14 @@ public partial class MainWindow : Window
         };
     }
 
-    private void OnKeyDown(object? sender, KeyEventArgs e)
+    private async void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        // Ctrl+Shift+Alt+K → 作者専用開発者ページ
         if (e.Key == Key.K &&
             e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift | KeyModifiers.Alt))
         {
-            if (DataContext is MainWindowViewModel vm)
+            var dialog = new PasswordDialog();
+            await dialog.ShowDialog(this);
+            if (dialog.Authenticated && DataContext is MainWindowViewModel vm)
                 vm.NavigateToCommand.Execute("Dev");
         }
     }
