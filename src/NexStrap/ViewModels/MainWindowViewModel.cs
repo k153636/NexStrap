@@ -25,6 +25,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public BrowserViewModel BrowserVM { get; }
     public ThemeViewModel ThemeVM { get; }
     public StatsViewModel StatsVM { get; }
+    public DevViewModel DevVM { get; }
 
     public MainWindowViewModel(
         DiscordRpcService discord,
@@ -37,7 +38,8 @@ public partial class MainWindowViewModel : ViewModelBase
         SettingsViewModel settingsVM,
         BrowserViewModel browserVM,
         ThemeViewModel themeVM,
-        StatsViewModel statsVM)
+        StatsViewModel statsVM,
+        DevViewModel devVM)
     {
         _discord = discord;
         _settings = settings;
@@ -51,6 +53,7 @@ public partial class MainWindowViewModel : ViewModelBase
         BrowserVM = browserVM;
         ThemeVM = themeVM;
         StatsVM = statsVM;
+        DevVM = devVM;
         _currentPage = homeVM;
 
         browserVM.IsGameActive = () => homeVM.IsRobloxRunning;
@@ -111,6 +114,14 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (page == "Stats")
             StatsVM.Refresh();
+
+        if (page == "Dev")
+        {
+            DevVM.Refresh();
+            CurrentPage = DevVM;
+            _discord.SetDevPresence();
+            return;
+        }
 
         CurrentPage = page switch
         {

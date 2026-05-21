@@ -73,6 +73,7 @@ public partial class App : Application
 
         services.AddTransient<ThemeViewModel>();
         services.AddTransient<StatsViewModel>();
+        services.AddTransient<DevViewModel>();
         services.AddTransient<MainWindowViewModel>();
         services.AddTransient<HomeViewModel>();
         services.AddTransient<FastFlagsViewModel>();

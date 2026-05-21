@@ -128,6 +128,19 @@ public class DiscordRpcService : IDisposable
         );
     }
 
+    // 作者専用開発者ページ
+    public void SetDevPresence()
+    {
+        SetPresence(
+            details: "開発者モード",
+            state: "NexStrap 内部ツール",
+            largeImage: "nexstrap",
+            largeText: "NexStrap Developer",
+            smallImage: null,
+            smallText: null
+        );
+    }
+
     // 起動中 — Robloxロゴが大、アバターが小
     public void SetLaunchingPresence(string? userAvatarUrl = null)
     {

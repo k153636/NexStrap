@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.VisualTree;
@@ -19,6 +20,7 @@ public partial class MainWindow : Window
             NavView.SelectedItem = first;
 
         DataContextChanged += (_, _) => WireGlassTheme();
+        KeyDown += OnKeyDown;
 
         NavView.TemplateApplied += (_, _) =>
         {
@@ -31,6 +33,17 @@ public partial class MainWindow : Window
             if (DataContext is MainWindowViewModel vm)
                 ApplyGlassTheme(vm.ThemeVM.GlassThemeEnabled);
         };
+    }
+
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        // Ctrl+Shift+Alt+K → 作者専用開発者ページ
+        if (e.Key == Key.K &&
+            e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift | KeyModifiers.Alt))
+        {
+            if (DataContext is MainWindowViewModel vm)
+                vm.NavigateToCommand.Execute("Dev");
+        }
     }
 
     private void WireGlassTheme()

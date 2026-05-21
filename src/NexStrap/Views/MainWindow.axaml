@@ -130,6 +130,9 @@
                         <DataTemplate DataType="vm:StatsViewModel">
                             <pages:StatsPage/>
                         </DataTemplate>
+                        <DataTemplate DataType="vm:DevViewModel">
+                            <pages:DevPage/>
+                        </DataTemplate>
                     </TransitioningContentControl.DataTemplates>
                 </TransitioningContentControl>
             </Border>
