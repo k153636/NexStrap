@@ -22,4 +22,5 @@ public class AppSettings
     public double BackgroundBlurRadius { get; set; } = 18.0;
     public double BackgroundImageOpacity { get; set; } = 0.85;
     public List<long> FavoriteGameIds { get; set; } = [];
+    public string GlassAccentColor { get; set; } = "#FFFFFF";
 }

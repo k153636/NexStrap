@@ -28,6 +28,110 @@
                                       OnContent="" OffContent=""
                                       VerticalAlignment="Center"/>
                     </Grid>
+
+                    <!-- UIカラー (Glass有効時のみ表示) -->
+                    <StackPanel Spacing="8" IsVisible="{Binding GlassThemeEnabled}">
+                        <TextBlock Text="UIカラー" FontSize="11" Foreground="#444444"/>
+                        <WrapPanel Orientation="Horizontal">
+
+                            <!-- White -->
+                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                                    BorderThickness="2"
+                                    BorderBrush="{Binding IsAccentWhite,
+                                        Converter={StaticResource BoolToColorConverter},
+                                        ConverterParameter='#FFFFFF,Transparent'}">
+                                <Button Command="{Binding SetAccentColorCommand}"
+                                        CommandParameter="#FFFFFF"
+                                        Width="28" Height="28" CornerRadius="18"
+                                        Background="#FFFFFF" Padding="0"/>
+                            </Border>
+
+                            <!-- Blue -->
+                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                                    BorderThickness="2"
+                                    BorderBrush="{Binding IsAccentBlue,
+                                        Converter={StaticResource BoolToColorConverter},
+                                        ConverterParameter='#6EA8FF,Transparent'}">
+                                <Button Command="{Binding SetAccentColorCommand}"
+                                        CommandParameter="#6EA8FF"
+                                        Width="28" Height="28" CornerRadius="18"
+                                        Background="#6EA8FF" Padding="0"/>
+                            </Border>
+
+                            <!-- Purple -->
+                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                                    BorderThickness="2"
+                                    BorderBrush="{Binding IsAccentPurple,
+                                        Converter={StaticResource BoolToColorConverter},
+                                        ConverterParameter='#B470FF,Transparent'}">
+                                <Button Command="{Binding SetAccentColorCommand}"
+                                        CommandParameter="#B470FF"
+                                        Width="28" Height="28" CornerRadius="18"
+                                        Background="#B470FF" Padding="0"/>
+                            </Border>
+
+                            <!-- Pink -->
+                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                                    BorderThickness="2"
+                                    BorderBrush="{Binding IsAccentPink,
+                                        Converter={StaticResource BoolToColorConverter},
+                                        ConverterParameter='#FF70A6,Transparent'}">
+                                <Button Command="{Binding SetAccentColorCommand}"
+                                        CommandParameter="#FF70A6"
+                                        Width="28" Height="28" CornerRadius="18"
+                                        Background="#FF70A6" Padding="0"/>
+                            </Border>
+
+                            <!-- Green -->
+                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                                    BorderThickness="2"
+                                    BorderBrush="{Binding IsAccentGreen,
+                                        Converter={StaticResource BoolToColorConverter},
+                                        ConverterParameter='#4ADE80,Transparent'}">
+                                <Button Command="{Binding SetAccentColorCommand}"
+                                        CommandParameter="#4ADE80"
+                                        Width="28" Height="28" CornerRadius="18"
+                                        Background="#4ADE80" Padding="0"/>
+                            </Border>
+
+                            <!-- Orange -->
+                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                                    BorderThickness="2"
+                                    BorderBrush="{Binding IsAccentOrange,
+                                        Converter={StaticResource BoolToColorConverter},
+                                        ConverterParameter='#FFAA44,Transparent'}">
+                                <Button Command="{Binding SetAccentColorCommand}"
+                                        CommandParameter="#FFAA44"
+                                        Width="28" Height="28" CornerRadius="18"
+                                        Background="#FFAA44" Padding="0"/>
+                            </Border>
+
+                            <!-- Cyan -->
+                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                                    BorderThickness="2"
+                                    BorderBrush="{Binding IsAccentCyan,
+                                        Converter={StaticResource BoolToColorConverter},
+                                        ConverterParameter='#44DFFF,Transparent'}">
+                                <Button Command="{Binding SetAccentColorCommand}"
+                                        CommandParameter="#44DFFF"
+                                        Width="28" Height="28" CornerRadius="18"
+                                        Background="#44DFFF" Padding="0"/>
+                            </Border>
+
+                            <!-- Red -->
+                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                                    BorderThickness="2"
+                                    BorderBrush="{Binding IsAccentRed,
+                                        Converter={StaticResource BoolToColorConverter},
+                                        ConverterParameter='#FF5555,Transparent'}">
+                                <Button Command="{Binding SetAccentColorCommand}"
+                                        CommandParameter="#FF5555"
+                                        Width="28" Height="28" CornerRadius="18"
+                                        Background="#FF5555" Padding="0"/>
+                            </Border>
+
+                        </WrapPanel>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

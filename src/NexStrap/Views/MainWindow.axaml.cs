@@ -53,28 +53,51 @@ public partial class MainWindow : Window
         ApplyGlassTheme(vm.ThemeVM.GlassThemeEnabled);
         vm.ThemeVM.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(ThemeViewModel.GlassThemeEnabled))
+            if (e.PropertyName == nameof(ThemeViewModel.GlassThemeEnabled) ||
+                e.PropertyName == nameof(ThemeViewModel.GlassAccentColor))
                 ApplyGlassTheme(vm.ThemeVM.GlassThemeEnabled);
         };
     }
 
-    private static readonly Dictionary<string, (Color glass, Color solid)> _themeColors = new()
+    private static readonly Dictionary<string, Color> _solidColors = new()
     {
-        ["CardBg"]     = (Color.FromArgb(0x18, 0xFF, 0xFF, 0xFF), Color.Parse("#111111")),
-        ["SurfaceBg"]  = (Color.FromArgb(0x20, 0xFF, 0xFF, 0xFF), Color.Parse("#141414")),
-        ["ElevatedBg"] = (Color.FromArgb(0x2A, 0xFF, 0xFF, 0xFF), Color.Parse("#202020")),
-        ["OverlayBg"]  = (Color.FromArgb(0x24, 0xFF, 0xFF, 0xFF), Color.Parse("#1A1A1A")),
-        ["InputBg"]    = (Color.FromArgb(0x10, 0xFF, 0xFF, 0xFF), Color.Parse("#0D0D0D")),
+        ["CardBg"]     = Color.Parse("#111111"),
+        ["SurfaceBg"]  = Color.Parse("#141414"),
+        ["ElevatedBg"] = Color.Parse("#202020"),
+        ["OverlayBg"]  = Color.Parse("#1A1A1A"),
+        ["InputBg"]    = Color.Parse("#0D0D0D"),
+    };
+
+    private static readonly Dictionary<string, byte> _glassAlphas = new()
+    {
+        ["CardBg"]     = 0x18,
+        ["SurfaceBg"]  = 0x20,
+        ["ElevatedBg"] = 0x2A,
+        ["OverlayBg"]  = 0x24,
+        ["InputBg"]    = 0x10,
     };
 
     private void ApplyGlassTheme(bool glass)
     {
-        // UI 全体のカード背景を切り替え
         var res = Application.Current!.Resources;
-        foreach (var (key, (glassColor, solidColor)) in _themeColors)
-            res[key] = new SolidColorBrush(glass ? glassColor : solidColor);
 
-        // サイドバーペインも半透明化
+        if (glass)
+        {
+            var accentHex = (DataContext as MainWindowViewModel)?.ThemeVM.GlassAccentColor ?? "#FFFFFF";
+            Color accent;
+            try { accent = Color.Parse(accentHex); }
+            catch { accent = Colors.White; }
+            byte r = accent.R, g = accent.G, b = accent.B;
+
+            foreach (var (key, alpha) in _glassAlphas)
+                res[key] = new SolidColorBrush(Color.FromArgb(alpha, r, g, b));
+        }
+        else
+        {
+            foreach (var (key, color) in _solidColors)
+                res[key] = new SolidColorBrush(color);
+        }
+
         var paneBrush = glass
             ? new SolidColorBrush(Color.FromArgb(0x55, 0x0D, 0x0D, 0x0D))
             : new SolidColorBrush(Color.FromArgb(0xFF, 0x14, 0x14, 0x14));

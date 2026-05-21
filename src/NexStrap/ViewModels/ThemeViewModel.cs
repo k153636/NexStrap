@@ -14,6 +14,22 @@ public partial class ThemeViewModel : ViewModelBase
     [ObservableProperty] private string _statusMessage = string.Empty;
     [ObservableProperty] private double _backgroundBlurRadius;
     [ObservableProperty] private double _backgroundImageOpacity;
+    [ObservableProperty] private string _glassAccentColor = "#FFFFFF";
+
+    public static IReadOnlyList<string> AccentColors { get; } =
+    [
+        "#FFFFFF", "#6EA8FF", "#B470FF", "#FF70A6",
+        "#4ADE80", "#FFAA44", "#44DFFF", "#FF5555"
+    ];
+
+    public bool IsAccentWhite  => GlassAccentColor == "#FFFFFF";
+    public bool IsAccentBlue   => GlassAccentColor == "#6EA8FF";
+    public bool IsAccentPurple => GlassAccentColor == "#B470FF";
+    public bool IsAccentPink   => GlassAccentColor == "#FF70A6";
+    public bool IsAccentGreen  => GlassAccentColor == "#4ADE80";
+    public bool IsAccentOrange => GlassAccentColor == "#FFAA44";
+    public bool IsAccentCyan   => GlassAccentColor == "#44DFFF";
+    public bool IsAccentRed    => GlassAccentColor == "#FF5555";
 
     public double BackgroundImageOpacityPercent
     {
@@ -28,10 +44,27 @@ public partial class ThemeViewModel : ViewModelBase
         _backgroundImagePath = settingsService.Settings.BackgroundImagePath;
         _backgroundBlurRadius = settingsService.Settings.BackgroundBlurRadius;
         _backgroundImageOpacity = settingsService.Settings.BackgroundImageOpacity;
+        _glassAccentColor = settingsService.Settings.GlassAccentColor;
     }
 
     partial void OnGlassThemeEnabledChanged(bool value)
         => _settingsService.Update(s => s.GlassThemeEnabled = value);
+
+    partial void OnGlassAccentColorChanged(string value)
+    {
+        _settingsService.Update(s => s.GlassAccentColor = value);
+        OnPropertyChanged(nameof(IsAccentWhite));
+        OnPropertyChanged(nameof(IsAccentBlue));
+        OnPropertyChanged(nameof(IsAccentPurple));
+        OnPropertyChanged(nameof(IsAccentPink));
+        OnPropertyChanged(nameof(IsAccentGreen));
+        OnPropertyChanged(nameof(IsAccentOrange));
+        OnPropertyChanged(nameof(IsAccentCyan));
+        OnPropertyChanged(nameof(IsAccentRed));
+    }
+
+    [RelayCommand]
+    private void SetAccentColor(string color) => GlassAccentColor = color;
 
     partial void OnBackgroundImagePathChanged(string value)
         => _settingsService.Update(s => s.BackgroundImagePath = value);
