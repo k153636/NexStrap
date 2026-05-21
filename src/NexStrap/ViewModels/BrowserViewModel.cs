@@ -10,6 +10,7 @@ public partial class BrowserViewModel : ViewModelBase
     private readonly RobloxApiService _robloxApi;
 
     public string? UserAvatarUrl { get; set; }
+    public Func<bool> IsGameActive { get; set; } = () => false;
 
     [ObservableProperty] private string _currentSiteLabel = string.Empty;
 
@@ -31,19 +32,22 @@ public partial class BrowserViewModel : ViewModelBase
             {
                 var (name, iconUrl, _) = await _robloxApi.GetGameInfoAsync(placeId);
                 CurrentSiteLabel = name;
-                _discord.SetBrowsingGamePresence(name, iconUrl, UserAvatarUrl);
+                if (!IsGameActive())
+                    _discord.SetBrowsingGamePresence(name, iconUrl, UserAvatarUrl);
             }
             catch
             {
                 CurrentSiteLabel = "roblox.com";
-                _discord.SetBrowsingPresence("roblox.com", UserAvatarUrl);
+                if (!IsGameActive())
+                    _discord.SetBrowsingPresence("roblox.com", UserAvatarUrl);
             }
         }
         else
         {
             var domain = ExtractDomain(url);
             CurrentSiteLabel = domain;
-            _discord.SetBrowsingPresence(domain, UserAvatarUrl);
+            if (!IsGameActive())
+                _discord.SetBrowsingPresence(domain, UserAvatarUrl);
         }
     }
 

@@ -33,6 +33,7 @@ public partial class HomeViewModel : ViewModelBase
     private long      _joinSequence;
 
     public ObservableCollection<GameEntryViewModel> RecentGames { get; } = [];
+    public ObservableCollection<GameEntryViewModel> FavoriteGames { get; } = [];
     public string? UserAvatarUrl => _userAvatarUrl;
 
     [ObservableProperty] private bool _isRobloxRunning;
@@ -60,8 +61,7 @@ public partial class HomeViewModel : ViewModelBase
         _robloxApi  = robloxApi;
         _history    = history;
 
-        foreach (var e in history.Entries)
-            RecentGames.Add(new GameEntryViewModel(e));
+        RebuildGameLists();
 
         IsRobloxInstalled = roblox.IsInstalled();
         var versionPath = roblox.RobloxVersionPath;
@@ -139,8 +139,7 @@ public partial class HomeViewModel : ViewModelBase
 
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
-                    RecentGames.Clear();
-                    foreach (var e in _history.Entries) RecentGames.Add(new GameEntryViewModel(e));
+                    RebuildGameLists();
 
                     StatusText      = launchMs.HasValue ? $"起動: {launchMs.Value:F1}秒" : $"プレイ中: {name}";
                     IsRobloxRunning = true;
@@ -172,11 +171,7 @@ public partial class HomeViewModel : ViewModelBase
             {
                 var duration = (int)(DateTime.UtcNow - _gameStartTime.Value).TotalSeconds;
                 _history.UpdateDuration(_lastPlaceId, duration);
-                Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    RecentGames.Clear();
-                    foreach (var e in _history.Entries) RecentGames.Add(new GameEntryViewModel(e));
-                });
+                Dispatcher.UIThread.InvokeAsync(RebuildGameLists);
             }
             _gameStartTime = null;
 
@@ -188,14 +183,18 @@ public partial class HomeViewModel : ViewModelBase
             });
         };
 
-        // Discord 接続時にアバター付きでプレゼンスを設定
+        // Discord 接続時にアバター付きでプレゼンスを設定（ゲーム中は上書きしない）
         _discord.ConnectionChanged += (_, connected) =>
         {
-            if (connected)
+            if (connected && !_gameDetected)
                 _discord.SetPagePresence("ホーム", _userAvatarUrl);
         };
 
         _logWatcher.Start();
+
+        // 起動時にすでに Roblox が動いていれば IsRobloxRunning を立てる
+        if (RobloxLogWatcher.IsRobloxRunning())
+            IsRobloxRunning = true;
 
         // 前回セッションのユーザーIDが保存済みならアバターを取得
         var cachedUserId = _settings.Settings.CachedRobloxUserId;
@@ -204,7 +203,9 @@ public partial class HomeViewModel : ViewModelBase
             _ = Task.Run(async () =>
             {
                 _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(cachedUserId);
-                _discord.SetPagePresence("ホーム", _userAvatarUrl);
+                // ゲームプレイ中・Roblox 起動中は上書きしない
+                if (!IsRobloxRunning && !_gameDetected)
+                    _discord.SetPagePresence("ホーム", _userAvatarUrl);
             });
         }
 
@@ -338,6 +339,39 @@ public partial class HomeViewModel : ViewModelBase
     {
         _launchFallbackCts?.Cancel();
         _launchFallbackCts = null;
+    }
+
+    private void RebuildGameLists()
+    {
+        var favorites = _settings.Settings.FavoriteGameIds.ToHashSet();
+        RecentGames.Clear();
+        FavoriteGames.Clear();
+        foreach (var e in _history.Entries)
+        {
+            var vm = new GameEntryViewModel(e) { IsFavorite = favorites.Contains(e.PlaceId) };
+            RecentGames.Add(vm);
+            if (vm.IsFavorite) FavoriteGames.Add(vm);
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleFavorite(GameEntryViewModel vm)
+    {
+        vm.IsFavorite = !vm.IsFavorite;
+        var ids = _settings.Settings.FavoriteGameIds;
+        if (vm.IsFavorite)
+        {
+            if (!ids.Contains(vm.PlaceId)) ids.Add(vm.PlaceId);
+            if (!FavoriteGames.Any(f => f.PlaceId == vm.PlaceId))
+                FavoriteGames.Insert(0, vm);
+        }
+        else
+        {
+            ids.Remove(vm.PlaceId);
+            var existing = FavoriteGames.FirstOrDefault(f => f.PlaceId == vm.PlaceId);
+            if (existing != null) FavoriteGames.Remove(existing);
+        }
+        _settings.Update(_ => { });
     }
 
     // "JP → US Server │ 12 Flags" / "US Server │ 12 Flags" / null

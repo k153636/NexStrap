@@ -32,9 +32,16 @@ public partial class ModsViewModel : ViewModelBase
     {
         IsLoading = true;
         StatusMessage = "インポート中...";
-        var mod = await _modService.ImportModAsync(folder.Path.LocalPath);
-        StatusMessage = mod != null ? $"{mod.Name} をインポートしました" : "インポートに失敗しました";
-        IsLoading = false;
+        try
+        {
+            var mod = await _modService.ImportModAsync(folder.Path.LocalPath);
+            StatusMessage = mod != null ? $"{mod.Name} をインポートしました" : "インポートに失敗しました";
+        }
+        catch (InvalidOperationException ex)
+        {
+            StatusMessage = ex.Message;
+        }
+        finally { IsLoading = false; }
     }
 
     [RelayCommand]

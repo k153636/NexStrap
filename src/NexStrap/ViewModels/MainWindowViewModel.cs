@@ -53,6 +53,8 @@ public partial class MainWindowViewModel : ViewModelBase
         StatsVM = statsVM;
         _currentPage = homeVM;
 
+        browserVM.IsGameActive = () => homeVM.IsRobloxRunning;
+
         var appId = env.Get("DISCORD_APP_ID");
         IsDiscordAppIdMissing = appId == null;
 
