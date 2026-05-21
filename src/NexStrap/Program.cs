@@ -13,6 +13,9 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        using var mutex = new Mutex(true, "NexStrap_SingleInstance", out bool createdNew);
+        if (!createdNew) return;
+
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
             WriteCrashLog("UnhandledException", e.ExceptionObject as Exception);
 
