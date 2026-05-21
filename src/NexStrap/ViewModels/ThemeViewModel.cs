@@ -1,3 +1,4 @@
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -15,6 +16,9 @@ public partial class ThemeViewModel : ViewModelBase
     [ObservableProperty] private double _backgroundBlurRadius;
     [ObservableProperty] private double _backgroundImageOpacity;
     [ObservableProperty] private string _glassAccentColor = "#FFFFFF";
+    [ObservableProperty] private Color _glassAccentColorValue = Colors.White;
+
+    private bool _syncingColor;
 
     public static IReadOnlyList<string> AccentColors { get; } =
     [
@@ -45,6 +49,7 @@ public partial class ThemeViewModel : ViewModelBase
         _backgroundBlurRadius = settingsService.Settings.BackgroundBlurRadius;
         _backgroundImageOpacity = settingsService.Settings.BackgroundImageOpacity;
         _glassAccentColor = settingsService.Settings.GlassAccentColor;
+        try { _glassAccentColorValue = Color.Parse(_glassAccentColor); } catch { }
     }
 
     partial void OnGlassThemeEnabledChanged(bool value)
@@ -61,6 +66,23 @@ public partial class ThemeViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsAccentOrange));
         OnPropertyChanged(nameof(IsAccentCyan));
         OnPropertyChanged(nameof(IsAccentRed));
+
+        if (!_syncingColor)
+        {
+            _syncingColor = true;
+            try { GlassAccentColorValue = Color.Parse(value); } catch { }
+            _syncingColor = false;
+        }
+    }
+
+    partial void OnGlassAccentColorValueChanged(Color value)
+    {
+        if (!_syncingColor)
+        {
+            _syncingColor = true;
+            GlassAccentColor = $"#{value.R:X2}{value.G:X2}{value.B:X2}";
+            _syncingColor = false;
+        }
     }
 
     [RelayCommand]

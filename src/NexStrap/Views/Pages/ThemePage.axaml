@@ -30,7 +30,7 @@
                     </Grid>
 
                     <!-- UIカラー (Glass有効時のみ表示) -->
-                    <StackPanel Spacing="8" IsVisible="{Binding GlassThemeEnabled}">
+                    <StackPanel Spacing="10" IsVisible="{Binding GlassThemeEnabled}">
                         <TextBlock Text="UIカラー" FontSize="11" Foreground="#444444"/>
                         <WrapPanel Orientation="Horizontal">
 
@@ -131,6 +131,11 @@
                             </Border>
 
                         </WrapPanel>
+
+                        <!-- RGB カラーピッカー -->
+                        <ColorPicker Color="{Binding GlassAccentColorValue}"
+                                     HorizontalAlignment="Left"/>
+
                     </StackPanel>
                 </StackPanel>
             </Border>
