@@ -14,9 +14,10 @@ public class RobloxLogWatcher : IDisposable
     private bool _wasRunning;
     private readonly object _lock = new();
 
-    public event EventHandler<long>? PlaceJoined;
-    public event EventHandler<long>? UserIdDetected;
-    public event EventHandler? GameLeft;
+    public event EventHandler<long>?   PlaceJoined;
+    public event EventHandler<long>?   UserIdDetected;
+    public event EventHandler?         GameLeft;
+    public event EventHandler<string>? ServerIpDetected;
 
     private static readonly Regex[] PlaceIdPatterns =
     [
@@ -34,7 +35,12 @@ public class RobloxLogWatcher : IDisposable
     private static readonly Regex UserIdPattern =
         new(@"\buserid:(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    private long _detectedUserId;
+    // UDMUX Address = X.X.X.X (ゲームサーバーIP)
+    private static readonly Regex UdmuxPattern =
+        new(@"UDMUX Address = (\d+\.\d+\.\d+\.\d+)", RegexOptions.Compiled);
+
+    private long   _detectedUserId;
+    private string _detectedIp = string.Empty;
 
     private static readonly string[] LeaveKeywords =
     [
@@ -62,9 +68,10 @@ public class RobloxLogWatcher : IDisposable
             if (IsRobloxRunning())
             {
                 _wasRunning = true;
-                var (placeId, userId) = ScanForLastPlaceIdAndUser(latest);
+                var (placeId, userId, ip) = ScanForLastPlaceIdAndUser(latest);
                 if (userId > 0) { _detectedUserId = userId; UserIdDetected?.Invoke(this, userId); }
                 if (placeId > 0) { _lastPlaceId = placeId; PlaceJoined?.Invoke(this, placeId); }
+                if (!string.IsNullOrEmpty(ip)) { _detectedIp = ip; ServerIpDetected?.Invoke(this, ip); }
             }
             StartWatchingFile(latest, fromEnd: true);
         }
@@ -87,6 +94,22 @@ public class RobloxLogWatcher : IDisposable
         _pollTimer    = null;
         _scanTimer    = null;
         _processTimer = null;
+    }
+
+    public void SetBackgroundMode(bool background)
+    {
+        if (background)
+        {
+            _pollTimer?.Change(5_000, 5_000);
+            _scanTimer?.Change(15_000, 15_000);
+            _processTimer?.Change(20_000, 20_000);
+        }
+        else
+        {
+            _pollTimer?.Change(1_000, 1_000);
+            _scanTimer?.Change(2_000, 2_000);
+            _processTimer?.Change(5_000, 5_000);
+        }
     }
 
     // 現在監視中のファイルより新しいログファイルがあれば切り替える
@@ -113,9 +136,10 @@ public class RobloxLogWatcher : IDisposable
         _filePosition = fromEnd ? GetFileLength(path) : 0;
     }
 
-    private (long placeId, long userId) ScanForLastPlaceIdAndUser(string path)
+    private (long placeId, long userId, string ip) ScanForLastPlaceIdAndUser(string path)
     {
         long foundPlace = 0, foundUser = 0;
+        string foundIp = string.Empty;
         try
         {
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -135,10 +159,12 @@ public class RobloxLogWatcher : IDisposable
                     if (um.Success && long.TryParse(um.Groups[1].Value, out var uid) && uid > 0)
                         foundUser = uid;
                 }
+                var rm = UdmuxPattern.Match(line);
+                if (rm.Success) foundIp = rm.Groups[1].Value;
             }
         }
         catch { }
-        return (foundPlace, foundUser);
+        return (foundPlace, foundUser, foundIp);
     }
 
     private void PollLogFile()
@@ -171,9 +197,10 @@ public class RobloxLogWatcher : IDisposable
 
     private void ProcessLine(string line)
     {
-        long fireUserId = 0;
-        long firePlaceId = 0;
-        bool fireLeave = false;
+        long   fireUserId  = 0;
+        long   firePlaceId = 0;
+        bool   fireLeave   = false;
+        string fireIp      = string.Empty;
 
         lock (_lock)
         {
@@ -198,12 +225,20 @@ public class RobloxLogWatcher : IDisposable
                 break;
             }
 
+            var rm = UdmuxPattern.Match(line);
+            if (rm.Success && rm.Groups[1].Value != _detectedIp)
+            {
+                _detectedIp = rm.Groups[1].Value;
+                fireIp = _detectedIp;
+            }
+
             if (firePlaceId == 0 && _lastPlaceId != 0)
             {
                 foreach (var keyword in LeaveKeywords)
                 {
                     if (!line.Contains(keyword, StringComparison.OrdinalIgnoreCase)) continue;
                     _lastPlaceId = 0;
+                    _detectedIp  = string.Empty;
                     fireLeave = true;
                     break;
                 }
@@ -211,9 +246,10 @@ public class RobloxLogWatcher : IDisposable
         }
 
         // イベント発火はロック外で行う（デッドロック防止）
-        if (fireUserId > 0) UserIdDetected?.Invoke(this, fireUserId);
-        if (firePlaceId > 0) PlaceJoined?.Invoke(this, firePlaceId);
-        if (fireLeave) GameLeft?.Invoke(this, EventArgs.Empty);
+        if (fireUserId > 0)             UserIdDetected?.Invoke(this, fireUserId);
+        if (firePlaceId > 0)            PlaceJoined?.Invoke(this, firePlaceId);
+        if (!string.IsNullOrEmpty(fireIp)) ServerIpDetected?.Invoke(this, fireIp);
+        if (fireLeave)                  GameLeft?.Invoke(this, EventArgs.Empty);
     }
 
     private void CheckProcessExit()
