@@ -55,6 +55,73 @@ public static class FastFlagPresets
     };
 }
 
+public class PresetGroup
+{
+    public string Name     { get; init; } = string.Empty;
+    public string IconPath { get; init; } = string.Empty;
+    public IReadOnlyList<FastFlag> Flags { get; init; } = [];
+}
+
+public static class FastFlagBundles
+{
+    public static IReadOnlyList<PresetGroup> Groups =>
+    [
+        new PresetGroup
+        {
+            Name = "グラフィックス軽量化",
+            IconPath = "M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z",
+            Flags =
+            [
+                new FastFlag { Name = "FFlagDisablePostFx",           Value = "true",  Type = FastFlagType.Boolean, Category = "グラフィックス" },
+                new FastFlag { Name = "FFlagDisableShadows",          Value = "true",  Type = FastFlagType.Boolean, Category = "グラフィックス" },
+                new FastFlag { Name = "FFlagDisableBloom",            Value = "true",  Type = FastFlagType.Boolean, Category = "グラフィックス" },
+                new FastFlag { Name = "FFlagDisableDepthOfField",     Value = "true",  Type = FastFlagType.Boolean, Category = "グラフィックス" },
+                new FastFlag { Name = "FFlagDisableGlobalShadows",    Value = "true",  Type = FastFlagType.Boolean, Category = "グラフィックス" },
+                new FastFlag { Name = "DFIntTaskSchedulerTargetFps",  Value = "240",   Type = FastFlagType.Integer, Category = "パフォーマンス" },
+            ]
+        },
+        new PresetGroup
+        {
+            Name = "レンダリング最適化",
+            IconPath = "M7 2v11h3v9l7-12h-4l4-8z",
+            Flags =
+            [
+                new FastFlag { Name = "FFlagEnableReducedLatency",    Value = "true",  Type = FastFlagType.Boolean, Category = "パフォーマンス" },
+                new FastFlag { Name = "FFlagFastGPULightCulling3",    Value = "true",  Type = FastFlagType.Boolean, Category = "グラフィックス" },
+                new FastFlag { Name = "FFlagRenderFixFog",            Value = "true",  Type = FastFlagType.Boolean, Category = "グラフィックス" },
+                new FastFlag { Name = "FFlagRenderOptimizedShadows",  Value = "true",  Type = FastFlagType.Boolean, Category = "グラフィックス" },
+            ]
+        },
+        new PresetGroup
+        {
+            Name = "メモリ / CPU",
+            IconPath = "M9 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-4V1h-2v2h-4V1H9v2zM5 5h14v14H5V5zm6 6H7v2h4v4h2v-4h4v-2h-4V7h-2v4z",
+            Flags =
+            [
+                new FastFlag { Name = "DFIntPhysicsStepsPerFrame",       Value = "1",   Type = FastFlagType.Integer, Category = "パフォーマンス" },
+                new FastFlag { Name = "DFIntGCJobFrequencyMs",           Value = "250", Type = FastFlagType.Integer, Category = "パフォーマンス" },
+                new FastFlag { Name = "FFlagLuaAppEnableLowMemoryMode",  Value = "true",Type = FastFlagType.Boolean, Category = "パフォーマンス" },
+            ]
+        },
+        new PresetGroup
+        {
+            Name = "ネットワーク最適化",
+            IconPath = "M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z",
+            Flags =
+            [
+                new FastFlag { Name = "DFIntConnectionMTUSize",              Value = "1380", Type = FastFlagType.Integer, Category = "ネットワーク" },
+                new FastFlag { Name = "DFIntRakNetResendTimeoutMS",          Value = "200",  Type = FastFlagType.Integer, Category = "ネットワーク" },
+                new FastFlag { Name = "DFIntRakNetResendBufferArrayLength",  Value = "64",   Type = FastFlagType.Integer, Category = "ネットワーク" },
+                new FastFlag { Name = "DFIntNetworkPrediction",              Value = "0",    Type = FastFlagType.Integer, Category = "ネットワーク" },
+                new FastFlag { Name = "DFIntNetworkLatencyTolerance",        Value = "0",    Type = FastFlagType.Integer, Category = "ネットワーク" },
+            ]
+        },
+    ];
+
+    public static IReadOnlyList<FastFlag> AllFlags =>
+        Groups.SelectMany(g => g.Flags).ToList();
+}
+
 // フラグ名 → (日本語説明, カテゴリ) の辞書。ClientAppSettings.json にあるフラグに説明を自動付与する。
 public static class FlagDescriptions
 {

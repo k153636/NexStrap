@@ -51,6 +51,10 @@ public partial class FastFlagsViewModel : ViewModelBase
     [ObservableProperty] private ObservableCollection<Profile> _profiles = new();
     [ObservableProperty] private Profile? _selectedProfile;
     [ObservableProperty] private string _newProfileName = string.Empty;
+    [ObservableProperty] private bool _isPresetPanelOpen;
+    [ObservableProperty] private bool _isPresetActive;
+
+    public IReadOnlyList<PresetGroup> PresetGroups => FastFlagBundles.Groups;
 
     public List<string> Categories { get; } = new()
     {
@@ -186,6 +190,14 @@ public partial class FastFlagsViewModel : ViewModelBase
         }
 
         ApplyFilter();
+        RefreshPresetState();
+    }
+
+    private void RefreshPresetState()
+    {
+        var current = _service.GetAll();
+        IsPresetActive = FastFlagBundles.AllFlags.All(f =>
+            current.TryGetValue(f.Name, out var v) && v == f.Value);
     }
 
     private void ApplyFilter()
@@ -271,6 +283,30 @@ public partial class FastFlagsViewModel : ViewModelBase
         _service.Remove(flag.Name);
         ApplyFilter();
         await _service.SaveAsync();
+    }
+
+    [RelayCommand]
+    private void TogglePresetPanel() => IsPresetPanelOpen = !IsPresetPanelOpen;
+
+    [RelayCommand]
+    private async Task TogglePresetAsync()
+    {
+        if (IsPresetActive)
+        {
+            foreach (var f in FastFlagBundles.AllFlags)
+                _service.Remove(f.Name);
+        }
+        else
+        {
+            foreach (var f in FastFlagBundles.AllFlags)
+                _service.Set(f.Name, f.Value);
+        }
+        await _service.SaveAsync();
+        IsPresetActive = !IsPresetActive;
+        LoadFlags();
+        await ShowStatusAsync(IsPresetActive
+            ? $"最適化プリセットを適用しました ({FastFlagBundles.AllFlags.Count} flags)"
+            : "最適化プリセットを解除しました");
     }
 
     [RelayCommand]

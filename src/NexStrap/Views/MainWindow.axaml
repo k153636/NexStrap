@@ -8,17 +8,38 @@
         Title="NexStrap"
         Icon="avares://NexStrap/Assets/nexstrap.png"
         Width="900" Height="620"
-        MinWidth="780" MinHeight="520"
-        Background="#080808"
-        TransparencyLevelHint="AcrylicBlur"
+        MinWidth="760" MinHeight="520"
+        Background="Transparent"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="PreferSystemChrome"
         ExtendClientAreaTitleBarHeightHint="-1">
 
     <Grid RowDefinitions="30,*">
 
+        <!-- 常時表示: 不透明な黒背景 -->
+        <Rectangle Grid.RowSpan="2" Fill="#080808"/>
+
+        <!-- Glassモード: 背景画像を適度に暗くするオーバーレイ -->
+        <Border Grid.RowSpan="2"
+                Background="#50000000"
+                IsHitTestVisible="False"
+                IsVisible="{Binding ThemeVM.GlassThemeEnabled}"/>
+
+        <!-- Background Image (全画面・ブラーあり) -->
+        <Image Grid.RowSpan="2"
+               Source="{Binding ThemeVM.BackgroundImagePath,
+                   Converter={StaticResource StringToImageConverter}}"
+               Stretch="UniformToFill"
+               Opacity="{Binding ThemeVM.BackgroundImageOpacity}"
+               IsVisible="{Binding ThemeVM.BackgroundImagePath,
+                   Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <Image.Effect>
+                <BlurEffect Radius="{Binding ThemeVM.BackgroundBlurRadius}"/>
+            </Image.Effect>
+        </Image>
+
         <!-- Title Bar -->
-        <Grid Grid.Row="0" Background="#0D0D0D">
+        <Grid Grid.Row="0" Background="Transparent">
             <TextBlock Text="NexStrap" FontSize="12" FontWeight="SemiBold"
                        Foreground="#3A3A3A" VerticalAlignment="Center"
                        HorizontalAlignment="Center"/>
@@ -29,7 +50,7 @@
                            x:Name="NavView"
                            IsPaneOpen="True"
                            PaneDisplayMode="Left"
-                           OpenPaneLength="180"
+                           OpenPaneLength="155"
                            IsBackButtonVisible="False"
                            IsSettingsVisible="False"
                            IsPaneToggleButtonVisible="False"
@@ -60,9 +81,20 @@
                         <ui:SymbolIconSource Symbol="Globe"/>
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="統計" Tag="Stats">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="List"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
 
             <ui:NavigationView.FooterMenuItems>
+                <ui:NavigationViewItem Content="テーマ" Tag="Theme">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="ColorBackground"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="設定" Tag="Settings">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="Settings"/>
@@ -70,8 +102,8 @@
                 </ui:NavigationViewItem>
             </ui:NavigationView.FooterMenuItems>
 
-            <!-- Page Content with smooth CrossFade transition -->
-            <Border Background="#080808">
+            <!-- Page Content -->
+            <Border Background="Transparent">
                 <TransitioningContentControl Content="{Binding CurrentPage}">
                     <TransitioningContentControl.PageTransition>
                         <CrossFade Duration="0:0:0.12"/>
@@ -91,6 +123,12 @@
                         </DataTemplate>
                         <DataTemplate DataType="vm:BrowserViewModel">
                             <pages:BrowserPage/>
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:ThemeViewModel">
+                            <pages:ThemePage/>
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:StatsViewModel">
+                            <pages:StatsPage/>
                         </DataTemplate>
                     </TransitioningContentControl.DataTemplates>
                 </TransitioningContentControl>

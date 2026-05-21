@@ -22,7 +22,9 @@ public partial class MainWindowViewModel : ViewModelBase
     public FastFlagsViewModel FastFlagsVM { get; }
     public ModsViewModel ModsVM { get; }
     public SettingsViewModel SettingsVM { get; }
-    public BrowserViewModel BrowserVM { get; } = new();
+    public BrowserViewModel BrowserVM { get; }
+    public ThemeViewModel ThemeVM { get; }
+    public StatsViewModel StatsVM { get; }
 
     public MainWindowViewModel(
         DiscordRpcService discord,
@@ -32,7 +34,10 @@ public partial class MainWindowViewModel : ViewModelBase
         HomeViewModel homeVM,
         FastFlagsViewModel fastFlagsVM,
         ModsViewModel modsVM,
-        SettingsViewModel settingsVM)
+        SettingsViewModel settingsVM,
+        BrowserViewModel browserVM,
+        ThemeViewModel themeVM,
+        StatsViewModel statsVM)
     {
         _discord = discord;
         _settings = settings;
@@ -43,6 +48,9 @@ public partial class MainWindowViewModel : ViewModelBase
         FastFlagsVM = fastFlagsVM;
         ModsVM = modsVM;
         SettingsVM = settingsVM;
+        BrowserVM = browserVM;
+        ThemeVM = themeVM;
+        StatsVM = statsVM;
         _currentPage = homeVM;
 
         var appId = env.Get("DISCORD_APP_ID");
@@ -61,7 +69,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (s.DiscordRpcEnabled && id != null)
                 discord.Initialize(id);
             else if (!s.DiscordRpcEnabled)
-                discord.ClearPresence();
+                discord.Disable();
 
             UpdateOverlayVisibility(s.ShowPerformanceOverlay);
         };
@@ -96,12 +104,20 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateTo(string page)
     {
+        if (page == "Browser")
+            BrowserVM.UserAvatarUrl = HomeVM.UserAvatarUrl;
+
+        if (page == "Stats")
+            StatsVM.Refresh();
+
         CurrentPage = page switch
         {
             "Home"      => HomeVM,
             "FastFlags" => FastFlagsVM,
             "Mods"      => ModsVM,
             "Browser"   => BrowserVM,
+            "Theme"     => ThemeVM,
+            "Stats"     => StatsVM,
             "Settings"  => SettingsVM,
             _           => HomeVM
         };
@@ -112,6 +128,8 @@ public partial class MainWindowViewModel : ViewModelBase
             "FastFlags" => "Fast Flags",
             "Mods"      => "Mods",
             "Browser"   => "ブラウザ",
+            "Theme"     => "テーマ",
+            "Stats"     => "統計",
             "Settings"  => "設定",
             _           => "ホーム"
         };

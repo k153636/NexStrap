@@ -1,0 +1,109 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NexStrap.ViewModels"
+             x:Class="NexStrap.Views.Pages.ThemePage"
+             x:DataType="vm:ThemeViewModel"
+             Background="Transparent">
+
+    <ScrollViewer>
+        <StackPanel Spacing="10" Margin="24,20">
+
+            <TextBlock Text="テーマ" FontSize="22" FontWeight="Bold"
+                       Foreground="#FFFFFF" Margin="0,0,0,2"/>
+
+            <!-- 外観カード -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="外観" FontSize="12" FontWeight="SemiBold"
+                               Foreground="#444444"/>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="3">
+                            <TextBlock Text="Glassテーマ" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="サイドバーを半透明にして背景画像が透けて見えるガラス効果"
+                                       Foreground="#444444" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1"
+                                      IsChecked="{Binding GlassThemeEnabled}"
+                                      OnContent="" OffContent=""
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 背景画像カード -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="背景画像" FontSize="12" FontWeight="SemiBold"
+                               Foreground="#444444"/>
+
+                    <!-- プレビュー (画像あり) -->
+                    <Border CornerRadius="10" ClipToBounds="True"
+                            Height="130" Background="{DynamicResource InputBg}"
+                            IsVisible="{Binding BackgroundImagePath,
+                                Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <Image Source="{Binding BackgroundImagePath,
+                                   Converter={StaticResource StringToImageConverter}}"
+                               Stretch="UniformToFill"/>
+                    </Border>
+
+                    <!-- プレースホルダー (画像なし) -->
+                    <Border CornerRadius="10" Height="130" Background="{DynamicResource InputBg}"
+                            IsVisible="{Binding BackgroundImagePath,
+                                Converter={x:Static StringConverters.IsNullOrEmpty}}">
+                        <StackPanel VerticalAlignment="Center"
+                                    HorizontalAlignment="Center" Spacing="6">
+                            <PathIcon Data="{StaticResource IconPackage}"
+                                      Width="26" Height="26" Foreground="#2A2A2A"/>
+                            <TextBlock Text="画像が設定されていません"
+                                       FontSize="11" Foreground="#2A2A2A"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ボタン -->
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="画像を選択"
+                                Click="PickImageButton_Click"
+                                Background="#FFFFFF" Foreground="#080808"
+                                FontWeight="SemiBold" FontSize="12"
+                                Padding="14,8" CornerRadius="10"/>
+                        <Button Content="削除"
+                                Command="{Binding ClearBackgroundImageCommand}"
+                                IsEnabled="{Binding BackgroundImagePath,
+                                    Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                Background="#141414" Foreground="#505050"
+                                FontSize="12" Padding="14,8" CornerRadius="10"/>
+                    </StackPanel>
+
+                    <!-- ぼかし強度 -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="ぼかし強度" FontSize="12" Foreground="#888888" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding BackgroundBlurRadius, StringFormat='{}{0:F0}'}"
+                                   FontSize="12" Foreground="#555555" VerticalAlignment="Center" Width="28" TextAlignment="Right"/>
+                    </Grid>
+                    <Slider Minimum="0" Maximum="50" Value="{Binding BackgroundBlurRadius}"
+                            Margin="0,2,0,8"/>
+
+                    <!-- 明るさ -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="明るさ" FontSize="12" Foreground="#888888" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding BackgroundImageOpacityPercent, StringFormat='{}{0:F0}%'}"
+                                   FontSize="12" Foreground="#555555" VerticalAlignment="Center" Width="36" TextAlignment="Right"/>
+                    </Grid>
+                    <Slider Minimum="0" Maximum="100" Value="{Binding BackgroundImageOpacityPercent}"
+                            Margin="0,2,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ステータス -->
+            <TextBlock Text="{Binding StatusMessage}"
+                       Foreground="#555555" FontSize="12"
+                       HorizontalAlignment="Center"
+                       IsVisible="{Binding StatusMessage,
+                           Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+        </StackPanel>
+    </ScrollViewer>
+
+</UserControl>
