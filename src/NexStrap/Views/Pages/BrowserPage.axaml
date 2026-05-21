@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="NexStrap.Views.Pages.BrowserPage"
-             Background="#080808">
+             Background="Transparent">
 
     <ScrollViewer>
         <StackPanel Spacing="20" Margin="32,28">
@@ -16,7 +16,7 @@
             <!-- URL Bar -->
             <Grid ColumnDefinitions="*,12,Auto">
                 <TextBox Grid.Column="0" x:Name="UrlBar"
-                         Background="#141414" Foreground="#FFFFFF"
+                         Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF"
                          BorderBrush="#2E2E2E" CornerRadius="14"
                          Padding="18,13" FontSize="14"
                          Watermark="URL を入力... (例: https://youtube.com)"/>
@@ -37,7 +37,7 @@
                 <WrapPanel Orientation="Horizontal">
 
                     <Button x:Name="YoutubeButton" Margin="0,0,12,12"
-                            Padding="24,20" CornerRadius="18" Background="#141414">
+                            Padding="24,20" CornerRadius="18" Background="{DynamicResource SurfaceBg}">
                         <StackPanel Spacing="10" HorizontalAlignment="Center">
                             <PathIcon Data="{StaticResource IconPlay}" Width="26" Height="26"
                                       Foreground="#FFFFFF" HorizontalAlignment="Center"/>
@@ -51,7 +51,7 @@
                     </Button>
 
                     <Button x:Name="NicoButton" Margin="0,0,12,12"
-                            Padding="24,20" CornerRadius="18" Background="#141414">
+                            Padding="24,20" CornerRadius="18" Background="{DynamicResource SurfaceBg}">
                         <StackPanel Spacing="10" HorizontalAlignment="Center">
                             <PathIcon Data="{StaticResource IconVideo}" Width="26" Height="26"
                                       Foreground="#FFFFFF" HorizontalAlignment="Center"/>
@@ -65,7 +65,7 @@
                     </Button>
 
                     <Button x:Name="TwitterButton" Margin="0,0,12,12"
-                            Padding="24,20" CornerRadius="18" Background="#141414">
+                            Padding="24,20" CornerRadius="18" Background="{DynamicResource SurfaceBg}">
                         <StackPanel Spacing="10" HorizontalAlignment="Center">
                             <PathIcon Data="{StaticResource IconChat}" Width="26" Height="26"
                                       Foreground="#FFFFFF" HorizontalAlignment="Center"/>
@@ -79,7 +79,7 @@
                     </Button>
 
                     <Button x:Name="DiscordButton" Margin="0,0,12,12"
-                            Padding="24,20" CornerRadius="18" Background="#141414">
+                            Padding="24,20" CornerRadius="18" Background="{DynamicResource SurfaceBg}">
                         <StackPanel Spacing="10" HorizontalAlignment="Center">
                             <PathIcon Data="{StaticResource IconChat}" Width="26" Height="26"
                                       Foreground="#CCCCCC" HorizontalAlignment="Center"/>
@@ -93,7 +93,7 @@
                     </Button>
 
                     <Button x:Name="SpotifyButton" Margin="0,0,12,12"
-                            Padding="24,20" CornerRadius="18" Background="#141414">
+                            Padding="24,20" CornerRadius="18" Background="{DynamicResource SurfaceBg}">
                         <StackPanel Spacing="10" HorizontalAlignment="Center">
                             <PathIcon Data="{StaticResource IconMusic}" Width="26" Height="26"
                                       Foreground="#FFFFFF" HorizontalAlignment="Center"/>
@@ -107,7 +107,7 @@
                     </Button>
 
                     <Button x:Name="RobloxButton" Margin="0,0,12,12"
-                            Padding="24,20" CornerRadius="18" Background="#141414">
+                            Padding="24,20" CornerRadius="18" Background="{DynamicResource SurfaceBg}">
                         <StackPanel Spacing="10" HorizontalAlignment="Center">
                             <PathIcon Data="{StaticResource IconGlobe}" Width="26" Height="26"
                                       Foreground="#FFFFFF" HorizontalAlignment="Center"/>
@@ -124,7 +124,7 @@
             </StackPanel>
 
             <!-- Tip -->
-            <Border Background="#141414" CornerRadius="16" Padding="24,20">
+            <Border Background="{DynamicResource SurfaceBg}" CornerRadius="16" Padding="24,20">
                 <StackPanel Spacing="10">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <PathIcon Data="{StaticResource IconInfo}" Width="13" Height="13"

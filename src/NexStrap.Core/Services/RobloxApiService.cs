@@ -9,28 +9,28 @@ public class RobloxApiService
         Timeout = TimeSpan.FromSeconds(10)
     };
 
-    private readonly Dictionary<long, (string name, string? iconUrl)> _gameCache = new();
+    private readonly Dictionary<long, (string name, string? iconUrl, string? creator)> _gameCache = new();
     private readonly Dictionary<long, string?> _avatarCache = new();
 
-    public async Task<(string name, string? iconUrl)> GetGameInfoAsync(long placeId)
+    public async Task<(string name, string? iconUrl, string? creator)> GetGameInfoAsync(long placeId)
     {
         if (_gameCache.TryGetValue(placeId, out var cached)) return cached;
 
         try
         {
             var universeId = await GetUniverseIdAsync(placeId);
-            if (universeId == null) return ("Roblox", null);
+            if (universeId == null) return ("Roblox", null, null);
 
-            var name    = await GetGameNameAsync(universeId.Value);
-            var iconUrl = await GetGameIconUrlAsync(universeId.Value);
+            var (name, creator) = await GetGameNameAndCreatorAsync(universeId.Value);
+            var iconUrl         = await GetGameIconUrlAsync(universeId.Value);
 
-            var result = (name ?? "Roblox", iconUrl);
+            var result = (name ?? "Roblox", iconUrl, creator);
             _gameCache[placeId] = result;
             return result;
         }
         catch
         {
-            return ("Roblox", null);
+            return ("Roblox", null, null);
         }
     }
 
@@ -42,12 +42,15 @@ public class RobloxApiService
         return obj["universeId"]?.Value<long>();
     }
 
-    private static async Task<string?> GetGameNameAsync(long universeId)
+    private static async Task<(string? name, string? creator)> GetGameNameAndCreatorAsync(long universeId)
     {
-        var url = $"https://games.roblox.com/v1/games?universeIds={universeId}";
-        var json = await Http.GetStringAsync(url);
-        var obj = JObject.Parse(json);
-        return obj["data"]?[0]?["name"]?.Value<string>();
+        var url      = $"https://games.roblox.com/v1/games?universeIds={universeId}";
+        var json     = await Http.GetStringAsync(url);
+        var data     = JObject.Parse(json)["data"]?[0];
+        var creatorName    = data?["creator"]?["name"]?.Value<string>();
+        var hasVerified    = data?["creator"]?["hasVerifiedBadge"]?.Value<bool>() ?? false;
+        var creatorDisplay = creatorName != null && hasVerified ? $"{creatorName} ☑️" : creatorName;
+        return (data?["name"]?.Value<string>(), creatorDisplay);
     }
 
     private static async Task<string?> GetGameIconUrlAsync(long universeId)
@@ -57,6 +60,30 @@ public class RobloxApiService
         var json = await Http.GetStringAsync(url);
         var obj = JObject.Parse(json);
         return obj["data"]?[0]?["imageUrl"]?.Value<string>();
+    }
+
+    // ゲームサーバーの国コードを返す（例: "SG", "US"）
+    public async Task<string?> GetServerCountryCodeAsync(string ip)
+    {
+        try
+        {
+            var json = await Http.GetStringAsync($"https://ipinfo.io/{ip}/json");
+            return JObject.Parse(json)["country"]?.Value<string>();
+        }
+        catch { return null; }
+    }
+
+    // プレイヤー自身の国名を返す（例: "Japan", "United States"）
+    public async Task<string?> GetMyCountryAsync()
+    {
+        try
+        {
+            var json = await Http.GetStringAsync("https://ipinfo.io/json");
+            var obj  = JObject.Parse(json);
+            // ipinfo は国コードしか返さないので country フィールドをそのまま使う
+            return obj["country"]?.Value<string>();
+        }
+        catch { return null; }
     }
 
     public async Task<string?> GetUserAvatarHeadshotAsync(long userId)
