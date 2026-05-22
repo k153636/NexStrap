@@ -5,16 +5,17 @@ namespace NexStrap.Core.Services;
 
 public class DiscordRpcService : IDisposable
 {
+    private readonly SettingsService _settings;
     private DiscordRpcClient? _client;
     private bool _isConnected;
     private string _currentAppId = string.Empty;
     private Timestamps? _startTimestamp;
     private readonly object _lock = new();
-    // デバウンス: 最後のプレゼンス更新から300ms以内の重複を抑制
     private Timer? _debounceTimer;
     private RichPresence? _pendingPresence;
-    // プロフィール表示設定: "@username" or "displayName (@username)"
     private string? _userLabel;
+
+    public DiscordRpcService(SettingsService settings) => _settings = settings;
 
     public bool IsConnected => _isConnected;
     public event EventHandler<bool>? ConnectionChanged;
@@ -37,7 +38,7 @@ public class DiscordRpcService : IDisposable
         try
         {
             _currentAppId = applicationId;
-            _startTimestamp = Timestamps.Now; // 起動タイマーをここで固定
+            _startTimestamp = Timestamps.Now;
 
             _client = new DiscordRpcClient(applicationId)
             {
@@ -67,59 +68,68 @@ public class DiscordRpcService : IDisposable
         catch { }
     }
 
-    // メディア再生中 (SMTC)
     public void SetMediaPresence(string title, string artist, string serviceKey, string? userAvatarUrl = null)
     {
         string? label; lock (_lock) { label = _userLabel; }
         SetPresence(
-            details: "視聴中",
+            details: "Listening",
             state: string.IsNullOrEmpty(artist) ? title : $"{title} — {artist}",
             largeImage: serviceKey,
             largeText: title,
             smallImage: userAvatarUrl,
-            smallText: userAvatarUrl != null ? (label ?? "プロフィール") : null
+            smallText: userAvatarUrl != null ? (label ?? "Profile") : null
         );
     }
 
-    // ホーム・ページ切り替え時 — NexStrapアイコンが大、アバターが小
     public void SetPagePresence(string pageName, string? userAvatarUrl = null, string prefix = "NexStrap")
     {
+        var s = _settings.Settings;
+        if (!s.DiscordShowLauncherPresence) { ClearPresence(); return; }
+
         string? label; lock (_lock) { label = _userLabel; }
         SetPresence(
-            details: $"{prefix} / {pageName}",
+            details: s.DiscordShowLauncherDetails ? $"{prefix} / {pageName}" : null,
             state: null,
             largeImage: "nexstrap",
-            largeText: "NexStrap Launcher・Created by K",
+            largeText: "NexStrap Launcher · Created by K",
             smallImage: userAvatarUrl,
-            smallText: userAvatarUrl != null ? (label ?? "プロフィール") : null
+            smallText: userAvatarUrl != null ? (label ?? "Profile") : null
         );
     }
 
     // ゲームプレイ中 — マップアイコンが大、アバターが右下に小さく
     public void SetInGamePresence(string gameName, string? gameIconUrl = null, string? userAvatarUrl = null, string? state = null, string? creator = null, long placeId = 0)
     {
+        var s = _settings.Settings;
         string? label; lock (_lock) { label = _userLabel; }
-        var buttons = placeId > 0
+
+        var details = s.DiscordShowCreator && creator != null
+            ? $"{gameName} · by {creator}"
+            : gameName;
+        var buttons = s.DiscordShowJoinButton && placeId > 0
             ? new Button[] { new() { Label = "Join Game", Url = $"https://www.roblox.com/games/{placeId}" } }
             : null;
 
+        var (largeImg, largeCaption, smallImg, smallCaption) = gameIconUrl != null
+            ? (gameIconUrl, gameName, userAvatarUrl, userAvatarUrl != null ? (label ?? "Profile") : null)
+            : (userAvatarUrl, label ?? "Profile", (string?)null, (string?)null);
+
         SetPresence(
-            details: creator != null ? $"{gameName}・by {creator}" : gameName,
+            details: details,
             state: state,
-            largeImage: gameIconUrl ?? "roblox_logo1",
-            largeText: "Roblox",
-            smallImage: userAvatarUrl,
-            smallText: userAvatarUrl != null ? (label ?? "プロフィール") : null,
+            largeImage: largeImg ?? "roblox",
+            largeText: largeCaption,
+            smallImage: smallImg,
+            smallText: smallCaption,
             buttons: buttons
         );
     }
 
-    // 作者専用開発者ページ
     public void SetDevPresence()
     {
         SetPresence(
-            details: "開発者モード",
-            state: "NexStrap 内部ツール",
+            details: "Developer Mode",
+            state: "NexStrap Internal Tools",
             largeImage: "nexstrap",
             largeText: "NexStrap Developer",
             smallImage: null,
@@ -127,17 +137,17 @@ public class DiscordRpcService : IDisposable
         );
     }
 
-    // 起動中 — Robloxロゴが大、アバターが小
     public void SetLaunchingPresence(string? userAvatarUrl = null)
     {
+        if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
         string? label; lock (_lock) { label = _userLabel; }
         SetPresence(
-            details: "起動中",
+            details: "Launching",
             state: null,
             largeImage: "roblox_logo1",
             largeText: "Roblox",
             smallImage: userAvatarUrl,
-            smallText: userAvatarUrl != null ? (label ?? "プロフィール") : null
+            smallText: userAvatarUrl != null ? (label ?? "Profile") : null
         );
     }
 
@@ -150,11 +160,11 @@ public class DiscordRpcService : IDisposable
             largeImage: "roblox_logo1",
             largeText: "Roblox",
             smallImage: userAvatarUrl,
-            smallText: userAvatarUrl != null ? (label ?? "プロフィール") : null
+            smallText: userAvatarUrl != null ? (label ?? "Profile") : null
         );
     }
 
-    private void SetPresence(string details, string? state, string largeImage, string largeText,
+    private void SetPresence(string? details, string? state, string largeImage, string largeText,
         string? smallImage, string? smallText, Button[]? buttons = null)
     {
         var presence = new RichPresence

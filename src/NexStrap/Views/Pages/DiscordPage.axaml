@@ -1,0 +1,129 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NexStrap.ViewModels"
+             xmlns:helpers="using:NexStrap.Helpers"
+             x:Class="NexStrap.Views.Pages.DiscordPage"
+             x:DataType="vm:DiscordViewModel"
+             Background="Transparent">
+
+    <ScrollViewer>
+        <StackPanel Spacing="10" Margin="24,20" helpers:AnimationHelper.StaggerChildren="True">
+
+            <TextBlock Text="Discord" FontSize="22" FontWeight="Bold"
+                       Foreground="#FFFFFF" Margin="0,0,0,2"/>
+
+            <!-- Connection -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="Connection" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource FgSub}" VerticalAlignment="Center"/>
+                        <Border CornerRadius="8" Padding="8,3" Background="{DynamicResource OverlayBg}">
+                            <TextBlock FontSize="11"
+                                       Text="{Binding DiscordAppIdConfigured, Converter={StaticResource BoolToStringConverter}, ConverterParameter='Configured,Not configured'}"
+                                       Foreground="{Binding DiscordAppIdConfigured, Converter={StaticResource BoolToStringConverter}, ConverterParameter='#4ADE80,#505050'}"/>
+                        </Border>
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Rich Presence" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Show game and launcher status on Discord"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding DiscordRpcEnabled}"
+                                      IsEnabled="{Binding DiscordAppIdConfigured}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Profile -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Profile" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource FgSub}"/>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Show Roblox username" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Display username next to avatar image"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowRobloxUsername}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto"
+                          IsVisible="{Binding ShowRobloxUsername}">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Use displayName format" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="When enabled: displayName (@username)"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding UseDisplayNameFormat}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- In-Game -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="In-Game" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource FgSub}"/>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Show creator name" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Appends &quot;by creator&quot; after the game name"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowCreator}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Show Join Game button" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Button to join the game directly from Discord"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowJoinButton}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Launcher Status -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Launcher Status" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource FgSub}"/>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Show launcher presence" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Show presence while using the launcher outside a game"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowLauncherPresence}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto"
+                          IsVisible="{Binding ShowLauncherPresence}">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Show Details text" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Shows &quot;NexStrap / page name&quot; as the details line"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowLauncherDetails}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

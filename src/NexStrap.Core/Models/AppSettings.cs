@@ -23,4 +23,11 @@ public class AppSettings
     public double BackgroundImageOpacity { get; set; } = 0.85;
     public List<long> FavoriteGameIds { get; set; } = [];
     public string GlassAccentColor { get; set; } = "#FFFFFF";
+    public double GlassOpacity { get; set; } = 0.75;
+    public bool DiscordShowRobloxUsername { get; set; } = false;
+    public bool DiscordUseDisplayNameFormat { get; set; } = false;
+    public bool DiscordShowCreator { get; set; } = true;
+    public bool DiscordShowJoinButton { get; set; } = true;
+    public bool DiscordShowLauncherPresence { get; set; } = true;
+    public bool DiscordShowLauncherDetails { get; set; } = true;
 }
