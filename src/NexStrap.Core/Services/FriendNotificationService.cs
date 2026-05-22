@@ -25,10 +25,20 @@ public class FriendNotificationService(RobloxApiService robloxApi) : IDisposable
         _timer = new Timer(_ => _ = PollAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(60));
     }
 
-    public void SetBackgroundMode(bool background)
-        => _timer?.Change(
+    public void SetBackgroundMode(bool background, bool playing)
+    {
+        if (_timer == null) return;
+
+        if (background && playing)
+        {
+            _timer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+            return;
+        }
+
+        _timer.Change(
             background ? TimeSpan.FromMinutes(5) : TimeSpan.Zero,
             background ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(60));
+    }
 
     private async Task PollAsync()
     {
