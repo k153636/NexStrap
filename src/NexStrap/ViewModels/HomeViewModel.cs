@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -33,6 +34,17 @@ public partial class HomeViewModel : ViewModelBase
     private DateTime? _launchStartTime;
     private DateTime? _gameStartTime;
     private long      _joinSequence;
+
+    private async Task ApplyUserLabelAsync(long userId)
+    {
+        if (!_settings.Settings.DiscordShowRobloxUsername) return;
+        var info = await _robloxApi.GetUserInfoAsync(userId);
+        if (info is not { } u) return;
+        var label = _settings.Settings.DiscordUseDisplayNameFormat
+            ? $"{u.displayName} (@{u.username})"
+            : $"@{u.username}";
+        _discord.SetUserLabel(label);
+    }
 
     public ObservableCollection<GameEntryViewModel> RecentGames { get; } = [];
     public ObservableCollection<GameEntryViewModel> FavoriteGames { get; } = [];
@@ -83,8 +95,32 @@ public partial class HomeViewModel : ViewModelBase
                     RobloxStatus.Launching    => "起動しています...",
                     RobloxStatus.Updating     => "アップデート中...",
                     RobloxStatus.NotInstalled => "Roblox が見つかりません",
+                    RobloxStatus.Running      => "Roblox running",
+                    RobloxStatus.Idle         => "Ready",
                     _ => StatusText
                 };
+
+                if (_gameDetected) return;
+
+                if (status == RobloxStatus.Updating)
+                {
+                    _discord.SetUpdatingPresence(_userAvatarUrl);
+                    return;
+                }
+
+                if (status == RobloxStatus.Launching)
+                {
+                    _discord.SetLaunchingPresence(_userAvatarUrl);
+                    return;
+                }
+                if (status == RobloxStatus.Running || status == RobloxStatus.Idle)
+                {
+                    _discord.SetPagePresence("Home", _userAvatarUrl, "Roblox");
+                    return;
+                }
+
+                if (status == RobloxStatus.Running || status == RobloxStatus.Idle)
+                    _discord.SetPagePresence("繝帙・繝", _userAvatarUrl, "Roblox");
             });
         };
 
@@ -96,6 +132,7 @@ public partial class HomeViewModel : ViewModelBase
                 _settings.Update(s => s.CachedRobloxUserId = userId);
                 _friendNotifications.Start(userId);
                 _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(userId);
+                await ApplyUserLabelAsync(userId);
                 if (!IsRobloxRunning && !IsLaunching)
                     _discord.SetPagePresence("ホーム", _userAvatarUrl);
             }
@@ -123,6 +160,9 @@ public partial class HomeViewModel : ViewModelBase
             _gameStartTime     = DateTime.UtcNow;
             CancelFallback();
             var seq = Interlocked.Increment(ref _joinSequence);
+
+            // API完了前に基本プレゼンスを即時表示（API失敗時のフォールバックも兼ねる）
+            _discord.SetInGamePresence("Roblox", null, _userAvatarUrl, null, null, placeId);
 
             try
             {
@@ -210,6 +250,7 @@ public partial class HomeViewModel : ViewModelBase
             _ = Task.Run(async () =>
             {
                 _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(cachedUserId);
+                await ApplyUserLabelAsync(cachedUserId);
                 // ゲームプレイ中・Roblox 起動中は上書きしない
                 if (!IsRobloxRunning && !_gameDetected)
                     _discord.SetPagePresence("ホーム", _userAvatarUrl);
@@ -262,7 +303,13 @@ public partial class HomeViewModel : ViewModelBase
         StatusText       = "起動しています...";
         _launchStartTime = DateTime.UtcNow;
         _discord.SetLaunchingPresence(_userAvatarUrl);
-        await _roblox.LaunchAsync();
+        var launched = await _roblox.LaunchAsync();
+        if (!launched)
+        {
+            IsLaunching = false;
+            IsRobloxRunning = false;
+            return;
+        }
 
         // ログ検知が失敗した場合のフォールバック（40秒後）
         StartLaunchFallback();
@@ -396,6 +443,11 @@ public partial class HomeViewModel : ViewModelBase
             ? $"{_myCountryCode} → {_currentServerCode} Server"
             : $"{_currentServerCode} Server";
         var flagCount = _fastFlags.GetAll().Count;
-        return $"{server}│{flagCount} Flags";
+        return $"{server}・{flagCount} Flags";
+    }
+    partial void OnIsRobloxRunningChanged(bool value)
+    {
+        if (Application.Current is App app)
+            app.SetPlayingMode(value);
     }
 }

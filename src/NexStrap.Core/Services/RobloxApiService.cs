@@ -119,6 +119,20 @@ public class RobloxApiService
         catch { return []; }
     }
 
+    public async Task<(string username, string displayName)?> GetUserInfoAsync(long userId)
+    {
+        try
+        {
+            var json        = await Http.GetStringAsync($"https://users.roblox.com/v1/users/{userId}");
+            var obj         = JObject.Parse(json);
+            var username    = obj["name"]?.Value<string>();
+            var displayName = obj["displayName"]?.Value<string>();
+            if (username == null) return null;
+            return (username, displayName ?? username);
+        }
+        catch { return null; }
+    }
+
     public async Task<string?> GetUserAvatarHeadshotAsync(long userId)
     {
         if (_avatarCache.TryGetValue(userId, out var cached)) return cached;
