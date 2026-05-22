@@ -13,18 +13,22 @@ public enum RobloxStatus
     Updating
 }
 
+public record BootstrapperProgress(string Message, double Percent, bool IsIndeterminate = false);
+
 public class RobloxService
 {
     private static readonly HttpClient Http = new()
     {
-        Timeout = TimeSpan.FromSeconds(30)
+        Timeout = TimeSpan.FromMinutes(5)
     };
 
     private Process? _robloxProcess;
     private string? _cachedVersionFolder;
+    private CancellationTokenSource? _installCts;
 
     public RobloxStatus Status { get; private set; } = RobloxStatus.Idle;
     public event EventHandler<RobloxStatus>? StatusChanged;
+    public event EventHandler<BootstrapperProgress>? BootstrapperProgress;
 
     public string? RobloxPlayerPath => FindRobloxPath();
     public string? RobloxVersionPath => FindVersionFolder();
@@ -83,7 +87,11 @@ public class RobloxService
         {
             SetStatus(RobloxStatus.Updating);
 
-            var installed = await InstallRobloxAsync();
+            _installCts = new CancellationTokenSource();
+            var installed = await InstallRobloxAsync(_installCts.Token);
+            _installCts.Dispose();
+            _installCts = null;
+
             if (!installed)
             {
                 OpenDownloadPage();
@@ -116,6 +124,8 @@ public class RobloxService
         return true;
     }
 
+    public void CancelInstall() => _installCts?.Cancel();
+
     private async Task MonitorProcessAsync(Process process)
     {
         await Task.Run(() => process.WaitForExit());
@@ -131,10 +141,15 @@ public class RobloxService
         StatusChanged?.Invoke(this, status);
     }
 
-    private async Task<bool> InstallRobloxAsync()
+    private void ReportProgress(string message, double percent, bool indeterminate = false)
+        => BootstrapperProgress?.Invoke(this, new BootstrapperProgress(message, percent, indeterminate));
+
+    private async Task<bool> InstallRobloxAsync(CancellationToken ct = default)
     {
         try
         {
+            ReportProgress("Checking for updates...", 0, indeterminate: true);
+
             var versionGuid = await GetLatestVersionGuidAsync();
             if (string.IsNullOrWhiteSpace(versionGuid))
                 return false;
@@ -149,13 +164,41 @@ public class RobloxService
             if (!File.Exists(installerPath))
             {
                 var installerUrl = $"https://setup.rbxcdn.com/{versionGuid}-RobloxPlayerInstaller.exe";
-                using var response = await Http.GetAsync(installerUrl);
+
+                using var response = await Http.GetAsync(installerUrl, HttpCompletionOption.ResponseHeadersRead, ct);
                 response.EnsureSuccessStatusCode();
 
-                await using var input = await response.Content.ReadAsStreamAsync();
+                var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                await using var input  = await response.Content.ReadAsStreamAsync(ct);
                 await using var output = File.Create(installerPath);
-                await input.CopyToAsync(output);
+
+                var buffer      = new byte[81920];
+                long downloaded = 0;
+                int  read;
+
+                while ((read = await input.ReadAsync(buffer, ct)) > 0)
+                {
+                    await output.WriteAsync(buffer.AsMemory(0, read), ct);
+                    downloaded += read;
+
+                    if (totalBytes > 0)
+                    {
+                        var percent = (double)downloaded / totalBytes * 100.0;
+                        var mb      = downloaded / 1_048_576.0;
+                        var totalMb = totalBytes / 1_048_576.0;
+                        ReportProgress($"Downloading Roblox... {mb:F1} / {totalMb:F1} MB", percent);
+                    }
+                    else
+                    {
+                        var mb = downloaded / 1_048_576.0;
+                        ReportProgress($"Downloading Roblox... {mb:F1} MB", 0, indeterminate: true);
+                    }
+                }
             }
+
+            if (ct.IsCancellationRequested) return false;
+
+            ReportProgress("Installing Roblox...", 100, indeterminate: true);
 
             var process = Process.Start(new ProcessStartInfo(installerPath, "/silent /install")
             {
@@ -165,11 +208,12 @@ public class RobloxService
             if (process == null)
                 return false;
 
-            try
-            {
-                await process.WaitForExitAsync();
-            }
+            try { await process.WaitForExitAsync(ct); }
             catch { }
+
+            if (ct.IsCancellationRequested) return false;
+
+            ReportProgress("Waiting for Roblox...", 100, indeterminate: true);
 
             var deadline = DateTime.UtcNow.AddMinutes(2);
             while (DateTime.UtcNow < deadline)
@@ -178,9 +222,10 @@ public class RobloxService
                 if (IsInstalled())
                     return true;
 
-                await Task.Delay(2000);
+                await Task.Delay(2000, ct);
             }
         }
+        catch (OperationCanceledException) { }
         catch { }
 
         return false;

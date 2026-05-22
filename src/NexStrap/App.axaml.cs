@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using NexStrap.Core.Services;
 using NexStrap.Services;
@@ -42,6 +43,28 @@ public partial class App : Application
         // Wire friend online → toast notification
         var friendNotif = Services.GetRequiredService<FriendNotificationService>();
         friendNotif.FriendCameOnline += (_, e) => NotificationService.ShowFriendOnline(e.DisplayName);
+
+        // Show bootstrapper window when Roblox install/update starts
+        var robloxService = Services.GetRequiredService<RobloxService>();
+        BootstrapperWindow? bootstrapperWindow = null;
+        robloxService.StatusChanged += (_, status) =>
+        {
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (status == RobloxStatus.Updating && bootstrapperWindow == null)
+                {
+                    var vm = new BootstrapperViewModel(robloxService);
+                    bootstrapperWindow = new BootstrapperWindow(vm);
+                    bootstrapperWindow.Closed += (_, _) => bootstrapperWindow = null;
+                    bootstrapperWindow.Show();
+                }
+                else if (status is RobloxStatus.Running or RobloxStatus.Idle or RobloxStatus.NotInstalled)
+                {
+                    bootstrapperWindow?.Close();
+                    bootstrapperWindow = null;
+                }
+            });
+        };
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
