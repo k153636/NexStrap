@@ -27,7 +27,9 @@ public class RobloxApiService
             var iconUrl         = await GetGameIconUrlAsync(universeId.Value);
 
             var result = (name ?? "Roblox", iconUrl, creator);
-            _gameCache[placeId] = result;
+            // 失敗結果（name="Roblox" かつ iconUrl=null）はキャッシュしない
+            if (result.Item1 != "Roblox" || iconUrl != null)
+                _gameCache[placeId] = result;
             return result;
         }
         catch
@@ -148,5 +150,51 @@ public class RobloxApiService
             return imageUrl;
         }
         catch { return null; }
+    }
+
+    public async Task<string?> GetAuthTicketAsync(string cookie)
+    {
+        try
+        {
+            using var req1 = new HttpRequestMessage(HttpMethod.Post,
+                "https://auth.roblox.com/v1/authentication-ticket");
+            req1.Headers.TryAddWithoutValidation("Cookie", $".ROBLOSECURITY={cookie}");
+            req1.Headers.TryAddWithoutValidation("Referer", "https://www.roblox.com");
+            req1.Content = new StringContent("", Encoding.UTF8, "application/json");
+            var resp1 = await Http.SendAsync(req1);
+            if (!resp1.Headers.TryGetValues("x-csrf-token", out var tokens)) return null;
+            var csrf = tokens.First();
+
+            using var req2 = new HttpRequestMessage(HttpMethod.Post,
+                "https://auth.roblox.com/v1/authentication-ticket");
+            req2.Headers.TryAddWithoutValidation("Cookie", $".ROBLOSECURITY={cookie}");
+            req2.Headers.TryAddWithoutValidation("Referer", "https://www.roblox.com");
+            req2.Headers.TryAddWithoutValidation("X-Csrf-Token", csrf);
+            req2.Content = new StringContent("", Encoding.UTF8, "application/json");
+            var resp2 = await Http.SendAsync(req2);
+            if (!resp2.IsSuccessStatusCode) return null;
+            if (!resp2.Headers.TryGetValues("RBX-Authentication-Ticket", out var tickets)) return null;
+            return tickets.First();
+        }
+        catch { return null; }
+    }
+
+    public async Task<List<FriendPresenceDetail>> GetFriendPresenceDetailsAsync(IList<long> userIds)
+    {
+        try
+        {
+            var body    = new JObject { ["userIds"] = new JArray(userIds.Cast<object>().ToArray()) };
+            var content = new StringContent(body.ToString(), Encoding.UTF8, "application/json");
+            var resp    = await Http.PostAsync("https://presence.roblox.com/v1/presence/users", content);
+            if (!resp.IsSuccessStatusCode) return [];
+            var json = await resp.Content.ReadAsStringAsync();
+            var data = JObject.Parse(json)["userPresences"] as JArray ?? [];
+            return [..data.Select(p => new FriendPresenceDetail(
+                p["userId"]!.Value<long>(),
+                p["userPresenceType"]?.Value<int>() ?? 0,
+                p["placeId"]?.Value<long?>(),
+                p["lastLocation"]?.Value<string>()))];
+        }
+        catch { return []; }
     }
 }
