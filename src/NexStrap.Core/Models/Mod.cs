@@ -23,9 +23,9 @@ public class Mod
 
     public string TypeLabel => Type switch
     {
-        ModType.Texture => "テクスチャ",
-        ModType.Sound => "サウンド",
-        ModType.Font => "フォント",
-        _ => "その他"
+        ModType.Texture => "Texture",
+        ModType.Sound => "Sound",
+        ModType.Font => "Font",
+        _ => "Other"
     };
 }

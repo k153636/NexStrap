@@ -1,5 +1,6 @@
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using NexStrap.Core.Models;
 using NexStrap.Core.Services;
 using System.Collections.ObjectModel;
@@ -63,14 +64,18 @@ public partial class GameStat : ViewModelBase
     }
 }
 
+public enum StatsSortMode { TotalTime, Sessions, LastPlayed, Name }
+
 public partial class StatsViewModel : ViewModelBase
 {
     private readonly GameHistoryService _history;
 
-    [ObservableProperty] private string _totalPlayTime = "--";
-    [ObservableProperty] private int    _totalSessions;
-    [ObservableProperty] private string _topGameName   = "--";
-    [ObservableProperty] private string _topGameTime   = "--";
+    [ObservableProperty] private string        _totalPlayTime = "--";
+    [ObservableProperty] private int           _totalSessions;
+    [ObservableProperty] private string        _topGameName   = "--";
+    [ObservableProperty] private string        _topGameTime   = "--";
+    [ObservableProperty] private StatsSortMode _sortMode      = StatsSortMode.TotalTime;
+    [ObservableProperty] private bool          _isSortMenuOpen;
 
     public ObservableCollection<GameStat> GameStats  { get; } = [];
     public ObservableCollection<DailyBar> DailyBars  { get; } = [];
@@ -81,6 +86,27 @@ public partial class StatsViewModel : ViewModelBase
         Refresh();
     }
 
+    public bool   IsSortTotalTime  => SortMode == StatsSortMode.TotalTime;
+    public bool   IsSortLastPlayed => SortMode == StatsSortMode.LastPlayed;
+    public string SortLabel        => SortMode == StatsSortMode.LastPlayed ? "Recent First" : "Most Played";
+
+    partial void OnSortModeChanged(StatsSortMode value)
+    {
+        OnPropertyChanged(nameof(IsSortTotalTime));
+        OnPropertyChanged(nameof(IsSortLastPlayed));
+        OnPropertyChanged(nameof(SortLabel));
+        Refresh();
+    }
+
+    [RelayCommand] private void ToggleSortMenu() => IsSortMenuOpen = !IsSortMenuOpen;
+
+    [RelayCommand]
+    private void SetSort(StatsSortMode mode)
+    {
+        SortMode       = mode;
+        IsSortMenuOpen = false;
+    }
+
     public void Refresh()
     {
         var entries = _history.Entries;
@@ -88,16 +114,22 @@ public partial class StatsViewModel : ViewModelBase
         TotalSessions = entries.Count;
         TotalPlayTime = FormatSeconds(entries.Sum(e => e.DurationSeconds));
 
-        var grouped = entries
+        var aggregated = entries
             .GroupBy(e => e.PlaceId)
             .Select(g => new GameStat(
                 g.First().Name,
                 g.First().IconUrl,
                 g.Count(),
                 g.Sum(e => e.DurationSeconds),
-                g.Max(e => e.PlayedAt)))
-            .OrderByDescending(g => g.TotalSeconds)
-            .ToList();
+                g.Max(e => e.PlayedAt)));
+
+        var grouped = (SortMode switch
+        {
+            StatsSortMode.Sessions   => aggregated.OrderByDescending(g => g.Sessions),
+            StatsSortMode.LastPlayed => aggregated.OrderByDescending(g => g.LastPlayed),
+            StatsSortMode.Name       => aggregated.OrderBy(g => g.Name),
+            _                        => aggregated.OrderByDescending(g => g.TotalSeconds),
+        }).ToList();
 
         GameStats.Clear();
         foreach (var s in grouped)

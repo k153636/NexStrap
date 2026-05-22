@@ -8,8 +8,8 @@
 
             <!-- Header -->
             <StackPanel Spacing="6">
-                <TextBlock Text="ブラウザ" FontSize="28" FontWeight="Bold" Foreground="#FFFFFF"/>
-                <TextBlock Text="ゲームをプレイしながら好きなサイトを開きましょう"
+                <TextBlock Text="Browser" FontSize="28" FontWeight="Bold" Foreground="#FFFFFF"/>
+                <TextBlock Text="Open your favorite sites while playing Roblox"
                            FontSize="14" Foreground="#505050"/>
             </StackPanel>
 
@@ -19,20 +19,20 @@
                          Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF"
                          BorderBrush="#2E2E2E" CornerRadius="14"
                          Padding="18,13" FontSize="14"
-                         Watermark="URL を入力... (例: https://youtube.com)"/>
+                         Watermark="Enter URL... (e.g. https://youtube.com)"/>
                 <Button Grid.Column="2" x:Name="GoButton"
                         Padding="20,13" CornerRadius="14"
                         Background="#FFFFFF" Foreground="#080808">
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <PathIcon Data="{StaticResource IconGlobe}" Width="14" Height="14" Foreground="#080808"/>
-                        <TextBlock Text="ブラウザで開く" FontWeight="SemiBold" FontSize="13"/>
+                        <TextBlock Text="Open in Browser" FontWeight="SemiBold" FontSize="13"/>
                     </StackPanel>
                 </Button>
             </Grid>
 
             <!-- Quick Links -->
             <StackPanel Spacing="16">
-                <TextBlock Text="クイックリンク" FontSize="12" FontWeight="SemiBold"
+                <TextBlock Text="Quick Links" FontSize="12" FontWeight="SemiBold"
                            Foreground="#505050" Margin="4,0"/>
                 <WrapPanel Orientation="Horizontal">
 
@@ -44,7 +44,7 @@
                             <StackPanel Spacing="3" HorizontalAlignment="Center">
                                 <TextBlock Text="YouTube" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#FFFFFF" HorizontalAlignment="Center"/>
-                                <TextBlock Text="動画・アニメを視聴" FontSize="11"
+                                <TextBlock Text="Watch videos &amp; anime" FontSize="11"
                                            Foreground="#505050" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </StackPanel>
@@ -56,9 +56,9 @@
                             <PathIcon Data="{StaticResource IconVideo}" Width="26" Height="26"
                                       Foreground="#FFFFFF" HorizontalAlignment="Center"/>
                             <StackPanel Spacing="3" HorizontalAlignment="Center">
-                                <TextBlock Text="ニコニコ" FontSize="13" FontWeight="SemiBold"
+                                <TextBlock Text="Niconico" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#FFFFFF" HorizontalAlignment="Center"/>
-                                <TextBlock Text="動画・生放送" FontSize="11"
+                                <TextBlock Text="Videos &amp; livestreams" FontSize="11"
                                            Foreground="#505050" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </StackPanel>
@@ -72,7 +72,7 @@
                             <StackPanel Spacing="3" HorizontalAlignment="Center">
                                 <TextBlock Text="X (Twitter)" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#FFFFFF" HorizontalAlignment="Center"/>
-                                <TextBlock Text="タイムライン" FontSize="11"
+                                <TextBlock Text="Timeline" FontSize="11"
                                            Foreground="#505050" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </StackPanel>
@@ -86,7 +86,7 @@
                             <StackPanel Spacing="3" HorizontalAlignment="Center">
                                 <TextBlock Text="Discord" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#FFFFFF" HorizontalAlignment="Center"/>
-                                <TextBlock Text="フレンドとチャット" FontSize="11"
+                                <TextBlock Text="Chat with friends" FontSize="11"
                                            Foreground="#505050" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </StackPanel>
@@ -100,7 +100,7 @@
                             <StackPanel Spacing="3" HorizontalAlignment="Center">
                                 <TextBlock Text="Spotify" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#FFFFFF" HorizontalAlignment="Center"/>
-                                <TextBlock Text="音楽を聴きながら" FontSize="11"
+                                <TextBlock Text="Listen while you play" FontSize="11"
                                            Foreground="#505050" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </StackPanel>
@@ -114,7 +114,7 @@
                             <StackPanel Spacing="3" HorizontalAlignment="Center">
                                 <TextBlock Text="Roblox.com" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#FFFFFF" HorizontalAlignment="Center"/>
-                                <TextBlock Text="ゲームを探す" FontSize="11"
+                                <TextBlock Text="Browse games" FontSize="11"
                                            Foreground="#505050" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </StackPanel>
@@ -129,12 +129,12 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <PathIcon Data="{StaticResource IconInfo}" Width="13" Height="13"
                                   Foreground="#505050"/>
-                        <TextBlock Text="使い方のヒント" FontSize="12" FontWeight="SemiBold"
+                        <TextBlock Text="Tip" FontSize="12" FontWeight="SemiBold"
                                    Foreground="#505050"/>
                     </StackPanel>
                     <TextBlock TextWrapping="Wrap" Foreground="#888888" FontSize="13" LineHeight="22">
-                        ブラウザで開いたサイトは Roblox と並べて表示できます。
-                        Windows キー + ← / → でスナップして、片方でゲーム・もう片方で動画を再生しましょう。
+                        You can snap browser windows alongside Roblox.
+                        Use Win + ← / → to snap — game on one side, video on the other.
                     </TextBlock>
                 </StackPanel>
             </Border>

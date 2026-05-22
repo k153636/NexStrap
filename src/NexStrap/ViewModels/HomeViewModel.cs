@@ -10,6 +10,8 @@ using NexStrap.Services;
 
 namespace NexStrap.ViewModels;
 
+public enum HomeSortMode { RecentFirst, TotalTime }
+
 public partial class HomeViewModel : ViewModelBase
 {
     private readonly RobloxService _roblox;
@@ -21,6 +23,7 @@ public partial class HomeViewModel : ViewModelBase
     private readonly RobloxApiService _robloxApi;
     private readonly GameHistoryService _history;
     private readonly FriendNotificationService _friendNotifications;
+    private readonly AccountService _accountService;
 
     private CancellationTokenSource? _launchFallbackCts;
     private bool      _gameDetected;
@@ -50,11 +53,34 @@ public partial class HomeViewModel : ViewModelBase
     public ObservableCollection<GameEntryViewModel> FavoriteGames { get; } = [];
     public string? UserAvatarUrl => _userAvatarUrl;
 
-    [ObservableProperty] private bool _isRobloxRunning;
-    [ObservableProperty] private bool _isLaunching;
-    [ObservableProperty] private bool _isRobloxInstalled;
-    [ObservableProperty] private string _statusText = "準備完了";
-    [ObservableProperty] private string _robloxVersion = "未検出";
+    [ObservableProperty] private bool         _isRobloxRunning;
+    [ObservableProperty] private bool         _isLaunching;
+    [ObservableProperty] private bool         _isRobloxInstalled;
+    [ObservableProperty] private string       _statusText    = "Ready";
+    [ObservableProperty] private string       _robloxVersion = "Not detected";
+    [ObservableProperty] private HomeSortMode _homeSortOrder = HomeSortMode.RecentFirst;
+    [ObservableProperty] private bool         _isSortMenuOpen;
+
+    public bool   IsSortRecent    => HomeSortOrder == HomeSortMode.RecentFirst;
+    public bool   IsSortTotalTime => HomeSortOrder == HomeSortMode.TotalTime;
+    public string SortLabel       => HomeSortOrder == HomeSortMode.RecentFirst ? "Recent First" : "Most Played";
+
+    partial void OnHomeSortOrderChanged(HomeSortMode value)
+    {
+        OnPropertyChanged(nameof(IsSortRecent));
+        OnPropertyChanged(nameof(IsSortTotalTime));
+        OnPropertyChanged(nameof(SortLabel));
+        RebuildGameLists();
+    }
+
+    [RelayCommand] private void ToggleSortMenu() => IsSortMenuOpen = !IsSortMenuOpen;
+
+    [RelayCommand]
+    private void SetHomeSort(HomeSortMode mode)
+    {
+        HomeSortOrder  = mode;
+        IsSortMenuOpen = false;
+    }
 
     public HomeViewModel(
         RobloxService roblox,
@@ -65,7 +91,8 @@ public partial class HomeViewModel : ViewModelBase
         RobloxLogWatcher logWatcher,
         RobloxApiService robloxApi,
         GameHistoryService history,
-        FriendNotificationService friendNotifications)
+        FriendNotificationService friendNotifications,
+        AccountService accountService)
     {
         _roblox               = roblox;
         _fastFlags            = fastFlags;
@@ -76,6 +103,7 @@ public partial class HomeViewModel : ViewModelBase
         _robloxApi            = robloxApi;
         _history              = history;
         _friendNotifications  = friendNotifications;
+        _accountService       = accountService;
 
         RebuildGameLists();
         UpdateJumpList();
@@ -92,9 +120,9 @@ public partial class HomeViewModel : ViewModelBase
                 IsLaunching = status == RobloxStatus.Launching;
                 StatusText  = status switch
                 {
-                    RobloxStatus.Launching    => "起動しています...",
-                    RobloxStatus.Updating     => "アップデート中...",
-                    RobloxStatus.NotInstalled => "Roblox が見つかりません",
+                    RobloxStatus.Launching    => "Launching...",
+                    RobloxStatus.Updating     => "Updating...",
+                    RobloxStatus.NotInstalled => "Roblox not found",
                     RobloxStatus.Running      => "Roblox running",
                     RobloxStatus.Idle         => "Ready",
                     _ => StatusText
@@ -120,7 +148,7 @@ public partial class HomeViewModel : ViewModelBase
                 }
 
                 if (status == RobloxStatus.Running || status == RobloxStatus.Idle)
-                    _discord.SetPagePresence("繝帙・繝", _userAvatarUrl, "Roblox");
+                    _discord.SetPagePresence("Home", _userAvatarUrl, "Roblox");
             });
         };
 
@@ -134,7 +162,7 @@ public partial class HomeViewModel : ViewModelBase
                 _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(userId);
                 await ApplyUserLabelAsync(userId);
                 if (!IsRobloxRunning && !IsLaunching)
-                    _discord.SetPagePresence("ホーム", _userAvatarUrl);
+                    _discord.SetPagePresence("Home", _userAvatarUrl);
             }
             catch { }
         };
@@ -187,7 +215,7 @@ public partial class HomeViewModel : ViewModelBase
                 {
                     RebuildGameLists();
 
-                    StatusText      = launchMs.HasValue ? $"起動: {launchMs.Value:F1}秒" : $"プレイ中: {name}";
+                    StatusText      = launchMs.HasValue ? $"Launch: {launchMs.Value:F1}s" : $"Playing: {name}";
                     IsRobloxRunning = true;
                     IsLaunching     = false;
                 });
@@ -197,7 +225,7 @@ public partial class HomeViewModel : ViewModelBase
                     await Task.Delay(3000);
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
-                        if (IsRobloxRunning) StatusText = $"プレイ中: {name}";
+                        if (IsRobloxRunning) StatusText = $"Playing: {name}";
                     });
                 }
             }
@@ -221,10 +249,10 @@ public partial class HomeViewModel : ViewModelBase
             }
             _gameStartTime = null;
 
-            _discord.SetPagePresence("ホーム", _userAvatarUrl, "Roblox");
+            _discord.SetPagePresence("Home", _userAvatarUrl, "Roblox");
             Dispatcher.UIThread.InvokeAsync(() =>
             {
-                StatusText      = "準備完了";
+                StatusText      = "Ready";
                 IsRobloxRunning = false;
             });
         };
@@ -233,7 +261,7 @@ public partial class HomeViewModel : ViewModelBase
         _discord.ConnectionChanged += (_, connected) =>
         {
             if (connected && !_gameDetected)
-                _discord.SetPagePresence("ホーム", _userAvatarUrl);
+                _discord.SetPagePresence("Home", _userAvatarUrl);
         };
 
         _logWatcher.Start();
@@ -253,7 +281,7 @@ public partial class HomeViewModel : ViewModelBase
                 await ApplyUserLabelAsync(cachedUserId);
                 // ゲームプレイ中・Roblox 起動中は上書きしない
                 if (!IsRobloxRunning && !_gameDetected)
-                    _discord.SetPagePresence("ホーム", _userAvatarUrl);
+                    _discord.SetPagePresence("Home", _userAvatarUrl);
             });
         }
 
@@ -271,7 +299,7 @@ public partial class HomeViewModel : ViewModelBase
 
         IsLaunching   = true;
         _gameDetected = false;
-        StatusText    = "フラグを適用中...";
+        StatusText    = "Applying flags...";
 
         // FPS Unlock 設定をフラグに反映
         if (_settings.Settings.FpsUnlockEnabled)
@@ -300,10 +328,20 @@ public partial class HomeViewModel : ViewModelBase
         await _fastFlags.SaveAsync();
         await _mods.ApplyEnabledModsAsync();
 
-        StatusText       = "起動しています...";
+        StatusText       = "Launching...";
         _launchStartTime = DateTime.UtcNow;
         _discord.SetLaunchingPresence(_userAvatarUrl);
-        var launched = await _roblox.LaunchAsync();
+
+        string? launchArgs = null;
+        var activeCookie = _accountService.GetActiveCookie();
+        if (activeCookie != null)
+        {
+            var ticket = await _robloxApi.GetAuthTicketAsync(activeCookie);
+            if (ticket != null)
+                launchArgs = $"--launchMode app --authenticationTicket {ticket} --authenticationUrl https://auth.roblox.com";
+        }
+
+        var launched = await _roblox.LaunchAsync(launchArgs);
         if (!launched)
         {
             IsLaunching = false;
@@ -334,9 +372,9 @@ public partial class HomeViewModel : ViewModelBase
     {
         var flags = _fastFlags.GetAll();
         await _fastFlags.HotReloadAsync(flags);
-        StatusText = "Fast Flags をホットリロードしました";
+        StatusText = "Fast Flags hot reloaded";
         await Task.Delay(2000);
-        StatusText = IsRobloxRunning ? $"プレイ中" : "準備完了";
+        StatusText = IsRobloxRunning ? $"Playing" : "Ready";
     }
 
     // Roblox プロセスを 2 秒ごとにポーリング — 検出次第即座に「プレイ中」へ
@@ -362,10 +400,10 @@ public partial class HomeViewModel : ViewModelBase
                         // プロセス確認できた → ホーム画面にいる状態
                         // GameLeft イベントが IsRobloxRunning=false に戻すので、
                         // ここではフラグを立てるだけで監視は LogWatcher に委譲
-                        _discord.SetPagePresence("ホーム", _userAvatarUrl, "Roblox");
+                        _discord.SetPagePresence("Home", _userAvatarUrl, "Roblox");
                         await Dispatcher.UIThread.InvokeAsync(() =>
                         {
-                            StatusText      = "Roblox を起動中";
+                            StatusText      = "Launching Roblox";
                             IsRobloxRunning = true;
                             IsLaunching     = false;
                         });
@@ -376,12 +414,12 @@ public partial class HomeViewModel : ViewModelBase
                 // タイムアウト — 起動失敗
                 if (!token.IsCancellationRequested && !_gameDetected)
                 {
-                    _discord.SetPagePresence("ホーム", _userAvatarUrl);
+                    _discord.SetPagePresence("Home", _userAvatarUrl);
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         IsLaunching     = false;
                         IsRobloxRunning = false;
-                        StatusText      = "準備完了";
+                        StatusText      = "Ready";
                     });
                 }
             }
@@ -400,9 +438,27 @@ public partial class HomeViewModel : ViewModelBase
         var favorites = _settings.Settings.FavoriteGameIds.ToHashSet();
         RecentGames.Clear();
         FavoriteGames.Clear();
-        foreach (var e in _history.Entries)
+
+        var grouped = _history.Entries
+            .GroupBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(g =>
+            {
+                var best  = g.OrderByDescending(e => e.PlayedAt).First();
+                var total = g.Sum(e => e.DurationSeconds);
+                return (Entry: best, TotalSeconds: total);
+            });
+
+        var sorted = HomeSortOrder == HomeSortMode.TotalTime
+            ? grouped.OrderByDescending(x => x.TotalSeconds)
+            : grouped.OrderByDescending(x => x.Entry.PlayedAt);
+
+        foreach (var (entry, total) in sorted)
         {
-            var vm = new GameEntryViewModel(e) { IsFavorite = favorites.Contains(e.PlaceId) };
+            var vm = new GameEntryViewModel(entry)
+            {
+                IsFavorite            = favorites.Contains(entry.PlaceId),
+                DisplayDurationSeconds = total
+            };
             RecentGames.Add(vm);
             if (vm.IsFavorite) FavoriteGames.Add(vm);
         }
@@ -443,7 +499,7 @@ public partial class HomeViewModel : ViewModelBase
             ? $"{_myCountryCode} → {_currentServerCode} Server"
             : $"{_currentServerCode} Server";
         var flagCount = _fastFlags.GetAll().Count;
-        return $"{server}・{flagCount} Flags";
+        return $"{server} · {flagCount} Flags";
     }
     partial void OnIsRobloxRunningChanged(bool value)
     {

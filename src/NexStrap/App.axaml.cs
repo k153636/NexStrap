@@ -13,6 +13,8 @@ namespace NexStrap;
 public partial class App : Application
 {
     public static IServiceProvider Services { get; private set; } = null!;
+    private bool _isBackground;
+    private bool _isPlaying;
 
     public override void Initialize()
     {
@@ -106,9 +108,21 @@ public partial class App : Application
 
     internal void SetBackgroundMode(bool background)
     {
-        Services.GetRequiredService<RobloxLogWatcher>().SetBackgroundMode(background);
-        Services.GetRequiredService<SmtcService>().SetBackgroundMode(background);
-        Services.GetRequiredService<FriendNotificationService>().SetBackgroundMode(background);
+        _isBackground = background;
+        ApplyServiceModes();
+    }
+
+    internal void SetPlayingMode(bool playing)
+    {
+        _isPlaying = playing;
+        ApplyServiceModes();
+    }
+
+    private void ApplyServiceModes()
+    {
+        Services.GetRequiredService<RobloxLogWatcher>().SetBackgroundMode(_isBackground, _isPlaying);
+        Services.GetRequiredService<SmtcService>().SetBackgroundMode(_isBackground, _isPlaying);
+        Services.GetRequiredService<FriendNotificationService>().SetBackgroundMode(_isBackground, _isPlaying);
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -135,6 +149,10 @@ public partial class App : Application
         services.AddTransient<FastFlagsViewModel>();
         services.AddTransient<ModsViewModel>();
         services.AddTransient<SettingsViewModel>();
+        services.AddTransient<DiscordViewModel>();
         services.AddTransient<BrowserViewModel>();
+        services.AddSingleton<AccountService>();
+        services.AddTransient<AccountViewModel>();
+        services.AddTransient<FriendsViewModel>();
     }
 }

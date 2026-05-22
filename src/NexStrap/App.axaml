@@ -12,9 +12,9 @@
                       Clicked="OnTrayIconClicked">
                 <TrayIcon.Menu>
                     <NativeMenu>
-                        <NativeMenuItem Header="NexStrapを表示" Click="OnTrayShowClicked"/>
+                        <NativeMenuItem Header="Show NexStrap" Click="OnTrayShowClicked"/>
                         <NativeMenuItemSeparator/>
-                        <NativeMenuItem Header="終了" Click="OnTrayExitClicked"/>
+                        <NativeMenuItem Header="Quit" Click="OnTrayExitClicked"/>
                     </NativeMenu>
                 </TrayIcon.Menu>
             </TrayIcon>
@@ -40,11 +40,25 @@
             <SolidColorBrush x:Key="FgBrush"        Color="#FFFFFF"/>
 
             <!-- Glass-switchable card brushes (updated in code when glass theme toggles) -->
-            <SolidColorBrush x:Key="CardBg"     Color="#111111"/>
-            <SolidColorBrush x:Key="SurfaceBg"  Color="#141414"/>
-            <SolidColorBrush x:Key="ElevatedBg" Color="#202020"/>
-            <SolidColorBrush x:Key="OverlayBg"  Color="#1A1A1A"/>
-            <SolidColorBrush x:Key="InputBg"    Color="#0D0D0D"/>
+            <LinearGradientBrush x:Key="CardBg"     StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#1A1A1A" Offset="0"/><GradientStop Color="#0D0D0D" Offset="1"/>
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="SurfaceBg"  StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#1C1C1C" Offset="0"/><GradientStop Color="#101010" Offset="1"/>
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="ElevatedBg" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#262626" Offset="0"/><GradientStop Color="#181818" Offset="1"/>
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="OverlayBg"  StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#202020" Offset="0"/><GradientStop Color="#131313" Offset="1"/>
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="InputBg"    StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#141414" Offset="0"/><GradientStop Color="#080808" Offset="1"/>
+            </LinearGradientBrush>
+
+            <!-- Glass-switchable text colors -->
+            <SolidColorBrush x:Key="FgSub"   Color="#555555"/>
+            <SolidColorBrush x:Key="FgMuted" Color="#2E2E2E"/>
 
             <!-- SVG path data (StreamGeometry — PathIcon.Data requires Geometry, not string) -->
             <StreamGeometry x:Key="IconHome">M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z</StreamGeometry>

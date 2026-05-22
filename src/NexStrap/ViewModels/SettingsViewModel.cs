@@ -8,11 +8,7 @@ namespace NexStrap.ViewModels;
 public partial class SettingsViewModel : ViewModelBase
 {
     private readonly SettingsService _settingsService;
-    private readonly DiscordRpcService _discord;
-    private readonly EnvService _env;
 
-    [ObservableProperty] private bool _discordRpcEnabled;
-    [ObservableProperty] private bool _discordAppIdConfigured;
     [ObservableProperty] private bool _showPerformanceOverlay;
     [ObservableProperty] private bool _autoUpdateRoblox;
     [ObservableProperty] private bool _minimizeToTray;
@@ -23,15 +19,11 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private string _browserHomepage = string.Empty;
     [ObservableProperty] private string _statusMessage = string.Empty;
 
-    public SettingsViewModel(SettingsService settingsService, DiscordRpcService discord, EnvService env)
+    public SettingsViewModel(SettingsService settingsService)
     {
         _settingsService = settingsService;
-        _discord = discord;
-        _env = env;
 
         var s = settingsService.Settings;
-        _discordRpcEnabled = s.DiscordRpcEnabled;
-        _discordAppIdConfigured = env.Get("DISCORD_APP_ID") != null;
         _showPerformanceOverlay = s.ShowPerformanceOverlay;
         _autoUpdateRoblox = s.AutoUpdateRoblox;
         _minimizeToTray = s.MinimizeToTray;
@@ -42,24 +34,11 @@ public partial class SettingsViewModel : ViewModelBase
         _browserHomepage = s.BrowserHomepage;
     }
 
-    // ToggleSwitch を変更したら即時保存・反映
-    partial void OnDiscordRpcEnabledChanged(bool value)
-    {
-        _settingsService.Update(s => s.DiscordRpcEnabled = value);
-
-        var appId = _env.Get("DISCORD_APP_ID");
-        if (value && appId != null)
-            _discord.Initialize(appId);
-        else
-            _discord.ClearPresence();
-    }
-
     [RelayCommand]
     private void Save()
     {
         _settingsService.Update(s =>
         {
-            s.DiscordRpcEnabled = DiscordRpcEnabled;
             s.ShowPerformanceOverlay = ShowPerformanceOverlay;
             s.AutoUpdateRoblox = AutoUpdateRoblox;
             s.MinimizeToTray = MinimizeToTray;
@@ -69,14 +48,13 @@ public partial class SettingsViewModel : ViewModelBase
             s.TargetFps = TargetFps;
             s.BrowserHomepage = BrowserHomepage;
         });
-        StatusMessage = "設定を保存しました";
+        StatusMessage = "Settings saved";
     }
 
     [RelayCommand]
     private void ResetToDefaults()
     {
         var defaults = new AppSettings();
-        DiscordRpcEnabled = defaults.DiscordRpcEnabled;
         ShowPerformanceOverlay = defaults.ShowPerformanceOverlay;
         AutoUpdateRoblox = defaults.AutoUpdateRoblox;
         MinimizeToTray = defaults.MinimizeToTray;

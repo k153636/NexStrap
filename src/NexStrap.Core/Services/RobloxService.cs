@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Microsoft.Win32;
 
 namespace NexStrap.Core.Services;
@@ -14,6 +15,11 @@ public enum RobloxStatus
 
 public class RobloxService
 {
+    private static readonly HttpClient Http = new()
+    {
+        Timeout = TimeSpan.FromSeconds(30)
+    };
+
     private Process? _robloxProcess;
     private string? _cachedVersionFolder;
 
@@ -70,10 +76,29 @@ public class RobloxService
         return _cachedVersionFolder;
     }
 
-    public Task<bool> LaunchAsync(string? launchArgs = null)
+    public async Task<bool> LaunchAsync(string? launchArgs = null)
     {
         var playerPath = RobloxPlayerPath;
-        if (playerPath == null) return Task.FromResult(false);
+        if (playerPath == null)
+        {
+            SetStatus(RobloxStatus.Updating);
+
+            var installed = await InstallRobloxAsync();
+            if (!installed)
+            {
+                OpenDownloadPage();
+                SetStatus(RobloxStatus.NotInstalled);
+                return false;
+            }
+
+            playerPath = RobloxPlayerPath;
+            if (playerPath == null)
+            {
+                OpenDownloadPage();
+                SetStatus(RobloxStatus.NotInstalled);
+                return false;
+            }
+        }
 
         SetStatus(RobloxStatus.Launching);
 
@@ -84,11 +109,11 @@ public class RobloxService
         };
 
         _robloxProcess = Process.Start(startInfo);
-        if (_robloxProcess == null) { SetStatus(RobloxStatus.Idle); return Task.FromResult(false); }
+        if (_robloxProcess == null) { SetStatus(RobloxStatus.Idle); return false; }
 
         _ = MonitorProcessAsync(_robloxProcess);
         SetStatus(RobloxStatus.Running);
-        return Task.FromResult(true);
+        return true;
     }
 
     private async Task MonitorProcessAsync(Process process)
@@ -104,5 +129,94 @@ public class RobloxService
     {
         Status = status;
         StatusChanged?.Invoke(this, status);
+    }
+
+    private async Task<bool> InstallRobloxAsync()
+    {
+        try
+        {
+            var versionGuid = await GetLatestVersionGuidAsync();
+            if (string.IsNullOrWhiteSpace(versionGuid))
+                return false;
+
+            var downloadsDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "NexStrap",
+                "Downloads");
+            Directory.CreateDirectory(downloadsDir);
+
+            var installerPath = Path.Combine(downloadsDir, $"{versionGuid}-RobloxPlayerInstaller.exe");
+            if (!File.Exists(installerPath))
+            {
+                var installerUrl = $"https://setup.rbxcdn.com/{versionGuid}-RobloxPlayerInstaller.exe";
+                using var response = await Http.GetAsync(installerUrl);
+                response.EnsureSuccessStatusCode();
+
+                await using var input = await response.Content.ReadAsStreamAsync();
+                await using var output = File.Create(installerPath);
+                await input.CopyToAsync(output);
+            }
+
+            var process = Process.Start(new ProcessStartInfo(installerPath, "/silent /install")
+            {
+                UseShellExecute = true
+            });
+
+            if (process == null)
+                return false;
+
+            try
+            {
+                await process.WaitForExitAsync();
+            }
+            catch { }
+
+            var deadline = DateTime.UtcNow.AddMinutes(2);
+            while (DateTime.UtcNow < deadline)
+            {
+                _cachedVersionFolder = null;
+                if (IsInstalled())
+                    return true;
+
+                await Task.Delay(2000);
+            }
+        }
+        catch { }
+
+        return false;
+    }
+
+    private static async Task<string?> GetLatestVersionGuidAsync()
+    {
+        foreach (var url in new[]
+                 {
+                     "https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer",
+                     "https://clientsettings.roblox.com/v2/client-version/WindowsPlayer"
+                 })
+        {
+            try
+            {
+                var json = await Http.GetStringAsync(url);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("clientVersionUpload", out var versionProp))
+                    return versionProp.GetString();
+            }
+            catch { }
+        }
+
+        return null;
+    }
+
+    private static void OpenDownloadPage()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "https://www.roblox.com/download",
+                UseShellExecute = true
+            });
+        }
+        catch { }
     }
 }

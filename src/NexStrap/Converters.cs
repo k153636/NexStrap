@@ -23,7 +23,7 @@ public class BoolToStringConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        var param = parameter?.ToString() ?? "はい,いいえ";
+        var param = parameter?.ToString() ?? "Yes,No";
         var parts = param.Split(',');
         return (value is bool b && b) ? parts[0] : (parts.Length > 1 ? parts[1] : string.Empty);
     }

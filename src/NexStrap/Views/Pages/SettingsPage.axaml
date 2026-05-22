@@ -1,66 +1,27 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NexStrap.ViewModels"
+             xmlns:helpers="using:NexStrap.Helpers"
              x:Class="NexStrap.Views.Pages.SettingsPage"
              x:DataType="vm:SettingsViewModel"
              Background="Transparent">
 
     <ScrollViewer>
-        <StackPanel Spacing="10" Margin="24,20">
+        <StackPanel Spacing="10" Margin="24,20" helpers:AnimationHelper.StaggerChildren="True">
 
-            <TextBlock Text="設定" FontSize="22" FontWeight="Bold"
+            <TextBlock Text="Settings" FontSize="22" FontWeight="Bold"
                        Foreground="#FFFFFF" Margin="0,0,0,2"/>
 
-            <!-- Discord -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
                 <StackPanel Spacing="12">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="Discord" FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#666666" VerticalAlignment="Center"/>
-                        <Border CornerRadius="8" Padding="8,3" Background="{DynamicResource OverlayBg}">
-                            <TextBlock FontSize="11"
-                                       Text="{Binding DiscordAppIdConfigured, Converter={StaticResource BoolToStringConverter}, ConverterParameter='設定済み,未設定'}"
-                                       Foreground="{Binding DiscordAppIdConfigured, Converter={StaticResource BoolToStringConverter}, ConverterParameter='#4ADE80,#505050'}"/>
-                        </Border>
-                    </StackPanel>
-
-                    <Border Background="{DynamicResource OverlayBg}" CornerRadius="10" Padding="14,10"
-                            IsVisible="{Binding !DiscordAppIdConfigured}">
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="DISCORD_APP_ID が未設定です"
-                                       Foreground="#CCCCCC" FontSize="12" FontWeight="SemiBold"/>
-                            <TextBlock TextWrapping="Wrap" Foreground="#666666" FontSize="11" LineHeight="18">
-                                プロジェクトルートの .env に DISCORD_APP_ID=あなたのID を追加してください。
-                            </TextBlock>
-                            <TextBlock Text="DISCORD_APP_ID=1234567890123456789"
-                                       Foreground="#888888" FontSize="11" FontFamily="Consolas,monospace"/>
-                        </StackPanel>
-                    </Border>
+                    <TextBlock Text="Performance" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource FgSub}"/>
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Rich Presence" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="プレイ中のゲーム情報を Discord に表示"
-                                       Foreground="#505050" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding DiscordRpcEnabled}"
-                                      IsEnabled="{Binding DiscordAppIdConfigured}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <!-- Performance -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="パフォーマンス" FontSize="12" FontWeight="SemiBold"
-                               Foreground="#666666"/>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="FPS アンロック（無制限）" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="DFIntTaskSchedulerTargetFps=9999 を自動設定"
-                                       Foreground="#505050" FontSize="11"/>
+                            <TextBlock Text="FPS Unlock" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Apply flags for uncapped frame rate"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding FpsUnlockEnabled}"
                                       OnContent="ON" OffContent="OFF"/>
@@ -68,9 +29,9 @@
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="マルチスレッド" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="タスクスケジューラーを全 CPU スレッドで動作させる"
-                                       Foreground="#505050" FontSize="11"/>
+                            <TextBlock Text="Multi-threading" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Tune scheduler flags for CPU thread utilization"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding MultiThreadingEnabled}"
                                       OnContent="ON" OffContent="OFF"/>
@@ -78,9 +39,9 @@
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="パフォーマンスオーバーレイ" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="FPS・CPU・メモリをゲーム上に表示"
-                                       Foreground="#505050" FontSize="11"/>
+                            <TextBlock Text="Performance Overlay" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Show FPS and memory usage while playing"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowPerformanceOverlay}"
                                       OnContent="ON" OffContent="OFF"/>
@@ -88,17 +49,16 @@
                 </StackPanel>
             </Border>
 
-            <!-- Roblox -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Roblox" FontSize="12" FontWeight="SemiBold"
-                               Foreground="#666666"/>
+                               Foreground="{DynamicResource FgSub}"/>
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="自動アップデート" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Roblox のアップデートを自動実行"
-                                       Foreground="#505050" FontSize="11"/>
+                            <TextBlock Text="Auto-update Roblox" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Automatically install Roblox updates"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoUpdateRoblox}"
                                       OnContent="ON" OffContent="OFF"/>
@@ -106,9 +66,9 @@
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Fast Flags ホットリロード" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="起動中に Flags を変更・即時反映"
-                                       Foreground="#505050" FontSize="11"/>
+                            <TextBlock Text="Fast Flags Hot Reload" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Reload flags on launch and when needed"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding HotReloadEnabled}"
                                       OnContent="ON" OffContent="OFF"/>
@@ -116,24 +76,23 @@
                 </StackPanel>
             </Border>
 
-            <!-- App -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="アプリ" FontSize="12" FontWeight="SemiBold"
-                               Foreground="#666666"/>
+                    <TextBlock Text="App" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource FgSub}"/>
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="トレイに最小化" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="閉じるボタンでトレイに格納"
-                                       Foreground="#505050" FontSize="11"/>
+                            <TextBlock Text="Minimize to Tray" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Close button sends app to system tray"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding MinimizeToTray}"
                                       OnContent="ON" OffContent="OFF"/>
                     </Grid>
 
                     <StackPanel Spacing="6">
-                        <TextBlock Text="ブラウザのホームページ" Foreground="#FFFFFF" FontSize="13"/>
+                        <TextBlock Text="Browser Homepage" Foreground="#FFFFFF" FontSize="13"/>
                         <TextBox Text="{Binding BrowserHomepage}"
                                  Background="#080808" Foreground="#FFFFFF"
                                  BorderBrush="#2A2A2A" CornerRadius="10"
@@ -142,20 +101,19 @@
                 </StackPanel>
             </Border>
 
-            <!-- Actions -->
             <Grid ColumnDefinitions="*,10,Auto" Margin="0,4,0,0">
-                <Button Grid.Column="0" Content="デフォルトに戻す"
+                <Button Grid.Column="0" Content="Reset to Defaults"
                         Command="{Binding ResetToDefaultsCommand}"
-                        Background="{DynamicResource CardBg}" Foreground="#505050" FontSize="12"
+                        Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}" FontSize="12"
                         Padding="14,8" CornerRadius="10" HorizontalAlignment="Left"/>
-                <Button Grid.Column="2" Content="保存"
+                <Button Grid.Column="2" Content="Save"
                         Command="{Binding SaveCommand}"
                         Background="#FFFFFF" Foreground="#080808"
                         FontWeight="SemiBold" FontSize="12"
                         Padding="24,8" CornerRadius="10"/>
             </Grid>
 
-            <TextBlock Text="{Binding StatusMessage}" Foreground="#666666" FontSize="12"
+            <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource FgSub}" FontSize="12"
                        HorizontalAlignment="Center" Margin="0,0,0,12"
                        IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 

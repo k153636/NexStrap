@@ -19,7 +19,7 @@ public partial class ModsPage : UserControl
 
         var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "Mod フォルダを選択",
+            Title = "Select Mod Folder",
             AllowMultiple = false
         });
 

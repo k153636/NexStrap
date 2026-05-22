@@ -1,27 +1,28 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NexStrap.ViewModels"
+             xmlns:helpers="using:NexStrap.Helpers"
              x:Class="NexStrap.Views.Pages.ThemePage"
              x:DataType="vm:ThemeViewModel"
              Background="Transparent">
 
     <ScrollViewer>
-        <StackPanel Spacing="10" Margin="24,20">
+        <StackPanel Spacing="10" Margin="24,20" helpers:AnimationHelper.StaggerChildren="True">
 
-            <TextBlock Text="テーマ" FontSize="22" FontWeight="Bold"
+            <TextBlock Text="Theme" FontSize="22" FontWeight="Bold"
                        Foreground="#FFFFFF" Margin="0,0,0,2"/>
 
-            <!-- 外観カード -->
+            <!-- Appearance -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="外観" FontSize="12" FontWeight="SemiBold"
-                               Foreground="#444444"/>
+                    <TextBlock Text="Appearance" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource FgSub}"/>
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="3">
-                            <TextBlock Text="Glassテーマ" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="サイドバーを半透明にして背景画像が透けて見えるガラス効果"
-                                       Foreground="#444444" FontSize="11"/>
+                            <TextBlock Text="Glass Theme" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Semi-transparent sidebar with background image bleed-through"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1"
                                       IsChecked="{Binding GlassThemeEnabled}"
@@ -29,12 +30,11 @@
                                       VerticalAlignment="Center"/>
                     </Grid>
 
-                    <!-- UIカラー (Glass有効時のみ表示) -->
+                    <!-- UI Color (Glass only) -->
                     <StackPanel Spacing="10" IsVisible="{Binding GlassThemeEnabled}">
-                        <TextBlock Text="UIカラー" FontSize="11" Foreground="#444444"/>
+                        <TextBlock Text="UI Color" FontSize="11" Foreground="{DynamicResource FgSub}"/>
                         <WrapPanel Orientation="Horizontal">
 
-                            <!-- White -->
                             <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentWhite,
@@ -46,7 +46,6 @@
                                         Background="#FFFFFF" Padding="0"/>
                             </Border>
 
-                            <!-- Blue -->
                             <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentBlue,
@@ -58,7 +57,6 @@
                                         Background="#6EA8FF" Padding="0"/>
                             </Border>
 
-                            <!-- Purple -->
                             <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentPurple,
@@ -70,7 +68,6 @@
                                         Background="#B470FF" Padding="0"/>
                             </Border>
 
-                            <!-- Pink -->
                             <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentPink,
@@ -82,7 +79,6 @@
                                         Background="#FF70A6" Padding="0"/>
                             </Border>
 
-                            <!-- Green -->
                             <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentGreen,
@@ -94,7 +90,6 @@
                                         Background="#4ADE80" Padding="0"/>
                             </Border>
 
-                            <!-- Orange -->
                             <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentOrange,
@@ -106,7 +101,6 @@
                                         Background="#FFAA44" Padding="0"/>
                             </Border>
 
-                            <!-- Cyan -->
                             <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentCyan,
@@ -118,7 +112,6 @@
                                         Background="#44DFFF" Padding="0"/>
                             </Border>
 
-                            <!-- Red -->
                             <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentRed,
@@ -132,82 +125,90 @@
 
                         </WrapPanel>
 
-                        <!-- RGB カラーピッカー -->
+                        <!-- Color picker -->
                         <ColorPicker Color="{Binding GlassAccentColorValue}"
                                      HorizontalAlignment="Left"/>
+
+                        <!-- Opacity -->
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                            <TextBlock Grid.Column="0" Text="UI Opacity" FontSize="12" Foreground="#888888" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding GlassOpacityPercent, StringFormat='{}{0:F0}%'}"
+                                       FontSize="12" Foreground="{DynamicResource FgSub}" VerticalAlignment="Center" Width="36" TextAlignment="Right"/>
+                        </Grid>
+                        <Slider Minimum="0" Maximum="100" Value="{Binding GlassOpacityPercent}"
+                                Margin="0,2,0,0"/>
 
                     </StackPanel>
                 </StackPanel>
             </Border>
 
-            <!-- 背景画像カード -->
+            <!-- Background Image -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="背景画像" FontSize="12" FontWeight="SemiBold"
-                               Foreground="#444444"/>
+                    <TextBlock Text="Background Image" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource FgSub}"/>
 
-                    <!-- プレビュー (画像あり) -->
+                    <!-- Preview (image set) -->
                     <Border CornerRadius="10" ClipToBounds="True"
-                            Height="130" Background="{DynamicResource InputBg}"
+                            MaxHeight="320" Background="{DynamicResource InputBg}"
                             IsVisible="{Binding BackgroundImagePath,
                                 Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                         <Image Source="{Binding BackgroundImagePath,
                                    Converter={StaticResource StringToImageConverter}}"
-                               Stretch="UniformToFill"/>
+                               Stretch="Uniform"/>
                     </Border>
 
-                    <!-- プレースホルダー (画像なし) -->
-                    <Border CornerRadius="10" Height="130" Background="{DynamicResource InputBg}"
+                    <!-- Placeholder (no image) -->
+                    <Border CornerRadius="10" Height="100" Background="{DynamicResource InputBg}"
                             IsVisible="{Binding BackgroundImagePath,
                                 Converter={x:Static StringConverters.IsNullOrEmpty}}">
                         <StackPanel VerticalAlignment="Center"
                                     HorizontalAlignment="Center" Spacing="6">
                             <PathIcon Data="{StaticResource IconPackage}"
                                       Width="26" Height="26" Foreground="#2A2A2A"/>
-                            <TextBlock Text="画像が設定されていません"
+                            <TextBlock Text="No image set"
                                        FontSize="11" Foreground="#2A2A2A"
                                        HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Border>
 
-                    <!-- ボタン -->
+                    <!-- Buttons -->
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Content="画像を選択"
+                        <Button Content="Choose Image"
                                 Click="PickImageButton_Click"
                                 Background="#FFFFFF" Foreground="#080808"
                                 FontWeight="SemiBold" FontSize="12"
                                 Padding="14,8" CornerRadius="10"/>
-                        <Button Content="削除"
+                        <Button Content="Remove"
                                 Command="{Binding ClearBackgroundImageCommand}"
                                 IsEnabled="{Binding BackgroundImagePath,
                                     Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                Background="#141414" Foreground="#505050"
+                                Background="#141414" Foreground="{DynamicResource FgSub}"
                                 FontSize="12" Padding="14,8" CornerRadius="10"/>
                     </StackPanel>
 
-                    <!-- ぼかし強度 -->
+                    <!-- Blur -->
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Grid.Column="0" Text="ぼかし強度" FontSize="12" Foreground="#888888" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Text="Blur" FontSize="12" Foreground="#888888" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="{Binding BackgroundBlurRadius, StringFormat='{}{0:F0}'}"
-                                   FontSize="12" Foreground="#555555" VerticalAlignment="Center" Width="28" TextAlignment="Right"/>
+                                   FontSize="12" Foreground="{DynamicResource FgSub}" VerticalAlignment="Center" Width="28" TextAlignment="Right"/>
                     </Grid>
                     <Slider Minimum="0" Maximum="50" Value="{Binding BackgroundBlurRadius}"
                             Margin="0,2,0,8"/>
 
-                    <!-- 明るさ -->
+                    <!-- Brightness -->
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Grid.Column="0" Text="明るさ" FontSize="12" Foreground="#888888" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Text="Brightness" FontSize="12" Foreground="#888888" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="{Binding BackgroundImageOpacityPercent, StringFormat='{}{0:F0}%'}"
-                                   FontSize="12" Foreground="#555555" VerticalAlignment="Center" Width="36" TextAlignment="Right"/>
+                                   FontSize="12" Foreground="{DynamicResource FgSub}" VerticalAlignment="Center" Width="36" TextAlignment="Right"/>
                     </Grid>
                     <Slider Minimum="0" Maximum="100" Value="{Binding BackgroundImageOpacityPercent}"
                             Margin="0,2,0,0"/>
                 </StackPanel>
             </Border>
 
-            <!-- ステータス -->
             <TextBlock Text="{Binding StatusMessage}"
-                       Foreground="#555555" FontSize="12"
+                       Foreground="{DynamicResource FgSub}" FontSize="12"
                        HorizontalAlignment="Center"
                        IsVisible="{Binding StatusMessage,
                            Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>

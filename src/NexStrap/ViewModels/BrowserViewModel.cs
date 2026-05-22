@@ -44,6 +44,6 @@ public partial class BrowserViewModel : ViewModelBase
     private static string ExtractDomain(string url)
     {
         try { return new Uri(url).Host.Replace("www.", ""); }
-        catch { return "不明なサイト"; }
+        catch { return "Unknown site"; }
     }
 }

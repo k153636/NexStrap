@@ -1,6 +1,5 @@
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -9,18 +8,11 @@ using Avalonia.Media;
 using Avalonia.VisualTree;
 using FluentAvalonia.UI.Controls;
 using NexStrap.ViewModels;
-using System.Collections.Generic;
 
 namespace NexStrap.Views;
 
 public partial class MainWindow : Window
 {
-    private bool                    _isMinimizing;
-    private bool                    _hasOpened;
-    private CancellationTokenSource? _animCts;
-    private ScaleTransform          _scale     = new(1, 1);
-    private TranslateTransform      _translate = new(0, 0);
-
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
@@ -33,23 +25,6 @@ public partial class MainWindow : Window
 
         DataContextChanged += (_, _) => WireGlassTheme();
         KeyDown += OnKeyDown;
-
-        // TransformGroup: Scale（中心基準）→ Translate（Y方向移動）
-        var group = new TransformGroup();
-        group.Children.Add(_scale);
-        group.Children.Add(_translate);
-        RootGrid.RenderTransform       = group;
-        RootGrid.RenderTransformOrigin = new RelativePoint(0, 0, RelativeUnit.Relative);
-
-        // 初期状態を不可視にしてウィンドウ表示直後のフラッシュを防ぐ
-        RootGrid.Opacity = 0;
-
-        Opened += (_, _) =>
-        {
-            _hasOpened = true;
-            DisableDwmTransitions();
-            StartShowAnimation();
-        };
 
         NavView.TemplateApplied += (_, _) =>
         {
@@ -74,160 +49,6 @@ public partial class MainWindow : Window
             if (Application.Current is App app)
                 app.SetBackgroundMode(true);
         };
-    }
-
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-    {
-        base.OnPropertyChanged(change);
-
-        // トレイから復元時（Hide→Show）のアニメーション
-        if (change.Property == IsVisibleProperty)
-        {
-            if (_hasOpened && change.NewValue is true && change.OldValue is false)
-                StartShowAnimation();
-            return;
-        }
-
-        if (change.Property != WindowStateProperty) return;
-
-        var newState = (WindowState)change.NewValue!;
-        var oldState = change.OldValue is WindowState s ? s : WindowState.Normal;
-
-        if (newState == WindowState.Minimized && !_isMinimizing)
-        {
-            // _isMinimizingを先に立ててから WindowState を戻す
-            // ← これをしないと再帰的に else-if が発火して ShowAnimation が走る
-            _isMinimizing = true;
-            WindowState = oldState;
-            _ = AnimateAndMinimize();
-        }
-        else if (oldState == WindowState.Minimized && newState != WindowState.Minimized && !_isMinimizing)
-        {
-            StartShowAnimation();
-        }
-    }
-
-    private void DisableDwmTransitions()
-    {
-        try
-        {
-            var hwnd = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
-            if (hwnd != IntPtr.Zero) { int v = 1; DwmSetWindowAttribute(hwnd, 3, ref v, sizeof(int)); }
-        }
-        catch { }
-    }
-
-    private void StartShowAnimation()
-    {
-        DisableDwmTransitions();
-        _animCts?.Cancel();
-        _animCts = new CancellationTokenSource();
-        SetAnimState(false);
-        _ = RunAnimation(true, _animCts.Token);
-    }
-
-    private async Task AnimateAndMinimize()
-    {
-        // _isMinimizing はすでに true（OnPropertyChanged で設定済み）
-        try
-        {
-            _animCts?.Cancel();
-            _animCts = new CancellationTokenSource();
-            var ct = _animCts.Token;
-            await RunAnimation(false, ct);
-            if (!ct.IsCancellationRequested)
-                WindowState = WindowState.Minimized;
-        }
-        finally
-        {
-            _isMinimizing = false;
-        }
-    }
-
-    // RenderTransformOrigin=(0,0) のとき、Scale で中心を維持するには
-    // tx=(1-s)*w/2, ty=(1-s)*h/2 のオフセットが必要
-    private void SetAnimState(bool visible)
-    {
-        const double scaleMin = 0.42;
-        // 最小化直後は Bounds が 0 になることがあるので XAML の Width/Height をフォールバックに使う
-        var w  = Bounds.Width  > 0 ? Bounds.Width  : Width;
-        var h  = Bounds.Height > 0 ? Bounds.Height : Height;
-        var ty = CalcMinimizeY();
-        if (visible)
-        {
-            RootGrid.Opacity = 1; _scale.ScaleX = _scale.ScaleY = 1;
-            _translate.X = _translate.Y = 0;
-        }
-        else
-        {
-            RootGrid.Opacity = 0; _scale.ScaleX = _scale.ScaleY = scaleMin;
-            _translate.X = (1.0 - scaleMin) * w / 2.0;
-            _translate.Y = (1.0 - scaleMin) * h / 2.0 + ty;
-        }
-    }
-
-    private double CalcMinimizeY()
-    {
-        try
-        {
-            var screen = Screens.ScreenFromWindow(this);
-            if (screen == null) return 220;
-            var sc            = screen.Scaling;
-            var winBottomDip  = Position.Y / sc + Height;
-            var workBottomDip = (screen.WorkingArea.Y + screen.WorkingArea.Height) / sc;
-            return Math.Max(80, workBottomDip - winBottomDip + 50);
-        }
-        catch { return 220; }
-    }
-
-    private async Task RunAnimation(bool fadeIn, CancellationToken ct = default)
-    {
-        const int    durationMs = 260;
-        const double scaleMin   = 0.42;
-        var          targetY    = CalcMinimizeY();
-        var          sw         = Stopwatch.StartNew();
-
-        while (true)
-        {
-            if (ct.IsCancellationRequested) return;
-
-            double t    = Math.Min(sw.Elapsed.TotalMilliseconds / durationMs, 1.0);
-            double ease = fadeIn
-                ? 1.0 - Math.Pow(1.0 - t, 3.0)   // cubic ease-out（速→遅）
-                : t * t * t;                        // cubic ease-in（遅→速）
-
-            double s  = scaleMin + (1.0 - scaleMin) * (fadeIn ? ease : 1.0 - ease);
-            // フレームごとに Bounds を読み直す（最小化復元直後は 0 になる場合がある）
-            double w  = Bounds.Width  > 0 ? Bounds.Width  : Width;
-            double h  = Bounds.Height > 0 ? Bounds.Height : Height;
-            double tx = (1.0 - s) * w / 2.0;
-            double ty = (1.0 - s) * h / 2.0 + targetY * (fadeIn ? 1.0 - ease : ease);
-            double op = fadeIn ? ease : 1.0 - ease;
-
-            RootGrid.Opacity = op;
-            _scale.ScaleX    = _scale.ScaleY = s;
-            _translate.X     = tx;
-            _translate.Y     = ty;
-
-            if (t >= 1.0) break;
-            await Task.Delay(11);
-        }
-
-        if (ct.IsCancellationRequested) return;
-
-        if (fadeIn)
-        {
-            RootGrid.Opacity = 1; _scale.ScaleX = _scale.ScaleY = 1;
-            _translate.X = _translate.Y = 0;
-        }
-        else
-        {
-            double w = Bounds.Width  > 0 ? Bounds.Width  : Width;
-            double h = Bounds.Height > 0 ? Bounds.Height : Height;
-            RootGrid.Opacity = 0; _scale.ScaleX = _scale.ScaleY = scaleMin;
-            _translate.X = (1.0 - scaleMin) * w / 2.0;
-            _translate.Y = (1.0 - scaleMin) * h / 2.0 + targetY;
-        }
     }
 
     private void TitleBar_PointerPressed(object? sender, PointerPressedEventArgs e)
@@ -262,53 +83,97 @@ public partial class MainWindow : Window
         vm.ThemeVM.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(ThemeViewModel.GlassThemeEnabled) ||
-                e.PropertyName == nameof(ThemeViewModel.GlassAccentColor))
+                e.PropertyName == nameof(ThemeViewModel.GlassAccentColor) ||
+                e.PropertyName == nameof(ThemeViewModel.GlassOpacity))
                 ApplyGlassTheme(vm.ThemeVM.GlassThemeEnabled);
         };
     }
 
-    private static readonly Dictionary<string, Color> _solidColors = new()
+    // Non-glass gradient pairs (top color, bottom color)
+    private static readonly Dictionary<string, (Color Top, Color Bot)> _solidGradients = new()
     {
-        ["CardBg"]     = Color.Parse("#111111"),
-        ["SurfaceBg"]  = Color.Parse("#141414"),
-        ["ElevatedBg"] = Color.Parse("#202020"),
-        ["OverlayBg"]  = Color.Parse("#1A1A1A"),
-        ["InputBg"]    = Color.Parse("#0D0D0D"),
+        ["CardBg"]     = (Color.Parse("#1A1A1A"), Color.Parse("#0D0D0D")),
+        ["SurfaceBg"]  = (Color.Parse("#1C1C1C"), Color.Parse("#101010")),
+        ["ElevatedBg"] = (Color.Parse("#262626"), Color.Parse("#181818")),
+        ["OverlayBg"]  = (Color.Parse("#202020"), Color.Parse("#131313")),
+        ["InputBg"]    = (Color.Parse("#141414"), Color.Parse("#080808")),
+        ["FgSub"]      = (Color.Parse("#555555"), Color.Parse("#555555")),
+        ["FgMuted"]    = (Color.Parse("#2E2E2E"), Color.Parse("#2E2E2E")),
     };
 
-    private static readonly Dictionary<string, byte> _glassAlphas = new()
+    // Glass min/max alpha (slider 0% → 100%)
+    private static readonly Dictionary<string, (byte Min, byte Max)> _glassAlphaRange = new()
     {
-        ["CardBg"]     = 0x18,
-        ["SurfaceBg"]  = 0x20,
-        ["ElevatedBg"] = 0x2A,
-        ["OverlayBg"]  = 0x24,
-        ["InputBg"]    = 0x10,
+        ["CardBg"]     = (0x18, 0xD0),
+        ["SurfaceBg"]  = (0x20, 0xD8),
+        ["ElevatedBg"] = (0x2A, 0xE0),
+        ["OverlayBg"]  = (0x24, 0xD4),
+        ["InputBg"]    = (0x10, 0xC8),
+    };
+
+    private static readonly Dictionary<string, Color> _glassTextColors = new()
+    {
+        ["FgSub"]   = Color.Parse("#AAAAAA"),
+        ["FgMuted"] = Color.Parse("#888888"),
+    };
+
+    private static LinearGradientBrush MakeGradient(Color top, Color bot) => new()
+    {
+        StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+        EndPoint   = new RelativePoint(0, 1, RelativeUnit.Relative),
+        GradientStops = [new GradientStop(top, 0.0), new GradientStop(bot, 1.0)],
     };
 
     private void ApplyGlassTheme(bool glass)
     {
         var res = Application.Current!.Resources;
+        var themeVm = (DataContext as MainWindowViewModel)?.ThemeVM;
+
+        var opacity = Math.Clamp(themeVm?.GlassOpacity ?? 0.75, 0.0, 0.75);
+        var t = opacity / 0.75;
 
         if (glass)
         {
-            var accentHex = (DataContext as MainWindowViewModel)?.ThemeVM.GlassAccentColor ?? "#FFFFFF";
+            var accentHex = themeVm?.GlassAccentColor ?? "#FFFFFF";
             Color accent;
             try { accent = Color.Parse(accentHex); }
             catch { accent = Colors.White; }
             byte r = accent.R, g = accent.G, b = accent.B;
 
-            foreach (var (key, alpha) in _glassAlphas)
-                res[key] = new SolidColorBrush(Color.FromArgb(alpha, r, g, b));
+            foreach (var (key, (min, max)) in _glassAlphaRange)
+            {
+                var alpha  = (byte)Math.Round(min + (max - min) * t);
+                var topA   = (byte)Math.Min(255, (int)(alpha * 1.18));
+                var botA   = (byte)Math.Max(0,   (int)(alpha * 0.82));
+                res[key] = MakeGradient(
+                    Color.FromArgb(topA, r, g, b),
+                    Color.FromArgb(botA, r, g, b));
+            }
+            foreach (var (key, color) in _glassTextColors)
+                res[key] = new SolidColorBrush(color);
         }
         else
         {
-            foreach (var (key, color) in _solidColors)
-                res[key] = new SolidColorBrush(color);
+            foreach (var (key, (top, bot)) in _solidGradients)
+                res[key] = key is "FgSub" or "FgMuted"
+                    ? new SolidColorBrush(top)
+                    : MakeGradient(top, bot);
         }
 
-        var paneBrush = glass
-            ? new SolidColorBrush(Color.FromArgb(0x55, 0x0D, 0x0D, 0x0D))
-            : new SolidColorBrush(Color.FromArgb(0xFF, 0x14, 0x14, 0x14));
+        // Sidebar pane: same gradient direction as cards
+        IBrush paneBrush;
+        if (glass)
+        {
+            var topA = (byte)Math.Round(0x38 + (0xE8 - 0x38) * t);
+            var botA = (byte)Math.Round(0x28 + (0xD4 - 0x28) * t);
+            paneBrush = MakeGradient(
+                Color.FromArgb(topA, 0x14, 0x14, 0x14),
+                Color.FromArgb(botA, 0x08, 0x08, 0x08));
+        }
+        else
+        {
+            paneBrush = MakeGradient(Color.Parse("#1C1C1C"), Color.Parse("#111111"));
+        }
 
         var splitView = NavView.GetVisualDescendants().OfType<SplitView>().FirstOrDefault();
         if (splitView != null)

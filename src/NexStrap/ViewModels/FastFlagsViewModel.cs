@@ -37,7 +37,7 @@ public partial class FastFlagsViewModel : ViewModelBase
 
     [ObservableProperty] private ObservableCollection<FlagEntry> _flags = new();
     [ObservableProperty] private string _searchText = string.Empty;
-    [ObservableProperty] private string _selectedCategory = "すべて";
+    [ObservableProperty] private string _selectedCategory = "All";
     [ObservableProperty] private FlagEntry? _selectedFlag;
     [ObservableProperty] private string _newFlagName = string.Empty;
     [ObservableProperty] private string _newFlagValue = string.Empty;
@@ -58,7 +58,7 @@ public partial class FastFlagsViewModel : ViewModelBase
 
     public List<string> Categories { get; } = new()
     {
-        "すべて", "パフォーマンス", "グラフィックス", "ネットワーク", "UI", "アバター", "カスタム"
+        "All", "Performance", "Graphics", "Network", "UI", "Avatar", "Custom"
     };
 
     public FastFlagsViewModel(FastFlagService service, ProfileService profileService)
@@ -89,7 +89,7 @@ public partial class FastFlagsViewModel : ViewModelBase
                           .ToDictionary(f => f.Name, f => f.Value)
         );
         await Dispatcher.UIThread.InvokeAsync(LoadFlags);
-        await ShowStatusAsync($"プロファイル「{value.Name}」を読み込みました");
+        await ShowStatusAsync($"Loaded profile \"{value.Name}\"");
     }
 
     [RelayCommand]
@@ -98,7 +98,7 @@ public partial class FastFlagsViewModel : ViewModelBase
         var name = NewProfileName.Trim();
         if (string.IsNullOrEmpty(name))
         {
-            await ShowStatusAsync("プロファイル名を入力してください", isError: true);
+            await ShowStatusAsync("Enter a profile name", isError: true);
             return;
         }
         var flags = _allFlags.Select(f => new FastFlag
@@ -118,7 +118,7 @@ public partial class FastFlagsViewModel : ViewModelBase
         _suppressProfileLoad = false;
 
         NewProfileName = string.Empty;
-        await ShowStatusAsync($"プロファイル「{name}」を保存しました");
+        await ShowStatusAsync($"Saved profile \"{name}\"");
     }
 
     [RelayCommand]
@@ -127,14 +127,14 @@ public partial class FastFlagsViewModel : ViewModelBase
         if (SelectedProfile == null) return;
         if (SelectedProfile.IsDefault)
         {
-            await ShowStatusAsync("デフォルトプロファイルは削除できません", isError: true);
+            await ShowStatusAsync("Cannot delete the default profile", isError: true);
             return;
         }
         var name = SelectedProfile.Name;
         _profileService.DeleteProfile(SelectedProfile.Id);
         RefreshProfiles();
         SelectedProfile = Profiles.FirstOrDefault();
-        await ShowStatusAsync($"プロファイル「{name}」を削除しました");
+        await ShowStatusAsync($"Deleted profile \"{name}\"");
     }
 
     private async Task ShowStatusAsync(string message, bool isError = false, int durationMs = 3000)
@@ -209,7 +209,7 @@ public partial class FastFlagsViewModel : ViewModelBase
                 f.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
                 f.Description.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
-        if (SelectedCategory != "すべて")
+        if (SelectedCategory != "All")
             filtered = filtered.Where(f => f.Category == SelectedCategory);
 
         var result = new ObservableCollection<FlagEntry>(filtered);
@@ -224,7 +224,7 @@ public partial class FastFlagsViewModel : ViewModelBase
     {
         if (string.IsNullOrEmpty(_service.GetSavePath()))
         {
-            await ShowStatusAsync("Roblox が見つかりません。インストールを確認してください", isError: true);
+            await ShowStatusAsync("Roblox not found. Check your installation", isError: true);
             return;
         }
 
@@ -233,7 +233,7 @@ public partial class FastFlagsViewModel : ViewModelBase
             _service.Set(flag.Name, flag.Value);
         await _service.SaveAsync();
         IsSaving = false;
-        await ShowStatusAsync($"保存しました ({_allFlags.Count} flags)");
+        await ShowStatusAsync($"Saved ({_allFlags.Count} flags)");
     }
 
     [RelayCommand]
@@ -241,14 +241,14 @@ public partial class FastFlagsViewModel : ViewModelBase
     {
         if (string.IsNullOrEmpty(_service.GetSavePath()))
         {
-            await ShowStatusAsync("Roblox が見つかりません", isError: true);
+            await ShowStatusAsync("Roblox not found", isError: true);
             return;
         }
 
         var dict = _allFlags.Where(f => f.IsEnabled)
             .ToDictionary(f => f.Name, f => f.Value);
         await _service.HotReloadAsync(dict);
-        await ShowStatusAsync($"ホットリロード完了 — 次のゲーム参加時に反映されます ({dict.Count} flags)");
+        await ShowStatusAsync($"Hot reload complete — takes effect on next game join ({dict.Count} flags)");
     }
 
     [RelayCommand]
@@ -257,7 +257,7 @@ public partial class FastFlagsViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(NewFlagName)) return;
         if (string.IsNullOrEmpty(_service.GetSavePath()))
         {
-            await ShowStatusAsync("Roblox が見つかりません", isError: true);
+            await ShowStatusAsync("Roblox not found", isError: true);
             return;
         }
         var (desc, cat) = FlagDescriptions.Lookup(NewFlagName.Trim());
@@ -272,7 +272,7 @@ public partial class FastFlagsViewModel : ViewModelBase
         NewFlagValue = string.Empty;
         ApplyFilter();
         await _service.SaveAsync();
-        await ShowStatusAsync($"{entry.Name} を追加・保存しました");
+        await ShowStatusAsync($"Added and saved {entry.Name}");
     }
 
     [RelayCommand]
@@ -305,8 +305,8 @@ public partial class FastFlagsViewModel : ViewModelBase
         IsPresetActive = !IsPresetActive;
         LoadFlags();
         await ShowStatusAsync(IsPresetActive
-            ? $"最適化プリセットを適用しました ({FastFlagBundles.AllFlags.Count} flags)"
-            : "最適化プリセットを解除しました");
+            ? $"Optimization preset applied ({FastFlagBundles.AllFlags.Count} flags)"
+            : "Optimization preset removed");
     }
 
     [RelayCommand]
@@ -314,7 +314,7 @@ public partial class FastFlagsViewModel : ViewModelBase
     {
         _service.ApplyPreset(FastFlagPresets.All);
         LoadFlags();
-        await ShowStatusAsync("プリセットを適用しました");
+        await ShowStatusAsync("Preset applied");
     }
 
     [RelayCommand]
@@ -326,7 +326,7 @@ public partial class FastFlagsViewModel : ViewModelBase
         else
         {
             var newEntry = new FlagEntry("DFIntTaskSchedulerTargetFps", FpsTarget.ToString())
-                { Category = "パフォーマンス", Description = "FPS 上限" };
+                { Category = "Performance", Description = "FPS limit" };
             _allFlags.Add(newEntry);
         }
         ApplyFilter();

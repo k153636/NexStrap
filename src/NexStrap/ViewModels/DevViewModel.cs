@@ -52,12 +52,12 @@ public partial class DevViewModel : ViewModelBase
     {
         var proc = Process.GetCurrentProcess();
         MemoryUsage   = $"{proc.WorkingSet64 / 1024 / 1024} MB";
-        DiscordStatus = _discord.IsConnected ? "接続済み ✓" : "未接続";
+        DiscordStatus = _discord.IsConnected ? "Connected ✓" : "Disconnected";
         FastFlagCount = _fastFlags.GetAll().Count;
         ModCount      = _mods.Mods.Count;
         HistoryCount  = _history.Entries.Count;
         FavoriteCount = _settings.Settings.FavoriteGameIds.Count;
-        RobloxPath    = _roblox.RobloxVersionPath ?? "未検出";
+        RobloxPath    = _roblox.RobloxVersionPath ?? "Not found";
         OnPropertyChanged(nameof(CachedUserId));
     }
 

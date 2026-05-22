@@ -14,8 +14,8 @@ internal static class NotificationService
                 <toast>
                     <visual>
                         <binding template="ToastGeneric">
-                            <text>フレンドがオンライン</text>
-                            <text>{safeName} が Roblox を起動しました</text>
+                            <text>Friend Online</text>
+                            <text>{safeName} launched Roblox</text>
                         </binding>
                     </visual>
                 </toast>

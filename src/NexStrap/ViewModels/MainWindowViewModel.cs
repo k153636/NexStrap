@@ -22,10 +22,13 @@ public partial class MainWindowViewModel : ViewModelBase
     public FastFlagsViewModel FastFlagsVM { get; }
     public ModsViewModel ModsVM { get; }
     public SettingsViewModel SettingsVM { get; }
+    public DiscordViewModel DiscordVM { get; }
     public BrowserViewModel BrowserVM { get; }
     public ThemeViewModel ThemeVM { get; }
     public StatsViewModel StatsVM { get; }
     public DevViewModel DevVM { get; }
+    public AccountViewModel AccountVM { get; }
+    public FriendsViewModel FriendsVM { get; }
 
     public MainWindowViewModel(
         DiscordRpcService discord,
@@ -36,10 +39,13 @@ public partial class MainWindowViewModel : ViewModelBase
         FastFlagsViewModel fastFlagsVM,
         ModsViewModel modsVM,
         SettingsViewModel settingsVM,
+        DiscordViewModel discordVM,
         BrowserViewModel browserVM,
         ThemeViewModel themeVM,
         StatsViewModel statsVM,
-        DevViewModel devVM)
+        DevViewModel devVM,
+        AccountViewModel accountVM,
+        FriendsViewModel friendsVM)
     {
         _discord = discord;
         _settings = settings;
@@ -50,12 +56,14 @@ public partial class MainWindowViewModel : ViewModelBase
         FastFlagsVM = fastFlagsVM;
         ModsVM = modsVM;
         SettingsVM = settingsVM;
+        DiscordVM = discordVM;
         BrowserVM = browserVM;
         ThemeVM = themeVM;
         StatsVM = statsVM;
         DevVM = devVM;
+        AccountVM = accountVM;
+        FriendsVM = friendsVM;
         _currentPage = homeVM;
-
 
         var appId = env.Get("DISCORD_APP_ID");
         IsDiscordAppIdMissing = appId == null;
@@ -66,7 +74,6 @@ public partial class MainWindowViewModel : ViewModelBase
         discord.ConnectionChanged += (_, connected) =>
             IsDiscordConnected = connected;
 
-        // 設定変更時に RPC 再初期化 & オーバーレイ制御
         settings.SettingsChanged += (_, s) =>
         {
             var id = env.Get("DISCORD_APP_ID");
@@ -78,7 +85,6 @@ public partial class MainWindowViewModel : ViewModelBase
             UpdateOverlayVisibility(s.ShowPerformanceOverlay);
         };
 
-        // Roblox 起動/終了でオーバーレイを自動表示/非表示
         homeVM.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(HomeViewModel.IsRobloxRunning))
@@ -114,6 +120,9 @@ public partial class MainWindowViewModel : ViewModelBase
         if (page == "Stats")
             StatsVM.Refresh();
 
+        if (page == "Friends")
+            _ = FriendsVM.RefreshAsync();
+
         if (page == "Dev")
         {
             DevVM.Refresh();
@@ -124,30 +133,20 @@ public partial class MainWindowViewModel : ViewModelBase
 
         CurrentPage = page switch
         {
-            "Home"      => HomeVM,
+            "Home" => HomeVM,
             "FastFlags" => FastFlagsVM,
-            "Mods"      => ModsVM,
-            "Browser"   => BrowserVM,
-            "Theme"     => ThemeVM,
-            "Stats"     => StatsVM,
-            "Settings"  => SettingsVM,
-            _           => HomeVM
+            "Mods" => ModsVM,
+            "Browser" => BrowserVM,
+            "Theme" => ThemeVM,
+            "Stats" => StatsVM,
+            "Discord" => DiscordVM,
+            "Settings" => SettingsVM,
+            "Account" => AccountVM,
+            "Friends" => FriendsVM,
+            _ => HomeVM
         };
 
-        // ブラウザはDiscordプレゼンスを更新しない、ゲームプレイ中も上書きしない
         if (page != "Browser" && !HomeVM.IsRobloxRunning)
-        {
-            var pageName = page switch
-            {
-                "Home"      => "ホーム",
-                "FastFlags" => "Fast Flags",
-                "Mods"      => "Mods",
-                "Theme"     => "テーマ",
-                "Stats"     => "統計",
-                "Settings"  => "設定",
-                _           => "ホーム"
-            };
-            _discord.SetPagePresence(pageName, HomeVM.UserAvatarUrl);
-        }
+            _discord.SetPagePresence(page, HomeVM.UserAvatarUrl);
     }
 }

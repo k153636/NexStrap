@@ -77,8 +77,8 @@ public class ProfileService
 
         var defaultProfile = new Profile
         {
-            Name = "デフォルト",
-            Description = "標準プロファイル",
+            Name = "Default",
+            Description = "Standard profile",
             IsDefault = true,
             FastFlags = FastFlagPresets.All.ToList()
         };

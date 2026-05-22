@@ -11,10 +11,10 @@
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="24,20,24,12" Spacing="3">
             <TextBlock Text="Fast Flags" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
-            <TextBlock Text="{Binding SavePath, StringFormat='保存先: {0}'}"
+            <TextBlock Text="{Binding SavePath, StringFormat='Save path: {0}'}"
                        FontSize="11" Foreground="#2E2E2E" FontFamily="Consolas,monospace"
                        IsVisible="{Binding SavePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-            <TextBlock Text="Roblox が見つかりません" FontSize="11" Foreground="#505050"
+            <TextBlock Text="Roblox not found" FontSize="11" Foreground="#505050"
                        IsVisible="{Binding SavePath, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
         </StackPanel>
 
@@ -22,7 +22,7 @@
         <Border Grid.Row="1" Background="{DynamicResource SurfaceBg}" CornerRadius="10"
                 Margin="24,0,24,8" Padding="12,8">
             <Grid ColumnDefinitions="Auto,10,*,10,Auto,6,Auto,6,Auto">
-                <TextBlock Grid.Column="0" Text="プロファイル" FontSize="11"
+                <TextBlock Grid.Column="0" Text="Profile" FontSize="11"
                            Foreground="#505050" VerticalAlignment="Center"/>
                 <ComboBox Grid.Column="2" ItemsSource="{Binding Profiles}"
                           SelectedItem="{Binding SelectedProfile}"
@@ -30,16 +30,16 @@
                           Background="{DynamicResource ElevatedBg}" Foreground="#FFFFFF"
                           CornerRadius="7" MinWidth="110" FontSize="12"/>
                 <TextBox Grid.Column="4" Text="{Binding NewProfileName}"
-                         Watermark="新しい名前..." FontSize="11"
+                         Watermark="New name..." FontSize="11"
                          Background="{DynamicResource ElevatedBg}" Foreground="#FFFFFF"
                          BorderBrush="#2E2E2E" CornerRadius="7"
                          Padding="8,5" MinWidth="110"/>
-                <Button Grid.Column="6" Content="保存"
+                <Button Grid.Column="6" Content="Save"
                         Command="{Binding SaveAsProfileCommand}"
                         Background="#FFFFFF" Foreground="#080808"
                         FontSize="11" FontWeight="SemiBold"
                         Padding="12,5" CornerRadius="7"/>
-                <Button Grid.Column="8" Content="削除"
+                <Button Grid.Column="8" Content="Delete"
                         Command="{Binding DeleteProfileCommand}"
                         Background="Transparent" Foreground="#505050"
                         FontSize="11" BorderBrush="#2E2E2E" BorderThickness="1"
@@ -51,13 +51,13 @@
         <Grid Grid.Row="2" Margin="24,0,24,8"
               ColumnDefinitions="*,8,Auto,8,Auto,8,Auto,8,Auto">
             <TextBox Grid.Column="0" Text="{Binding SearchText}"
-                     Watermark="検索..." Background="{DynamicResource SurfaceBg}" BorderBrush="#2E2E2E"
+                     Watermark="Search..." Background="{DynamicResource SurfaceBg}" BorderBrush="#2E2E2E"
                      Foreground="#FFFFFF" CornerRadius="10" Padding="12,7" FontSize="12"/>
             <ComboBox Grid.Column="2" ItemsSource="{Binding Categories}"
                       SelectedItem="{Binding SelectedCategory}"
                       Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF"
                       CornerRadius="10" MinWidth="120" FontSize="12"/>
-            <Button Grid.Column="4" Content="プリセット"
+            <Button Grid.Column="4" Content="Presets"
                     Command="{Binding TogglePresetPanelCommand}"
                     Background="{Binding IsPresetPanelOpen,
                         Converter={StaticResource BoolToColorConverter},
@@ -69,14 +69,14 @@
                     Padding="12,7" CornerRadius="10">
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <PathIcon Data="{StaticResource IconFlash}" Width="11" Height="11" Foreground="#CCCCCC"/>
-                    <TextBlock Text="ホットリロード" FontSize="12"/>
+                    <TextBlock Text="Hot Reload" FontSize="12"/>
                 </StackPanel>
             </Button>
             <Button Grid.Column="8" Command="{Binding SaveCommand}"
                     IsEnabled="{Binding !IsSaving}"
                     Background="#FFFFFF" Foreground="#080808"
                     Padding="16,7" CornerRadius="10">
-                <TextBlock Text="保存" FontWeight="SemiBold" FontSize="12"/>
+                <TextBlock Text="Save" FontWeight="SemiBold" FontSize="12"/>
             </Button>
         </Grid>
 
@@ -84,14 +84,14 @@
         <Border Grid.Row="3" Background="{DynamicResource SurfaceBg}" CornerRadius="10"
                 Margin="24,0,24,8" Padding="14,8">
             <Grid ColumnDefinitions="Auto,*,Auto,12,Auto">
-                <TextBlock Grid.Column="0" Text="FPS 上限" Foreground="#888888"
+                <TextBlock Grid.Column="0" Text="FPS Limit" Foreground="#888888"
                            VerticalAlignment="Center" Margin="0,0,14,0" FontSize="12"/>
                 <Slider Grid.Column="1" Minimum="30" Maximum="360"
                         Value="{Binding FpsTarget}" TickFrequency="30" IsSnapToTickEnabled="True"/>
                 <TextBlock Grid.Column="2" Text="{Binding FpsTarget}"
                            Foreground="#FFFFFF" FontWeight="Bold" Width="40"
                            VerticalAlignment="Center" Margin="10,0" FontSize="13"/>
-                <Button Grid.Column="4" Content="適用"
+                <Button Grid.Column="4" Content="Apply"
                         Command="{Binding SetFpsTargetCommand}"
                         Background="{DynamicResource ElevatedBg}" Foreground="#FFFFFF" FontSize="12"
                         Padding="14,6" CornerRadius="8"/>
@@ -103,9 +103,9 @@
             <Grid RowDefinitions="Auto,*">
                 <Border Grid.Row="0" Background="{DynamicResource ElevatedBg}" CornerRadius="12,12,0,0">
                     <Grid ColumnDefinitions="*,200,100,40" Margin="16,8">
-                        <TextBlock Grid.Column="0" Text="フラグ名" FontSize="11" FontWeight="SemiBold" Foreground="#505050"/>
-                        <TextBlock Grid.Column="1" Text="値" FontSize="11" FontWeight="SemiBold" Foreground="#505050"/>
-                        <TextBlock Grid.Column="2" Text="カテゴリ" FontSize="11" FontWeight="SemiBold" Foreground="#505050"/>
+                        <TextBlock Grid.Column="0" Text="Flag Name" FontSize="11" FontWeight="SemiBold" Foreground="#505050"/>
+                        <TextBlock Grid.Column="1" Text="Value" FontSize="11" FontWeight="SemiBold" Foreground="#505050"/>
+                        <TextBlock Grid.Column="2" Text="Category" FontSize="11" FontWeight="SemiBold" Foreground="#505050"/>
                     </Grid>
                 </Border>
                 <ListBox Grid.Row="1" ItemsSource="{Binding Flags}"
@@ -151,7 +151,7 @@
             <Grid RowDefinitions="Auto,*,Auto" Margin="16,14">
                 <!-- Panel header -->
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
-                    <TextBlock Text="プリセット" FontSize="14" FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                    <TextBlock Text="Presets" FontSize="14" FontWeight="SemiBold" Foreground="#FFFFFF"/>
                     <Button Grid.Column="1" Content="✕"
                             Command="{Binding TogglePresetPanelCommand}"
                             Background="Transparent" Foreground="#505050"
@@ -164,7 +164,7 @@
                             Background="{Binding IsPresetActive, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#FFFFFF,#1E1E1E'}"
                             Foreground="{Binding IsPresetActive, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#080808,#888888'}"
                             Padding="0,10" CornerRadius="8" Margin="0,0,0,14">
-                        <TextBlock Text="{Binding IsPresetActive, Converter={StaticResource BoolToStringConverter}, ConverterParameter='使用中,適用'}"
+                        <TextBlock Text="{Binding IsPresetActive, Converter={StaticResource BoolToStringConverter}, ConverterParameter='Active,Apply'}"
                                    FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                     </Button>
                     <ItemsControl ItemsSource="{Binding PresetGroups}">
@@ -188,13 +188,13 @@
         <!-- Add Flag + Status -->
         <Grid Grid.Row="5" Margin="24,8,24,14" ColumnDefinitions="*,8,110,8,60,*,Auto">
             <TextBox Grid.Column="0" Text="{Binding NewFlagName}"
-                     Watermark="新しいフラグ名 (例: FFlagXxx)"
+                     Watermark="New flag name (e.g. FFlagXxx)"
                      Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF" FontSize="12"
                      BorderBrush="#2E2E2E" CornerRadius="10" Padding="12,7"/>
-            <TextBox Grid.Column="2" Text="{Binding NewFlagValue}" Watermark="値"
+            <TextBox Grid.Column="2" Text="{Binding NewFlagValue}" Watermark="Value"
                      Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF" FontSize="12"
                      BorderBrush="#2E2E2E" CornerRadius="10" Padding="12,7"/>
-            <Button Grid.Column="4" Content="+ 追加"
+            <Button Grid.Column="4" Content="+ Add"
                     Command="{Binding AddFlagCommand}"
                     Background="#FFFFFF" Foreground="#080808" FontWeight="SemiBold" FontSize="12"
                     Padding="0,7" CornerRadius="10" HorizontalAlignment="Stretch"/>

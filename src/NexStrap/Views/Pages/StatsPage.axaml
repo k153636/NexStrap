@@ -1,55 +1,53 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NexStrap.ViewModels"
+             xmlns:helpers="using:NexStrap.Helpers"
              x:Class="NexStrap.Views.Pages.StatsPage"
              x:DataType="vm:StatsViewModel"
              Background="Transparent">
 
     <ScrollViewer>
-        <StackPanel Spacing="10" Margin="24,20">
+        <StackPanel Spacing="10" Margin="24,20" helpers:AnimationHelper.StaggerChildren="True">
 
-            <TextBlock Text="統計" FontSize="22" FontWeight="Bold"
+            <TextBlock Text="Stats" FontSize="22" FontWeight="Bold"
                        Foreground="#FFFFFF" Margin="0,0,0,2"/>
 
             <!-- Summary cards -->
             <Grid ColumnDefinitions="*,8,*,8,*">
 
-                <!-- 総プレイ時間 -->
-                <Border Grid.Column="0" Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14">
+                <Border Grid.Column="0" Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14" BoxShadow="0 2 10 0 #22000000">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="総プレイ時間" FontSize="11" Foreground="#505050"/>
+                        <TextBlock Text="Total Playtime" FontSize="11" Foreground="{DynamicResource FgSub}"/>
                         <TextBlock Text="{Binding TotalPlayTime}" FontSize="22"
                                    FontWeight="Bold" Foreground="#FFFFFF"/>
                     </StackPanel>
                 </Border>
 
-                <!-- プレイ回数 -->
-                <Border Grid.Column="2" Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14">
+                <Border Grid.Column="2" Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14" BoxShadow="0 2 10 0 #22000000">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="プレイ回数" FontSize="11" Foreground="#505050"/>
+                        <TextBlock Text="Sessions" FontSize="11" Foreground="{DynamicResource FgSub}"/>
                         <TextBlock Text="{Binding TotalSessions}" FontSize="22"
                                    FontWeight="Bold" Foreground="#FFFFFF"/>
                     </StackPanel>
                 </Border>
 
-                <!-- 最多プレイ -->
-                <Border Grid.Column="4" Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14">
+                <Border Grid.Column="4" Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14" BoxShadow="0 2 10 0 #22000000">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="最多プレイ" FontSize="11" Foreground="#505050"/>
+                        <TextBlock Text="Top Game" FontSize="11" Foreground="{DynamicResource FgSub}"/>
                         <TextBlock Text="{Binding TopGameName}" FontSize="13"
                                    FontWeight="SemiBold" Foreground="#FFFFFF"
                                    TextTrimming="CharacterEllipsis"/>
                         <TextBlock Text="{Binding TopGameTime}" FontSize="11"
-                                   Foreground="#505050"/>
+                                   Foreground="{DynamicResource FgSub}"/>
                     </StackPanel>
                 </Border>
 
             </Grid>
 
             <!-- Weekly bar chart -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14" Margin="0,0,0,0">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14" Margin="0,0,0,0" BoxShadow="0 2 10 0 #22000000">
                 <StackPanel Spacing="10">
-                    <TextBlock Text="週間プレイ時間" FontSize="11" FontWeight="SemiBold" Foreground="#444444"/>
+                    <TextBlock Text="Weekly Playtime" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource FgSub}"/>
                     <ItemsControl ItemsSource="{Binding DailyBars}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -69,7 +67,7 @@
                                                     ConverterParameter='#FFFFFF,#383838'}"/>
                                     </Grid>
                                     <TextBlock Text="{Binding TimeText}" FontSize="9"
-                                               Foreground="#555555" HorizontalAlignment="Center"/>
+                                               Foreground="{DynamicResource FgSub}" HorizontalAlignment="Center"/>
                                     <TextBlock Text="{Binding DayLabel}" FontSize="10"
                                                Foreground="{Binding IsToday,
                                                    Converter={StaticResource BoolToColorConverter},
@@ -82,13 +80,46 @@
                 </StackPanel>
             </Border>
 
-            <!-- Divider + section label -->
+            <!-- Divider + section label + sort button -->
             <Border Height="1" Background="{DynamicResource SurfaceBg}" Margin="0,4,0,0"/>
-            <TextBlock Text="ゲーム別" FontSize="11" FontWeight="SemiBold"
-                       Foreground="#444444" Margin="0,0,0,2"/>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,0">
+                <TextBlock Grid.Column="0" Text="By Game" FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource FgSub}" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Command="{Binding ToggleSortMenuCommand}"
+                        Background="{DynamicResource OverlayBg}" CornerRadius="6" Padding="8,3">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="↕" FontSize="10" Foreground="{DynamicResource FgSub}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding SortLabel}" FontSize="10" Foreground="{DynamicResource FgSub}"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- Sort dropdown -->
+            <Border IsVisible="{Binding IsSortMenuOpen}"
+                    Background="{DynamicResource CardBg}" CornerRadius="8"
+                    Padding="4" Margin="0,0,0,0">
+                <StackPanel>
+                    <Button Content="Recent First"
+                            Command="{Binding SetSortCommand}"
+                            CommandParameter="{x:Static vm:StatsSortMode.LastPlayed}"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                            Background="Transparent" Padding="10,6" CornerRadius="6"
+                            Foreground="{Binding IsSortLastPlayed,
+                                Converter={StaticResource BoolToColorConverter},
+                                ConverterParameter='#FFFFFF,#505050'}"/>
+                    <Button Content="Most Played"
+                            Command="{Binding SetSortCommand}"
+                            CommandParameter="{x:Static vm:StatsSortMode.TotalTime}"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                            Background="Transparent" Padding="10,6" CornerRadius="6"
+                            Foreground="{Binding IsSortTotalTime,
+                                Converter={StaticResource BoolToColorConverter},
+                                ConverterParameter='#FFFFFF,#505050'}"/>
+                </StackPanel>
+            </Border>
 
             <!-- Empty state -->
-            <TextBlock Text="プレイ履歴がありません" FontSize="12" Foreground="#2E2E2E"
+            <TextBlock Text="No play history" FontSize="12" Foreground="{DynamicResource FgMuted}"
                        HorizontalAlignment="Center" Margin="0,24,0,0"
                        IsVisible="{Binding GameStats.Count,
                            Converter={StaticResource IntToZeroConverter}}"/>
@@ -98,7 +129,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vm:GameStat">
                         <Border Background="{DynamicResource CardBg}" CornerRadius="10" Padding="12,10"
-                                Margin="0,0,0,6">
+                                Margin="0,0,0,6" BoxShadow="0 2 8 0 #1A000000">
                             <Grid ColumnDefinitions="36,*,Auto">
                                 <!-- Icon -->
                                 <Border Grid.Column="0" Width="36" Height="36"
@@ -112,10 +143,10 @@
                                                FontWeight="SemiBold" Foreground="#FFFFFF"
                                                TextTrimming="CharacterEllipsis"/>
                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <TextBlock Text="{Binding Sessions, StringFormat='{}{0}回'}"
-                                                   FontSize="11" Foreground="#444444"/>
+                                        <TextBlock Text="{Binding Sessions, StringFormat='{}{0} sessions'}"
+                                                   FontSize="11" Foreground="{DynamicResource FgSub}"/>
                                         <TextBlock Text="{Binding LastPlayedText}"
-                                                   FontSize="11" Foreground="#444444"/>
+                                                   FontSize="11" Foreground="{DynamicResource FgSub}"/>
                                     </StackPanel>
                                 </StackPanel>
                                 <!-- Total time -->

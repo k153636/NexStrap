@@ -12,6 +12,8 @@ public class RobloxLogWatcher : IDisposable
     private long _filePosition;
     private long _lastPlaceId;
     private bool _wasRunning;
+    private bool _isBackgroundMode;
+    private bool _isPlayingMode;
     private readonly object _lock = new();
 
     public event EventHandler<long>?   PlaceJoined;
@@ -96,9 +98,21 @@ public class RobloxLogWatcher : IDisposable
         _processTimer = null;
     }
 
-    public void SetBackgroundMode(bool background)
+    public void SetBackgroundMode(bool background, bool playing)
     {
-        if (background)
+        _isBackgroundMode = background;
+        _isPlayingMode = playing;
+
+        if (background && playing)
+        {
+            _pollTimer?.Change(3_000, 3_000);
+            if (_watchedFile == null)
+                _scanTimer?.Change(30_000, 30_000);
+            else
+                _scanTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+            _processTimer?.Change(20_000, 20_000);
+        }
+        else if (background)
         {
             _pollTimer?.Change(5_000, 5_000);
             _scanTimer?.Change(15_000, 15_000);
@@ -115,6 +129,9 @@ public class RobloxLogWatcher : IDisposable
     // 現在監視中のファイルより新しいログファイルがあれば切り替える
     private void CheckForNewLogFile()
     {
+        if (_isBackgroundMode && _isPlayingMode && _watchedFile != null)
+            return;
+
         var latest = GetLatestLogFile();
         if (latest == null) return;
         lock (_lock)

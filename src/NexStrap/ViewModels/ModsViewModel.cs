@@ -31,11 +31,11 @@ public partial class ModsViewModel : ViewModelBase
     public async Task ImportModAsync(IStorageFolder folder)
     {
         IsLoading = true;
-        StatusMessage = "インポート中...";
+        StatusMessage = "Importing...";
         try
         {
             var mod = await _modService.ImportModAsync(folder.Path.LocalPath);
-            StatusMessage = mod != null ? $"{mod.Name} をインポートしました" : "インポートに失敗しました";
+            StatusMessage = mod != null ? $"Imported {mod.Name}" : "Import failed";
         }
         catch (InvalidOperationException ex)
         {
@@ -48,9 +48,9 @@ public partial class ModsViewModel : ViewModelBase
     private async Task ApplyModsAsync()
     {
         IsLoading = true;
-        StatusMessage = "Mod を適用中...";
+        StatusMessage = "Applying mods...";
         await _modService.ApplyEnabledModsAsync();
-        StatusMessage = "Mod を適用しました";
+        StatusMessage = "Mods applied";
         IsLoading = false;
     }
 
@@ -67,6 +67,6 @@ public partial class ModsViewModel : ViewModelBase
     {
         if (mod == null) return;
         _modService.RemoveMod(mod.Id);
-        StatusMessage = $"{mod.Name} を削除しました";
+        StatusMessage = $"Removed {mod.Name}";
     }
 }

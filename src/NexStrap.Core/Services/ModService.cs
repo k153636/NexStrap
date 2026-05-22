@@ -60,8 +60,8 @@ public class ModService
             if (string.IsNullOrEmpty(ext)) continue;
             if (!AllowedExtensions.Contains(ext))
                 throw new InvalidOperationException(
-                    $"許可されていないファイル形式です: {Path.GetFileName(file)}\n" +
-                    $"使用可能な形式: テクスチャ (.png .jpg .dds .bmp), サウンド (.ogg .mp3 .wav), フォント (.ttf .otf)");
+                    $"Unsupported file type: {Path.GetFileName(file)}\n" +
+                    $"Allowed types: Texture (.png .jpg .dds .bmp), Sound (.ogg .mp3 .wav), Font (.ttf .otf)");
         }
     }
 

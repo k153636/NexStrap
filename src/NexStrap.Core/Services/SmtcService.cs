@@ -92,8 +92,18 @@ public class SmtcService : IDisposable
         return (rawTitle, "nexstrap", string.Empty);
     }
 
-    public void SetBackgroundMode(bool background)
-        => _timer?.Change(0, background ? 8_000 : 1_500);
+    public void SetBackgroundMode(bool background, bool playing)
+    {
+        if (_timer == null) return;
+
+        if (background && playing)
+        {
+            _timer.Change(Timeout.Infinite, Timeout.Infinite);
+            return;
+        }
+
+        _timer.Change(0, background ? 8_000 : 1_500);
+    }
 
     public void Stop()
     {

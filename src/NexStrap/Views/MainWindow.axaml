@@ -14,18 +14,14 @@
         ExtendClientAreaChromeHints="PreferSystemChrome"
         ExtendClientAreaTitleBarHeightHint="-1">
 
-    <Grid RowDefinitions="30,*">
-
-        <!-- 常時表示: 不透明な黒背景 -->
+    <Grid x:Name="RootGrid" RowDefinitions="30,*">
         <Rectangle Grid.RowSpan="2" Fill="#080808"/>
 
-        <!-- Glassモード: 背景画像を適度に暗くするオーバーレイ -->
         <Border Grid.RowSpan="2"
                 Background="#50000000"
                 IsHitTestVisible="False"
                 IsVisible="{Binding ThemeVM.GlassThemeEnabled}"/>
 
-        <!-- Background Image (全画面・ブラーあり) -->
         <Image Grid.RowSpan="2"
                Source="{Binding ThemeVM.BackgroundImagePath,
                    Converter={StaticResource StringToImageConverter}}"
@@ -38,14 +34,18 @@
             </Image.Effect>
         </Image>
 
-        <!-- Title Bar -->
-        <Grid Grid.Row="0" Background="Transparent">
-            <TextBlock Text="NexStrap" FontSize="12" FontWeight="SemiBold"
-                       Foreground="#3A3A3A" VerticalAlignment="Center"
-                       HorizontalAlignment="Center"/>
+        <Grid Grid.Row="0" Background="Transparent"
+              PointerPressed="TitleBar_PointerPressed"
+              DoubleTapped="TitleBar_DoubleTapped">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                        Margin="12,0" Spacing="7" IsHitTestVisible="False">
+                <Image Source="avares://NexStrap/Assets/nexstrap.png"
+                       Width="16" Height="16" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                <TextBlock Text="NexStrap" FontSize="12" FontWeight="SemiBold"
+                           Foreground="#888888" VerticalAlignment="Center"/>
+            </StackPanel>
         </Grid>
 
-        <!-- Navigation + Content -->
         <ui:NavigationView Grid.Row="1"
                            x:Name="NavView"
                            IsPaneOpen="True"
@@ -58,7 +58,7 @@
                            SelectionChanged="NavView_SelectionChanged">
 
             <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem Content="ホーム" Tag="Home">
+                <ui:NavigationViewItem Content="Home" Tag="Home">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="Home"/>
                     </ui:NavigationViewItem.IconSource>
@@ -76,33 +76,51 @@
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem Content="ブラウザ" Tag="Browser">
+                <ui:NavigationViewItem Content="Browser" Tag="Browser">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="Globe"/>
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem Content="統計" Tag="Stats">
+                <ui:NavigationViewItem Content="Stats" Tag="Stats">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="List"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="Friends" Tag="Friends">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="People"/>
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
 
             <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem Content="テーマ" Tag="Theme">
+                <ui:NavigationViewItem Content="Account" Tag="Account">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Contact"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="Theme" Tag="Theme">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="ColorBackground"/>
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="設定" Tag="Settings">
+
+                <ui:NavigationViewItem Content="Discord" Tag="Discord">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Comment"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="Settings" Tag="Settings">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="Settings"/>
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
             </ui:NavigationView.FooterMenuItems>
 
-            <!-- Page Content -->
             <Border Background="Transparent">
                 <TransitioningContentControl Content="{Binding CurrentPage}">
                     <TransitioningContentControl.PageTransition>
@@ -121,6 +139,9 @@
                         <DataTemplate DataType="vm:SettingsViewModel">
                             <pages:SettingsPage/>
                         </DataTemplate>
+                        <DataTemplate DataType="vm:DiscordViewModel">
+                            <pages:DiscordPage/>
+                        </DataTemplate>
                         <DataTemplate DataType="vm:BrowserViewModel">
                             <pages:BrowserPage/>
                         </DataTemplate>
@@ -132,6 +153,12 @@
                         </DataTemplate>
                         <DataTemplate DataType="vm:DevViewModel">
                             <pages:DevPage/>
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:AccountViewModel">
+                            <pages:AccountPage/>
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:FriendsViewModel">
+                            <pages:FriendsPage/>
                         </DataTemplate>
                     </TransitioningContentControl.DataTemplates>
                 </TransitioningContentControl>

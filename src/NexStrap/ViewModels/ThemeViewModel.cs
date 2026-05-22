@@ -17,6 +17,7 @@ public partial class ThemeViewModel : ViewModelBase
     [ObservableProperty] private double _backgroundImageOpacity;
     [ObservableProperty] private string _glassAccentColor = "#FFFFFF";
     [ObservableProperty] private Color _glassAccentColorValue = Colors.White;
+    [ObservableProperty] private double _glassOpacity = 1.0;
 
     private bool _syncingColor;
 
@@ -41,6 +42,12 @@ public partial class ThemeViewModel : ViewModelBase
         set => BackgroundImageOpacity = value / 100.0;
     }
 
+    public double GlassOpacityPercent
+    {
+        get => GlassOpacity / 0.75 * 100.0;
+        set => GlassOpacity = value / 100.0 * 0.75;
+    }
+
     public ThemeViewModel(SettingsService settingsService)
     {
         _settingsService = settingsService;
@@ -49,6 +56,7 @@ public partial class ThemeViewModel : ViewModelBase
         _backgroundBlurRadius = settingsService.Settings.BackgroundBlurRadius;
         _backgroundImageOpacity = settingsService.Settings.BackgroundImageOpacity;
         _glassAccentColor = settingsService.Settings.GlassAccentColor;
+        _glassOpacity = Math.Clamp(settingsService.Settings.GlassOpacity, 0.0, 0.75);
         try { _glassAccentColorValue = Color.Parse(_glassAccentColor); } catch { }
     }
 
@@ -100,15 +108,21 @@ public partial class ThemeViewModel : ViewModelBase
         OnPropertyChanged(nameof(BackgroundImageOpacityPercent));
     }
 
+    partial void OnGlassOpacityChanged(double value)
+    {
+        _settingsService.Update(s => s.GlassOpacity = value);
+        OnPropertyChanged(nameof(GlassOpacityPercent));
+    }
+
     public async Task PickBackgroundImageAsync(IStorageProvider storageProvider)
     {
         var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "背景画像を選択",
+            Title = "Select Background Image",
             AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("画像ファイル")
+                new FilePickerFileType("Image Files")
                 {
                     Patterns = ["*.jpg", "*.jpeg", "*.png", "*.webp"]
                 }
@@ -119,13 +133,13 @@ public partial class ThemeViewModel : ViewModelBase
         if (file == null) return;
 
         BackgroundImagePath = file.Path.LocalPath;
-        StatusMessage = "背景画像を設定しました";
+        StatusMessage = "Background image set";
     }
 
     [RelayCommand]
     private void ClearBackgroundImage()
     {
         BackgroundImagePath = string.Empty;
-        StatusMessage = "背景画像を削除しました";
+        StatusMessage = "Background image removed";
     }
 }
