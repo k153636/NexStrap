@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NexStrap.Core.Services;
@@ -8,31 +9,65 @@ public partial class BootstrapperViewModel : ViewModelBase
 {
     private readonly RobloxService _roblox;
 
-    [ObservableProperty] private string  _statusText       = "Preparing...";
-    [ObservableProperty] private double  _progressValue    = 0;
-    [ObservableProperty] private bool    _isIndeterminate  = true;
-    [ObservableProperty] private bool    _isCancelVisible  = true;
+    [ObservableProperty] private string _statusText      = "Preparing...";
+    [ObservableProperty] private double _progressValue   = 0;
+    [ObservableProperty] private bool   _isIndeterminate = true;
+    [ObservableProperty] private bool   _isCancelVisible = false;
+    [ObservableProperty] private string _detailText      = string.Empty;
+
+    public bool HasDetail => !string.IsNullOrEmpty(DetailText);
+
+    // Theme snapshot — read once; window is short-lived
+    public string BackgroundImagePath   { get; }
+    public double BackgroundBlurRadius  { get; }
+    public double BackgroundImageOpacity { get; }
+    public bool   GlassThemeEnabled     { get; }
+    public bool   HasBackgroundImage    { get; }
 
     public event EventHandler? CloseRequested;
 
-    public BootstrapperViewModel(RobloxService roblox)
+    public BootstrapperViewModel(RobloxService roblox, SettingsService settings)
     {
         _roblox = roblox;
+
+        var s = settings.Settings;
+        // Use the dedicated loading-screen image; fall back to main background if not set
+        var imgPath            = !string.IsNullOrEmpty(s.BootstrapperImagePath)
+                                     ? s.BootstrapperImagePath
+                                     : s.BackgroundImagePath;
+        BackgroundImagePath    = imgPath;
+        BackgroundBlurRadius   = 0;          // loading screen: no blur
+        BackgroundImageOpacity = 0.85;
+        GlassThemeEnabled      = s.GlassThemeEnabled;
+        HasBackgroundImage     = !string.IsNullOrEmpty(imgPath);
+
+        // Cancelはセットアップ中は非表示、Roblox起動・更新中のみ表示
+        _roblox.StatusChanged += (_, s) =>
+        {
+            if (s is RobloxStatus.Launching or RobloxStatus.Updating)
+                Dispatcher.UIThread.InvokeAsync(() => IsCancelVisible = true);
+        };
+
         _roblox.BootstrapperProgress += OnProgress;
         _roblox.StatusChanged        += OnStatusChanged;
     }
 
     private void OnProgress(object? sender, BootstrapperProgress p)
     {
-        StatusText      = p.Message;
-        ProgressValue   = p.Percent;
-        IsIndeterminate = p.IsIndeterminate;
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            StatusText      = p.Message;
+            ProgressValue   = p.Percent;
+            IsIndeterminate = p.IsIndeterminate;
+            DetailText      = p.Detail ?? string.Empty;
+            OnPropertyChanged(nameof(HasDetail));
+        });
     }
 
     private void OnStatusChanged(object? sender, RobloxStatus status)
     {
         if (status is RobloxStatus.Running or RobloxStatus.NotInstalled or RobloxStatus.Idle)
-            CloseRequested?.Invoke(this, EventArgs.Empty);
+            Dispatcher.UIThread.InvokeAsync(() => CloseRequested?.Invoke(this, EventArgs.Empty));
     }
 
     [RelayCommand]
