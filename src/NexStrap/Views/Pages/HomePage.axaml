@@ -7,7 +7,7 @@
              x:DataType="vm:HomeViewModel"
              Background="Transparent">
 
-    <Grid RowDefinitions="Auto,*,Auto">
+    <Grid RowDefinitions="Auto,*,Auto,Auto">
 
         <!-- Header: title + badges -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="24,20,24,0">
@@ -190,8 +190,33 @@
             </StackPanel>
         </ScrollViewer>
 
+        <!-- Now Playing bar -->
+        <Border Grid.Row="2" Background="{DynamicResource CardBg}"
+                Margin="24,0,24,8" CornerRadius="10" Padding="12,8"
+                IsVisible="{Binding HasNowPlaying}">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding NowPlayingTitle}"
+                               FontSize="12" FontWeight="SemiBold" Foreground="#FFFFFF"
+                               TextTrimming="CharacterEllipsis"/>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="{Binding NowPlayingService}"
+                                   FontSize="10" Foreground="{DynamicResource FgSub}"/>
+                        <TextBlock Text="·" FontSize="10" Foreground="{DynamicResource FgSub}"
+                                   IsVisible="{Binding NowPlayingArtist,
+                                       Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        <TextBlock Text="{Binding NowPlayingArtist}"
+                                   FontSize="10" Foreground="{DynamicResource FgSub}"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="♪" FontSize="14"
+                           Foreground="{DynamicResource FgSub}" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
         <!-- Launch button pinned to bottom -->
-        <Button Grid.Row="2"
+        <Button Grid.Row="3"
                 Command="{Binding LaunchRobloxCommand}"
                 IsEnabled="{Binding !IsLaunching}"
                 HorizontalAlignment="Stretch"

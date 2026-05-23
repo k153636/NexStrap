@@ -24,8 +24,11 @@ public partial class HomeViewModel : ViewModelBase
     private readonly GameHistoryService _history;
     private readonly FriendNotificationService _friendNotifications;
     private readonly AccountService _accountService;
+    private readonly SmtcService _smtc;
 
-    private CancellationTokenSource? _launchFallbackCts;
+    internal string CurrentPageName { get; set; } = "Home";
+    internal bool IsGameDetected => _gameDetected;
+
     private bool      _gameDetected;
     private string?   _userAvatarUrl;
     private string?   _myCountryCode;
@@ -60,6 +63,10 @@ public partial class HomeViewModel : ViewModelBase
     [ObservableProperty] private string       _robloxVersion = "Not detected";
     [ObservableProperty] private HomeSortMode _homeSortOrder = HomeSortMode.RecentFirst;
     [ObservableProperty] private bool         _isSortMenuOpen;
+    [ObservableProperty] private bool         _hasNowPlaying;
+    [ObservableProperty] private string       _nowPlayingTitle  = string.Empty;
+    [ObservableProperty] private string       _nowPlayingArtist = string.Empty;
+    [ObservableProperty] private string       _nowPlayingService = string.Empty;
 
     public bool   IsSortRecent    => HomeSortOrder == HomeSortMode.RecentFirst;
     public bool   IsSortTotalTime => HomeSortOrder == HomeSortMode.TotalTime;
@@ -92,7 +99,8 @@ public partial class HomeViewModel : ViewModelBase
         RobloxApiService robloxApi,
         GameHistoryService history,
         FriendNotificationService friendNotifications,
-        AccountService accountService)
+        AccountService accountService,
+        SmtcService smtc)
     {
         _roblox               = roblox;
         _fastFlags            = fastFlags;
@@ -104,6 +112,19 @@ public partial class HomeViewModel : ViewModelBase
         _history              = history;
         _friendNotifications  = friendNotifications;
         _accountService       = accountService;
+        _smtc                 = smtc;
+
+        _smtc.MediaChanged += (_, info) => Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            NowPlayingTitle   = info.Title;
+            NowPlayingArtist  = info.Artist;
+            NowPlayingService = info.ServiceName;
+            HasNowPlaying     = true;
+        });
+        _smtc.MediaStopped += (_, _) => Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            HasNowPlaying = false;
+        });
 
         RebuildGameLists();
         UpdateJumpList();
@@ -117,8 +138,16 @@ public partial class HomeViewModel : ViewModelBase
         {
             Dispatcher.UIThread.InvokeAsync(() =>
             {
-                IsLaunching = status == RobloxStatus.Launching;
-                StatusText  = status switch
+                // Updating (install in progress) keeps the launcher in "busy" state
+                IsLaunching = status is RobloxStatus.Launching or RobloxStatus.Updating;
+
+                // Sync IsRobloxRunning directly with the process lifecycle
+                if (status == RobloxStatus.Running)
+                    IsRobloxRunning = true;
+                else if (status is RobloxStatus.Idle or RobloxStatus.NotInstalled)
+                    IsRobloxRunning = false;
+
+                StatusText = status switch
                 {
                     RobloxStatus.Launching    => "Launching...",
                     RobloxStatus.Updating     => "Updating...",
@@ -130,25 +159,22 @@ public partial class HomeViewModel : ViewModelBase
 
                 if (_gameDetected) return;
 
-                if (status == RobloxStatus.Updating)
+                switch (status)
                 {
-                    _discord.SetUpdatingPresence(_userAvatarUrl);
-                    return;
+                    case RobloxStatus.Updating:
+                        _discord.SetUpdatingPresence(_userAvatarUrl);
+                        break;
+                    case RobloxStatus.Launching:
+                        _discord.SetLaunchingPresence(_userAvatarUrl);
+                        break;
+                    case RobloxStatus.Running:
+                        _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox");
+                        break;
+                    case RobloxStatus.Idle:
+                    case RobloxStatus.NotInstalled:
+                        _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+                        break;
                 }
-
-                if (status == RobloxStatus.Launching)
-                {
-                    _discord.SetLaunchingPresence(_userAvatarUrl);
-                    return;
-                }
-                if (status == RobloxStatus.Running || status == RobloxStatus.Idle)
-                {
-                    _discord.SetPagePresence("Home", _userAvatarUrl, "Roblox");
-                    return;
-                }
-
-                if (status == RobloxStatus.Running || status == RobloxStatus.Idle)
-                    _discord.SetPagePresence("Home", _userAvatarUrl, "Roblox");
             });
         };
 
@@ -162,7 +188,7 @@ public partial class HomeViewModel : ViewModelBase
                 _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(userId);
                 await ApplyUserLabelAsync(userId);
                 if (!IsRobloxRunning && !IsLaunching)
-                    _discord.SetPagePresence("Home", _userAvatarUrl);
+                    _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
             }
             catch { }
         };
@@ -186,8 +212,8 @@ public partial class HomeViewModel : ViewModelBase
             _currentServerCode = null;
             _lastPlaceId       = placeId;
             _gameStartTime     = DateTime.UtcNow;
-            CancelFallback();
             var seq = Interlocked.Increment(ref _joinSequence);
+            _discord.ResetGameTimestamp();
 
             // API完了前に基本プレゼンスを即時表示（API失敗時のフォールバックも兼ねる）
             _discord.SetInGamePresence("Roblox", null, _userAvatarUrl, null, null, placeId);
@@ -195,7 +221,7 @@ public partial class HomeViewModel : ViewModelBase
             try
             {
                 var (name, iconUrl, creator) = await _robloxApi.GetGameInfoAsync(placeId);
-                if (Interlocked.Read(ref _joinSequence) != seq) return;
+                if (Interlocked.Read(ref _joinSequence) != seq || !_gameDetected) return;
 
                 _lastGameName    = name;
                 _lastGameIconUrl = iconUrl;
@@ -249,7 +275,7 @@ public partial class HomeViewModel : ViewModelBase
             }
             _gameStartTime = null;
 
-            _discord.SetPagePresence("Home", _userAvatarUrl, "Roblox");
+            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox");
             Dispatcher.UIThread.InvokeAsync(() =>
             {
                 StatusText      = "Ready";
@@ -257,17 +283,20 @@ public partial class HomeViewModel : ViewModelBase
             });
         };
 
-        // Discord 接続時にアバター付きでプレゼンスを設定（ゲーム中は上書きしない）
+        // Discord 再接続時にゲーム中なら in-game presence を復元、それ以外はページ presence
         _discord.ConnectionChanged += (_, connected) =>
         {
-            if (connected && !_gameDetected)
-                _discord.SetPagePresence("Home", _userAvatarUrl);
+            if (!connected) return;
+            if (_gameDetected)
+                _discord.SetInGamePresence(_lastGameName ?? "Roblox", _lastGameIconUrl, _userAvatarUrl, FormatServer(), _lastGameCreator, _lastPlaceId);
+            else
+                _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
         };
 
         _logWatcher.Start();
 
-        // 起動時にすでに Roblox が動いていれば IsRobloxRunning を立てる
-        if (RobloxLogWatcher.IsRobloxRunning())
+        // 起動時にすでに NexStrap が起動した Roblox が動いていれば IsRobloxRunning を立てる
+        if (_roblox.IsNexStrapRobloxRunning())
             IsRobloxRunning = true;
 
         // 前回セッションのユーザーIDが保存済みならアバター取得・フレンド通知開始
@@ -281,7 +310,7 @@ public partial class HomeViewModel : ViewModelBase
                 await ApplyUserLabelAsync(cachedUserId);
                 // ゲームプレイ中・Roblox 起動中は上書きしない
                 if (!IsRobloxRunning && !_gameDetected)
-                    _discord.SetPagePresence("Home", _userAvatarUrl);
+                    _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
             });
         }
 
@@ -301,10 +330,11 @@ public partial class HomeViewModel : ViewModelBase
         _gameDetected = false;
         StatusText    = "Applying flags...";
 
-        // FPS Unlock 設定をフラグに反映
+        // FPS unlock: use TargetFps value (default 144), 0 = unlimited (9999)
         if (_settings.Settings.FpsUnlockEnabled)
         {
-            _fastFlags.Set("DFIntTaskSchedulerTargetFps", "9999");
+            var fps = _settings.Settings.TargetFps > 0 ? _settings.Settings.TargetFps.ToString() : "9999";
+            _fastFlags.Set("DFIntTaskSchedulerTargetFps", fps);
             _fastFlags.Set("FFlagTaskSchedulerLimitTargetFpsTo2402", "False");
         }
         else
@@ -328,9 +358,8 @@ public partial class HomeViewModel : ViewModelBase
         await _fastFlags.SaveAsync();
         await _mods.ApplyEnabledModsAsync();
 
-        StatusText       = "Launching...";
+        StatusText = "Checking for updates...";
         _launchStartTime = DateTime.UtcNow;
-        _discord.SetLaunchingPresence(_userAvatarUrl);
 
         string? launchArgs = null;
         var activeCookie = _accountService.GetActiveCookie();
@@ -341,16 +370,12 @@ public partial class HomeViewModel : ViewModelBase
                 launchArgs = $"--launchMode app --authenticationTicket {ticket} --authenticationUrl https://auth.roblox.com";
         }
 
-        var launched = await _roblox.LaunchAsync(launchArgs);
+        var launched = await _roblox.LaunchAsync(launchArgs, autoUpdate: _settings.Settings.AutoUpdateRoblox);
         if (!launched)
         {
-            IsLaunching = false;
+            IsLaunching     = false;
             IsRobloxRunning = false;
-            return;
         }
-
-        // ログ検知が失敗した場合のフォールバック（40秒後）
-        StartLaunchFallback();
     }
 
     [RelayCommand]
@@ -375,62 +400,6 @@ public partial class HomeViewModel : ViewModelBase
         StatusText = "Fast Flags hot reloaded";
         await Task.Delay(2000);
         StatusText = IsRobloxRunning ? $"Playing" : "Ready";
-    }
-
-    // Roblox プロセスを 2 秒ごとにポーリング — 検出次第即座に「プレイ中」へ
-    private void StartLaunchFallback()
-    {
-        CancelFallback();
-        _launchFallbackCts = new CancellationTokenSource();
-        var token = _launchFallbackCts.Token;
-
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                var deadline = DateTime.UtcNow.AddSeconds(90);
-
-                while (!token.IsCancellationRequested && DateTime.UtcNow < deadline)
-                {
-                    await Task.Delay(2000, token);
-                    if (_gameDetected) return; // PlaceJoined が先に処理済み
-
-                    if (RobloxLogWatcher.IsRobloxRunning())
-                    {
-                        // プロセス確認できた → ホーム画面にいる状態
-                        // GameLeft イベントが IsRobloxRunning=false に戻すので、
-                        // ここではフラグを立てるだけで監視は LogWatcher に委譲
-                        _discord.SetPagePresence("Home", _userAvatarUrl, "Roblox");
-                        await Dispatcher.UIThread.InvokeAsync(() =>
-                        {
-                            StatusText      = "Launching Roblox";
-                            IsRobloxRunning = true;
-                            IsLaunching     = false;
-                        });
-                        return;
-                    }
-                }
-
-                // タイムアウト — 起動失敗
-                if (!token.IsCancellationRequested && !_gameDetected)
-                {
-                    _discord.SetPagePresence("Home", _userAvatarUrl);
-                    await Dispatcher.UIThread.InvokeAsync(() =>
-                    {
-                        IsLaunching     = false;
-                        IsRobloxRunning = false;
-                        StatusText      = "Ready";
-                    });
-                }
-            }
-            catch (TaskCanceledException) { }
-        });
-    }
-
-    private void CancelFallback()
-    {
-        _launchFallbackCts?.Cancel();
-        _launchFallbackCts = null;
     }
 
     private void RebuildGameLists()
