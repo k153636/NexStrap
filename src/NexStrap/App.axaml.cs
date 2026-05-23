@@ -30,8 +30,20 @@ public partial class App : Application
 
         JumpListService.Initialize();
 
-        // --launch-game {placeId}: フラグ/Mod適用 → ゲーム起動 → 即終了
         var args = Environment.GetCommandLineArgs();
+
+        // roblox:// / roblox-player:// protocol launch from browser
+        var robloxUrl = args.Skip(1).FirstOrDefault(a =>
+            a.StartsWith("roblox://", StringComparison.OrdinalIgnoreCase) ||
+            a.StartsWith("roblox-player://", StringComparison.OrdinalIgnoreCase));
+        if (robloxUrl != null)
+        {
+            HandleRobloxUrlLaunchAsync(robloxUrl).GetAwaiter().GetResult();
+            Environment.Exit(0);
+            return;
+        }
+
+        // --launch-game {placeId}: フラグ/Mod適用 → ゲーム起動 → 即終了
         var idx  = Array.IndexOf(args, "--launch-game");
         if (idx >= 0 && idx + 1 < args.Length && long.TryParse(args[idx + 1], out var placeId))
         {
@@ -44,37 +56,128 @@ public partial class App : Application
         var friendNotif = Services.GetRequiredService<FriendNotificationService>();
         friendNotif.FriendCameOnline += (_, e) => NotificationService.ShowFriendOnline(e.DisplayName);
 
+        // Start media detection
+        _ = Services.GetRequiredService<SmtcService>().StartAsync();
+
         // Show bootstrapper window when Roblox install/update starts
-        var robloxService = Services.GetRequiredService<RobloxService>();
+        var robloxService   = Services.GetRequiredService<RobloxService>();
+        var settingsService = Services.GetRequiredService<SettingsService>();
         BootstrapperWindow? bootstrapperWindow = null;
+        BootstrapperViewModel? bootstrapperViewModel = null;
+
         robloxService.StatusChanged += (_, status) =>
         {
-            Dispatcher.UIThread.InvokeAsync(() =>
+            void HandleStatus()
             {
-                if (status == RobloxStatus.Updating && bootstrapperWindow == null)
+                if (status is RobloxStatus.Updating or RobloxStatus.Launching && bootstrapperWindow == null)
                 {
-                    var vm = new BootstrapperViewModel(robloxService);
-                    bootstrapperWindow = new BootstrapperWindow(vm);
-                    bootstrapperWindow.Closed += (_, _) => bootstrapperWindow = null;
+                    bootstrapperViewModel = new BootstrapperViewModel(robloxService, settingsService);
+                    bootstrapperWindow = new BootstrapperWindow(bootstrapperViewModel);
+                    bootstrapperWindow.Closed += (_, _) =>
+                    {
+                        bootstrapperWindow = null;
+                        bootstrapperViewModel = null;
+                    };
                     bootstrapperWindow.Show();
                 }
                 else if (status is RobloxStatus.Running or RobloxStatus.Idle or RobloxStatus.NotInstalled)
                 {
                     bootstrapperWindow?.Close();
-                    bootstrapperWindow = null;
                 }
-            });
+            }
+
+            // If already on the UI thread (typical: called from RelayCommand), run synchronously
+            // so the window opens BEFORE Process.Start. Otherwise post to the dispatcher.
+            if (Dispatcher.UIThread.CheckAccess())
+                HandleStatus();
+            else
+                Dispatcher.UIThread.InvokeAsync(HandleStatus);
         };
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = Services.GetRequiredService<MainWindowViewModel>()
-            };
+            // Keep the app alive during the startup sequence; main window is shown at the end
+            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            _ = RunStartupSequenceAsync(robloxService, settingsService, desktop);
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static async Task RunStartupSequenceAsync(
+        RobloxService roblox, SettingsService settings,
+        IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        // Step 1: first-time environment setup (VC++ etc.)
+        if (roblox.NeedsSetup())
+        {
+            BootstrapperWindow? win = null;
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                var vm = new BootstrapperViewModel(roblox, settings);
+                win = new BootstrapperWindow(vm);
+                win.Show();
+            });
+            await roblox.RunSetupAsync();
+            await Dispatcher.UIThread.InvokeAsync(() => win?.Close());
+        }
+
+        // Step 2: check for NexStrap self-update
+        var updateService = new UpdateService();
+        var update        = await updateService.CheckForUpdateAsync();
+        if (update != null)
+        {
+            BootstrapperWindow? win = null;
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                var vm = new BootstrapperViewModel(roblox, settings);
+                win = new BootstrapperWindow(vm);
+                win.Show();
+            });
+            await updateService.DownloadAndApplyAsync(
+                update.Value.DownloadUrl,
+                p => roblox.BroadcastProgress(p));
+            return; // Environment.Exit(0) called inside DownloadAndApplyAsync
+        }
+
+        // Step 3: all done — create and show main window, restore normal shutdown mode
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            var mainWindow = new MainWindow
+            {
+                DataContext = Services.GetRequiredService<MainWindowViewModel>()
+            };
+            desktop.MainWindow   = mainWindow;
+            desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
+            mainWindow.Show();
+            mainWindow.Activate();
+        });
+    }
+
+    private static void ApplyPerformanceFlags(FastFlagService fastFlags, SettingsService settings)
+    {
+        if (settings.Settings.FpsUnlockEnabled)
+        {
+            var fps = settings.Settings.TargetFps > 0 ? settings.Settings.TargetFps.ToString() : "9999";
+            fastFlags.Set("DFIntTaskSchedulerTargetFps", fps);
+            fastFlags.Set("FFlagTaskSchedulerLimitTargetFpsTo2402", "False");
+        }
+        else
+        {
+            fastFlags.Remove("DFIntTaskSchedulerTargetFps");
+            fastFlags.Remove("FFlagTaskSchedulerLimitTargetFpsTo2402");
+        }
+
+        if (settings.Settings.MultiThreadingEnabled)
+        {
+            fastFlags.Set("FIntRuntimeMaxNumOfThreads", "2400");
+            fastFlags.Set("DFIntTaskSchedulerThreadCount", Environment.ProcessorCount.ToString());
+        }
+        else
+        {
+            fastFlags.Remove("FIntRuntimeMaxNumOfThreads");
+            fastFlags.Remove("DFIntTaskSchedulerThreadCount");
+        }
     }
 
     private async Task HandleJumpLaunchAsync(long placeId)
@@ -85,23 +188,7 @@ public partial class App : Application
             var settings  = Services.GetRequiredService<SettingsService>();
             var mods      = Services.GetRequiredService<ModService>();
 
-            if (settings.Settings.FpsUnlockEnabled)
-            {
-                fastFlags.Set("DFIntTaskSchedulerTargetFps", "9999");
-                fastFlags.Set("FFlagTaskSchedulerLimitTargetFpsTo2402", "False");
-            }
-            else
-            {
-                fastFlags.Remove("DFIntTaskSchedulerTargetFps");
-                fastFlags.Remove("FFlagTaskSchedulerLimitTargetFpsTo2402");
-            }
-
-            if (settings.Settings.MultiThreadingEnabled)
-            {
-                fastFlags.Set("FIntRuntimeMaxNumOfThreads", "2400");
-                fastFlags.Set("DFIntTaskSchedulerThreadCount", Environment.ProcessorCount.ToString());
-            }
-
+            ApplyPerformanceFlags(fastFlags, settings);
             await fastFlags.SaveAsync();
             await mods.ApplyEnabledModsAsync();
 
@@ -110,6 +197,41 @@ public partial class App : Application
                 FileName        = $"roblox://experiences/start?placeId={placeId}",
                 UseShellExecute = true
             });
+        }
+        catch { }
+    }
+
+    private async Task HandleRobloxUrlLaunchAsync(string url)
+    {
+        try
+        {
+            var fastFlags = Services.GetRequiredService<FastFlagService>();
+            var settings  = Services.GetRequiredService<SettingsService>();
+            var mods      = Services.GetRequiredService<ModService>();
+            var roblox    = Services.GetRequiredService<RobloxService>();
+
+            ApplyPerformanceFlags(fastFlags, settings);
+            await fastFlags.SaveAsync();
+            await mods.ApplyEnabledModsAsync();
+
+            var playerPath = roblox.RobloxPlayerPath;
+            if (playerPath != null)
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(playerPath)
+                {
+                    UseShellExecute  = true,
+                    WorkingDirectory = System.IO.Path.GetDirectoryName(playerPath)!,
+                    Arguments        = url
+                });
+            }
+            else
+            {
+                // Roblox not installed via NexStrap, pass URL to shell
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url)
+                {
+                    UseShellExecute = true
+                });
+            }
         }
         catch { }
     }
@@ -157,7 +279,7 @@ public partial class App : Application
         services.AddSingleton<ModService>();
         services.AddSingleton<DiscordRpcService>();
         services.AddSingleton<ProfileService>();
-        services.AddSingleton<RobloxLogWatcher>();
+        services.AddSingleton<RobloxLogWatcher>(sp => new RobloxLogWatcher(sp.GetRequiredService<RobloxService>().IsNexStrapRobloxRunning));
         services.AddSingleton<RobloxApiService>();
         services.AddSingleton<PerformanceMonitorService>();
         services.AddSingleton<SmtcService>();
@@ -174,6 +296,7 @@ public partial class App : Application
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<DiscordViewModel>();
         services.AddTransient<BrowserViewModel>();
+        services.AddSingleton<UpdateService>();
         services.AddSingleton<AccountService>();
         services.AddTransient<AccountViewModel>();
         services.AddTransient<FriendsViewModel>();

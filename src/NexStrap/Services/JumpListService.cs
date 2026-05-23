@@ -22,6 +22,31 @@ internal static class JumpListService
             if (!string.IsNullOrEmpty(exe)) key.SetValue("IconUri", exe);
         }
         catch { }
+
+        RegisterProtocolHandler();
+    }
+
+    public static void RegisterProtocolHandler()
+    {
+        var exe = Environment.ProcessPath ?? string.Empty;
+        if (string.IsNullOrEmpty(exe)) return;
+
+        foreach (var (scheme, label) in new[] { ("roblox", "Roblox"), ("roblox-player", "Roblox Player") })
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{scheme}");
+                key.SetValue("", $"URL:{label} Protocol");
+                key.SetValue("URL Protocol", "");
+
+                using var iconKey = key.CreateSubKey("DefaultIcon");
+                iconKey.SetValue("", $"{exe},0");
+
+                using var cmdKey = key.CreateSubKey(@"shell\open\command");
+                cmdKey.SetValue("", $"\"{exe}\" \"%1\"");
+            }
+            catch { }
+        }
     }
 
     public static void Update(IEnumerable<(long PlaceId, string Name)> favorites)
