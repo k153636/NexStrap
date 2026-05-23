@@ -10,7 +10,6 @@ public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly DiscordRpcService _discord;
     private readonly SettingsService _settings;
-    private readonly EnvService _env;
     private readonly PerformanceMonitorService _perfMonitor;
     private PerformanceOverlayWindow? _overlayWindow;
 
@@ -33,7 +32,6 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(
         DiscordRpcService discord,
         SettingsService settings,
-        EnvService env,
         PerformanceMonitorService perfMonitor,
         HomeViewModel homeVM,
         FastFlagsViewModel fastFlagsVM,
@@ -49,7 +47,6 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         _discord = discord;
         _settings = settings;
-        _env = env;
         _perfMonitor = perfMonitor;
 
         HomeVM = homeVM;
@@ -65,20 +62,18 @@ public partial class MainWindowViewModel : ViewModelBase
         FriendsVM = friendsVM;
         _currentPage = homeVM;
 
-        var appId = env.Get("DISCORD_APP_ID");
-        IsDiscordAppIdMissing = appId == null;
+        IsDiscordAppIdMissing = false;
 
-        if (settings.Settings.DiscordRpcEnabled && appId != null)
-            discord.Initialize(appId);
+        if (settings.Settings.DiscordRpcEnabled)
+            discord.Initialize(AppConstants.DiscordAppId);
 
         discord.ConnectionChanged += (_, connected) =>
             IsDiscordConnected = connected;
 
         settings.SettingsChanged += (_, s) =>
         {
-            var id = env.Get("DISCORD_APP_ID");
-            if (s.DiscordRpcEnabled && id != null)
-                discord.Initialize(id);
+            if (s.DiscordRpcEnabled)
+                discord.Initialize(AppConstants.DiscordAppId);
             else if (!s.DiscordRpcEnabled)
                 discord.Disable();
 
@@ -146,7 +141,9 @@ public partial class MainWindowViewModel : ViewModelBase
             _ => HomeVM
         };
 
-        if (page != "Browser" && !HomeVM.IsRobloxRunning)
+        HomeVM.CurrentPageName = page;
+
+        if (page != "Browser" && !HomeVM.IsGameDetected)
             _discord.SetPagePresence(page, HomeVM.UserAvatarUrl);
     }
 }

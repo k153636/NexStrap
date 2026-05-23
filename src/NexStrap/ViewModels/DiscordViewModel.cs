@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using NexStrap.Core.Models;
 using NexStrap.Core.Services;
 
 namespace NexStrap.ViewModels;
@@ -8,7 +7,6 @@ public partial class DiscordViewModel : ViewModelBase
 {
     private readonly SettingsService _settingsService;
     private readonly DiscordRpcService _discord;
-    private readonly EnvService _env;
     private readonly RobloxApiService _robloxApi;
 
     [ObservableProperty] private bool _discordRpcEnabled;
@@ -20,16 +18,15 @@ public partial class DiscordViewModel : ViewModelBase
     [ObservableProperty] private bool _showLauncherPresence;
     [ObservableProperty] private bool _showLauncherDetails;
 
-    public DiscordViewModel(SettingsService settingsService, DiscordRpcService discord, EnvService env, RobloxApiService robloxApi)
+    public DiscordViewModel(SettingsService settingsService, DiscordRpcService discord, RobloxApiService robloxApi)
     {
         _settingsService = settingsService;
         _discord = discord;
-        _env = env;
         _robloxApi = robloxApi;
 
         var s = settingsService.Settings;
         _discordRpcEnabled      = s.DiscordRpcEnabled;
-        _discordAppIdConfigured = env.Get("DISCORD_APP_ID") != null;
+        _discordAppIdConfigured = true;
         _showRobloxUsername     = s.DiscordShowRobloxUsername;
         _useDisplayNameFormat   = s.DiscordUseDisplayNameFormat;
         _showCreator            = s.DiscordShowCreator;
@@ -41,9 +38,8 @@ public partial class DiscordViewModel : ViewModelBase
     partial void OnDiscordRpcEnabledChanged(bool value)
     {
         _settingsService.Update(s => s.DiscordRpcEnabled = value);
-        var appId = _env.Get("DISCORD_APP_ID");
-        if (value && appId != null)
-            _discord.Initialize(appId);
+        if (value)
+            _discord.Initialize(AppConstants.DiscordAppId);
         else
             _discord.ClearPresence();
     }
