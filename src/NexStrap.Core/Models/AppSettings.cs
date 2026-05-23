@@ -19,6 +19,7 @@ public class AppSettings
     public long CachedRobloxUserId { get; set; } = 0;
     public bool GlassThemeEnabled { get; set; } = false;
     public string BackgroundImagePath { get; set; } = string.Empty;
+    public string BootstrapperImagePath { get; set; } = string.Empty;
     public double BackgroundBlurRadius { get; set; } = 18.0;
     public double BackgroundImageOpacity { get; set; } = 0.85;
     public List<long> FavoriteGameIds { get; set; } = [];
@@ -30,4 +31,5 @@ public class AppSettings
     public bool DiscordShowJoinButton { get; set; } = true;
     public bool DiscordShowLauncherPresence { get; set; } = true;
     public bool DiscordShowLauncherDetails { get; set; } = true;
+    public bool StartWithWindows { get; set; } = false;
 }

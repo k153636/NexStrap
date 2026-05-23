@@ -83,6 +83,16 @@
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Start with Windows" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Launch NexStrap automatically on login"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding StartWithWindows}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
                             <TextBlock Text="Minimize to Tray" Foreground="#FFFFFF" FontSize="13"/>
                             <TextBlock Text="Close button sends app to system tray"
                                        Foreground="{DynamicResource FgSub}" FontSize="11"/>
@@ -98,6 +108,80 @@
                                  BorderBrush="#2A2A2A" CornerRadius="10"
                                  Padding="12,7" FontSize="12"/>
                     </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Data" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource FgSub}"/>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Settings" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Export or import your NexStrap settings"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <Button Content="Export" Command="{Binding ExportSettingsCommand}"
+                                    Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                                    FontSize="12" Padding="14,6" CornerRadius="8"/>
+                            <Button Content="Import" Command="{Binding ImportSettingsCommand}"
+                                    Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                                    FontSize="12" Padding="14,6" CornerRadius="8"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Game History" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Export or import your play history"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <Button Content="Export" Command="{Binding ExportHistoryCommand}"
+                                    Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                                    FontSize="12" Padding="14,6" CornerRadius="8"/>
+                            <Button Content="Import" Command="{Binding ImportHistoryCommand}"
+                                    Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                                    FontSize="12" Padding="14,6" CornerRadius="8"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Button Content="Open Data Folder" Command="{Binding OpenDataFolderCommand}"
+                            Background="Transparent" Foreground="{DynamicResource FgSub}"
+                            FontSize="12" Padding="0,4" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Uninstall" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource FgSub}"/>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="NexStrap Roblox" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Delete Versions and Downloads folders managed by NexStrap"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="Uninstall"
+                                Command="{Binding UninstallNexStrapRobloxCommand}"
+                                Background="#3A1A1A" Foreground="#FF6B6B"
+                                FontSize="12" Padding="14,6" CornerRadius="8"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Stock Roblox" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Delete %LOCALAPPDATA%\Roblox and remove registry entries"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="Uninstall"
+                                Command="{Binding UninstallStockRobloxCommand}"
+                                Background="#3A1A1A" Foreground="#FF6B6B"
+                                FontSize="12" Padding="14,6" CornerRadius="8"/>
+                    </Grid>
                 </StackPanel>
             </Border>
 
