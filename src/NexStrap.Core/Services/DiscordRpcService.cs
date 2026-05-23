@@ -10,6 +10,7 @@ public class DiscordRpcService : IDisposable
     private bool _isConnected;
     private string _currentAppId = string.Empty;
     private Timestamps? _startTimestamp;
+    private Timestamps? _gameTimestamp;
     private readonly object _lock = new();
     private Timer? _debounceTimer;
     private RichPresence? _pendingPresence;
@@ -22,12 +23,15 @@ public class DiscordRpcService : IDisposable
 
     public void SetUserLabel(string? label) { lock (_lock) { _userLabel = label; } }
 
+    public void ResetGameTimestamp() { lock (_lock) { _gameTimestamp = Timestamps.Now; } }
+
     public void Initialize(string applicationId)
     {
         if (string.IsNullOrWhiteSpace(applicationId)) return;
         lock (_lock)
         {
-            if (_currentAppId == applicationId && _client?.IsInitialized == true) return;
+            // Don't recreate if same app ID — the client auto-reconnects on its own
+            if (_currentAppId == applicationId && _client != null) return;
         }
 
         _client?.ClearPresence();
@@ -114,6 +118,7 @@ public class DiscordRpcService : IDisposable
             ? (gameIconUrl, gameName, userAvatarUrl, userAvatarUrl != null ? (label ?? "Profile") : null)
             : (userAvatarUrl, label ?? "Profile", (string?)null, (string?)null);
 
+        Timestamps? gameTs; lock (_lock) { gameTs = _gameTimestamp; }
         SetPresence(
             details: details,
             state: state,
@@ -121,7 +126,8 @@ public class DiscordRpcService : IDisposable
             largeText: largeCaption,
             smallImage: smallImg,
             smallText: smallCaption,
-            buttons: buttons
+            buttons: buttons,
+            timestamps: gameTs
         );
     }
 
@@ -165,7 +171,7 @@ public class DiscordRpcService : IDisposable
     }
 
     private void SetPresence(string? details, string? state, string largeImage, string largeText,
-        string? smallImage, string? smallText, Button[]? buttons = null)
+        string? smallImage, string? smallText, Button[]? buttons = null, Timestamps? timestamps = null)
     {
         var presence = new RichPresence
         {
@@ -178,7 +184,7 @@ public class DiscordRpcService : IDisposable
                 SmallImageKey  = smallImage,
                 SmallImageText = smallText
             },
-            Timestamps = _startTimestamp,
+            Timestamps = timestamps ?? _startTimestamp,
             Buttons    = buttons
         };
 

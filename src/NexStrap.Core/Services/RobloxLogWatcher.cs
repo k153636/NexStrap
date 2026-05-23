@@ -15,6 +15,7 @@ public class RobloxLogWatcher : IDisposable
     private bool _isBackgroundMode;
     private bool _isPlayingMode;
     private readonly object _lock = new();
+    private readonly Func<bool> _isRobloxRunningFunc;
 
     public event EventHandler<long>?   PlaceJoined;
     public event EventHandler<long>?   UserIdDetected;
@@ -51,14 +52,21 @@ public class RobloxLogWatcher : IDisposable
         "game left",
         "reportGameDisconnect",
         "Game disconnect",
-        "Disconnecting",
         "leaving game",
         "returnToLuaApp",
+        "connection timeout",
+        "Connection closed",
+        // "Disconnecting" removed — too broad, fires on game JOIN logs too
     ];
 
     private static readonly string LogDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Roblox", "logs");
+
+    public RobloxLogWatcher(Func<bool> isRobloxRunningFunc)
+    {
+        _isRobloxRunningFunc = isRobloxRunningFunc ?? (() => false);
+    }
 
     public void Start()
     {
@@ -67,7 +75,7 @@ public class RobloxLogWatcher : IDisposable
         var latest = GetLatestLogFile();
         if (latest != null)
         {
-            if (IsRobloxRunning())
+            if (_isRobloxRunningFunc())
             {
                 _wasRunning = true;
                 var (placeId, userId, ip) = ScanForLastPlaceIdAndUser(latest);
@@ -148,9 +156,11 @@ public class RobloxLogWatcher : IDisposable
 
     private void StartWatchingFileUnsafe(string path, bool fromEnd)
     {
-        _watchedFile  = path;
-        _lastPlaceId  = 0;
-        _filePosition = fromEnd ? GetFileLength(path) : 0;
+        _watchedFile    = path;
+        _lastPlaceId    = 0;
+        _detectedIp     = string.Empty;
+        _detectedUserId = 0;
+        _filePosition   = fromEnd ? GetFileLength(path) : 0;
     }
 
     private (long placeId, long userId, string ip) ScanForLastPlaceIdAndUser(string path)
@@ -249,13 +259,18 @@ public class RobloxLogWatcher : IDisposable
                 fireIp = _detectedIp;
             }
 
-            if (firePlaceId == 0 && _lastPlaceId != 0)
+            if (firePlaceId > 0)
+            {
+                _wasRunning = true;
+            }
+            else if (_lastPlaceId != 0)
             {
                 foreach (var keyword in LeaveKeywords)
                 {
                     if (!line.Contains(keyword, StringComparison.OrdinalIgnoreCase)) continue;
                     _lastPlaceId = 0;
                     _detectedIp  = string.Empty;
+                    _wasRunning  = false;
                     fireLeave = true;
                     break;
                 }
@@ -271,7 +286,7 @@ public class RobloxLogWatcher : IDisposable
 
     private void CheckProcessExit()
     {
-        var running = IsRobloxRunning();
+        var running = _isRobloxRunningFunc() || IsRobloxRunning();
         bool shouldFireLeave;
         lock (_lock)
         {
