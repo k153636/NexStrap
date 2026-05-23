@@ -17,4 +17,11 @@ public partial class ThemePage : UserControl
         if (topLevel == null || DataContext is not ThemeViewModel vm) return;
         await vm.PickBackgroundImageAsync(topLevel.StorageProvider);
     }
+
+    private async void PickBootstrapperImageButton_Click(object? sender, RoutedEventArgs e)
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel == null || DataContext is not ThemeViewModel vm) return;
+        await vm.PickBootstrapperImageAsync(topLevel.StorageProvider);
+    }
 }
