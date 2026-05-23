@@ -38,13 +38,26 @@ public class GameHistoryService
         Save();
     }
 
+    public void ExportTo(string destPath) => File.Copy(_path, destPath, overwrite: true);
+
+    public void ImportFrom(string srcPath)
+    {
+        var json = File.ReadAllText(srcPath);
+        var loaded = JsonConvert.DeserializeObject<List<GameHistoryEntry>>(json) ?? [];
+        _entries.Clear();
+        _entries.AddRange(loaded);
+        Save();
+    }
+
     private List<GameHistoryEntry> Load()
     {
         try
         {
             if (!File.Exists(_path)) return [];
             var json = File.ReadAllText(_path);
-            return JsonConvert.DeserializeObject<List<GameHistoryEntry>>(json) ?? [];
+            var entries = JsonConvert.DeserializeObject<List<GameHistoryEntry>>(json) ?? [];
+            File.Copy(_path, _path + ".bak", overwrite: true);
+            return entries;
         }
         catch { return []; }
     }

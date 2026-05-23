@@ -21,6 +21,8 @@ public class SettingsService
         Load();
     }
 
+    public string DataDirectory => Path.GetDirectoryName(_settingsPath)!;
+
     public void Load()
     {
         if (!File.Exists(_settingsPath)) { WriteFile(); return; }
@@ -28,8 +30,19 @@ public class SettingsService
         {
             var json = File.ReadAllText(_settingsPath);
             _settings = JsonConvert.DeserializeObject<AppSettings>(json) ?? new AppSettings();
+            File.Copy(_settingsPath, _settingsPath + ".bak", overwrite: true);
         }
         catch { _settings = new AppSettings(); }
+    }
+
+    public void ExportTo(string destPath) => File.Copy(_settingsPath, destPath, overwrite: true);
+
+    public void ImportFrom(string srcPath)
+    {
+        var json = File.ReadAllText(srcPath);
+        _settings = JsonConvert.DeserializeObject<AppSettings>(json) ?? new AppSettings();
+        WriteFile();
+        SettingsChanged?.Invoke(this, _settings);
     }
 
     public void Save()

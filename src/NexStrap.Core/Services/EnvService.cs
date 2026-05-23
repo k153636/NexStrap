@@ -6,11 +6,15 @@ public class EnvService
 
     public EnvService()
     {
-        // 実行ファイルの場所から .env を探す（開発時はソリューションルートも検索）
+        // Single-file publish では AppContext.BaseDirectory が一時展開フォルダになるため
+        // 実際の exe の隣も探す
+        var exeDir = Path.GetDirectoryName(Environment.ProcessPath) ?? AppContext.BaseDirectory;
+
         var candidates = new[]
         {
-            Path.Combine(AppContext.BaseDirectory, ".env"),
-            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", ".env"),
+            Path.Combine(exeDir, ".env"),                                           // exe の隣（配布時）
+            Path.Combine(AppContext.BaseDirectory, ".env"),                          // 開発: bin フォルダ
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", ".env"), // 開発: ソリューションルート
             Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".env"),
         };
 
