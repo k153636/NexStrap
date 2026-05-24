@@ -190,397 +190,196 @@ public class RobloxService
 
         var playerPath = RobloxPlayerPath;
 
-        // Auto-update: compare installed version with latest from CDN
+        // Auto-update check
         if (playerPath != null && autoUpdate)
         {
             var latestGuid    = await GetLatestVersionGuidAsync();
             var installedGuid = Path.GetFileName(FindVersionFolder() ?? "");
-            if (!string.IsNullOrEmpty(latestGuid) &&
-                !string.IsNullOrEmpty(installedGuid) &&
-                installedGuid != latestGuid)
+            if (!string.IsNullOrEmpty(latestGuid) && installedGuid != latestGuid)
             {
                 Log($"Update available: {installedGuid} → {latestGuid}");
                 SetStatus(RobloxStatus.Updating);
-                var versionDir = Path.Combine(VersionsDir, latestGuid);
-                _installCts = new CancellationTokenSource();
-                var updated = await DownloadAndInstallAsync(latestGuid, versionDir, _installCts.Token);
-                _installCts.Dispose();
-                _installCts = null;
-                if (updated)
-                {
-                    _currentVersionFolder = versionDir;
-                    playerPath = RobloxPlayerPath;
-                }
+                playerPath = await InstallVersionAsync(latestGuid);
             }
         }
 
-        // Debug logging
-        Log($"LaunchAsync called. RobloxPlayerPath: {playerPath}");
-        
-        // If Roblox is installed, try to launch it
-        if (playerPath != null)
+        // First-time install
+        if (playerPath == null)
         {
-            SetStatus(RobloxStatus.Launching);
-            Log($"Attempting to launch: {playerPath}");
-            Log($"Working directory: {Path.GetDirectoryName(playerPath)}");
-            Log($"Launch args: {launchArgs ?? "(none)"}");
-
-            var proc = Process.Start(new ProcessStartInfo(playerPath)
-            {
-                UseShellExecute  = true,
-                WorkingDirectory = Path.GetDirectoryName(playerPath)!,
-                Arguments        = launchArgs ?? string.Empty
-            });
-
-            Log($"Process.Start returned: {proc != null}");
-            if (proc == null) 
-            { 
-                Log("Process.Start returned null, launch failed");
-                SetStatus(RobloxStatus.Idle); 
-                return false; 
-            }
-
-            // Wait a bit to see if the process stays alive
-            Log("Waiting 3 seconds to check if process stays alive...");
-            await Task.Delay(3000);
-            
-            if (proc.HasExited)
-            {
-                Log($"Process exited quickly with code: {proc.ExitCode}");
-                Log("Installation appears broken, running custom install...");
-                
-                // Process exited quickly, installation is broken, run custom install
-                SetStatus(RobloxStatus.Updating);
-                
-                var newVersionGuid = await GetLatestVersionGuidAsync();
-                if (!string.IsNullOrWhiteSpace(newVersionGuid))
-                {
-                    var versionDir = Path.Combine(VersionsDir, newVersionGuid);
-                    _installCts = new CancellationTokenSource();
-                    var installed = await DownloadAndInstallAsync(newVersionGuid, versionDir, _installCts.Token);
-                    _installCts.Dispose();
-                    _installCts = null;
-                    
-                    if (installed)
-                    {
-                        _currentVersionFolder = versionDir;
-                        
-                        // After custom install completes, try to launch again
-                        Log("Attempting to launch after custom installation...");
-                        playerPath = RobloxPlayerPath;
-                        if (playerPath != null)
-                        {
-                            SetStatus(RobloxStatus.Launching);
-                            var launchProc = Process.Start(new ProcessStartInfo(playerPath)
-                            {
-                                UseShellExecute  = true,
-                                WorkingDirectory = Path.GetDirectoryName(playerPath)!,
-                                Arguments        = launchArgs ?? string.Empty
-                            });
-
-                            if (launchProc != null)
-                            {
-                                _launchedRobloxProcess = launchProc;
-                                _ = MonitorProcessAsync(launchProc);
-                                SetStatus(RobloxStatus.Running);
-                                Log("Launch successful after custom installation");
-                                return true;
-                            }
-                        }
-                    }
-                }
-                
-                SetStatus(RobloxStatus.Idle);
-                return false;
-            }
-
-            // Process is still alive, launch successful
-            _launchedRobloxProcess = proc;
-            _ = MonitorProcessAsync(proc);
-            SetStatus(RobloxStatus.Running);
-            Log("Launch successful");
-            return true;
+            SetStatus(RobloxStatus.Updating);
+            var guid = await GetLatestVersionGuidAsync();
+            if (!string.IsNullOrWhiteSpace(guid))
+                playerPath = await InstallVersionAsync(guid);
         }
 
-        // If not installed, copy from stock Roblox or run custom install
+        if (playerPath == null) { SetStatus(RobloxStatus.Idle); return false; }
+
+        Log($"Launching: {playerPath} args={launchArgs ?? "(none)"}");
+        SetStatus(RobloxStatus.Launching);
+        var proc = TryStartProcess(playerPath, launchArgs);
+        if (proc == null) { SetStatus(RobloxStatus.Idle); return false; }
+
+        await Task.Delay(3000);
+        if (!proc.HasExited)
+            return SetLaunched(proc);
+
+        // Exited immediately — installation is broken, force reinstall and retry once
+        Log($"Process exited with code {proc.ExitCode}, reinstalling...");
         SetStatus(RobloxStatus.Updating);
-        
-        // Try to copy from stock Roblox first
-        var stockVersionFolder = FindStockRobloxVersionFolder();
-        if (stockVersionFolder != null && IsVersionComplete(stockVersionFolder))
+        var retryGuid = await GetLatestVersionGuidAsync();
+        if (!string.IsNullOrWhiteSpace(retryGuid))
+            playerPath = await InstallVersionAsync(retryGuid, forceReinstall: true);
+
+        if (playerPath == null) { SetStatus(RobloxStatus.Idle); return false; }
+        SetStatus(RobloxStatus.Launching);
+        proc = TryStartProcess(playerPath, launchArgs);
+        if (proc == null) { SetStatus(RobloxStatus.Idle); return false; }
+        return SetLaunched(proc);
+    }
+
+    // Returns the RobloxPlayerBeta.exe path on success, null on failure.
+    // Install priority: already complete → copy from stock → CDN download → official installer + copy
+    private async Task<string?> InstallVersionAsync(string versionGuid, bool forceReinstall = false)
+    {
+        var versionDir = Path.Combine(VersionsDir, versionGuid);
+
+        if (forceReinstall && Directory.Exists(versionDir))
+            try { Directory.Delete(versionDir, recursive: true); } catch { }
+
+        // 1. Already installed
+        if (IsVersionComplete(versionDir))
         {
-            Log($"Copying from stock Roblox: {stockVersionFolder}");
-            
-            var versionGuid = await GetLatestVersionGuidAsync();
-            if (!string.IsNullOrWhiteSpace(versionGuid))
+            _currentVersionFolder = versionDir;
+            return Path.Combine(versionDir, "RobloxPlayerBeta.exe");
+        }
+
+        // 2. Copy from stock Roblox (fast path — no download needed)
+        var stockFolder = FindStockRobloxVersionFolder();
+        if (stockFolder != null)
+        {
+            Log($"Copying from stock Roblox: {stockFolder}");
+            Directory.CreateDirectory(versionDir);
+            await CopyDirectoryAsync(stockFolder, versionDir);
+        }
+
+        // 3. CDN download
+        if (!IsVersionComplete(versionDir))
+        {
+            _installCts = new CancellationTokenSource();
+            var ok = await DownloadAndInstallAsync(versionGuid, versionDir, _installCts.Token);
+            _installCts.Dispose();
+            _installCts = null;
+
+            if (!ok)
             {
-                var versionDir = Path.Combine(VersionsDir, versionGuid);
-                
-                // Check if already copied
-                if (IsVersionComplete(versionDir))
+                // 4. Official installer fallback
+                await RunOfficialInstallerAsync();
+                var newStock = FindStockRobloxVersionFolder();
+                if (newStock != null)
                 {
-                    Log("NexStrap installation already exists, skipping copy");
-                    _currentVersionFolder = versionDir;
-                }
-                else
-                {
+                    Log($"Copying from newly installed stock Roblox: {newStock}");
                     Directory.CreateDirectory(versionDir);
-
-                    Log($"Copying files to: {versionDir}");
-                    await Task.Run(() =>
-                    {
-                        var allFiles = Directory.GetFiles(stockVersionFolder, "*", SearchOption.AllDirectories);
-                        var total    = allFiles.Length;
-                        var done     = 0;
-
-                        foreach (var file in allFiles)
-                        {
-                            var rel      = Path.GetRelativePath(stockVersionFolder, file);
-                            var destFile = Path.Combine(versionDir, rel);
-                            var destDir2 = Path.GetDirectoryName(destFile);
-                            if (destDir2 != null) Directory.CreateDirectory(destDir2);
-                            File.Copy(file, destFile, overwrite: true);
-
-                            done++;
-                            var pct = total > 0 ? done / (double)total * 100.0 : 0;
-                            ReportProgress($"Copying {Path.GetFileName(file)}", pct);
-                        }
-                    });
-
-                    _currentVersionFolder = versionDir;
-                    Log("Copy completed successfully");
-                }
-                
-                // After copy completes, try to launch
-                Log("Attempting to launch after copy...");
-                playerPath = RobloxPlayerPath;
-                if (playerPath != null)
-                {
-                    SetStatus(RobloxStatus.Launching);
-                    var launchProc = Process.Start(new ProcessStartInfo(playerPath)
-                    {
-                        UseShellExecute  = true,
-                        WorkingDirectory = Path.GetDirectoryName(playerPath)!,
-                        Arguments        = launchArgs ?? string.Empty
-                    });
-
-                    if (launchProc != null)
-                    {
-                        _launchedRobloxProcess = launchProc;
-                        _ = MonitorProcessAsync(launchProc);
-                        SetStatus(RobloxStatus.Running);
-                        Log("Launch successful after copy");
-                        return true;
-                    }
+                    await CopyDirectoryAsync(newStock, versionDir);
                 }
             }
         }
-        else
+
+        if (!IsVersionComplete(versionDir)) return null;
+        _currentVersionFolder = versionDir;
+        Log($"Installation complete: {versionDir}");
+        return Path.Combine(versionDir, "RobloxPlayerBeta.exe");
+    }
+
+    private static Process? TryStartProcess(string playerPath, string? launchArgs)
+        => Process.Start(new ProcessStartInfo(playerPath)
         {
-            // Fallback to custom install if stock Roblox not available
-            var versionGuid = await GetLatestVersionGuidAsync();
-            if (!string.IsNullOrWhiteSpace(versionGuid))
+            UseShellExecute  = true,
+            WorkingDirectory = Path.GetDirectoryName(playerPath)!,
+            Arguments        = launchArgs ?? string.Empty
+        });
+
+    private bool SetLaunched(Process proc)
+    {
+        _launchedRobloxProcess = proc;
+        _ = MonitorProcessAsync(proc);
+        SetStatus(RobloxStatus.Running);
+        Log("Launch successful");
+        return true;
+    }
+
+    private async Task CopyDirectoryAsync(string source, string dest)
+    {
+        await Task.Run(() =>
+        {
+            var allFiles = Directory.GetFiles(source, "*", SearchOption.AllDirectories);
+            var done     = 0;
+            foreach (var file in allFiles)
             {
-                var versionDir = Path.Combine(VersionsDir, versionGuid);
-                _installCts = new CancellationTokenSource();
-                var installed = await DownloadAndInstallAsync(versionGuid, versionDir, _installCts.Token);
-                _installCts.Dispose();
-                _installCts = null;
-                
-                if (installed)
-                {
-                    _currentVersionFolder = versionDir;
-                    
-                    // After custom install completes, try to launch
-                    Log("Attempting to launch after custom installation...");
-                    playerPath = RobloxPlayerPath;
-                    if (playerPath != null)
-                    {
-                        SetStatus(RobloxStatus.Launching);
-                        var launchProc = Process.Start(new ProcessStartInfo(playerPath)
-                        {
-                            UseShellExecute  = true,
-                            WorkingDirectory = Path.GetDirectoryName(playerPath)!,
-                            Arguments        = launchArgs ?? string.Empty
-                        });
+                var rel      = Path.GetRelativePath(source, file);
+                var destFile = Path.Combine(dest, rel);
+                var destDir  = Path.GetDirectoryName(destFile);
+                if (destDir != null) Directory.CreateDirectory(destDir);
+                File.Copy(file, destFile, overwrite: true);
+                done++;
+                var pct = allFiles.Length > 0 ? done / (double)allFiles.Length * 100.0 : 0;
+                ReportProgress($"Copying {Path.GetFileName(file)}", pct);
+            }
+        });
+        Log("Directory copy complete");
+    }
 
-                        if (launchProc != null)
-                        {
-                            _launchedRobloxProcess = launchProc;
-                            _ = MonitorProcessAsync(launchProc);
-                            SetStatus(RobloxStatus.Running);
-                            Log("Launch successful after custom installation");
-                            return true;
-                        }
-                    }
-                }
-                else
-                {
-                    // CDN download failed, use official installer as last resort
-                    Log("CDN download failed, using official installer as fallback");
-                    
-                    var installerPath = FindStockRobloxInstallerPath();
-                    if (installerPath == null)
-                    {
-                        // Download official installer
-                        Log("Downloading official installer...");
-                        var installerDir = Path.Combine(DownloadsDir, "installer");
-                        Directory.CreateDirectory(installerDir);
-                        var installerExe = Path.Combine(installerDir, "RobloxPlayerInstaller.exe");
-                        
-                        try
-                        {
-                            using var client = new HttpClient();
-                            var installerBytes = await client.GetByteArrayAsync("https://setup.rbxcdn.com/RobloxPlayerInstaller.exe");
-                            await File.WriteAllBytesAsync(installerExe, installerBytes);
-                            installerPath = installerExe;
-                        }
-                        catch (Exception ex)
-                        {
-                            Log($"Failed to download official installer: {ex.Message}");
-                        }
-                    }
-                    
-                    if (installerPath != null)
-                    {
-                        Log($"Running official installer: {installerPath}");
-                        var installerProc = Process.Start(new ProcessStartInfo(installerPath)
-                        {
-                            UseShellExecute  = false,
-                            WorkingDirectory = Path.GetDirectoryName(installerPath)!,
-                            CreateNoWindow  = true,
-                            WindowStyle     = ProcessWindowStyle.Hidden
-                        });
+    private async Task RunOfficialInstallerAsync()
+    {
+        Log("CDN download failed, falling back to official installer");
+        var installerPath = FindFileInStockRoblox("RobloxPlayerInstaller.exe");
 
-                        if (installerProc != null)
-                        {
-                            Log("Waiting for official installer to complete...");
-                            await installerProc.WaitForExitAsync();
-                            Log($"Official installer exited with code: {installerProc.ExitCode}");
-                            
-                            // After installer completes, copy from stock Roblox to NexStrap
-                            var newStockFolder = FindStockRobloxVersionFolder();
-                            if (newStockFolder != null)
-                            {
-                                Log($"Copying from newly installed stock Roblox: {newStockFolder}");
-                                versionGuid = await GetLatestVersionGuidAsync();
-                                if (!string.IsNullOrWhiteSpace(versionGuid))
-                                {
-                                    versionDir = Path.Combine(VersionsDir, versionGuid);
-                                    Directory.CreateDirectory(versionDir);
-                                    
-                                    await Task.Run(() =>
-                                    {
-                                        var allFiles2 = Directory.GetFiles(newStockFolder, "*", SearchOption.AllDirectories);
-                                        var total2    = allFiles2.Length;
-                                        var done2     = 0;
-                                        foreach (var file in allFiles2)
-                                        {
-                                            var rel2  = Path.GetRelativePath(newStockFolder, file);
-                                            var dest2 = Path.Combine(versionDir, rel2);
-                                            var dir2  = Path.GetDirectoryName(dest2);
-                                            if (dir2 != null) Directory.CreateDirectory(dir2);
-                                            File.Copy(file, dest2, overwrite: true);
-                                            done2++;
-                                            var pct2 = total2 > 0 ? done2 / (double)total2 * 100.0 : 0;
-                                            ReportProgress($"Copying {Path.GetFileName(file)}", pct2);
-                                        }
-                                    });
-                                    
-                                    _currentVersionFolder = versionDir;
-                                    Log("Copy completed successfully");
-                                    
-                                    // Try to launch after copy
-                                    Log("Attempting to launch after official install and copy...");
-                                    playerPath = RobloxPlayerPath;
-                                    if (playerPath != null)
-                                    {
-                                        SetStatus(RobloxStatus.Launching);
-                                        var launchProc = Process.Start(new ProcessStartInfo(playerPath)
-                                        {
-                                            UseShellExecute  = true,
-                                            WorkingDirectory = Path.GetDirectoryName(playerPath)!,
-                                            Arguments        = launchArgs ?? string.Empty
-                                        });
-
-                                        if (launchProc != null)
-                                        {
-                                            _launchedRobloxProcess = launchProc;
-                                            _ = MonitorProcessAsync(launchProc);
-                                            SetStatus(RobloxStatus.Running);
-                                            Log("Launch successful after official install");
-                                            return true;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+        if (installerPath == null)
+        {
+            Log("Downloading official installer...");
+            var installerDir = Path.Combine(DownloadsDir, "installer");
+            Directory.CreateDirectory(installerDir);
+            var installerExe = Path.Combine(installerDir, "RobloxPlayerInstaller.exe");
+            try
+            {
+                using var client = new HttpClient();
+                var bytes = await client.GetByteArrayAsync("https://setup.rbxcdn.com/RobloxPlayerInstaller.exe");
+                await File.WriteAllBytesAsync(installerExe, bytes);
+                installerPath = installerExe;
+            }
+            catch (Exception ex)
+            {
+                Log($"Failed to download official installer: {ex.Message}");
+                return;
             }
         }
 
-        SetStatus(RobloxStatus.Idle);
-        return false;
-    }
-
-    private void CopyDirectory(string sourceDir, string destDir)
-    {
-        foreach (var file in Directory.GetFiles(sourceDir))
+        Log($"Running official installer: {installerPath}");
+        var proc = Process.Start(new ProcessStartInfo(installerPath)
         {
-            File.Copy(file, Path.Combine(destDir, Path.GetFileName(file)), true);
-        }
-        
-        foreach (var dir in Directory.GetDirectories(sourceDir))
+            UseShellExecute  = false,
+            WorkingDirectory = Path.GetDirectoryName(installerPath)!,
+            CreateNoWindow   = true,
+            WindowStyle      = ProcessWindowStyle.Hidden
+        });
+        if (proc != null)
         {
-            var newDestDir = Path.Combine(destDir, Path.GetFileName(dir));
-            Directory.CreateDirectory(newDestDir);
-            CopyDirectory(dir, newDestDir);
+            await proc.WaitForExitAsync();
+            Log($"Official installer exited with code {proc.ExitCode}");
         }
     }
 
-    private string? FindStockRobloxVersionFolder()
+    private static string? FindStockRobloxVersionFolder()
     {
         if (!Directory.Exists(StockRobloxVersionsDir)) return null;
-
-        var versionDirs = Directory.GetDirectories(StockRobloxVersionsDir);
-        foreach (var versionDir in versionDirs)
-        {
-            if (IsVersionComplete(versionDir))
-                return versionDir;
-        }
-
-        return null;
+        return Directory.GetDirectories(StockRobloxVersionsDir).FirstOrDefault(IsVersionComplete);
     }
 
-    private string? FindStockRobloxInstallerPath()
+    private static string? FindFileInStockRoblox(string filename)
     {
         if (!Directory.Exists(StockRobloxVersionsDir)) return null;
-
-        var versionDirs = Directory.GetDirectories(StockRobloxVersionsDir);
-        foreach (var versionDir in versionDirs)
-        {
-            var installerExe = Path.Combine(versionDir, "RobloxPlayerInstaller.exe");
-            if (File.Exists(installerExe))
-                return installerExe;
-        }
-
-        return null;
-    }
-
-    private string? FindStockRobloxPlayerPath()
-    {
-        if (!Directory.Exists(StockRobloxVersionsDir)) return null;
-
-        var versionDirs = Directory.GetDirectories(StockRobloxVersionsDir);
-        foreach (var versionDir in versionDirs)
-        {
-            var playerExe = Path.Combine(versionDir, "RobloxPlayerBeta.exe");
-            if (File.Exists(playerExe))
-                return playerExe;
-        }
-
-        return null;
+        return Directory.GetDirectories(StockRobloxVersionsDir)
+            .Select(d => Path.Combine(d, filename))
+            .FirstOrDefault(File.Exists);
     }
 
     public void CancelInstall() => _installCts?.Cancel();
