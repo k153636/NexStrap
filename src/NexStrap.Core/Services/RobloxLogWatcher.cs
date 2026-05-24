@@ -77,10 +77,9 @@ public class RobloxLogWatcher : IDisposable
         {
             if (_isRobloxRunningFunc())
             {
-                _wasRunning = true;
                 var (placeId, userId, ip) = ScanForLastPlaceIdAndUser(latest);
                 if (userId > 0) { _detectedUserId = userId; UserIdDetected?.Invoke(this, userId); }
-                if (placeId > 0) { _lastPlaceId = placeId; PlaceJoined?.Invoke(this, placeId); }
+                if (placeId > 0) { _lastPlaceId = placeId; _wasRunning = true; PlaceJoined?.Invoke(this, placeId); }
                 if (!string.IsNullOrEmpty(ip)) { _detectedIp = ip; ServerIpDetected?.Invoke(this, ip); }
             }
             StartWatchingFile(latest, fromEnd: true);
@@ -290,7 +289,13 @@ public class RobloxLogWatcher : IDisposable
         bool shouldFireLeave;
         lock (_lock)
         {
-            if (running) { _wasRunning = true; return; }
+            if (running)
+            {
+                // ゲームプレイ中のときだけフラグを立てる。
+                // メニュー画面で _lastPlaceId==0 のときは立てない → 二重発火防止
+                if (_lastPlaceId != 0) _wasRunning = true;
+                return;
+            }
             shouldFireLeave = _wasRunning;
             if (_wasRunning) { _wasRunning = false; _lastPlaceId = 0; }
         }
