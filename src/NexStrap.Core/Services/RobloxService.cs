@@ -116,6 +116,9 @@ public class RobloxService
     private long   _totalExtractFiles;
     private long   _completedExtractFiles;
 
+    /// <summary>Called after a fresh install, before Roblox is started — use to write FastFlags/Mods.</summary>
+    public Func<Task>? PreLaunchAsync { get; set; }
+
     public RobloxStatus Status { get; private set; } = RobloxStatus.Idle;
     public event EventHandler<RobloxStatus>?          StatusChanged;
     public event EventHandler<BootstrapperProgress>?  BootstrapperProgress;
@@ -283,6 +286,9 @@ public class RobloxService
                 {
                     UpdateVersionCache(guid);
                     SaveState(guid, Path.GetDirectoryName(playerPath)!);
+                    // バージョンフォルダが確定したので FastFlags/Mods を適用
+                    if (PreLaunchAsync != null)
+                        await PreLaunchAsync();
                 }
             }
         }
@@ -443,6 +449,11 @@ public class RobloxService
             }
         }
 
+        // インストーラー実行前に存在する Roblox プロセスを記録しておく
+        var existingRobloxPids = Process.GetProcessesByName("RobloxPlayerBeta")
+            .Select(p => p.Id)
+            .ToHashSet();
+
         Log($"Running official installer: {installerPath}");
         var proc = Process.Start(new ProcessStartInfo(installerPath)
         {
@@ -455,6 +466,18 @@ public class RobloxService
         {
             await proc.WaitForExitAsync();
             Log($"Official installer exited with code {proc.ExitCode}");
+        }
+
+        // インストーラーが自動起動した Roblox を終了させる (NexStrap が正しくフラグ付きで起動する)
+        foreach (var roblox in Process.GetProcessesByName("RobloxPlayerBeta"))
+        {
+            if (existingRobloxPids.Contains(roblox.Id)) continue;
+            try
+            {
+                roblox.Kill();
+                Log($"Killed installer-spawned Roblox (PID {roblox.Id})");
+            }
+            catch { }
         }
     }
 

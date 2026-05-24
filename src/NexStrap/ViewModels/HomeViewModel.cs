@@ -117,6 +117,14 @@ public partial class HomeViewModel : ViewModelBase
         _accountService       = accountService;
         _smtc                 = smtc;
 
+        // 初回インストール後にバージョンフォルダが確定したタイミングでフラグ・Modを適用
+        roblox.PreLaunchAsync = async () =>
+        {
+            _fastFlags.ApplyPerformanceSettings(_settings.Settings);
+            await _fastFlags.SaveAsync();
+            await _mods.ApplyEnabledModsAsync();
+        };
+
         _smtc.MediaChanged += (_, info) => Dispatcher.UIThread.InvokeAsync(() =>
         {
             NowPlayingTitle   = info.Title;
