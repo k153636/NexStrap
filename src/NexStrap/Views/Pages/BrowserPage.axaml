@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="NexStrap.Views.Pages.BrowserPage"
              Background="Transparent">
@@ -10,7 +10,7 @@
             <StackPanel Spacing="6">
                 <TextBlock Text="Browser" FontSize="28" FontWeight="Bold" Foreground="#FFFFFF"/>
                 <TextBlock Text="Open your favorite sites while playing Roblox"
-                           FontSize="14" Foreground="#505050"/>
+                           FontSize="14" Foreground="{DynamicResource MutedBrush}"/>
             </StackPanel>
 
             <!-- URL Bar -->
@@ -33,7 +33,7 @@
             <!-- Quick Links -->
             <StackPanel Spacing="16">
                 <TextBlock Text="Quick Links" FontSize="12" FontWeight="SemiBold"
-                           Foreground="#505050" Margin="4,0"/>
+                           Foreground="{DynamicResource MutedBrush}" Margin="4,0"/>
                 <WrapPanel Orientation="Horizontal">
 
                     <Button x:Name="YoutubeButton" Margin="0,0,12,12"
@@ -45,7 +45,7 @@
                                 <TextBlock Text="YouTube" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#FFFFFF" HorizontalAlignment="Center"/>
                                 <TextBlock Text="Watch videos &amp; anime" FontSize="11"
-                                           Foreground="#505050" HorizontalAlignment="Center"/>
+                                           Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </StackPanel>
                     </Button>
@@ -59,7 +59,7 @@
                                 <TextBlock Text="Niconico" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#FFFFFF" HorizontalAlignment="Center"/>
                                 <TextBlock Text="Videos &amp; livestreams" FontSize="11"
-                                           Foreground="#505050" HorizontalAlignment="Center"/>
+                                           Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </StackPanel>
                     </Button>
@@ -73,7 +73,7 @@
                                 <TextBlock Text="X (Twitter)" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#FFFFFF" HorizontalAlignment="Center"/>
                                 <TextBlock Text="Timeline" FontSize="11"
-                                           Foreground="#505050" HorizontalAlignment="Center"/>
+                                           Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </StackPanel>
                     </Button>
@@ -82,12 +82,12 @@
                             Padding="24,20" CornerRadius="18" Background="{DynamicResource SurfaceBg}">
                         <StackPanel Spacing="10" HorizontalAlignment="Center">
                             <PathIcon Data="{StaticResource IconChat}" Width="26" Height="26"
-                                      Foreground="#CCCCCC" HorizontalAlignment="Center"/>
+                                      Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center"/>
                             <StackPanel Spacing="3" HorizontalAlignment="Center">
                                 <TextBlock Text="Discord" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#FFFFFF" HorizontalAlignment="Center"/>
                                 <TextBlock Text="Chat with friends" FontSize="11"
-                                           Foreground="#505050" HorizontalAlignment="Center"/>
+                                           Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </StackPanel>
                     </Button>
@@ -101,7 +101,7 @@
                                 <TextBlock Text="Spotify" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#FFFFFF" HorizontalAlignment="Center"/>
                                 <TextBlock Text="Listen while you play" FontSize="11"
-                                           Foreground="#505050" HorizontalAlignment="Center"/>
+                                           Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </StackPanel>
                     </Button>
@@ -115,7 +115,7 @@
                                 <TextBlock Text="Roblox.com" FontSize="13" FontWeight="SemiBold"
                                            Foreground="#FFFFFF" HorizontalAlignment="Center"/>
                                 <TextBlock Text="Browse games" FontSize="11"
-                                           Foreground="#505050" HorizontalAlignment="Center"/>
+                                           Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </StackPanel>
                     </Button>
@@ -128,11 +128,11 @@
                 <StackPanel Spacing="10">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <PathIcon Data="{StaticResource IconInfo}" Width="13" Height="13"
-                                  Foreground="#505050"/>
+                                  Foreground="{DynamicResource MutedBrush}"/>
                         <TextBlock Text="Tip" FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#505050"/>
+                                   Foreground="{DynamicResource MutedBrush}"/>
                     </StackPanel>
-                    <TextBlock TextWrapping="Wrap" Foreground="#888888" FontSize="13" LineHeight="22">
+                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SubtextBrush}" FontSize="13" LineHeight="22">
                         You can snap browser windows alongside Roblox.
                         Use Win + ← / → to snap — game on one side, video on the other.
                     </TextBlock>

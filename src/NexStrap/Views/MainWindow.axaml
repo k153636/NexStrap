@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="using:FluentAvalonia.UI.Controls"
         xmlns:vm="using:NexStrap.ViewModels"
@@ -42,7 +42,7 @@
                 <Image Source="avares://NexStrap/Assets/nexstrap.png"
                        Width="16" Height="16" RenderOptions.BitmapInterpolationMode="HighQuality"/>
                 <TextBlock Text="NexStrap" FontSize="12" FontWeight="SemiBold"
-                           Foreground="#888888" VerticalAlignment="Center"/>
+                           Foreground="{DynamicResource SubtextBrush}" VerticalAlignment="Center"/>
             </StackPanel>
         </Grid>
 

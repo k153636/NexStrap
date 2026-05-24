@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NexStrap.ViewModels"
              xmlns:helpers="using:NexStrap.Helpers"
@@ -152,7 +152,7 @@
                                 <!-- Total time -->
                                 <TextBlock Grid.Column="2" Text="{Binding TotalTimeText}"
                                            FontSize="13" FontWeight="SemiBold"
-                                           Foreground="#888888" VerticalAlignment="Center"/>
+                                           Foreground="{DynamicResource SubtextBrush}" VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
                     </DataTemplate>

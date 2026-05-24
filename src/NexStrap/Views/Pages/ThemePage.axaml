@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NexStrap.ViewModels"
              xmlns:helpers="using:NexStrap.Helpers"
@@ -132,7 +132,7 @@
 
                         <!-- Opacity -->
                         <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
-                            <TextBlock Grid.Column="0" Text="UI Opacity" FontSize="12" Foreground="#888888" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="0" Text="UI Opacity" FontSize="12" Foreground="{DynamicResource SubtextBrush}" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="{Binding GlassOpacityPercent, StringFormat='{}{0:F0}%'}"
                                        FontSize="12" Foreground="{DynamicResource FgSub}" VerticalAlignment="Center" Width="36" TextAlignment="Right"/>
                         </Grid>
@@ -166,9 +166,9 @@
                         <StackPanel VerticalAlignment="Center"
                                     HorizontalAlignment="Center" Spacing="6">
                             <PathIcon Data="{StaticResource IconPackage}"
-                                      Width="26" Height="26" Foreground="#2A2A2A"/>
+                                      Width="26" Height="26" Foreground="{DynamicResource FgMuted}"/>
                             <TextBlock Text="No image set"
-                                       FontSize="11" Foreground="#2A2A2A"
+                                       FontSize="11" Foreground="{DynamicResource FgMuted}"
                                        HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Border>
@@ -190,7 +190,7 @@
 
                     <!-- Blur -->
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Grid.Column="0" Text="Blur" FontSize="12" Foreground="#888888" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Text="Blur" FontSize="12" Foreground="{DynamicResource SubtextBrush}" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="{Binding BackgroundBlurRadius, StringFormat='{}{0:F0}'}"
                                    FontSize="12" Foreground="{DynamicResource FgSub}" VerticalAlignment="Center" Width="28" TextAlignment="Right"/>
                     </Grid>
@@ -199,7 +199,7 @@
 
                     <!-- Brightness -->
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Grid.Column="0" Text="Brightness" FontSize="12" Foreground="#888888" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Text="Brightness" FontSize="12" Foreground="{DynamicResource SubtextBrush}" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="{Binding BackgroundImageOpacityPercent, StringFormat='{}{0:F0}%'}"
                                    FontSize="12" Foreground="{DynamicResource FgSub}" VerticalAlignment="Center" Width="36" TextAlignment="Right"/>
                     </Grid>
@@ -242,7 +242,7 @@
                                     <Image Source="avares://NexStrap/Assets/nexstrap.png"
                                            Width="14" Height="14"/>
                                     <TextBlock Text="NexStrap" FontSize="11" FontWeight="SemiBold"
-                                               Foreground="#555555" VerticalAlignment="Center"/>
+                                               Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
                                 </StackPanel>
 
                                 <!-- Center content (matches BootstrapperWindow layout) -->
@@ -257,7 +257,7 @@
                                     </StackPanel>
 
                                     <TextBlock Text="Checking for updates..."
-                                               FontSize="12" Foreground="#888888"
+                                               FontSize="12" Foreground="{DynamicResource SubtextBrush}"
                                                HorizontalAlignment="Center"/>
 
                                     <StackPanel Spacing="5">
@@ -275,7 +275,7 @@
                                         VerticalAlignment="Bottom"
                                         Margin="0,0,0,16"
                                         Background="Transparent"
-                                        Foreground="#444444"
+                                        Foreground="{DynamicResource MutedBrush}"
                                         FontSize="11"
                                         Padding="18,5"
                                         CornerRadius="7"

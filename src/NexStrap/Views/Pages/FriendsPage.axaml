@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NexStrap.ViewModels"
              xmlns:helpers="using:NexStrap.Helpers"
@@ -16,7 +16,7 @@
                 <Button Grid.Column="1" Content="↻"
                         Command="{Binding RefreshAsyncCommand}"
                         Background="{DynamicResource OverlayBg}"
-                        Foreground="#888888" FontSize="16"
+                        Foreground="{DynamicResource SubtextBrush}" FontSize="16"
                         Width="32" Height="32" Padding="0" CornerRadius="8"
                         HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                         VerticalAlignment="Center"/>

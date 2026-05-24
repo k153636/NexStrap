@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NexStrap.ViewModels"
              xmlns:helpers="using:NexStrap.Helpers"
@@ -167,7 +167,7 @@
                         </StackPanel>
                         <Button Grid.Column="1" Content="Uninstall"
                                 Command="{Binding UninstallNexStrapRobloxCommand}"
-                                Background="#3A1A1A" Foreground="#FF6B6B"
+                                Background="#3A1A1A" Foreground="{DynamicResource FgDanger}"
                                 FontSize="12" Padding="14,6" CornerRadius="8"/>
                     </Grid>
 
@@ -179,7 +179,7 @@
                         </StackPanel>
                         <Button Grid.Column="1" Content="Uninstall"
                                 Command="{Binding UninstallStockRobloxCommand}"
-                                Background="#3A1A1A" Foreground="#FF6B6B"
+                                Background="#3A1A1A" Foreground="{DynamicResource FgDanger}"
                                 FontSize="12" Padding="14,6" CornerRadius="8"/>
                     </Grid>
                 </StackPanel>

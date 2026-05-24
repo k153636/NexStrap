@@ -57,8 +57,11 @@
             </LinearGradientBrush>
 
             <!-- Glass-switchable text colors -->
-            <SolidColorBrush x:Key="FgSub"   Color="#555555"/>
-            <SolidColorBrush x:Key="FgMuted" Color="#2E2E2E"/>
+            <SolidColorBrush x:Key="FgSub"   Color="#888888"/>
+            <SolidColorBrush x:Key="FgMuted" Color="#505050"/>
+
+            <!-- Semantic colors -->
+            <SolidColorBrush x:Key="FgDanger" Color="#FF6B6B"/>
 
             <!-- SVG path data (StreamGeometry — PathIcon.Data requires Geometry, not string) -->
             <StreamGeometry x:Key="IconHome">M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z</StreamGeometry>

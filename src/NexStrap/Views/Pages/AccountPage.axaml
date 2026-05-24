@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NexStrap.ViewModels"
              xmlns:helpers="using:NexStrap.Helpers"
@@ -27,11 +27,11 @@
                         <Button Content="Cancel"
                                 Command="{Binding CancelImportCommand}"
                                 IsVisible="{Binding IsImporting}"
-                                Background="#1AFF4444" Foreground="#FF6666"
+                                Background="#1AFF4444" Foreground="{DynamicResource FgDanger}"
                                 FontSize="12" Padding="14,8" CornerRadius="10"/>
                     </StackPanel>
                     <TextBlock Text="Please log in to roblox.com in Chrome…"
-                               FontSize="12" Foreground="#888888"
+                               FontSize="12" Foreground="{DynamicResource SubtextBrush}"
                                IsVisible="{Binding IsWaitingForLogin}"/>
                 </StackPanel>
             </Border>
@@ -87,7 +87,7 @@
                                             Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).RemoveCommand}"
                                             CommandParameter="{Binding}"
                                             Background="#1AFF4444"
-                                            Foreground="#FF6666" FontSize="11"
+                                            Foreground="{DynamicResource FgDanger}" FontSize="11"
                                             Padding="10,5" CornerRadius="8"/>
                                 </StackPanel>
 

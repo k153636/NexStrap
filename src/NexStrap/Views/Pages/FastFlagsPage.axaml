@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NexStrap.ViewModels"
              xmlns:models="using:NexStrap.Core.Models"
@@ -12,9 +12,9 @@
         <StackPanel Grid.Row="0" Margin="24,20,24,12" Spacing="3">
             <TextBlock Text="Fast Flags" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
             <TextBlock Text="{Binding SavePath, StringFormat='Save path: {0}'}"
-                       FontSize="11" Foreground="#2E2E2E" FontFamily="Consolas,monospace"
+                       FontSize="11" Foreground="{DynamicResource FgMuted}" FontFamily="Consolas,monospace"
                        IsVisible="{Binding SavePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-            <TextBlock Text="Roblox not found" FontSize="11" Foreground="#505050"
+            <TextBlock Text="Roblox not found" FontSize="11" Foreground="{DynamicResource MutedBrush}"
                        IsVisible="{Binding SavePath, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
         </StackPanel>
 
@@ -23,7 +23,7 @@
                 Margin="24,0,24,8" Padding="12,8">
             <Grid ColumnDefinitions="Auto,10,*,10,Auto,6,Auto,6,Auto">
                 <TextBlock Grid.Column="0" Text="Profile" FontSize="11"
-                           Foreground="#505050" VerticalAlignment="Center"/>
+                           Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
                 <ComboBox Grid.Column="2" ItemsSource="{Binding Profiles}"
                           SelectedItem="{Binding SelectedProfile}"
                           DisplayMemberBinding="{Binding Name}"
@@ -41,7 +41,7 @@
                         Padding="12,5" CornerRadius="7"/>
                 <Button Grid.Column="8" Content="Delete"
                         Command="{Binding DeleteProfileCommand}"
-                        Background="Transparent" Foreground="#505050"
+                        Background="Transparent" Foreground="{DynamicResource MutedBrush}"
                         FontSize="11" BorderBrush="#2E2E2E" BorderThickness="1"
                         Padding="12,5" CornerRadius="7"/>
             </Grid>
@@ -62,13 +62,13 @@
                     Background="{Binding IsPresetPanelOpen,
                         Converter={StaticResource BoolToColorConverter},
                         ConverterParameter='#2A2A2A,#141414'}"
-                    Foreground="#CCCCCC"
+                    Foreground="{DynamicResource TextBrush}"
                     FontSize="12" Padding="12,7" CornerRadius="10"/>
             <Button Grid.Column="6" Command="{Binding HotReloadCommand}"
-                    Background="{DynamicResource SurfaceBg}" Foreground="#CCCCCC"
+                    Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
                     Padding="12,7" CornerRadius="10">
                 <StackPanel Orientation="Horizontal" Spacing="5">
-                    <PathIcon Data="{StaticResource IconFlash}" Width="11" Height="11" Foreground="#CCCCCC"/>
+                    <PathIcon Data="{StaticResource IconFlash}" Width="11" Height="11" Foreground="{DynamicResource TextBrush}"/>
                     <TextBlock Text="Hot Reload" FontSize="12"/>
                 </StackPanel>
             </Button>
@@ -84,7 +84,7 @@
         <Border Grid.Row="3" Background="{DynamicResource SurfaceBg}" CornerRadius="10"
                 Margin="24,0,24,8" Padding="14,8">
             <Grid ColumnDefinitions="Auto,*,Auto,12,Auto">
-                <TextBlock Grid.Column="0" Text="FPS Limit" Foreground="#888888"
+                <TextBlock Grid.Column="0" Text="FPS Limit" Foreground="{DynamicResource SubtextBrush}"
                            VerticalAlignment="Center" Margin="0,0,14,0" FontSize="12"/>
                 <Slider Grid.Column="1" Minimum="30" Maximum="360"
                         Value="{Binding FpsTarget}" TickFrequency="30" IsSnapToTickEnabled="True"/>
@@ -92,7 +92,7 @@
                            Foreground="#FFFFFF" FontWeight="Bold" Width="40"
                            VerticalAlignment="Center" Margin="10,0" FontSize="13"/>
                 <Button Grid.Column="4" Content="Apply"
-                        Command="{Binding SetFpsTargetCommand}"
+                        Command="{Binding SetFpsTargetAsyncCommand}"
                         Background="{DynamicResource ElevatedBg}" Foreground="#FFFFFF" FontSize="12"
                         Padding="14,6" CornerRadius="8"/>
             </Grid>
@@ -103,9 +103,9 @@
             <Grid RowDefinitions="Auto,*">
                 <Border Grid.Row="0" Background="{DynamicResource ElevatedBg}" CornerRadius="12,12,0,0">
                     <Grid ColumnDefinitions="*,200,100,40" Margin="16,8">
-                        <TextBlock Grid.Column="0" Text="Flag Name" FontSize="11" FontWeight="SemiBold" Foreground="#505050"/>
-                        <TextBlock Grid.Column="1" Text="Value" FontSize="11" FontWeight="SemiBold" Foreground="#505050"/>
-                        <TextBlock Grid.Column="2" Text="Category" FontSize="11" FontWeight="SemiBold" Foreground="#505050"/>
+                        <TextBlock Grid.Column="0" Text="Flag Name" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}"/>
+                        <TextBlock Grid.Column="1" Text="Value" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}"/>
+                        <TextBlock Grid.Column="2" Text="Category" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}"/>
                     </Grid>
                 </Border>
                 <ListBox Grid.Row="1" ItemsSource="{Binding Flags}"
@@ -115,9 +115,9 @@
                         <DataTemplate DataType="vm:FlagEntry">
                             <Grid ColumnDefinitions="*,200,100,40" Margin="0,2">
                                 <StackPanel Grid.Column="0" Spacing="1" Margin="8,0">
-                                    <TextBlock Text="{Binding Name}" FontSize="12" Foreground="#CCCCCC"
+                                    <TextBlock Text="{Binding Name}" FontSize="12" Foreground="{DynamicResource TextBrush}"
                                                FontFamily="Consolas,Courier New,monospace"/>
-                                    <TextBlock Text="{Binding Description}" FontSize="10" Foreground="#505050"
+                                    <TextBlock Text="{Binding Description}" FontSize="10" Foreground="{DynamicResource MutedBrush}"
                                                IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                 </StackPanel>
                                 <TextBox Grid.Column="1" Text="{Binding Value}"
@@ -128,11 +128,11 @@
                                 <Border Grid.Column="2" Background="{DynamicResource ElevatedBg}" CornerRadius="8"
                                         Padding="8,3" Margin="4,0" VerticalAlignment="Center"
                                         HorizontalAlignment="Left">
-                                    <TextBlock Text="{Binding Category}" FontSize="11" Foreground="#888888"/>
+                                    <TextBlock Text="{Binding Category}" FontSize="11" Foreground="{DynamicResource SubtextBrush}"/>
                                 </Border>
                                 <Button Grid.Column="3"
                                         Command="{Binding DeleteCommand}"
-                                        Padding="4,4" Background="Transparent" Foreground="#505050" CornerRadius="5">
+                                        Padding="4,4" Background="Transparent" Foreground="{DynamicResource MutedBrush}" CornerRadius="5">
                                     <TextBlock Text="✕" FontSize="11"/>
                                 </Button>
                             </Grid>
@@ -154,7 +154,7 @@
                     <TextBlock Text="Presets" FontSize="14" FontWeight="SemiBold" Foreground="#FFFFFF"/>
                     <Button Grid.Column="1" Content="✕"
                             Command="{Binding TogglePresetPanelCommand}"
-                            Background="Transparent" Foreground="#505050"
+                            Background="Transparent" Foreground="{DynamicResource MutedBrush}"
                             Padding="6,2" FontSize="13" CornerRadius="6"/>
                 </Grid>
                 <!-- Single toggle + group breakdown -->
@@ -172,9 +172,9 @@
                             <DataTemplate DataType="models:PresetGroup">
                                 <Grid ColumnDefinitions="18,*,Auto" Margin="0,0,0,8">
                                     <PathIcon Grid.Column="0" Data="{Binding IconPath}"
-                                              Width="13" Height="13" Foreground="#444444" VerticalAlignment="Center"/>
+                                              Width="13" Height="13" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
                                     <TextBlock Grid.Column="1" Text="{Binding Name}"
-                                               FontSize="12" Foreground="#666666" Margin="8,0" VerticalAlignment="Center"/>
+                                               FontSize="12" Foreground="{DynamicResource SubtextBrush}" Margin="8,0" VerticalAlignment="Center"/>
                                     <TextBlock Grid.Column="2" Text="{Binding Flags.Count, StringFormat='{}{0} flags'}"
                                                FontSize="11" Foreground="#333333" VerticalAlignment="Center"/>
                                 </Grid>
