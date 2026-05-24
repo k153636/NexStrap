@@ -41,19 +41,19 @@
 
             <!-- Glass-switchable card brushes (updated in code when glass theme toggles) -->
             <LinearGradientBrush x:Key="CardBg"     StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#1A1A1A" Offset="0"/><GradientStop Color="#0D0D0D" Offset="1"/>
+                <GradientStop Color="#1E1E1E" Offset="0"/><GradientStop Color="#141414" Offset="0.45"/><GradientStop Color="#0C0C0C" Offset="1"/>
             </LinearGradientBrush>
             <LinearGradientBrush x:Key="SurfaceBg"  StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#1C1C1C" Offset="0"/><GradientStop Color="#101010" Offset="1"/>
+                <GradientStop Color="#202020" Offset="0"/><GradientStop Color="#161616" Offset="0.45"/><GradientStop Color="#0E0E0E" Offset="1"/>
             </LinearGradientBrush>
             <LinearGradientBrush x:Key="ElevatedBg" StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#262626" Offset="0"/><GradientStop Color="#181818" Offset="1"/>
+                <GradientStop Color="#2A2A2A" Offset="0"/><GradientStop Color="#1E1E1E" Offset="0.45"/><GradientStop Color="#181818" Offset="1"/>
             </LinearGradientBrush>
             <LinearGradientBrush x:Key="OverlayBg"  StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#202020" Offset="0"/><GradientStop Color="#131313" Offset="1"/>
+                <GradientStop Color="#222222" Offset="0"/><GradientStop Color="#181818" Offset="0.45"/><GradientStop Color="#121212" Offset="1"/>
             </LinearGradientBrush>
             <LinearGradientBrush x:Key="InputBg"    StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#141414" Offset="0"/><GradientStop Color="#080808" Offset="1"/>
+                <GradientStop Color="#151515" Offset="0"/><GradientStop Color="#0F0F0F" Offset="0.45"/><GradientStop Color="#080808" Offset="1"/>
             </LinearGradientBrush>
 
             <!-- Glass-switchable text colors -->
@@ -85,25 +85,25 @@
     <Application.Styles>
         <fa:FluentAvaloniaTheme/>
 
-        <!-- Global button: iOS 26-style spring animation -->
+        <!-- Global button: subtle press feedback -->
         <Style Selector="Button">
             <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Transitions">
                 <Transitions>
                     <TransformOperationsTransition Property="RenderTransform"
-                        Duration="0:0:0.35" Easing="BackEaseOut"/>
+                        Duration="0:0:0.15" Easing="CubicEaseOut"/>
                     <DoubleTransition Property="Opacity"
-                        Duration="0:0:0.12" Easing="CubicEaseOut"/>
+                        Duration="0:0:0.10" Easing="CubicEaseOut"/>
                 </Transitions>
             </Setter>
         </Style>
         <Style Selector="Button:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.94)"/>
-            <Setter Property="Opacity" Value="0.75"/>
+            <Setter Property="RenderTransform" Value="scale(0.97)"/>
+            <Setter Property="Opacity" Value="0.82"/>
         </Style>
         <Style Selector="Button:pointerover">
-            <Setter Property="Opacity" Value="0.85"/>
+            <Setter Property="Opacity" Value="0.90"/>
         </Style>
 
         <!-- ToggleSwitch cursor -->

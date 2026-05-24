@@ -89,16 +89,16 @@ public partial class MainWindow : Window
         };
     }
 
-    // Non-glass gradient pairs (top color, bottom color)
-    private static readonly Dictionary<string, (Color Top, Color Bot)> _solidGradients = new()
+    // Non-glass gradient triples (top, mid @45%, bottom)
+    private static readonly Dictionary<string, (Color Top, Color Mid, Color Bot)> _solidGradients = new()
     {
-        ["CardBg"]     = (Color.Parse("#1A1A1A"), Color.Parse("#0D0D0D")),
-        ["SurfaceBg"]  = (Color.Parse("#1C1C1C"), Color.Parse("#101010")),
-        ["ElevatedBg"] = (Color.Parse("#262626"), Color.Parse("#181818")),
-        ["OverlayBg"]  = (Color.Parse("#202020"), Color.Parse("#131313")),
-        ["InputBg"]    = (Color.Parse("#141414"), Color.Parse("#080808")),
-        ["FgSub"]      = (Color.Parse("#555555"), Color.Parse("#555555")),
-        ["FgMuted"]    = (Color.Parse("#2E2E2E"), Color.Parse("#2E2E2E")),
+        ["CardBg"]     = (Color.Parse("#1E1E1E"), Color.Parse("#141414"), Color.Parse("#0C0C0C")),
+        ["SurfaceBg"]  = (Color.Parse("#202020"), Color.Parse("#161616"), Color.Parse("#0E0E0E")),
+        ["ElevatedBg"] = (Color.Parse("#2A2A2A"), Color.Parse("#1E1E1E"), Color.Parse("#181818")),
+        ["OverlayBg"]  = (Color.Parse("#222222"), Color.Parse("#181818"), Color.Parse("#121212")),
+        ["InputBg"]    = (Color.Parse("#151515"), Color.Parse("#0F0F0F"), Color.Parse("#080808")),
+        ["FgSub"]      = (Color.Parse("#555555"), Color.Parse("#555555"), Color.Parse("#555555")),
+        ["FgMuted"]    = (Color.Parse("#2E2E2E"), Color.Parse("#2E2E2E"), Color.Parse("#2E2E2E")),
     };
 
     // Glass min/max alpha (slider 0% → 100%)
@@ -122,6 +122,13 @@ public partial class MainWindow : Window
         StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
         EndPoint   = new RelativePoint(0, 1, RelativeUnit.Relative),
         GradientStops = [new GradientStop(top, 0.0), new GradientStop(bot, 1.0)],
+    };
+
+    private static LinearGradientBrush MakeGradient3(Color top, Color mid, Color bot) => new()
+    {
+        StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+        EndPoint   = new RelativePoint(0, 1, RelativeUnit.Relative),
+        GradientStops = [new GradientStop(top, 0.0), new GradientStop(mid, 0.45), new GradientStop(bot, 1.0)],
     };
 
     private void ApplyGlassTheme(bool glass)
@@ -154,10 +161,10 @@ public partial class MainWindow : Window
         }
         else
         {
-            foreach (var (key, (top, bot)) in _solidGradients)
+            foreach (var (key, (top, mid, bot)) in _solidGradients)
                 res[key] = key is "FgSub" or "FgMuted"
                     ? new SolidColorBrush(top)
-                    : MakeGradient(top, bot);
+                    : MakeGradient3(top, mid, bot);
         }
 
         // Sidebar pane: same gradient direction as cards
