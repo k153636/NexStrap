@@ -318,17 +318,16 @@ public partial class FastFlagsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void SetFpsTarget()
+    private async Task SetFpsTargetAsync()
     {
         _service.Set("DFIntTaskSchedulerTargetFps", FpsTarget.ToString());
         var entry = _allFlags.FirstOrDefault(f => f.Name == "DFIntTaskSchedulerTargetFps");
-        if (entry != null) entry.Value = FpsTarget.ToString();
+        if (entry != null)
+            entry.Value = FpsTarget.ToString();
         else
-        {
-            var newEntry = new FlagEntry("DFIntTaskSchedulerTargetFps", FpsTarget.ToString())
-                { Category = "Performance", Description = "FPS limit" };
-            _allFlags.Add(newEntry);
-        }
+            _allFlags.Add(new FlagEntry("DFIntTaskSchedulerTargetFps", FpsTarget.ToString())
+                { Category = "Performance", Description = "FPS limit" });
         ApplyFilter();
+        await _service.SaveAsync();
     }
 }
