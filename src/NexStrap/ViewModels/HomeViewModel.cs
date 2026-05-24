@@ -29,17 +29,20 @@ public partial class HomeViewModel : ViewModelBase
     internal string CurrentPageName { get; set; } = "Home";
     internal bool IsGameDetected => _gameDetected;
 
-    private bool      _gameDetected;
-    private string?   _userAvatarUrl;
-    private string?   _myCountryCode;
-    private string?   _currentServerCode;
-    private string?   _lastGameName;
-    private string?   _lastGameIconUrl;
-    private string?   _lastGameCreator;
-    private long      _lastPlaceId;
-    private DateTime? _launchStartTime;
-    private DateTime? _gameStartTime;
-    private long      _joinSequence;
+    private bool             _gameDetected;
+    private string?          _userAvatarUrl;
+    private string?          _myCountryCode;
+    private string?          _currentServerCode;
+    private string?          _lastGameName;
+    private string?          _lastGameIconUrl;
+    private string?          _lastGameCreator;
+    private long             _lastPlaceId;
+    private DateTime?        _launchStartTime;
+    private DateTime?        _gameStartTime;
+    private long             _joinSequence;
+    private long             _currentUniverseId;
+    private double           _accumulatedDurationSeconds;
+    private GameHistoryEntry? _sessionEntry;
 
     private async Task ApplyUserLabelAsync(long userId)
     {
@@ -205,17 +208,73 @@ public partial class HomeViewModel : ViewModelBase
             catch { }
         };
 
-        // ゲーム参加 — API でゲーム名・アイコン取得（高速切り替え時の競合を sequence で防ぐ）
+        // ゲーム参加 / テレポート — universeId で同一ゲーム内かを判定
         _logWatcher.PlaceJoined += async (_, placeId) =>
         {
-            _gameDetected      = true;
-            _currentServerCode = null;
-            _lastPlaceId       = placeId;
-            _gameStartTime     = DateTime.UtcNow;
-            var seq = Interlocked.Increment(ref _joinSequence);
-            _discord.ResetGameTimestamp();
+            // await 前に現在の状態をスナップショット（テレポート判定に使う）
+            var prevDetected    = _gameDetected;
+            var prevUniverseId  = _currentUniverseId;
+            var prevStartTime   = _gameStartTime;
+            var prevAccumulated = _accumulatedDurationSeconds;
 
-            // API完了前に基本プレゼンスを即時表示（API失敗時のフォールバックも兼ねる）
+            var seq = Interlocked.Increment(ref _joinSequence);
+
+            // universeId を先に解決してテレポートか新セッションかを判断
+            long newUniverseId = 0;
+            try { newUniverseId = (await _robloxApi.GetUniverseIdAsync(placeId)) ?? 0; } catch { }
+
+            if (Interlocked.Read(ref _joinSequence) != seq) return;
+
+            // 同じ universeId → テレポート（同一ゲーム内の移動）
+            bool isTeleport = prevDetected && newUniverseId != 0 && newUniverseId == prevUniverseId;
+
+            if (isTeleport)
+            {
+                // 前のサブプレイスの経過時間を累積してタイマーをリセット
+                var added = prevStartTime.HasValue
+                    ? (DateTime.UtcNow - prevStartTime.Value).TotalSeconds
+                    : 0.0;
+                _accumulatedDurationSeconds = prevAccumulated + added;
+                _gameStartTime     = DateTime.UtcNow;
+                _lastPlaceId       = placeId;
+                _currentServerCode = null;
+
+                // Discord のみ新しいサブプレイス情報で更新
+                try
+                {
+                    var (name, iconUrl, creator) = await _robloxApi.GetGameInfoAsync(placeId);
+                    if (Interlocked.Read(ref _joinSequence) != seq || !_gameDetected) return;
+                    _discord.SetInGamePresence(
+                        name ?? _lastGameName ?? "Roblox",
+                        iconUrl ?? _lastGameIconUrl,
+                        _userAvatarUrl,
+                        FormatServer(),
+                        creator ?? _lastGameCreator,
+                        placeId);
+                }
+                catch { }
+                return;
+            }
+
+            // ── 新しいゲームセッション ─────────────────────────────────────────
+            // 前のセッションがあれば累積時間を確定保存
+            if (prevDetected && prevStartTime.HasValue && _sessionEntry != null)
+            {
+                var elapsed = (DateTime.UtcNow - prevStartTime.Value).TotalSeconds;
+                _history.UpdateDuration(_sessionEntry, (int)(prevAccumulated + elapsed));
+            }
+
+            _accumulatedDurationSeconds = 0;
+            _currentServerCode          = null;
+            _gameDetected               = true;
+            _currentUniverseId          = newUniverseId;
+            _lastPlaceId                = placeId;
+            _gameStartTime              = DateTime.UtcNow;
+            _sessionEntry               = null;
+            _lastGameName               = null;
+            _lastGameIconUrl            = null;
+            _lastGameCreator            = null;
+            _discord.ResetGameTimestamp();
             _discord.SetInGamePresence("Roblox", null, _userAvatarUrl, null, null, placeId);
 
             try
@@ -228,11 +287,10 @@ public partial class HomeViewModel : ViewModelBase
                 _lastGameCreator = creator;
                 _discord.SetInGamePresence(name, iconUrl, _userAvatarUrl, FormatServer(), creator, placeId);
 
-                // 履歴に追加
                 var entry = new GameHistoryEntry { PlaceId = placeId, Name = name, IconUrl = iconUrl, PlayedAt = DateTime.Now };
                 _history.Add(entry);
+                _sessionEntry = entry;
 
-                // 起動時間を計測して表示
                 var launchMs = _launchStartTime.HasValue
                     ? (DateTime.UtcNow - _launchStartTime.Value).TotalSeconds
                     : (double?)null;
@@ -240,7 +298,6 @@ public partial class HomeViewModel : ViewModelBase
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     RebuildGameLists();
-
                     StatusText      = launchMs.HasValue ? $"Launch: {launchMs.Value:F1}s" : $"Playing: {name}";
                     IsRobloxRunning = true;
                     IsLaunching     = false;
@@ -261,19 +318,23 @@ public partial class HomeViewModel : ViewModelBase
         // ゲーム退出
         _logWatcher.GameLeft += (_, _) =>
         {
-            _gameDetected      = false;
-            _currentServerCode = null;
-            _lastGameName      = null;
-            _lastGameIconUrl   = null;
-            _lastGameCreator   = null;
-
-            if (_lastPlaceId > 0 && _gameStartTime.HasValue)
+            // テレポートをまたいだ累積時間 + 最後のサブプレイス経過時間を合計して確定保存
+            if (_gameStartTime.HasValue && _sessionEntry != null)
             {
-                var duration = (int)(DateTime.UtcNow - _gameStartTime.Value).TotalSeconds;
-                _history.UpdateDuration(_lastPlaceId, duration);
+                var elapsed = (DateTime.UtcNow - _gameStartTime.Value).TotalSeconds;
+                _history.UpdateDuration(_sessionEntry, (int)(_accumulatedDurationSeconds + elapsed));
                 Dispatcher.UIThread.InvokeAsync(RebuildGameLists);
             }
-            _gameStartTime = null;
+
+            _gameDetected               = false;
+            _currentUniverseId          = 0;
+            _accumulatedDurationSeconds = 0;
+            _sessionEntry               = null;
+            _currentServerCode          = null;
+            _lastGameName               = null;
+            _lastGameIconUrl            = null;
+            _lastGameCreator            = null;
+            _gameStartTime              = null;
 
             _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox");
             Dispatcher.UIThread.InvokeAsync(() =>

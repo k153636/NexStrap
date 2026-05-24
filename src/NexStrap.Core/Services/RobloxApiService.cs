@@ -13,6 +13,7 @@ public class RobloxApiService
 
     private readonly Dictionary<long, (string name, string? iconUrl, string? creator)> _gameCache = new();
     private readonly Dictionary<long, string?> _avatarCache = new();
+    private readonly Dictionary<long, long>    _universeIdCache = new();
 
     public async Task<(string name, string? iconUrl, string? creator)> GetGameInfoAsync(long placeId)
     {
@@ -38,12 +39,18 @@ public class RobloxApiService
         }
     }
 
-    private static async Task<long?> GetUniverseIdAsync(long placeId)
+    public async Task<long?> GetUniverseIdAsync(long placeId)
     {
-        var url = $"https://apis.roblox.com/universes/v1/places/{placeId}/universe";
-        var json = await Http.GetStringAsync(url);
-        var obj = JObject.Parse(json);
-        return obj["universeId"]?.Value<long>();
+        if (_universeIdCache.TryGetValue(placeId, out var cached)) return cached;
+        try
+        {
+            var url = $"https://apis.roblox.com/universes/v1/places/{placeId}/universe";
+            var json = await Http.GetStringAsync(url);
+            var universeId = JObject.Parse(json)["universeId"]?.Value<long>();
+            if (universeId.HasValue) _universeIdCache[placeId] = universeId.Value;
+            return universeId;
+        }
+        catch { return null; }
     }
 
     private static async Task<(string? name, string? creator)> GetGameNameAndCreatorAsync(long universeId)

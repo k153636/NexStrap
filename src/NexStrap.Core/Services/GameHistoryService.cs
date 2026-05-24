@@ -38,6 +38,14 @@ public class GameHistoryService
         Save();
     }
 
+    // 特定セッションエントリを直接更新（テレポートをまたいだ正確な累積時間に使用）
+    public void UpdateDuration(GameHistoryEntry entry, int durationSeconds)
+    {
+        if (!_entries.Contains(entry)) return;
+        entry.DurationSeconds = durationSeconds;
+        Save();
+    }
+
     public void ExportTo(string destPath) => File.Copy(_path, destPath, overwrite: true);
 
     public void ImportFrom(string srcPath)
