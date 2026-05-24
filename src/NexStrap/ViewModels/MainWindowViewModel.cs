@@ -1,4 +1,5 @@
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NexStrap.Core.Services;
@@ -68,7 +69,7 @@ public partial class MainWindowViewModel : ViewModelBase
             discord.Initialize(AppConstants.DiscordAppId);
 
         discord.ConnectionChanged += (_, connected) =>
-            IsDiscordConnected = connected;
+            Dispatcher.UIThread.InvokeAsync(() => IsDiscordConnected = connected);
 
         settings.SettingsChanged += (_, s) =>
         {
@@ -122,6 +123,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             DevVM.Refresh();
             CurrentPage = DevVM;
+            HomeVM.CurrentPageName = "Dev";
             _discord.SetDevPresence();
             return;
         }

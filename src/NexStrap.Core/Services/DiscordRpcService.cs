@@ -28,46 +28,33 @@ public class DiscordRpcService : IDisposable
     public void Initialize(string applicationId)
     {
         if (string.IsNullOrWhiteSpace(applicationId)) return;
+
+        DiscordRpcClient? oldClient;
         lock (_lock)
         {
-            // Don't recreate if same app ID — the client auto-reconnects on its own
             if (_currentAppId == applicationId && _client != null) return;
+            oldClient        = _client;
+            _client          = null;
+            _currentAppId    = applicationId;
+            _isConnected     = false;
         }
 
-        _client?.ClearPresence();
-        _client?.Dispose();
-        _client = null;
-        _isConnected = false;
+        // Dispose the old client outside the lock to avoid holding the lock during blocking calls
+        oldClient?.ClearPresence();
+        oldClient?.Dispose();
 
         try
         {
-            _currentAppId = applicationId;
             _startTimestamp = Timestamps.Now;
 
-            _client = new DiscordRpcClient(applicationId)
-            {
-                Logger = new NullLogger()
-            };
+            var newClient = new DiscordRpcClient(applicationId) { Logger = new NullLogger() };
 
-            _client.OnReady += (_, _) =>
-            {
-                _isConnected = true;
-                ConnectionChanged?.Invoke(this, true);
-            };
+            newClient.OnReady += (_, _) => { _isConnected = true;  ConnectionChanged?.Invoke(this, true);  };
+            newClient.OnClose += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
+            newClient.OnError += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
 
-            _client.OnClose += (_, _) =>
-            {
-                _isConnected = false;
-                ConnectionChanged?.Invoke(this, false);
-            };
-
-            _client.OnError += (_, _) =>
-            {
-                _isConnected = false;
-                ConnectionChanged?.Invoke(this, false);
-            };
-
-            _client.Initialize();
+            newClient.Initialize();
+            lock (_lock) { _client = newClient; }
         }
         catch { }
     }
@@ -201,30 +188,41 @@ public class DiscordRpcService : IDisposable
     private void FlushPresence()
     {
         RichPresence? presence;
-        lock (_lock) { presence = _pendingPresence; _pendingPresence = null; }
-        if (presence == null) return;
-        try { _client?.SetPresence(presence); } catch { }
+        DiscordRpcClient? client;
+        lock (_lock) { presence = _pendingPresence; _pendingPresence = null; client = _client; }
+        if (presence == null || client == null) return;
+        try { client.SetPresence(presence); } catch { }
     }
 
     public void ClearPresence()
     {
-        lock (_lock) { _debounceTimer?.Dispose(); _debounceTimer = null; _pendingPresence = null; }
-        _client?.ClearPresence();
+        DiscordRpcClient? client;
+        lock (_lock) { _debounceTimer?.Dispose(); _debounceTimer = null; _pendingPresence = null; client = _client; }
+        client?.ClearPresence();
     }
 
     public void Disable()
     {
-        lock (_lock) { _debounceTimer?.Dispose(); _debounceTimer = null; _pendingPresence = null; _currentAppId = string.Empty; }
-        _client?.ClearPresence();
-        _client?.Dispose();
-        _client = null;
-        _isConnected = false;
+        DiscordRpcClient? client;
+        lock (_lock)
+        {
+            _debounceTimer?.Dispose(); _debounceTimer = null;
+            _pendingPresence = null;
+            _currentAppId    = string.Empty;
+            client           = _client;
+            _client          = null;
+            _isConnected     = false;
+        }
+        client?.ClearPresence();
+        client?.Dispose();
+        ConnectionChanged?.Invoke(this, false);
     }
 
     public void Dispose()
     {
-        lock (_lock) { _debounceTimer?.Dispose(); _debounceTimer = null; }
-        _client?.ClearPresence();
-        _client?.Dispose();
+        DiscordRpcClient? client;
+        lock (_lock) { _debounceTimer?.Dispose(); _debounceTimer = null; client = _client; _client = null; _isConnected = false; }
+        client?.ClearPresence();
+        client?.Dispose();
     }
 }

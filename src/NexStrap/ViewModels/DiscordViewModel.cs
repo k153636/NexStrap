@@ -40,8 +40,7 @@ public partial class DiscordViewModel : ViewModelBase
         _settingsService.Update(s => s.DiscordRpcEnabled = value);
         if (value)
             _discord.Initialize(AppConstants.DiscordAppId);
-        else
-            _discord.ClearPresence();
+        // Disable() is invoked via SettingsChanged → MainWindowViewModel — no duplicate call needed
     }
 
     partial void OnShowRobloxUsernameChanged(bool value)
