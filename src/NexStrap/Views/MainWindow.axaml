@@ -34,6 +34,20 @@
             </Image.Effect>
         </Image>
 
+        <!-- Vignette top -->
+        <Rectangle Grid.RowSpan="2" IsHitTestVisible="False"
+                   Fill="{Binding ThemeVM.VignetteTopBrush}"
+                   Opacity="{Binding ThemeVM.BackgroundVignetteIntensity}"
+                   IsVisible="{Binding ThemeVM.BackgroundImagePath,
+                       Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+        <!-- Vignette bottom -->
+        <Rectangle Grid.RowSpan="2" IsHitTestVisible="False"
+                   Fill="{Binding ThemeVM.VignetteBottomBrush}"
+                   Opacity="{Binding ThemeVM.BackgroundVignetteIntensity}"
+                   IsVisible="{Binding ThemeVM.BackgroundImagePath,
+                       Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
         <Grid Grid.Row="0" Background="Transparent"
               PointerPressed="TitleBar_PointerPressed"
               DoubleTapped="TitleBar_DoubleTapped">

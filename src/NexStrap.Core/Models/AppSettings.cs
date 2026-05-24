@@ -32,4 +32,7 @@ public class AppSettings
     public bool DiscordShowLauncherPresence { get; set; } = true;
     public bool DiscordShowLauncherDetails { get; set; } = true;
     public bool StartWithWindows { get; set; } = false;
+    public double BackgroundVignetteIntensity { get; set; } = 0.0;
+    public double BackgroundVignetteRange { get; set; } = 0.15;
+    public string BackgroundVignetteColor { get; set; } = "#000000";
 }

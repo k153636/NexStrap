@@ -154,9 +154,17 @@
                             MaxHeight="320" Background="{DynamicResource InputBg}"
                             IsVisible="{Binding BackgroundImagePath,
                                 Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                        <Image Source="{Binding BackgroundImagePath,
-                                   Converter={StaticResource StringToImageConverter}}"
-                               Stretch="Uniform"/>
+                        <Grid>
+                            <Image Source="{Binding BackgroundImagePath,
+                                       Converter={StaticResource StringToImageConverter}}"
+                                   Stretch="Uniform"/>
+                            <Rectangle IsHitTestVisible="False"
+                                       Fill="{Binding VignetteTopBrush}"
+                                       Opacity="{Binding BackgroundVignetteIntensity}"/>
+                            <Rectangle IsHitTestVisible="False"
+                                       Fill="{Binding VignetteBottomBrush}"
+                                       Opacity="{Binding BackgroundVignetteIntensity}"/>
+                        </Grid>
                     </Border>
 
                     <!-- Placeholder (no image) -->
@@ -205,6 +213,29 @@
                     </Grid>
                     <Slider Minimum="0" Maximum="100" Value="{Binding BackgroundImageOpacityPercent}"
                             Margin="0,2,0,0"/>
+
+                    <!-- Vignette -->
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                        <TextBlock Grid.Column="0" Text="Vignette" FontSize="12" Foreground="{DynamicResource SubtextBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding BackgroundVignettePercent, StringFormat='{}{0:F0}%'}"
+                                   FontSize="12" Foreground="{DynamicResource FgSub}" VerticalAlignment="Center" Width="36" TextAlignment="Right"/>
+                    </Grid>
+                    <Slider Minimum="0" Maximum="100" Value="{Binding BackgroundVignettePercent}"
+                            Margin="0,2,0,4"/>
+
+                    <!-- Vignette Range -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="Range" FontSize="12" Foreground="{DynamicResource SubtextBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding BackgroundVignetteRangePercent, StringFormat='{}{0:F0}%'}"
+                                   FontSize="12" Foreground="{DynamicResource FgSub}" VerticalAlignment="Center" Width="36" TextAlignment="Right"/>
+                    </Grid>
+                    <Slider Minimum="5" Maximum="50" Value="{Binding BackgroundVignetteRangePercent}"
+                            Margin="0,2,0,4"/>
+
+                    <!-- Vignette Color -->
+                    <TextBlock Text="Vignette Color" FontSize="11" Foreground="{DynamicResource FgSub}"/>
+                    <ColorPicker Color="{Binding BackgroundVignetteColorValue}"
+                                 HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
 
@@ -216,7 +247,7 @@
 
                     <!-- Preview: exact replica of BootstrapperWindow scaled down -->
                     <Border CornerRadius="12" ClipToBounds="True"
-                            Width="352" Height="192" HorizontalAlignment="Left"
+                            Width="387" Height="211" HorizontalAlignment="Center"
                             BorderBrush="#2A2A2A" BorderThickness="1">
                         <Viewbox Stretch="Fill">
                             <!-- Content at native 440×240 size — Viewbox scales to fit -->

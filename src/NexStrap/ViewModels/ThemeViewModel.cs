@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -19,8 +20,13 @@ public partial class ThemeViewModel : ViewModelBase
     [ObservableProperty] private string _glassAccentColor = "#FFFFFF";
     [ObservableProperty] private Color _glassAccentColorValue = Colors.White;
     [ObservableProperty] private double _glassOpacity = 1.0;
+    [ObservableProperty] private double _backgroundVignetteIntensity;
+    [ObservableProperty] private double _backgroundVignetteRange;
+    [ObservableProperty] private string _backgroundVignetteColor = "#000000";
+    [ObservableProperty] private Color _backgroundVignetteColorValue = Colors.Black;
 
     private bool _syncingColor;
+    private bool _syncingVignetteColor;
 
     public static IReadOnlyList<string> AccentColors { get; } =
     [
@@ -43,6 +49,44 @@ public partial class ThemeViewModel : ViewModelBase
         set => BackgroundImageOpacity = value / 100.0;
     }
 
+    public double BackgroundVignettePercent
+    {
+        get => BackgroundVignetteIntensity * 100.0;
+        set => BackgroundVignetteIntensity = value / 100.0;
+    }
+
+    public double BackgroundVignetteRangePercent
+    {
+        get => BackgroundVignetteRange * 100.0;
+        set => BackgroundVignetteRange = value / 100.0;
+    }
+
+    public LinearGradientBrush VignetteTopBrush { get; private set; } = new();
+    public LinearGradientBrush VignetteBottomBrush { get; private set; } = new();
+
+    private void RebuildVignetteBrushes()
+    {
+        var opaque      = BackgroundVignetteColorValue;
+        var transparent = Color.FromArgb(0, opaque.R, opaque.G, opaque.B);
+        var range       = BackgroundVignetteRange;
+
+        VignetteTopBrush = new LinearGradientBrush
+        {
+            StartPoint    = new RelativePoint(0.5, 0, RelativeUnit.Relative),
+            EndPoint      = new RelativePoint(0.5, 1, RelativeUnit.Relative),
+            GradientStops = [new GradientStop(opaque, 0), new GradientStop(transparent, range)]
+        };
+        VignetteBottomBrush = new LinearGradientBrush
+        {
+            StartPoint    = new RelativePoint(0.5, 1, RelativeUnit.Relative),
+            EndPoint      = new RelativePoint(0.5, 0, RelativeUnit.Relative),
+            GradientStops = [new GradientStop(opaque, 0), new GradientStop(transparent, range)]
+        };
+
+        OnPropertyChanged(nameof(VignetteTopBrush));
+        OnPropertyChanged(nameof(VignetteBottomBrush));
+    }
+
     public double GlassOpacityPercent
     {
         get => GlassOpacity / 0.75 * 100.0;
@@ -52,6 +96,7 @@ public partial class ThemeViewModel : ViewModelBase
     public bool HasBackgroundImage    => !string.IsNullOrEmpty(BackgroundImagePath);
     public bool HasBootstrapperImage  => !string.IsNullOrEmpty(BootstrapperImagePath);
 
+
     public ThemeViewModel(SettingsService settingsService)
     {
         _settingsService = settingsService;
@@ -60,9 +105,15 @@ public partial class ThemeViewModel : ViewModelBase
         _bootstrapperImagePath   = settingsService.Settings.BootstrapperImagePath;
         _backgroundBlurRadius    = settingsService.Settings.BackgroundBlurRadius;
         _backgroundImageOpacity  = settingsService.Settings.BackgroundImageOpacity;
-        _glassAccentColor        = settingsService.Settings.GlassAccentColor;
-        _glassOpacity            = Math.Clamp(settingsService.Settings.GlassOpacity, 0.0, 0.75);
-        try { _glassAccentColorValue = Color.Parse(_glassAccentColor); } catch { }
+        _glassAccentColor             = settingsService.Settings.GlassAccentColor;
+        _glassOpacity                 = Math.Clamp(settingsService.Settings.GlassOpacity, 0.0, 0.75);
+        _backgroundVignetteIntensity  = settingsService.Settings.BackgroundVignetteIntensity;
+        _backgroundVignetteRange      = settingsService.Settings.BackgroundVignetteRange;
+        _backgroundVignetteColor      = settingsService.Settings.BackgroundVignetteColor;
+        try { _glassAccentColorValue        = Color.Parse(_glassAccentColor); }       catch { }
+        try { _backgroundVignetteColorValue = Color.Parse(_backgroundVignetteColor); } catch { }
+        RebuildVignetteBrushes();
+
     }
 
     partial void OnGlassThemeEnabledChanged(bool value)
@@ -128,6 +179,41 @@ public partial class ThemeViewModel : ViewModelBase
         OnPropertyChanged(nameof(GlassOpacityPercent));
     }
 
+    partial void OnBackgroundVignetteIntensityChanged(double value)
+    {
+        _settingsService.Update(s => s.BackgroundVignetteIntensity = value);
+        OnPropertyChanged(nameof(BackgroundVignettePercent));
+    }
+
+    partial void OnBackgroundVignetteRangeChanged(double value)
+    {
+        _settingsService.Update(s => s.BackgroundVignetteRange = value);
+        OnPropertyChanged(nameof(BackgroundVignetteRangePercent));
+        RebuildVignetteBrushes();
+    }
+
+    partial void OnBackgroundVignetteColorChanged(string value)
+    {
+        _settingsService.Update(s => s.BackgroundVignetteColor = value);
+        if (!_syncingVignetteColor)
+        {
+            _syncingVignetteColor = true;
+            try { BackgroundVignetteColorValue = Color.Parse(value); } catch { }
+            _syncingVignetteColor = false;
+        }
+    }
+
+    partial void OnBackgroundVignetteColorValueChanged(Color value)
+    {
+        RebuildVignetteBrushes();
+        if (!_syncingVignetteColor)
+        {
+            _syncingVignetteColor = true;
+            BackgroundVignetteColor = $"#{value.R:X2}{value.G:X2}{value.B:X2}";
+            _syncingVignetteColor = false;
+        }
+    }
+
     public async Task PickBackgroundImageAsync(IStorageProvider storageProvider)
     {
         var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
@@ -182,4 +268,5 @@ public partial class ThemeViewModel : ViewModelBase
     {
         BootstrapperImagePath = string.Empty;
     }
+
 }

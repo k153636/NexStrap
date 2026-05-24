@@ -35,13 +35,19 @@ public class RobloxService
         catch { }
     }
 
-    // CDN mirrors with priority delays — tested in parallel, fastest wins (Bloxstrap pattern)
+    // CDN mirrors — Bloxstrap と同一の5鏡構成
     private static readonly (string BaseUrl, int DelayMs)[] CdnMirrors =
     [
         ("https://setup.rbxcdn.com",                      0),
-        ("https://setup-ak.rbxcdn.com",                 1000),
-        ("https://setup-ec2.rbxcdn.com",                2000),
+        ("https://setup-aws.rbxcdn.com",               2000),
+        ("https://setup-ak.rbxcdn.com",                2000),
+        ("https://roblox-setup.cachefly.net",          2000),
+        ("https://s3.amazonaws.com/setup.roblox.com",  4000),
     ];
+
+    private static readonly string StateFilePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "NexStrap", "roblox-state.json");
 
     // Stock Roblox installation paths
     private static readonly string StockRobloxVersionsDir = Path.Combine(
@@ -99,6 +105,10 @@ public class RobloxService
     private CancellationTokenSource? _installCts;
     private Process? _launchedRobloxProcess;
 
+    private string?  _cachedLatestGuid;
+    private DateTime _lastVersionCheck = DateTime.MinValue;
+    private static readonly TimeSpan VersionCheckInterval = TimeSpan.FromHours(4);
+
     // Shared across DownloadAndInstallAsync and the progress timer task
     private long   _totalDownloadedBytes;
     private long   _totalPackedBytes;
@@ -154,24 +164,65 @@ public class RobloxService
         }
     }
 
+    // WebView2Loader.dll は Roblox 自身の更新で削除されることがある — exe だけチェック
     private static bool IsVersionComplete(string dir) =>
-        File.Exists(Path.Combine(dir, "RobloxPlayerBeta.exe")) &&
-        File.Exists(Path.Combine(dir, "WebView2Loader.dll"));
+        File.Exists(Path.Combine(dir, "RobloxPlayerBeta.exe"));
+
+    // ステートファイル (Bloxstrap の DistributionState に相当)
+    private sealed record RobloxStateFile(string VersionGuid, string VersionPath);
+
+    private static RobloxStateFile? LoadState()
+    {
+        try
+        {
+            if (!File.Exists(StateFilePath)) return null;
+            return JsonSerializer.Deserialize<RobloxStateFile>(File.ReadAllText(StateFilePath));
+        }
+        catch { return null; }
+    }
+
+    private static void SaveState(string guid, string path)
+    {
+        try
+        {
+            File.WriteAllText(StateFilePath,
+                JsonSerializer.Serialize(new RobloxStateFile(guid, path)));
+        }
+        catch { }
+    }
 
     private string? FindVersionFolder()
     {
+        // 1. メモリキャッシュ
         if (_currentVersionFolder != null &&
             Directory.Exists(_currentVersionFolder) &&
             IsVersionComplete(_currentVersionFolder))
             return _currentVersionFolder;
 
-        if (!Directory.Exists(VersionsDir)) return null;
+        // 2. ステートファイル (Bloxstrap 方式 — ディレクトリスキャン不要)
+        var state = LoadState();
+        if (state != null && IsVersionComplete(state.VersionPath))
+        {
+            _currentVersionFolder = state.VersionPath;
+            return _currentVersionFolder;
+        }
 
-        _currentVersionFolder = Directory.GetDirectories(VersionsDir)
-            .Where(IsVersionComplete)
-            .OrderByDescending(d => new DirectoryInfo(d).LastWriteTime)
-            .FirstOrDefault();
+        // 3. NexStrap Versions ディレクトリスキャン
+        if (Directory.Exists(VersionsDir))
+        {
+            var found = Directory.GetDirectories(VersionsDir)
+                .Where(IsVersionComplete)
+                .OrderByDescending(d => new DirectoryInfo(d).LastWriteTime)
+                .FirstOrDefault();
+            if (found != null)
+            {
+                _currentVersionFolder = found;
+                return _currentVersionFolder;
+            }
+        }
 
+        // 4. ストック Roblox フォールバック
+        _currentVersionFolder = FindStockRobloxVersionFolder();
         return _currentVersionFolder;
     }
 
@@ -193,13 +244,24 @@ public class RobloxService
         // Auto-update check
         if (playerPath != null && autoUpdate)
         {
-            var latestGuid    = await GetLatestVersionGuidAsync();
-            var installedGuid = Path.GetFileName(FindVersionFolder() ?? "");
+            var latestGuid    = await GetLatestVersionGuidCachedAsync();
+            // ステートファイル優先、なければフォルダ名から推定
+            var state         = LoadState();
+            var folderName    = Path.GetFileName(FindVersionFolder() ?? "");
+            var installedGuid = state?.VersionGuid
+                                ?? (folderName.StartsWith("version-", StringComparison.OrdinalIgnoreCase)
+                                    ? folderName.Substring(8) : folderName);
+
             if (!string.IsNullOrEmpty(latestGuid) && installedGuid != latestGuid)
             {
                 Log($"Update available: {installedGuid} → {latestGuid}");
                 SetStatus(RobloxStatus.Updating);
                 playerPath = await InstallVersionAsync(latestGuid);
+                if (playerPath != null)
+                {
+                    UpdateVersionCache(latestGuid);
+                    SaveState(latestGuid, Path.GetDirectoryName(playerPath)!);
+                }
             }
         }
 
@@ -207,9 +269,16 @@ public class RobloxService
         if (playerPath == null)
         {
             SetStatus(RobloxStatus.Updating);
-            var guid = await GetLatestVersionGuidAsync();
+            var guid = await GetLatestVersionGuidCachedAsync();
             if (!string.IsNullOrWhiteSpace(guid))
+            {
                 playerPath = await InstallVersionAsync(guid);
+                if (playerPath != null)
+                {
+                    UpdateVersionCache(guid);
+                    SaveState(guid, Path.GetDirectoryName(playerPath)!);
+                }
+            }
         }
 
         if (playerPath == null) { SetStatus(RobloxStatus.Idle); return false; }
@@ -226,9 +295,13 @@ public class RobloxService
         // Exited immediately — installation is broken, force reinstall and retry once
         Log($"Process exited with code {proc.ExitCode}, reinstalling...");
         SetStatus(RobloxStatus.Updating);
-        var retryGuid = await GetLatestVersionGuidAsync();
+        var retryGuid = await GetLatestVersionGuidCachedAsync();
         if (!string.IsNullOrWhiteSpace(retryGuid))
+        {
             playerPath = await InstallVersionAsync(retryGuid, forceReinstall: true);
+            if (playerPath != null)
+                SaveState(retryGuid, Path.GetDirectoryName(playerPath)!);
+        }
 
         if (playerPath == null) { SetStatus(RobloxStatus.Idle); return false; }
         SetStatus(RobloxStatus.Launching);
@@ -272,14 +345,25 @@ public class RobloxService
 
             if (!ok)
             {
-                // 4. Official installer fallback
-                await RunOfficialInstallerAsync();
-                var newStock = FindStockRobloxVersionFolder();
-                if (newStock != null)
+                // CDN 完全失敗 — ストック Roblox が存在すればそれを使い、なければ公式インストーラー
+                var stockFallback = FindStockRobloxVersionFolder();
+                if (stockFallback != null)
                 {
-                    Log($"Copying from newly installed stock Roblox: {newStock}");
+                    Log($"CDN failed, copying from existing stock Roblox: {stockFallback}");
                     Directory.CreateDirectory(versionDir);
-                    await CopyDirectoryAsync(newStock, versionDir);
+                    await CopyDirectoryAsync(stockFallback, versionDir);
+                }
+                else
+                {
+                    // 最終手段: 公式インストーラー (Roblox Game Client) — 本当に何もない場合のみ
+                    await RunOfficialInstallerAsync();
+                    var newStock = FindStockRobloxVersionFolder();
+                    if (newStock != null)
+                    {
+                        Log($"Copying from newly installed stock Roblox: {newStock}");
+                        Directory.CreateDirectory(versionDir);
+                        await CopyDirectoryAsync(newStock, versionDir);
+                    }
                 }
             }
         }
@@ -412,6 +496,7 @@ public class RobloxService
             // Phase 0: CDN test
             ReportProgress("Connecting to CDN...", 0, indeterminate: false);
             _cdnBaseUrl = await TestConnectivityAsync(ct) ?? "https://setup.rbxcdn.com";
+            Log($"CDN connectivity winner: {_cdnBaseUrl}");
 
             // Phase 1: manifest
             ReportProgress("Fetching package list...", 3, indeterminate: false);
@@ -692,7 +777,15 @@ public class RobloxService
                 var text = await ManifestHttp.GetStringAsync(
                     $"{baseUrl}/version-{versionGuid}-rbxPkgManifest.txt", ct);
                 var pkgs = ParseManifest(text);
-                if (pkgs.Count > 0) return pkgs;
+                if (pkgs.Count > 0)
+                {
+                    if (baseUrl != _cdnBaseUrl)
+                    {
+                        Log($"CDN switched: {_cdnBaseUrl} → {baseUrl}");
+                        _cdnBaseUrl = baseUrl;
+                    }
+                    return pkgs;
+                }
             }
             catch (Exception ex)
             {
@@ -732,6 +825,29 @@ public class RobloxService
     // -------------------------------------------------------------------------
     // Version GUID
     // -------------------------------------------------------------------------
+
+    private async Task<string?> GetLatestVersionGuidCachedAsync()
+    {
+        if (_cachedLatestGuid != null && DateTime.UtcNow - _lastVersionCheck < VersionCheckInterval)
+        {
+            Log($"Using cached version GUID: {_cachedLatestGuid}");
+            return _cachedLatestGuid;
+        }
+
+        var guid = await GetLatestVersionGuidAsync();
+        if (guid != null)
+        {
+            _cachedLatestGuid = guid;
+            _lastVersionCheck = DateTime.UtcNow;
+        }
+        return guid;
+    }
+
+    private void UpdateVersionCache(string guid)
+    {
+        _cachedLatestGuid = guid;
+        _lastVersionCheck = DateTime.UtcNow;
+    }
 
     private static async Task<string?> GetLatestVersionGuidAsync()
     {
