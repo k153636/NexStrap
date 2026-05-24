@@ -256,11 +256,17 @@ public class RobloxService
             {
                 Log($"Update available: {installedGuid} → {latestGuid}");
                 SetStatus(RobloxStatus.Updating);
-                playerPath = await InstallVersionAsync(latestGuid);
-                if (playerPath != null)
+                var updatedPath = await InstallVersionAsync(latestGuid);
+                if (updatedPath != null)
                 {
+                    playerPath = updatedPath;
                     UpdateVersionCache(latestGuid);
                     SaveState(latestGuid, Path.GetDirectoryName(playerPath)!);
+                }
+                else
+                {
+                    // 更新失敗 — 既存バージョンで続行し、インストーラーは起動しない
+                    Log($"Update failed, launching existing version: {playerPath}");
                 }
             }
         }
@@ -326,8 +332,8 @@ public class RobloxService
             return Path.Combine(versionDir, "RobloxPlayerBeta.exe");
         }
 
-        // 2. Copy from stock Roblox (fast path — no download needed)
-        var stockFolder = FindStockRobloxVersionFolder();
+        // 2. Copy from stock Roblox if exact version matches (fast path — no download needed)
+        var stockFolder = FindStockRobloxVersionFolder(versionGuid);
         if (stockFolder != null)
         {
             Log($"Copying from stock Roblox: {stockFolder}");
@@ -345,19 +351,19 @@ public class RobloxService
 
             if (!ok)
             {
-                // CDN 完全失敗 — ストック Roblox が存在すればそれを使い、なければ公式インストーラー
-                var stockFallback = FindStockRobloxVersionFolder();
+                // CDN 完全失敗 — 正確なバージョンのストック Roblox があればコピー、なければ公式インストーラー
+                var stockFallback = FindStockRobloxVersionFolder(versionGuid);
                 if (stockFallback != null)
                 {
-                    Log($"CDN failed, copying from existing stock Roblox: {stockFallback}");
+                    Log($"CDN failed, copying from stock Roblox: {stockFallback}");
                     Directory.CreateDirectory(versionDir);
                     await CopyDirectoryAsync(stockFallback, versionDir);
                 }
                 else
                 {
-                    // 最終手段: 公式インストーラー (Roblox Game Client) — 本当に何もない場合のみ
+                    // 最終手段: 公式インストーラーで正確なバージョンを取得後コピー
                     await RunOfficialInstallerAsync();
-                    var newStock = FindStockRobloxVersionFolder();
+                    var newStock = FindStockRobloxVersionFolder(versionGuid);
                     if (newStock != null)
                     {
                         Log($"Copying from newly installed stock Roblox: {newStock}");
@@ -452,10 +458,18 @@ public class RobloxService
         }
     }
 
-    private static string? FindStockRobloxVersionFolder()
+    private static string? FindStockRobloxVersionFolder(string? targetGuid = null)
     {
         if (!Directory.Exists(StockRobloxVersionsDir)) return null;
-        return Directory.GetDirectories(StockRobloxVersionsDir).FirstOrDefault(IsVersionComplete);
+        if (targetGuid != null)
+        {
+            // 正確なバージョンのみ返す — GUIDが違うファイルをコピーしない
+            var specific = Path.Combine(StockRobloxVersionsDir, $"version-{targetGuid}");
+            return Directory.Exists(specific) && IsVersionComplete(specific) ? specific : null;
+        }
+        return Directory.GetDirectories(StockRobloxVersionsDir)
+            .OrderByDescending(d => new DirectoryInfo(d).LastWriteTime)
+            .FirstOrDefault(IsVersionComplete);
     }
 
     private static string? FindFileInStockRoblox(string filename)
