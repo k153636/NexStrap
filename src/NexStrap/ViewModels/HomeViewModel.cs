@@ -278,8 +278,10 @@ public partial class HomeViewModel : ViewModelBase
             _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox");
             Dispatcher.UIThread.InvokeAsync(() =>
             {
-                StatusText      = "Ready";
-                IsRobloxRunning = false;
+                StatusText = "Ready";
+                // Roblox process may still be open (user returned to menu) — only clear if truly exited
+                if (!_roblox.IsNexStrapRobloxRunning() && !RobloxLogWatcher.IsRobloxRunning())
+                    IsRobloxRunning = false;
             });
         };
 
@@ -330,31 +332,7 @@ public partial class HomeViewModel : ViewModelBase
         _gameDetected = false;
         StatusText    = "Applying flags...";
 
-        // FPS unlock: use TargetFps value (default 144), 0 = unlimited (9999)
-        if (_settings.Settings.FpsUnlockEnabled)
-        {
-            var fps = _settings.Settings.TargetFps > 0 ? _settings.Settings.TargetFps.ToString() : "9999";
-            _fastFlags.Set("DFIntTaskSchedulerTargetFps", fps);
-            _fastFlags.Set("FFlagTaskSchedulerLimitTargetFpsTo2402", "False");
-        }
-        else
-        {
-            _fastFlags.Remove("DFIntTaskSchedulerTargetFps");
-            _fastFlags.Remove("FFlagTaskSchedulerLimitTargetFpsTo2402");
-        }
-
-        // マルチスレッド設定をフラグに反映
-        if (_settings.Settings.MultiThreadingEnabled)
-        {
-            _fastFlags.Set("FIntRuntimeMaxNumOfThreads", "2400");
-            _fastFlags.Set("DFIntTaskSchedulerThreadCount", Environment.ProcessorCount.ToString());
-        }
-        else
-        {
-            _fastFlags.Remove("FIntRuntimeMaxNumOfThreads");
-            _fastFlags.Remove("DFIntTaskSchedulerThreadCount");
-        }
-
+        _fastFlags.ApplyPerformanceSettings(_settings.Settings);
         await _fastFlags.SaveAsync();
         await _mods.ApplyEnabledModsAsync();
 
@@ -399,7 +377,9 @@ public partial class HomeViewModel : ViewModelBase
         await _fastFlags.HotReloadAsync(flags);
         StatusText = "Fast Flags hot reloaded";
         await Task.Delay(2000);
-        StatusText = IsRobloxRunning ? $"Playing" : "Ready";
+        StatusText = _gameDetected && _lastGameName != null ? $"Playing: {_lastGameName}"
+                   : IsRobloxRunning                       ? "Playing"
+                   :                                         "Ready";
     }
 
     private void RebuildGameLists()

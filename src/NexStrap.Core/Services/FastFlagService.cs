@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Newtonsoft.Json;
 using NexStrap.Core.Models;
 
@@ -96,6 +95,32 @@ public class FastFlagService
     {
         foreach (var preset in presets.Where(p => p.IsEnabled))
             _currentFlags[preset.Name] = preset.Value;
+    }
+
+    public void ApplyPerformanceSettings(AppSettings settings)
+    {
+        if (settings.FpsUnlockEnabled)
+        {
+            var fps = settings.TargetFps > 0 ? settings.TargetFps.ToString() : "9999";
+            Set("DFIntTaskSchedulerTargetFps", fps);
+            Set("FFlagTaskSchedulerLimitTargetFpsTo2402", "False");
+        }
+        else
+        {
+            Remove("DFIntTaskSchedulerTargetFps");
+            Remove("FFlagTaskSchedulerLimitTargetFpsTo2402");
+        }
+
+        if (settings.MultiThreadingEnabled)
+        {
+            Set("FIntRuntimeMaxNumOfThreads", "2400");
+            Set("DFIntTaskSchedulerThreadCount", Environment.ProcessorCount.ToString());
+        }
+        else
+        {
+            Remove("FIntRuntimeMaxNumOfThreads");
+            Remove("DFIntTaskSchedulerThreadCount");
+        }
     }
 
     private void LoadFlags()

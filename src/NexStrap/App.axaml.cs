@@ -155,30 +155,7 @@ public partial class App : Application
     }
 
     private static void ApplyPerformanceFlags(FastFlagService fastFlags, SettingsService settings)
-    {
-        if (settings.Settings.FpsUnlockEnabled)
-        {
-            var fps = settings.Settings.TargetFps > 0 ? settings.Settings.TargetFps.ToString() : "9999";
-            fastFlags.Set("DFIntTaskSchedulerTargetFps", fps);
-            fastFlags.Set("FFlagTaskSchedulerLimitTargetFpsTo2402", "False");
-        }
-        else
-        {
-            fastFlags.Remove("DFIntTaskSchedulerTargetFps");
-            fastFlags.Remove("FFlagTaskSchedulerLimitTargetFpsTo2402");
-        }
-
-        if (settings.Settings.MultiThreadingEnabled)
-        {
-            fastFlags.Set("FIntRuntimeMaxNumOfThreads", "2400");
-            fastFlags.Set("DFIntTaskSchedulerThreadCount", Environment.ProcessorCount.ToString());
-        }
-        else
-        {
-            fastFlags.Remove("FIntRuntimeMaxNumOfThreads");
-            fastFlags.Remove("DFIntTaskSchedulerThreadCount");
-        }
-    }
+        => fastFlags.ApplyPerformanceSettings(settings.Settings);
 
     private async Task HandleJumpLaunchAsync(long placeId)
     {
