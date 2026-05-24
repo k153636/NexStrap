@@ -78,6 +78,76 @@
 
             <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
                 <StackPanel Spacing="12">
+                    <TextBlock Text="Roblox Behavior" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource FgSub}"/>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Multi-instance" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Allow multiple Roblox windows at the same time"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding MultiInstanceEnabled}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Suppress Crash Handler" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Kill RobloxCrashHandler to prevent crash dialogs"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding SuppressCrashHandler}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Memory Optimization" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Limit Roblox working set to reduce memory pressure"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding MemoryOptimizationEnabled}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="CPU Affinity" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Restrict Roblox to a subset of CPU cores"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding CpuAffinityEnabled}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding CpuAffinityEnabled}">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="CPU Core Limit" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Max cores to use (0 = all cores)"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <NumericUpDown Grid.Column="1" Value="{Binding CpuCoreLimit}"
+                                       Minimum="0" Maximum="64" Increment="1"
+                                       Width="90" FontSize="12"
+                                       Background="#080808" Foreground="#FFFFFF"
+                                       BorderBrush="#2A2A2A"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Cleanup Old Versions" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Delete outdated version folders after update"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding CleanupOldVersions}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                <StackPanel Spacing="12">
                     <TextBlock Text="App" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}"/>
 

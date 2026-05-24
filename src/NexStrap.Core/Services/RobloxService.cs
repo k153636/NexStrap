@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Win32;
@@ -10,9 +12,29 @@ public enum RobloxStatus { NotInstalled, Idle, Launching, Running, Updating }
 
 public record BootstrapperProgress(string Message, double Percent, bool IsIndeterminate = false, string? Detail = null);
 
+/// <summary>Options passed to LaunchAsync that control post-launch behavior.</summary>
+public record LaunchOptions(
+    bool MultiInstance      = false,
+    bool SuppressCrashHandler = false,
+    int  CpuCoreLimit       = 0,
+    bool MemoryOptimization = false,
+    bool CleanupOldVersions = true
+);
+
 public class RobloxService
 {
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromMinutes(10) };
+    // -------------------------------------------------------------------------
+    // Win32 — multi-instance mutex control
+    // -------------------------------------------------------------------------
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr CreateMutex(IntPtr lpAttr, bool bInitialOwner, string lpName);
+    [DllImport("kernel32.dll")] private static extern bool ReleaseMutex(IntPtr h);
+    [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr h);
+
+    // -------------------------------------------------------------------------
+    // HTTP clients
+    // -------------------------------------------------------------------------
+    private static readonly HttpClient Http         = new() { Timeout = TimeSpan.FromMinutes(10) };
     private static readonly HttpClient ManifestHttp = new() { Timeout = TimeSpan.FromSeconds(30) };
 
     static RobloxService()
@@ -20,6 +42,10 @@ public class RobloxService
         Http.DefaultRequestHeaders.UserAgent.ParseAdd("RobloxStudio/WinInet");
         ManifestHttp.DefaultRequestHeaders.UserAgent.ParseAdd("RobloxStudio/WinInet");
     }
+
+    // -------------------------------------------------------------------------
+    // Logging
+    // -------------------------------------------------------------------------
     private static readonly string LogFilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "NexStrap", "debug.log");
@@ -35,27 +61,28 @@ public class RobloxService
         catch { }
     }
 
-    // CDN mirrors — Bloxstrap と同一の5鏡構成
+    // -------------------------------------------------------------------------
+    // CDN — Bloxstrap と同一の5鏡構成
+    // -------------------------------------------------------------------------
     private static readonly (string BaseUrl, int DelayMs)[] CdnMirrors =
     [
-        ("https://setup.rbxcdn.com",                      0),
-        ("https://setup-aws.rbxcdn.com",               2000),
-        ("https://setup-ak.rbxcdn.com",                2000),
-        ("https://roblox-setup.cachefly.net",          2000),
-        ("https://s3.amazonaws.com/setup.roblox.com",  4000),
+        ("https://setup.rbxcdn.com",                     0),
+        ("https://setup-aws.rbxcdn.com",              2000),
+        ("https://setup-ak.rbxcdn.com",               2000),
+        ("https://roblox-setup.cachefly.net",         2000),
+        ("https://s3.amazonaws.com/setup.roblox.com", 4000),
     ];
 
+    // -------------------------------------------------------------------------
+    // Paths
+    // -------------------------------------------------------------------------
     private static readonly string StateFilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "NexStrap", "roblox-state.json");
 
-    // Stock Roblox installation paths
     private static readonly string StockRobloxVersionsDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Roblox", "Versions");
-
-    private const int MaxDownloadRetries = 5;    // matches Bloxstrap
-    private const int BufferSize         = 4096; // matches Bloxstrap
 
     private static readonly string VersionsDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -69,7 +96,17 @@ public class RobloxService
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Roblox", "Downloads");
 
-    // Package name → subdirectory within the version folder (matches Bloxstrap)
+    // -------------------------------------------------------------------------
+    // Constants
+    // -------------------------------------------------------------------------
+    private const int  MaxDownloadRetries  = 5;
+    private const int  BufferSize          = 65536;   // 64 KB (より速い)
+    private const int  MaxSegments         = 4;        // マルチパート並列セグメント数
+    private const long MinSegmentBytes     = 2 * 1024 * 1024; // 2MB — これ未満は単一ダウンロード
+
+    // -------------------------------------------------------------------------
+    // Package dir mapping (matches Bloxstrap)
+    // -------------------------------------------------------------------------
     private static readonly IReadOnlyDictionary<string, string> PackageDirs =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -100,8 +137,18 @@ public class RobloxService
             ["NPRobloxProxy.zip"]                 = "",
         };
 
+    // -------------------------------------------------------------------------
+    // State
+    // -------------------------------------------------------------------------
     private string  _cdnBaseUrl           = "https://setup.rbxcdn.com";
     private string? _currentVersionFolder;
+
+    // インストール多重実行防止 (Bloxstrap の mutex に相当)
+    private readonly SemaphoreSlim _installLock = new(1, 1);
+
+    // マルチインスタンス用 Win32 ミューテックスハンドル
+    private IntPtr _multiInstanceMutex = IntPtr.Zero;
+
     private CancellationTokenSource? _installCts;
     private Process? _launchedRobloxProcess;
 
@@ -109,30 +156,25 @@ public class RobloxService
     private DateTime _lastVersionCheck = DateTime.MinValue;
     private static readonly TimeSpan VersionCheckInterval = TimeSpan.FromHours(4);
 
-    // Shared across DownloadAndInstallAsync and the progress timer task
+    // ダウンロード進捗 (DownloadAndInstallAsync と progressTimer で共有)
     private long   _totalDownloadedBytes;
     private long   _totalPackedBytes;
     private string _currentPackageName    = string.Empty;
     private long   _totalExtractFiles;
     private long   _completedExtractFiles;
 
-    /// <summary>Called after a fresh install, before Roblox is started — use to write FastFlags/Mods.</summary>
+    /// <summary>初回インストール後・起動前に呼ばれる — FastFlags/Mods の書き込みに使う。</summary>
     public Func<Task>? PreLaunchAsync { get; set; }
 
     public RobloxStatus Status { get; private set; } = RobloxStatus.Idle;
-    public event EventHandler<RobloxStatus>?          StatusChanged;
-    public event EventHandler<BootstrapperProgress>?  BootstrapperProgress;
+    public event EventHandler<RobloxStatus>?         StatusChanged;
+    public event EventHandler<BootstrapperProgress>? BootstrapperProgress;
 
-    public string? RobloxPlayerPath
-    {
-        get
-        {
-            // Only check NexStrap installation
-            return FindNexStrapRobloxPlayerPath();
-        }
-    }
-
-    public string? RobloxVersionPath => FindVersionFolder();
+    // -------------------------------------------------------------------------
+    // Public surface
+    // -------------------------------------------------------------------------
+    public string? RobloxPlayerPath    => FindNexStrapRobloxPlayerPath();
+    public string? RobloxVersionPath   => FindVersionFolder();
 
     public string ClientSettingsPath
     {
@@ -152,26 +194,17 @@ public class RobloxService
         }
     }
 
-    public bool IsInstalled() => RobloxPlayerPath != null;
+    public bool IsInstalled()             => RobloxPlayerPath != null;
+    public bool IsNexStrapRobloxRunning() =>
+        _launchedRobloxProcess != null &&
+        !_launchedRobloxProcess.HasExited;
 
-    public bool IsNexStrapRobloxRunning()
-    {
-        if (_launchedRobloxProcess == null) return false;
-        try
-        {
-            return !_launchedRobloxProcess.HasExited;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    // WebView2Loader.dll は Roblox 自身の更新で削除されることがある — exe だけチェック
+    // -------------------------------------------------------------------------
+    // Version folder detection
+    // -------------------------------------------------------------------------
     private static bool IsVersionComplete(string dir) =>
         File.Exists(Path.Combine(dir, "RobloxPlayerBeta.exe"));
 
-    // ステートファイル (Bloxstrap の DistributionState に相当)
     private sealed record RobloxStateFile(string VersionGuid, string VersionPath);
 
     private static RobloxStateFile? LoadState()
@@ -186,23 +219,17 @@ public class RobloxService
 
     private static void SaveState(string guid, string path)
     {
-        try
-        {
-            File.WriteAllText(StateFilePath,
-                JsonSerializer.Serialize(new RobloxStateFile(guid, path)));
-        }
+        try { File.WriteAllText(StateFilePath, JsonSerializer.Serialize(new RobloxStateFile(guid, path))); }
         catch { }
     }
 
     private string? FindVersionFolder()
     {
-        // 1. メモリキャッシュ
         if (_currentVersionFolder != null &&
             Directory.Exists(_currentVersionFolder) &&
             IsVersionComplete(_currentVersionFolder))
             return _currentVersionFolder;
 
-        // 2. ステートファイル (Bloxstrap 方式 — ディレクトリスキャン不要)
         var state = LoadState();
         if (state != null && IsVersionComplete(state.VersionPath))
         {
@@ -210,7 +237,6 @@ public class RobloxService
             return _currentVersionFolder;
         }
 
-        // 3. NexStrap Versions ディレクトリスキャン
         if (Directory.Exists(VersionsDir))
         {
             var found = Directory.GetDirectories(VersionsDir)
@@ -224,7 +250,6 @@ public class RobloxService
             }
         }
 
-        // 4. ストック Roblox フォールバック
         _currentVersionFolder = FindStockRobloxVersionFolder();
         return _currentVersionFolder;
     }
@@ -233,27 +258,36 @@ public class RobloxService
     {
         var versionFolder = FindVersionFolder();
         if (versionFolder == null) return null;
-
         var playerExe = Path.Combine(versionFolder, "RobloxPlayerBeta.exe");
         return File.Exists(playerExe) ? playerExe : null;
     }
 
-    public async Task<bool> LaunchAsync(string? launchArgs = null, bool autoUpdate = true)
+    // -------------------------------------------------------------------------
+    // Launch
+    // -------------------------------------------------------------------------
+    public async Task<bool> LaunchAsync(string? launchArgs = null, bool autoUpdate = true,
+        LaunchOptions? options = null)
     {
+        options ??= new LaunchOptions();
+
         await CheckAndInstallVcRedistAsync();
+
+        // マルチインスタンス: NexStrap が ROBLOX_singletonMutex を保持することで
+        // 新しい Roblox インスタンスがシングルトンチェックをパスできる
+        if (options.MultiInstance)
+            AcquireRobloxSingletonMutex();
 
         var playerPath = RobloxPlayerPath;
 
-        // Auto-update check
+        // Auto-update
         if (playerPath != null && autoUpdate)
         {
             var latestGuid    = await GetLatestVersionGuidCachedAsync();
-            // ステートファイル優先、なければフォルダ名から推定
             var state         = LoadState();
             var folderName    = Path.GetFileName(FindVersionFolder() ?? "");
             var installedGuid = state?.VersionGuid
                                 ?? (folderName.StartsWith("version-", StringComparison.OrdinalIgnoreCase)
-                                    ? folderName.Substring(8) : folderName);
+                                    ? folderName[8..] : folderName);
 
             if (!string.IsNullOrEmpty(latestGuid) && installedGuid != latestGuid)
             {
@@ -265,16 +299,17 @@ public class RobloxService
                     playerPath = updatedPath;
                     UpdateVersionCache(latestGuid);
                     SaveState(latestGuid, Path.GetDirectoryName(playerPath)!);
+                    if (options.CleanupOldVersions)
+                        CleanupOldVersionDirectories(latestGuid);
                 }
                 else
                 {
-                    // 更新失敗 — 既存バージョンで続行し、インストーラーは起動しない
                     Log($"Update failed, launching existing version: {playerPath}");
                 }
             }
         }
 
-        // First-time install
+        // 初回インストール
         if (playerPath == null)
         {
             SetStatus(RobloxStatus.Updating);
@@ -286,7 +321,6 @@ public class RobloxService
                 {
                     UpdateVersionCache(guid);
                     SaveState(guid, Path.GetDirectoryName(playerPath)!);
-                    // バージョンフォルダが確定したので FastFlags/Mods を適用
                     if (PreLaunchAsync != null)
                         await PreLaunchAsync();
                 }
@@ -302,10 +336,10 @@ public class RobloxService
 
         await Task.Delay(3000);
         if (!proc.HasExited)
-            return SetLaunched(proc);
+            return SetLaunched(proc, options);
 
-        // Exited immediately — installation is broken, force reinstall and retry once
-        Log($"Process exited with code {proc.ExitCode}, reinstalling...");
+        // 即終了 — 壊れているので強制再インストールして一度だけリトライ
+        Log($"Process exited immediately (code {proc.ExitCode}), force reinstalling...");
         SetStatus(RobloxStatus.Updating);
         var retryGuid = await GetLatestVersionGuidCachedAsync();
         if (!string.IsNullOrWhiteSpace(retryGuid))
@@ -319,26 +353,121 @@ public class RobloxService
         SetStatus(RobloxStatus.Launching);
         proc = TryStartProcess(playerPath, launchArgs);
         if (proc == null) { SetStatus(RobloxStatus.Idle); return false; }
-        return SetLaunched(proc);
+        return SetLaunched(proc, options);
     }
 
-    // Returns the RobloxPlayerBeta.exe path on success, null on failure.
-    // Install priority: already complete → copy from stock → CDN download → official installer + copy
+    private bool SetLaunched(Process proc, LaunchOptions opts)
+    {
+        _launchedRobloxProcess = proc;
+        _ = MonitorProcessAsync(proc);
+        _ = PostLaunchAsync(proc, opts);
+        SetStatus(RobloxStatus.Running);
+        Log("Launch successful");
+        return true;
+    }
+
+    /// <summary>CPU アフィニティ・メモリ上限・クラッシュハンドラ抑制を起動後に適用する。</summary>
+    private async Task PostLaunchAsync(Process proc, LaunchOptions opts)
+    {
+        await Task.Delay(1500); // Roblox の初期化を少し待つ
+
+        // CPU アフィニティ
+        if (opts.CpuCoreLimit > 0)
+        {
+            try
+            {
+                int cores = Math.Clamp(opts.CpuCoreLimit, 1, Environment.ProcessorCount);
+                long mask = cores >= 64 ? -1L : (1L << cores) - 1;
+                proc.ProcessorAffinity = (nint)mask;
+                Log($"CPU affinity set: {cores}/{Environment.ProcessorCount} cores (mask=0x{mask:X})");
+            }
+            catch (Exception ex) { Log($"CPU affinity failed: {ex.Message}"); }
+        }
+
+        // メモリ上限 (Voidstrap 方式: RAM の半分 or 2GB の小さいほう)
+        if (opts.MemoryOptimization)
+        {
+            try
+            {
+                var info  = GC.GetGCMemoryInfo();
+                long maxWs = Math.Min(2L * 1024 * 1024 * 1024,
+                                      info.TotalAvailableMemoryBytes / 2);
+                proc.MaxWorkingSet = new IntPtr(maxWs);
+                Log($"MaxWorkingSet set to {maxWs / 1_048_576}MB");
+            }
+            catch (Exception ex) { Log($"Memory optimization failed: {ex.Message}"); }
+        }
+
+        // RobloxCrashHandler 抑制 (起動 ~800ms 後に出現するので少し待つ)
+        if (opts.SuppressCrashHandler)
+        {
+            await Task.Delay(800);
+            foreach (var handler in Process.GetProcessesByName("RobloxCrashHandler"))
+            {
+                try
+                {
+                    if (!handler.CloseMainWindow())
+                        handler.Kill(entireProcessTree: true);
+                    Log($"Suppressed RobloxCrashHandler (PID {handler.Id})");
+                }
+                catch { }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Multi-instance: NexStrap が ROBLOX_singletonMutex を保持する
+    // -------------------------------------------------------------------------
+    private void AcquireRobloxSingletonMutex()
+    {
+        if (_multiInstanceMutex != IntPtr.Zero) return; // 既に保持中
+        _multiInstanceMutex = CreateMutex(IntPtr.Zero, true, "ROBLOX_singletonMutex");
+        Log(_multiInstanceMutex != IntPtr.Zero
+            ? "Acquired ROBLOX_singletonMutex for multi-instance"
+            : "Failed to acquire ROBLOX_singletonMutex");
+    }
+
+    public void ReleaseRobloxSingletonMutex()
+    {
+        if (_multiInstanceMutex == IntPtr.Zero) return;
+        ReleaseMutex(_multiInstanceMutex);
+        CloseHandle(_multiInstanceMutex);
+        _multiInstanceMutex = IntPtr.Zero;
+        Log("Released ROBLOX_singletonMutex");
+    }
+
+    // -------------------------------------------------------------------------
+    // Install
+    // -------------------------------------------------------------------------
     private async Task<string?> InstallVersionAsync(string versionGuid, bool forceReinstall = false)
+    {
+        // 同時インストール防止
+        await _installLock.WaitAsync();
+        try
+        {
+            return await InstallVersionInternalAsync(versionGuid, forceReinstall);
+        }
+        finally
+        {
+            _installLock.Release();
+        }
+    }
+
+    private async Task<string?> InstallVersionInternalAsync(string versionGuid, bool forceReinstall)
     {
         var versionDir = Path.Combine(VersionsDir, versionGuid);
 
         if (forceReinstall && Directory.Exists(versionDir))
             try { Directory.Delete(versionDir, recursive: true); } catch { }
 
-        // 1. Already installed
+        // 1. 既にインストール済み
         if (IsVersionComplete(versionDir))
         {
             _currentVersionFolder = versionDir;
             return Path.Combine(versionDir, "RobloxPlayerBeta.exe");
         }
 
-        // 2. Copy from stock Roblox if exact version matches (fast path — no download needed)
+        // 2. ストック Roblox の正確なバージョンからコピー (CDN 不要の高速パス)
         var stockFolder = FindStockRobloxVersionFolder(versionGuid);
         if (stockFolder != null)
         {
@@ -347,7 +476,7 @@ public class RobloxService
             await CopyDirectoryAsync(stockFolder, versionDir);
         }
 
-        // 3. CDN download
+        // 3. CDN ダウンロード
         if (!IsVersionComplete(versionDir))
         {
             _installCts = new CancellationTokenSource();
@@ -357,7 +486,7 @@ public class RobloxService
 
             if (!ok)
             {
-                // CDN 完全失敗 — 正確なバージョンのストック Roblox があればコピー、なければ公式インストーラー
+                // CDN 完全失敗 — 正確なバージョンのストック Roblox があればコピー
                 var stockFallback = FindStockRobloxVersionFolder(versionGuid);
                 if (stockFallback != null)
                 {
@@ -386,6 +515,28 @@ public class RobloxService
         return Path.Combine(versionDir, "RobloxPlayerBeta.exe");
     }
 
+    // -------------------------------------------------------------------------
+    // Old version cleanup
+    // -------------------------------------------------------------------------
+    private void CleanupOldVersionDirectories(string keepGuid)
+    {
+        if (!Directory.Exists(VersionsDir)) return;
+        foreach (var dir in Directory.GetDirectories(VersionsDir))
+        {
+            if (string.Equals(Path.GetFileName(dir), keepGuid, StringComparison.OrdinalIgnoreCase))
+                continue;
+            try
+            {
+                Directory.Delete(dir, recursive: true);
+                Log($"Cleaned up old version: {Path.GetFileName(dir)}");
+            }
+            catch { }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Process management helpers
+    // -------------------------------------------------------------------------
     private static Process? TryStartProcess(string playerPath, string? launchArgs)
         => Process.Start(new ProcessStartInfo(playerPath)
         {
@@ -394,21 +545,21 @@ public class RobloxService
             Arguments        = launchArgs ?? string.Empty
         });
 
-    private bool SetLaunched(Process proc)
+    private async Task MonitorProcessAsync(Process process)
     {
-        _launchedRobloxProcess = proc;
-        _ = MonitorProcessAsync(proc);
-        SetStatus(RobloxStatus.Running);
-        Log("Launch successful");
-        return true;
+        try { await process.WaitForExitAsync(); } catch { }
+        SetStatus(RobloxStatus.Idle);
     }
 
+    // -------------------------------------------------------------------------
+    // Directory copy
+    // -------------------------------------------------------------------------
     private async Task CopyDirectoryAsync(string source, string dest)
     {
         await Task.Run(() =>
         {
             var allFiles = Directory.GetFiles(source, "*", SearchOption.AllDirectories);
-            var done     = 0;
+            var done = 0;
             foreach (var file in allFiles)
             {
                 var rel      = Path.GetRelativePath(source, file);
@@ -424,6 +575,9 @@ public class RobloxService
         Log("Directory copy complete");
     }
 
+    // -------------------------------------------------------------------------
+    // Official installer fallback
+    // -------------------------------------------------------------------------
     private async Task RunOfficialInstallerAsync()
     {
         Log("CDN download failed, falling back to official installer");
@@ -437,8 +591,7 @@ public class RobloxService
             var installerExe = Path.Combine(installerDir, "RobloxPlayerInstaller.exe");
             try
             {
-                using var client = new HttpClient();
-                var bytes = await client.GetByteArrayAsync("https://setup.rbxcdn.com/RobloxPlayerInstaller.exe");
+                var bytes = await Http.GetByteArrayAsync("https://setup.rbxcdn.com/RobloxPlayerInstaller.exe");
                 await File.WriteAllBytesAsync(installerExe, bytes);
                 installerPath = installerExe;
             }
@@ -449,10 +602,9 @@ public class RobloxService
             }
         }
 
-        // インストーラー実行前に存在する Roblox プロセスを記録しておく
-        var existingRobloxPids = Process.GetProcessesByName("RobloxPlayerBeta")
-            .Select(p => p.Id)
-            .ToHashSet();
+        // インストーラー実行前に存在する Roblox プロセスを記録
+        var existingPids = Process.GetProcessesByName("RobloxPlayerBeta")
+            .Select(p => p.Id).ToHashSet();
 
         Log($"Running official installer: {installerPath}");
         var proc = Process.Start(new ProcessStartInfo(installerPath)
@@ -468,10 +620,10 @@ public class RobloxService
             Log($"Official installer exited with code {proc.ExitCode}");
         }
 
-        // インストーラーが自動起動した Roblox を終了させる (NexStrap が正しくフラグ付きで起動する)
+        // インストーラーが自動起動した Roblox を終了させる
         foreach (var roblox in Process.GetProcessesByName("RobloxPlayerBeta"))
         {
-            if (existingRobloxPids.Contains(roblox.Id)) continue;
+            if (existingPids.Contains(roblox.Id)) continue;
             try
             {
                 roblox.Kill();
@@ -481,12 +633,14 @@ public class RobloxService
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Stock Roblox helpers
+    // -------------------------------------------------------------------------
     private static string? FindStockRobloxVersionFolder(string? targetGuid = null)
     {
         if (!Directory.Exists(StockRobloxVersionsDir)) return null;
         if (targetGuid != null)
         {
-            // 正確なバージョンのみ返す — GUIDが違うファイルをコピーしない
             var specific = Path.Combine(StockRobloxVersionsDir, $"version-{targetGuid}");
             return Directory.Exists(specific) && IsVersionComplete(specific) ? specific : null;
         }
@@ -505,24 +659,12 @@ public class RobloxService
 
     public void CancelInstall() => _installCts?.Cancel();
 
-    private async Task MonitorProcessAsync(Process process)
-    {
-        try { await process.WaitForExitAsync(); } catch { }
-        SetStatus(RobloxStatus.Idle);
-    }
-
     // -------------------------------------------------------------------------
-    // Installation / update — Bloxstrap-compatible download system
+    // Download & Install (Bloxstrap-compatible)
     // -------------------------------------------------------------------------
-
-    private async Task<bool> DownloadAndInstallAsync(string versionGuid, string versionDir, CancellationToken ct)
+    private async Task<bool> DownloadAndInstallAsync(string versionGuid, string versionDir,
+        CancellationToken ct)
     {
-        // Overall progress ranges:
-        //   0- 3%  CDN test
-        //   3- 6%  manifest fetch
-        //   6-88%  download (per-byte within total packed bytes)
-        //  88-99%  extraction
-        //  99-100% configure
         const double DlStart  = 6.0;
         const double DlEnd    = 88.0;
         const double ExtStart = 88.0;
@@ -530,14 +672,12 @@ public class RobloxService
 
         try
         {
-            // Phase 0: CDN test
-            ReportProgress("Connecting to CDN...", 0, indeterminate: false);
+            ReportProgress("Connecting to CDN...", 0);
             _cdnBaseUrl = await TestConnectivityAsync(ct) ?? "https://setup.rbxcdn.com";
-            Log($"CDN connectivity winner: {_cdnBaseUrl}");
+            Log($"CDN winner: {_cdnBaseUrl}");
 
-            // Phase 1: manifest
-            ReportProgress("Fetching package list...", 3, indeterminate: false);
-            Log($"Fetching manifest for version: {versionGuid}");
+            ReportProgress("Fetching package list...", 3);
+            Log($"Fetching manifest for: {versionGuid}");
             var packages = await FetchManifestAsync(versionGuid, ct);
             if (packages == null || packages.Count == 0)
             {
@@ -552,16 +692,14 @@ public class RobloxService
             Directory.CreateDirectory(versionDir);
             Directory.CreateDirectory(DownloadsDir);
 
-            // Phase 2: sequential download (no extraction yet)
             _totalDownloadedBytes = 0;
             _totalPackedBytes     = packages.Sum(p => p.CompressedSize);
 
-            var downloadStart    = DateTime.UtcNow;
-            var downloadedPaths  = new List<(string Path, string Name)>();
+            var downloadStart = DateTime.UtcNow;
+            var downloadedPaths = new List<(string Path, string Name)>();
 
-            // Timer refreshes speed/% at 100 ms cadence
-            var progressTimer    = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
-            var progressReporter = Task.Run(async () =>
+            var progressTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
+            var progressTask  = Task.Run(async () =>
             {
                 try
                 {
@@ -573,39 +711,38 @@ public class RobloxService
                         var ratio   = _totalPackedBytes > 0 ? dl / (double)_totalPackedBytes : 0;
                         var overall = DlStart + ratio * (DlEnd - DlStart);
                         var name    = _currentPackageName;
-                        var msg     = string.IsNullOrEmpty(name) ? "Downloading..." : $"Downloading {name}";
-                        ReportProgress(msg, overall, detail: FormatSpeed(speed));
+                        ReportProgress(string.IsNullOrEmpty(name) ? "Downloading..." : $"Downloading {name}",
+                            overall, detail: FormatSpeed(speed));
                     }
                 }
                 catch (OperationCanceledException) { }
             });
 
-            foreach (var package in packages)
+            foreach (var pkg in packages)
             {
                 if (ct.IsCancellationRequested) break;
-
-                _currentPackageName = package.Name;
-                var localPath = Path.Combine(DownloadsDir, package.Signature);
-                await DownloadPackageAsync(package, localPath, versionGuid, ct);
-
-                if (package.Name != "WebView2RuntimeInstaller.zip")
-                    downloadedPaths.Add((localPath, package.Name));
+                _currentPackageName = pkg.Name;
+                var localPath = Path.Combine(DownloadsDir, pkg.Signature);
+                await DownloadPackageAsync(pkg, localPath, versionGuid, ct);
+                if (pkg.Name != "WebView2RuntimeInstaller.zip")
+                    downloadedPaths.Add((localPath, pkg.Name));
             }
             _currentPackageName = string.Empty;
 
             progressTimer.Dispose();
-            try { await progressReporter; } catch { }
+            try { await progressTask; } catch { }
 
             if (ct.IsCancellationRequested) return false;
 
-            // Phase 3: count all zip entries BEFORE starting any extraction task
-            _totalExtractFiles    = 0;
+            // 展開ファイル数を先に集計 (進捗精度のため)
+            _totalExtractFiles     = 0;
             _completedExtractFiles = 0;
             await Task.Run(() =>
             {
                 foreach (var (path, _) in downloadedPaths)
                 {
-                    if (!path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || !File.Exists(path)) continue;
+                    if (!path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || !File.Exists(path))
+                        continue;
                     try
                     {
                         using var z = ZipFile.OpenRead(path);
@@ -615,13 +752,9 @@ public class RobloxService
                 }
             }, ct);
 
-            // Now start all extraction tasks in parallel
-            var extractionTasks = downloadedPaths
-                .Select(item => Task.Run(() =>
-                    ExtractPackageWithProgress(item.Path, item.Name, versionDir, ExtStart, ExtEnd), ct))
-                .ToList();
-
-            await Task.WhenAll(extractionTasks);
+            // 全パッケージを並列展開
+            await Task.WhenAll(downloadedPaths.Select(item =>
+                Task.Run(() => ExtractPackageWithProgress(item.Path, item.Name, versionDir, ExtStart, ExtEnd), ct)));
 
             ReportProgress("Configuring...", 99);
             await File.WriteAllTextAsync(
@@ -647,21 +780,23 @@ public class RobloxService
         return false;
     }
 
+    // -------------------------------------------------------------------------
+    // Package download — MD5 キャッシュ + マルチパート並列 DL + HTTP フォールバック
+    // -------------------------------------------------------------------------
     private async Task DownloadPackageAsync(RobloxPackage package, string localPath,
         string versionGuid, CancellationToken ct)
     {
         if (ct.IsCancellationRequested) return;
 
-        if (File.Exists(localPath))
+        // キャッシュヒット: NexStrap Downloads
+        if (File.Exists(localPath) && ComputeMd5(localPath) == package.Signature)
         {
-            if (ComputeMd5(localPath) == package.Signature)
-            {
-                Interlocked.Add(ref _totalDownloadedBytes, package.CompressedSize);
-                return;
-            }
-            try { File.Delete(localPath); } catch { }
+            Interlocked.Add(ref _totalDownloadedBytes, package.CompressedSize);
+            return;
         }
+        try { if (File.Exists(localPath)) File.Delete(localPath); } catch { }
 
+        // キャッシュヒット: stock Roblox Downloads
         var robloxCached = Path.Combine(RobloxDownloadsDir, package.Signature);
         if (File.Exists(robloxCached))
         {
@@ -674,34 +809,41 @@ public class RobloxService
             catch { }
         }
 
-        var packageUrl = $"{_cdnBaseUrl}/version-{versionGuid}-{package.Name}";
-        var buffer     = new byte[BufferSize];
+        var url = $"{_cdnBaseUrl}/version-{versionGuid}-{package.Name}";
 
         for (int attempt = 1; attempt <= MaxDownloadRetries; attempt++)
         {
             if (ct.IsCancellationRequested) return;
-
             long bytesThisAttempt = 0;
 
             try
             {
-                using var resp = await Http.GetAsync(packageUrl, HttpCompletionOption.ResponseHeadersRead, ct);
+                // ファイルサイズが MinSegmentBytes 以上ならマルチパートを試みる
+                if (package.CompressedSize >= MinSegmentBytes)
+                {
+                    var downloaded = await TryDownloadMultipartAsync(url, localPath, package, ct);
+                    if (downloaded) return;
+                    // マルチパート失敗 → 通常ダウンロードへ fallthrough
+                }
+
+                // 通常 (単一接続) ダウンロード
+                using var resp = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
                 resp.EnsureSuccessStatusCode();
 
                 await using var src = await resp.Content.ReadAsStreamAsync(ct);
                 await using var dst = new FileStream(localPath, FileMode.Create,
                     FileAccess.ReadWrite, FileShare.Delete);
 
-                int bytesRead;
-                while ((bytesRead = await src.ReadAsync(buffer, ct)) > 0)
+                var buffer = new byte[BufferSize];
+                int n;
+                while ((n = await src.ReadAsync(buffer, ct)) > 0)
                 {
-                    if (ct.IsCancellationRequested) return;
-
-                    await dst.WriteAsync(buffer.AsMemory(0, bytesRead), ct);
-                    bytesThisAttempt += bytesRead;
-                    Interlocked.Add(ref _totalDownloadedBytes, bytesRead);
+                    await dst.WriteAsync(buffer.AsMemory(0, n), ct);
+                    bytesThisAttempt += n;
+                    Interlocked.Add(ref _totalDownloadedBytes, n);
                 }
 
+                // MD5 検証
                 dst.Seek(0, SeekOrigin.Begin);
                 var hash = ComputeMd5(dst);
                 if (hash != package.Signature)
@@ -716,19 +858,87 @@ public class RobloxService
                 Interlocked.Add(ref _totalDownloadedBytes, -bytesThisAttempt);
                 try { File.Delete(localPath); } catch { }
 
+                Log($"Download attempt {attempt}/{MaxDownloadRetries} failed for {package.Name}: {ex.Message}");
                 if (attempt >= MaxDownloadRetries) break;
 
-                if (ex is IOException &&
-                    packageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                {
-                    packageUrl = packageUrl.Replace("https://", "http://");
-                }
+                // HTTPS 失敗 → HTTP フォールバック (Bloxstrap 方式)
+                if (url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                    url = "http://" + url[8..];
 
                 await Task.Delay(500 * attempt, ct);
             }
         }
     }
 
+    /// <summary>バイトレンジ並列ダウンロード (Voidstrap 方式)。失敗時は false を返す。</summary>
+    private async Task<bool> TryDownloadMultipartAsync(string url, string localPath,
+        RobloxPackage package, CancellationToken ct)
+    {
+        try
+        {
+            long contentLength = package.CompressedSize;
+            int  segs          = (int)Math.Min(MaxSegments, Math.Max(1, contentLength / MinSegmentBytes));
+            if (segs <= 1) return false;
+
+            // ファイルを事前確保して並列書き込みの土台を作る
+            await using (var alloc = new FileStream(localPath, FileMode.Create, FileAccess.Write,
+                FileShare.None, 4096, FileOptions.Asynchronous))
+            {
+                alloc.SetLength(contentLength);
+            }
+
+            long segSize = contentLength / segs;
+
+            await Task.WhenAll(Enumerable.Range(0, segs).Select(async i =>
+            {
+                long start = i * segSize;
+                long end   = i == segs - 1 ? contentLength - 1 : start + segSize - 1;
+
+                using var req = new HttpRequestMessage(HttpMethod.Get, url);
+                req.Headers.Range = new RangeHeaderValue(start, end);
+
+                using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+                if (resp.StatusCode != System.Net.HttpStatusCode.PartialContent)
+                    throw new NotSupportedException($"Server returned {resp.StatusCode}, not 206");
+
+                await using var src = await resp.Content.ReadAsStreamAsync(ct);
+                await using var dst = new FileStream(localPath, FileMode.Open, FileAccess.Write,
+                    FileShare.Write, BufferSize, FileOptions.Asynchronous);
+                dst.Position = start;
+
+                var buf = new byte[BufferSize];
+                int n;
+                while ((n = await src.ReadAsync(buf, ct)) > 0)
+                {
+                    await dst.WriteAsync(buf.AsMemory(0, n), ct);
+                    Interlocked.Add(ref _totalDownloadedBytes, n);
+                }
+            }));
+
+            // MD5 検証
+            if (ComputeMd5(localPath) != package.Signature)
+            {
+                File.Delete(localPath);
+                Log($"Multipart MD5 mismatch for {package.Name}, falling back to single download");
+                Interlocked.Add(ref _totalDownloadedBytes, -contentLength);
+                return false;
+            }
+
+            Log($"Multipart download: {package.Name} ({segs} segments)");
+            return true;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Log($"Multipart download failed for {package.Name}: {ex.Message}, falling back");
+            try { File.Delete(localPath); } catch { }
+            return false;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Extraction
+    // -------------------------------------------------------------------------
     private void ExtractPackageWithProgress(string archivePath, string packageName,
         string versionDir, double extStart, double extEnd)
     {
@@ -749,7 +959,6 @@ public class RobloxService
 
             using var archive = ZipFile.OpenRead(archivePath);
             var entries = archive.Entries.Where(e => !string.IsNullOrEmpty(e.Name)).ToList();
-
             foreach (var entry in entries)
             {
                 var done = Interlocked.Increment(ref _completedExtractFiles);
@@ -767,6 +976,9 @@ public class RobloxService
         catch { }
     }
 
+    // -------------------------------------------------------------------------
+    // CDN connectivity test
+    // -------------------------------------------------------------------------
     private static async Task<string?> TestConnectivityAsync(CancellationToken ct)
     {
         using var cts   = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -778,8 +990,7 @@ public class RobloxService
             var delay = delayMs;
             tasks.Add(Task.Run(async () =>
             {
-                if (delay > 0)
-                    await Task.Delay(delay, cts.Token);
+                if (delay > 0) await Task.Delay(delay, cts.Token);
                 await Http.GetAsync($"{url}/version",
                     HttpCompletionOption.ResponseHeadersRead, cts.Token);
                 return url;
@@ -798,10 +1009,12 @@ public class RobloxService
             }
             catch { }
         }
-
         return null;
     }
 
+    // -------------------------------------------------------------------------
+    // Manifest fetch
+    // -------------------------------------------------------------------------
     private async Task<List<RobloxPackage>?> FetchManifestAsync(string versionGuid, CancellationToken ct)
     {
         var urls = new[] { _cdnBaseUrl }
@@ -824,20 +1037,15 @@ public class RobloxService
                     return pkgs;
                 }
             }
-            catch (Exception ex)
-            {
-                Log($"Failed to fetch manifest from {baseUrl}: {ex.Message}");
-            }
+            catch (Exception ex) { Log($"Manifest fetch failed ({baseUrl}): {ex.Message}"); }
         }
         return null;
     }
 
     private static List<RobloxPackage> ParseManifest(string text)
     {
-        using var reader = new StringReader(text);
-
-        var version = reader.ReadLine();
-        if (version != "v0") return [];
+        using var reader  = new StringReader(text);
+        if (reader.ReadLine() != "v0") return [];
 
         var result = new List<RobloxPackage>();
         while (true)
@@ -847,14 +1055,14 @@ public class RobloxService
             var rawPacked = reader.ReadLine();
             var rawSize   = reader.ReadLine();
 
-            if (string.IsNullOrEmpty(name)      || string.IsNullOrEmpty(signature) ||
-                string.IsNullOrEmpty(rawPacked)  || string.IsNullOrEmpty(rawSize))
+            if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(signature) ||
+                string.IsNullOrEmpty(rawPacked) || string.IsNullOrEmpty(rawSize))
                 break;
 
             if (name == "RobloxPlayerLauncher.exe") break;
 
-            long packedSize = long.TryParse(rawPacked, out var s) ? s : 0;
-            result.Add(new RobloxPackage(name, packedSize, signature));
+            long packed = long.TryParse(rawPacked, out var s) ? s : 0;
+            result.Add(new RobloxPackage(name, packed, signature));
         }
         return result;
     }
@@ -862,7 +1070,6 @@ public class RobloxService
     // -------------------------------------------------------------------------
     // Version GUID
     // -------------------------------------------------------------------------
-
     private async Task<string?> GetLatestVersionGuidCachedAsync()
     {
         if (_cachedLatestGuid != null && DateTime.UtcNow - _lastVersionCheck < VersionCheckInterval)
@@ -902,42 +1109,28 @@ public class RobloxService
                 {
                     var version = v.GetString();
                     if (version == null) continue;
-                    // Strip "version-" prefix if present (Roblox API sometimes returns it with prefix)
                     if (version.StartsWith("version-", StringComparison.OrdinalIgnoreCase))
-                        version = version.Substring(8);
+                        version = version[8..];
                     Log($"Fetched version GUID: {version} from {url}");
                     return version;
                 }
             }
-            catch (Exception ex)
-            {
-                Log($"Failed to fetch version GUID from {url}: {ex.Message}");
-            }
+            catch (Exception ex) { Log($"Failed to fetch version GUID from {url}: {ex.Message}"); }
         }
         Log("Failed to fetch version GUID from all sources");
         return null;
     }
 
     // -------------------------------------------------------------------------
-    // First-time setup (called on app startup in a clean environment)
+    // Setup
     // -------------------------------------------------------------------------
-
     public bool NeedsSetup() => !IsVcRedistInstalled();
-
-    // Called by UpdateService to feed progress into the shared BootstrapperProgress event
-    public void BroadcastProgress(BootstrapperProgress p)
-        => BootstrapperProgress?.Invoke(this, p);
-
-    public async Task RunSetupAsync()
-    {
-        // No SetStatus calls — caller manages window lifecycle
-        await CheckAndInstallVcRedistAsync();
-    }
+    public void BroadcastProgress(BootstrapperProgress p) => BootstrapperProgress?.Invoke(this, p);
+    public async Task RunSetupAsync() => await CheckAndInstallVcRedistAsync();
 
     // -------------------------------------------------------------------------
-    // VC++ redistributable check & auto-install
+    // VC++ redistributable
     // -------------------------------------------------------------------------
-
     private static bool IsVcRedistInstalled()
     {
         try
@@ -954,7 +1147,7 @@ public class RobloxService
         if (IsVcRedistInstalled()) return;
 
         Log("VC++ 2015-2022 x64 not found, downloading...");
-        ReportProgress("Downloading vc_redist.x64.exe", 0, indeterminate: false);
+        ReportProgress("Downloading vc_redist.x64.exe", 0);
 
         var tempExe = Path.Combine(Path.GetTempPath(), "vc_redist.x64.exe");
         try
@@ -978,16 +1171,11 @@ public class RobloxService
                 got += n;
                 var pct     = total > 0 ? got / (double)total * 100.0 : 0;
                 var elapsed = (DateTime.UtcNow - startTime).TotalSeconds;
-                var speed   = elapsed > 0.1 ? got / elapsed : 0;
                 ReportProgress($"Downloading vc_redist.x64.exe ({got / 1024:N0} KB)", pct,
-                    detail: FormatSpeed(speed));
+                    detail: FormatSpeed(elapsed > 0.1 ? got / elapsed : 0));
             }
         }
-        catch (Exception ex)
-        {
-            Log($"Failed to download VC++ redist: {ex.Message}");
-            return;
-        }
+        catch (Exception ex) { Log($"Failed to download VC++ redist: {ex.Message}"); return; }
 
         ReportProgress("Installing vc_redist.x64.exe", 100, indeterminate: true);
         try
@@ -1010,20 +1198,15 @@ public class RobloxService
     // -------------------------------------------------------------------------
     // Uninstall
     // -------------------------------------------------------------------------
-
     public async Task UninstallNexStrapRobloxAsync()
     {
-        // Kill any running NexStrap-managed Roblox process
         foreach (var proc in Process.GetProcessesByName("RobloxPlayerBeta"))
-        {
             try { proc.Kill(); await proc.WaitForExitAsync(); } catch { }
-        }
 
         await Task.Run(() =>
         {
             if (Directory.Exists(VersionsDir))
                 try { Directory.Delete(VersionsDir, recursive: true); } catch { }
-
             if (Directory.Exists(DownloadsDir))
                 try { Directory.Delete(DownloadsDir, recursive: true); } catch { }
         });
@@ -1033,14 +1216,9 @@ public class RobloxService
 
     public async Task UninstallStockRobloxAsync()
     {
-        // Kill any running stock Roblox processes
         foreach (var name in new[] { "RobloxPlayerBeta", "RobloxPlayerLauncher", "RobloxStudioBeta" })
-        {
             foreach (var proc in Process.GetProcessesByName(name))
-            {
                 try { proc.Kill(); await proc.WaitForExitAsync(); } catch { }
-            }
-        }
 
         await Task.Run(() =>
         {
@@ -1049,25 +1227,20 @@ public class RobloxService
             if (Directory.Exists(robloxDir))
                 try { Directory.Delete(robloxDir, recursive: true); } catch { }
 
-            // Remove registry URL handlers and uninstall entries
-            var keysToDelete = new[]
+            foreach (var key in new[]
             {
                 @"Software\Classes\roblox",
                 @"Software\Classes\roblox-player",
                 @"Software\Microsoft\Windows\CurrentVersion\Uninstall\roblox-player",
                 @"Software\Roblox",
-            };
-            foreach (var key in keysToDelete)
-            {
+            })
                 try { Registry.CurrentUser.DeleteSubKeyTree(key, throwOnMissingSubKey: false); } catch { }
-            }
         });
     }
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
-
     private static string ComputeMd5(string filePath)
     {
         using var md5    = MD5.Create();
@@ -1102,5 +1275,5 @@ public class RobloxService
             new BootstrapperProgress(message, percent, indeterminate, detail));
 }
 
-// Signature = MD5 hash, used as cache filename (matches Bloxstrap's Package.Signature)
+// Signature = MD5 hash (matches Bloxstrap Package.Signature)
 internal record RobloxPackage(string Name, long CompressedSize, string Signature);

@@ -400,7 +400,8 @@ public partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private async Task LaunchRobloxAsync()
     {
-        if (IsLaunching || IsRobloxRunning) return;
+        var multiInstance = _settings.Settings.MultiInstanceEnabled;
+        if (IsLaunching || (IsRobloxRunning && !multiInstance)) return;
 
         IsLaunching   = true;
         _gameDetected = false;
@@ -422,7 +423,15 @@ public partial class HomeViewModel : ViewModelBase
                 launchArgs = $"--launchMode app --authenticationTicket {ticket} --authenticationUrl https://auth.roblox.com";
         }
 
-        var launched = await _roblox.LaunchAsync(launchArgs, autoUpdate: _settings.Settings.AutoUpdateRoblox);
+        var s = _settings.Settings;
+        var opts = new NexStrap.Core.Services.LaunchOptions(
+            MultiInstance:       s.MultiInstanceEnabled,
+            SuppressCrashHandler: s.SuppressCrashHandler,
+            CpuCoreLimit:        s.CpuAffinityEnabled ? s.CpuCoreLimit : 0,
+            MemoryOptimization:  s.MemoryOptimizationEnabled,
+            CleanupOldVersions:  s.CleanupOldVersions
+        );
+        var launched = await _roblox.LaunchAsync(launchArgs, autoUpdate: s.AutoUpdateRoblox, options: opts);
         if (!launched)
         {
             IsLaunching     = false;

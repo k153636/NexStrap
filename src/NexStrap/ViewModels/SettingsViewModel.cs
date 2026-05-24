@@ -26,6 +26,12 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private string _browserHomepage = string.Empty;
     [ObservableProperty] private string _statusMessage = string.Empty;
     [ObservableProperty] private bool _startWithWindows;
+    [ObservableProperty] private bool _multiInstanceEnabled;
+    [ObservableProperty] private bool _suppressCrashHandler;
+    [ObservableProperty] private bool _cpuAffinityEnabled;
+    [ObservableProperty] private int  _cpuCoreLimit;
+    [ObservableProperty] private bool _memoryOptimizationEnabled;
+    [ObservableProperty] private bool _cleanupOldVersions;
 
     public SettingsViewModel(SettingsService settingsService, GameHistoryService history, RobloxService roblox)
     {
@@ -43,6 +49,12 @@ public partial class SettingsViewModel : ViewModelBase
         _targetFps = s.TargetFps;
         _browserHomepage = s.BrowserHomepage;
         _startWithWindows = IsStartupRegistered();
+        _multiInstanceEnabled    = s.MultiInstanceEnabled;
+        _suppressCrashHandler    = s.SuppressCrashHandler;
+        _cpuAffinityEnabled      = s.CpuAffinityEnabled;
+        _cpuCoreLimit            = s.CpuCoreLimit;
+        _memoryOptimizationEnabled = s.MemoryOptimizationEnabled;
+        _cleanupOldVersions      = s.CleanupOldVersions;
     }
 
     partial void OnStartWithWindowsChanged(bool value) => SetStartupRegistry(value);
@@ -92,6 +104,12 @@ public partial class SettingsViewModel : ViewModelBase
             s.TargetFps = TargetFps;
             s.BrowserHomepage = BrowserHomepage;
             s.StartWithWindows = StartWithWindows;
+            s.MultiInstanceEnabled    = MultiInstanceEnabled;
+            s.SuppressCrashHandler    = SuppressCrashHandler;
+            s.CpuAffinityEnabled      = CpuAffinityEnabled;
+            s.CpuCoreLimit            = CpuCoreLimit;
+            s.MemoryOptimizationEnabled = MemoryOptimizationEnabled;
+            s.CleanupOldVersions      = CleanupOldVersions;
         });
         StatusMessage = "Settings saved";
     }
@@ -108,6 +126,12 @@ public partial class SettingsViewModel : ViewModelBase
         MultiThreadingEnabled = defaults.MultiThreadingEnabled;
         TargetFps = defaults.TargetFps;
         BrowserHomepage = defaults.BrowserHomepage;
+        MultiInstanceEnabled    = defaults.MultiInstanceEnabled;
+        SuppressCrashHandler    = defaults.SuppressCrashHandler;
+        CpuAffinityEnabled      = defaults.CpuAffinityEnabled;
+        CpuCoreLimit            = defaults.CpuCoreLimit;
+        MemoryOptimizationEnabled = defaults.MemoryOptimizationEnabled;
+        CleanupOldVersions      = defaults.CleanupOldVersions;
         Save();
     }
 
@@ -163,6 +187,12 @@ public partial class SettingsViewModel : ViewModelBase
             MultiThreadingEnabled  = s.MultiThreadingEnabled;
             TargetFps              = s.TargetFps;
             BrowserHomepage        = s.BrowserHomepage;
+            MultiInstanceEnabled    = s.MultiInstanceEnabled;
+            SuppressCrashHandler    = s.SuppressCrashHandler;
+            CpuAffinityEnabled      = s.CpuAffinityEnabled;
+            CpuCoreLimit            = s.CpuCoreLimit;
+            MemoryOptimizationEnabled = s.MemoryOptimizationEnabled;
+            CleanupOldVersions      = s.CleanupOldVersions;
             StatusMessage = "Settings imported";
         }
         catch { StatusMessage = "Import failed"; }

@@ -35,4 +35,12 @@ public class AppSettings
     public double BackgroundVignetteIntensity { get; set; } = 0.0;
     public double BackgroundVignetteRange { get; set; } = 0.15;
     public string BackgroundVignetteColor { get; set; } = "#000000";
+
+    // Roblox behavior
+    public bool MultiInstanceEnabled    { get; set; } = false;
+    public bool SuppressCrashHandler    { get; set; } = true;
+    public bool CpuAffinityEnabled      { get; set; } = false;
+    public int  CpuCoreLimit            { get; set; } = 0;   // 0 = all cores
+    public bool MemoryOptimizationEnabled { get; set; } = false;
+    public bool CleanupOldVersions      { get; set; } = true;
 }
