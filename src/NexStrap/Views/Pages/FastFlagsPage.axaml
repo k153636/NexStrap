@@ -6,7 +6,7 @@
              x:DataType="vm:FastFlagsViewModel"
              Background="Transparent">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="24,20,24,12" Spacing="3">
@@ -80,26 +80,8 @@
             </Button>
         </Grid>
 
-        <!-- FPS Quick Control -->
-        <Border Grid.Row="3" Background="{DynamicResource SurfaceBg}" CornerRadius="10"
-                Margin="24,0,24,8" Padding="14,8">
-            <Grid ColumnDefinitions="Auto,*,Auto,12,Auto">
-                <TextBlock Grid.Column="0" Text="FPS Limit" Foreground="{DynamicResource SubtextBrush}"
-                           VerticalAlignment="Center" Margin="0,0,14,0" FontSize="12"/>
-                <Slider Grid.Column="1" Minimum="30" Maximum="360"
-                        Value="{Binding FpsTarget}" TickFrequency="30" IsSnapToTickEnabled="True"/>
-                <TextBlock Grid.Column="2" Text="{Binding FpsTarget}"
-                           Foreground="#FFFFFF" FontWeight="Bold" Width="40"
-                           VerticalAlignment="Center" Margin="10,0" FontSize="13"/>
-                <Button Grid.Column="4" Content="Apply"
-                        Command="{Binding SetFpsTargetAsyncCommand}"
-                        Background="{DynamicResource ElevatedBg}" Foreground="#FFFFFF" FontSize="12"
-                        Padding="14,6" CornerRadius="8"/>
-            </Grid>
-        </Border>
-
         <!-- Flags List -->
-        <Border Grid.Row="4" Margin="24,0,24,0" Background="{DynamicResource SurfaceBg}" CornerRadius="12">
+        <Border Grid.Row="3" Margin="24,0,24,0" Background="{DynamicResource SurfaceBg}" CornerRadius="12">
             <Grid RowDefinitions="Auto,*">
                 <Border Grid.Row="0" Background="{DynamicResource ElevatedBg}" CornerRadius="12,12,0,0">
                     <Grid ColumnDefinitions="*,200,100,40" Margin="16,8">
@@ -143,7 +125,7 @@
         </Border>
 
         <!-- Preset Panel Overlay -->
-        <Border Grid.Row="4" Grid.RowSpan="2"
+        <Border Grid.Row="3" Grid.RowSpan="2"
                 IsVisible="{Binding IsPresetPanelOpen}"
                 Background="#CC080808" CornerRadius="12"
                 Margin="24,0,24,0" ZIndex="10"
@@ -186,7 +168,7 @@
         </Border>
 
         <!-- Add Flag + Status -->
-        <Grid Grid.Row="5" Margin="24,8,24,14" ColumnDefinitions="*,8,110,8,60,*,Auto">
+        <Grid Grid.Row="4" Margin="24,8,24,14" ColumnDefinitions="*,8,110,8,60,*,Auto">
             <TextBox Grid.Column="0" Text="{Binding NewFlagName}"
                      Watermark="New flag name (e.g. FFlagXxx)"
                      Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF" FontSize="12"
