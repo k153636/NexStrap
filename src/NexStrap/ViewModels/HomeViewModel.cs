@@ -202,15 +202,17 @@ public partial class HomeViewModel : ViewModelBase
             try
             {
                 _currentServerCode = await _robloxApi.GetServerCountryCodeAsync(ip);
-                if (_gameDetected && _lastGameName != null)
-                    _discord.SetInGamePresence(_lastGameName, _lastGameIconUrl, _userAvatarUrl, FormatServer(), _lastGameCreator, _lastPlaceId);
+                if (_gameDetected)
+                    _discord.SetInGamePresence(_lastGameName ?? "Roblox", _lastGameIconUrl, _userAvatarUrl, FormatState(), _lastGameCreator, _lastPlaceId);
             }
             catch { }
         };
 
         // ゲーム参加 / テレポート — universeId で同一ゲーム内かを判定
-        _logWatcher.PlaceJoined += async (_, placeId) =>
+        _logWatcher.PlaceJoined += async (_, args) =>
         {
+            var (placeId, universeIdFromLog) = args;
+
             // await 前に現在の状態をスナップショット（テレポート判定に使う）
             var prevDetected    = _gameDetected;
             var prevUniverseId  = _currentUniverseId;
@@ -219,9 +221,12 @@ public partial class HomeViewModel : ViewModelBase
 
             var seq = Interlocked.Increment(ref _joinSequence);
 
-            // universeId を先に解決してテレポートか新セッションかを判断
-            long newUniverseId = 0;
-            try { newUniverseId = (await _robloxApi.GetUniverseIdAsync(placeId)) ?? 0; } catch { }
+            // ログから universeid: が取れていれば API 呼び出しをスキップ
+            long newUniverseId = universeIdFromLog;
+            if (newUniverseId == 0)
+            {
+                try { newUniverseId = (await _robloxApi.GetUniverseIdAsync(placeId)) ?? 0; } catch { }
+            }
 
             if (Interlocked.Read(ref _joinSequence) != seq) return;
 
@@ -242,13 +247,13 @@ public partial class HomeViewModel : ViewModelBase
                 // Discord のみ新しいサブプレイス情報で更新
                 try
                 {
-                    var (name, iconUrl, creator) = await _robloxApi.GetGameInfoAsync(placeId);
+                    var (name, iconUrl, creator) = await _robloxApi.GetGameInfoAsync(placeId, newUniverseId);
                     if (Interlocked.Read(ref _joinSequence) != seq || !_gameDetected) return;
                     _discord.SetInGamePresence(
                         name ?? _lastGameName ?? "Roblox",
                         iconUrl ?? _lastGameIconUrl,
                         _userAvatarUrl,
-                        FormatServer(),
+                        FormatState(),
                         creator ?? _lastGameCreator,
                         placeId);
                 }
@@ -275,17 +280,17 @@ public partial class HomeViewModel : ViewModelBase
             _lastGameIconUrl            = null;
             _lastGameCreator            = null;
             _discord.ResetGameTimestamp();
-            _discord.SetInGamePresence("Roblox", null, _userAvatarUrl, null, null, placeId);
+            _discord.SetInGamePresence("Roblox", null, _userAvatarUrl, FormatState(), null, placeId);
 
             try
             {
-                var (name, iconUrl, creator) = await _robloxApi.GetGameInfoAsync(placeId);
+                var (name, iconUrl, creator) = await _robloxApi.GetGameInfoAsync(placeId, newUniverseId);
                 if (Interlocked.Read(ref _joinSequence) != seq || !_gameDetected) return;
 
                 _lastGameName    = name;
                 _lastGameIconUrl = iconUrl;
                 _lastGameCreator = creator;
-                _discord.SetInGamePresence(name, iconUrl, _userAvatarUrl, FormatServer(), creator, placeId);
+                _discord.SetInGamePresence(name, iconUrl, _userAvatarUrl, FormatState(), creator, placeId);
 
                 var entry = new GameHistoryEntry { PlaceId = placeId, Name = name, IconUrl = iconUrl, PlayedAt = DateTime.Now };
                 _history.Add(entry);
@@ -351,7 +356,7 @@ public partial class HomeViewModel : ViewModelBase
         {
             if (!connected) return;
             if (_gameDetected)
-                _discord.SetInGamePresence(_lastGameName ?? "Roblox", _lastGameIconUrl, _userAvatarUrl, FormatServer(), _lastGameCreator, _lastPlaceId);
+                _discord.SetInGamePresence(_lastGameName ?? "Roblox", _lastGameIconUrl, _userAvatarUrl, FormatState(), _lastGameCreator, _lastPlaceId);
             else
                 _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
         };
@@ -501,15 +506,20 @@ public partial class HomeViewModel : ViewModelBase
         catch { }
     }
 
-    // "JP → US Server │ 12 Flags" / "US Server │ 12 Flags" / null
-    private string? FormatServer()
+    // "JP → US Server · 12 Flags" / "US Server" / "12 Flags" / null
+    private string? FormatState()
     {
-        if (_currentServerCode == null) return null;
+        var flagCount = _fastFlags.GetAll().Count;
+        var flagStr   = flagCount > 0 ? $"{flagCount} Flags" : null;
+
+        if (_currentServerCode == null)
+            return flagStr;
+
         var server = _myCountryCode != null
             ? $"{_myCountryCode} → {_currentServerCode} Server"
             : $"{_currentServerCode} Server";
-        var flagCount = _fastFlags.GetAll().Count;
-        return $"{server} · {flagCount} Flags";
+
+        return flagStr != null ? $"{server} · {flagStr}" : server;
     }
     partial void OnIsRobloxRunningChanged(bool value)
     {

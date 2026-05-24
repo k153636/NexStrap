@@ -15,17 +15,18 @@ public class RobloxApiService
     private readonly Dictionary<long, string?> _avatarCache = new();
     private readonly Dictionary<long, long>    _universeIdCache = new();
 
-    public async Task<(string name, string? iconUrl, string? creator)> GetGameInfoAsync(long placeId)
+    public async Task<(string name, string? iconUrl, string? creator)> GetGameInfoAsync(long placeId, long universeId = 0)
     {
         if (_gameCache.TryGetValue(placeId, out var cached)) return cached;
 
         try
         {
-            var universeId = await GetUniverseIdAsync(placeId);
-            if (universeId == null) return ("Roblox", null, null);
+            // universeId がログから直接取得できていれば API 呼び出しをスキップ
+            long? resolvedUniverseId = universeId > 0 ? universeId : await GetUniverseIdAsync(placeId);
+            if (resolvedUniverseId == null) return ("Roblox", null, null);
 
-            var (name, creator) = await GetGameNameAndCreatorAsync(universeId.Value);
-            var iconUrl         = await GetGameIconUrlAsync(universeId.Value);
+            var (name, creator) = await GetGameNameAndCreatorAsync(resolvedUniverseId.Value);
+            var iconUrl         = await GetGameIconUrlAsync(resolvedUniverseId.Value);
 
             var result = (name ?? "Roblox", iconUrl, creator);
             // 失敗結果（name="Roblox" かつ iconUrl=null）はキャッシュしない

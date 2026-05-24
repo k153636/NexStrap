@@ -17,7 +17,7 @@ public class RobloxLogWatcher : IDisposable
     private readonly object _lock = new();
     private readonly Func<bool> _isRobloxRunningFunc;
 
-    public event EventHandler<long>?   PlaceJoined;
+    public event EventHandler<(long placeId, long universeId)>? PlaceJoined;
     public event EventHandler<long>?   UserIdDetected;
     public event EventHandler?         GameLeft;
     public event EventHandler<string>? ServerIpDetected;
@@ -37,6 +37,10 @@ public class RobloxLogWatcher : IDisposable
     // GameJoinLoadTime 行に含まれる userid:XXXXXXXXXX
     private static readonly Regex UserIdPattern =
         new(@"\buserid:(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    // GameJoinLoadTime 行に含まれる universeid:XXXXXXXXXX
+    private static readonly Regex UniverseIdPattern =
+        new(@"\buniverseid:(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     // UDMUX Address = X.X.X.X (ゲームサーバーIP)
     private static readonly Regex UdmuxPattern =
@@ -77,19 +81,19 @@ public class RobloxLogWatcher : IDisposable
         {
             if (_isRobloxRunningFunc())
             {
-                var (placeId, userId, ip) = ScanForLastPlaceIdAndUser(latest);
+                var (placeId, userId, universeId, ip) = ScanForLastPlaceIdAndUser(latest);
                 if (userId > 0) { _detectedUserId = userId; UserIdDetected?.Invoke(this, userId); }
-                if (placeId > 0) { _lastPlaceId = placeId; _wasRunning = true; PlaceJoined?.Invoke(this, placeId); }
+                if (placeId > 0) { _lastPlaceId = placeId; _wasRunning = true; PlaceJoined?.Invoke(this, (placeId, universeId)); }
                 if (!string.IsNullOrEmpty(ip)) { _detectedIp = ip; ServerIpDetected?.Invoke(this, ip); }
             }
             StartWatchingFile(latest, fromEnd: true);
         }
 
-        // ログ行ポーリング（1秒ごと）
-        _pollTimer = new Timer(_ => PollLogFile(), null, 1000, 1000);
+        // ログ行ポーリング（250msごと）
+        _pollTimer = new Timer(_ => PollLogFile(), null, 250, 250);
 
-        // 新ログファイル検知（FileSystemWatcherの代わりに定期スキャン、2秒ごと）
-        _scanTimer = new Timer(_ => CheckForNewLogFile(), null, 2000, 2000);
+        // 新ログファイル検知（FileSystemWatcherの代わりに定期スキャン、500msごと）
+        _scanTimer = new Timer(_ => CheckForNewLogFile(), null, 500, 500);
 
         // プロセス終了フォールバック（5秒ごと）
         _processTimer = new Timer(_ => CheckProcessExit(), null, 5000, 5000);
@@ -127,8 +131,8 @@ public class RobloxLogWatcher : IDisposable
         }
         else
         {
-            _pollTimer?.Change(1_000, 1_000);
-            _scanTimer?.Change(2_000, 2_000);
+            _pollTimer?.Change(250, 250);
+            _scanTimer?.Change(500, 500);
             _processTimer?.Change(5_000, 5_000);
         }
     }
@@ -141,11 +145,15 @@ public class RobloxLogWatcher : IDisposable
 
         var latest = GetLatestLogFile();
         if (latest == null) return;
+        bool switched;
         lock (_lock)
         {
             if (latest == _watchedFile) return;
             StartWatchingFileUnsafe(latest, fromEnd: false);
+            switched = true;
         }
+        // 新ファイルを即座にポーリングしてゲーム参加を素早く検知
+        if (switched) PollLogFile();
     }
 
     private void StartWatchingFile(string path, bool fromEnd)
@@ -162,9 +170,9 @@ public class RobloxLogWatcher : IDisposable
         _filePosition   = fromEnd ? GetFileLength(path) : 0;
     }
 
-    private (long placeId, long userId, string ip) ScanForLastPlaceIdAndUser(string path)
+    private (long placeId, long userId, long universeId, string ip) ScanForLastPlaceIdAndUser(string path)
     {
-        long foundPlace = 0, foundUser = 0;
+        long foundPlace = 0, foundUser = 0, foundUniverse = 0;
         string foundIp = string.Empty;
         try
         {
@@ -173,11 +181,19 @@ public class RobloxLogWatcher : IDisposable
             string? line;
             while ((line = reader.ReadLine()) != null)
             {
+                bool matchedPlace = false;
                 foreach (var pattern in PlaceIdPatterns)
                 {
                     var m = pattern.Match(line);
                     if (m.Success && long.TryParse(m.Groups[1].Value, out var id) && id > 0)
-                    { foundPlace = id; break; }
+                    { foundPlace = id; matchedPlace = true; break; }
+                }
+                // universeid: は placeid: と同じ行（GameJoinLoadTime）にある
+                if (matchedPlace)
+                {
+                    var um = UniverseIdPattern.Match(line);
+                    foundUniverse = um.Success && long.TryParse(um.Groups[1].Value, out var uid) && uid > 0
+                        ? uid : 0;
                 }
                 if (foundUser == 0)
                 {
@@ -190,7 +206,7 @@ public class RobloxLogWatcher : IDisposable
             }
         }
         catch { }
-        return (foundPlace, foundUser, foundIp);
+        return (foundPlace, foundUser, foundUniverse, foundIp);
     }
 
     private void PollLogFile()
@@ -223,10 +239,11 @@ public class RobloxLogWatcher : IDisposable
 
     private void ProcessLine(string line)
     {
-        long   fireUserId  = 0;
-        long   firePlaceId = 0;
-        bool   fireLeave   = false;
-        string fireIp      = string.Empty;
+        long   fireUserId    = 0;
+        long   firePlaceId   = 0;
+        long   fireUniverseId = 0;
+        bool   fireLeave     = false;
+        string fireIp        = string.Empty;
 
         lock (_lock)
         {
@@ -248,6 +265,10 @@ public class RobloxLogWatcher : IDisposable
                 if (placeId <= 0 || placeId == _lastPlaceId) continue;
                 _lastPlaceId = placeId;
                 firePlaceId = placeId;
+                // universeid: は placeid: と同じ行（GameJoinLoadTime）にある
+                var uum = UniverseIdPattern.Match(line);
+                if (uum.Success && long.TryParse(uum.Groups[1].Value, out var universeId) && universeId > 0)
+                    fireUniverseId = universeId;
                 break;
             }
 
@@ -278,7 +299,7 @@ public class RobloxLogWatcher : IDisposable
 
         // イベント発火はロック外で行う（デッドロック防止）
         if (fireUserId > 0)             UserIdDetected?.Invoke(this, fireUserId);
-        if (firePlaceId > 0)            PlaceJoined?.Invoke(this, firePlaceId);
+        if (firePlaceId > 0)            PlaceJoined?.Invoke(this, (firePlaceId, fireUniverseId));
         if (!string.IsNullOrEmpty(fireIp)) ServerIpDetected?.Invoke(this, fireIp);
         if (fireLeave)                  GameLeft?.Invoke(this, EventArgs.Empty);
     }
