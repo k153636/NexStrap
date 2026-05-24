@@ -1,26 +1,33 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
 using NexStrap.Core.Services;
 
 namespace NexStrap.Views;
 
+// DataContext = this だと INotifyPropertyChanged が効かないため専用 VM を使う
+internal sealed partial class OverlayViewModel : ObservableObject
+{
+    [ObservableProperty] private double _cpuPercent;
+    [ObservableProperty] private double _memoryPercent;
+    [ObservableProperty] private string _cpuText    = "0%";
+    [ObservableProperty] private string _memoryText = "0 MB";
+}
+
 public partial class PerformanceOverlayWindow : Window
 {
     private readonly PerformanceMonitorService _monitor;
+    private readonly OverlayViewModel _vm = new();
 
-    public double CpuPercent { get; private set; }
-    public double MemoryPercent { get; private set; }
-    public string CpuText { get; private set; } = "0%";
-    public string MemoryText { get; private set; } = "0 MB";
+    public PerformanceOverlayWindow() : this(null!) { }
 
     public PerformanceOverlayWindow(PerformanceMonitorService monitor)
     {
         InitializeComponent();
-        _monitor = monitor;
-        DataContext = this;
+        _monitor    = monitor;
+        DataContext = _vm;
 
-        // 画面右上に配置
         var screen = Screens.Primary;
         if (screen != null)
         {
@@ -36,12 +43,10 @@ public partial class PerformanceOverlayWindow : Window
     {
         Dispatcher.UIThread.InvokeAsync(() =>
         {
-            CpuPercent    = stats.CpuPercent;
-            MemoryPercent = Math.Min(100, stats.MemoryMb / 80.0); // 8GB を 100% とする目安
-            CpuText       = $"{stats.CpuPercent:F0}%";
-            MemoryText    = $"{stats.MemoryMb}MB";
-            DataContext   = null;
-            DataContext   = this;
+            _vm.CpuPercent    = stats.CpuPercent;
+            _vm.MemoryPercent = Math.Min(100, stats.MemoryMb / 80.0);
+            _vm.CpuText       = $"{stats.CpuPercent:F0}%";
+            _vm.MemoryText    = $"{stats.MemoryMb}MB";
         });
     }
 

@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="NexStrap.Views.PerformanceOverlayWindow"
         Title="NexStrap Overlay"
@@ -13,11 +13,11 @@
 
     <Border Background="#CC000000" CornerRadius="10" Margin="8">
         <StackPanel Spacing="6" Margin="12,10">
-            <TextBlock Text="NexStrap" FontSize="9" Foreground="#505050"
+            <TextBlock Text="NexStrap" FontSize="9" Foreground="{DynamicResource MutedBrush}"
                        FontWeight="SemiBold" HorizontalAlignment="Center"/>
             <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="CPU" FontSize="11"
-                           Foreground="#888888" Margin="0,0,8,0"/>
+                           Foreground="{DynamicResource SubtextBrush}" Margin="0,0,8,0"/>
                 <ProgressBar Grid.Row="0" Grid.Column="1" Value="{Binding CpuPercent}"
                              Minimum="0" Maximum="100" Height="4"
                              VerticalAlignment="Center" Foreground="#FFFFFF" Background="#333333"/>
@@ -26,11 +26,11 @@
                            TextAlignment="Right"/>
 
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="RAM" FontSize="11"
-                           Foreground="#888888" Margin="0,4,8,0"/>
+                           Foreground="{DynamicResource SubtextBrush}" Margin="0,4,8,0"/>
                 <ProgressBar Grid.Row="1" Grid.Column="1" Value="{Binding MemoryPercent}"
                              Minimum="0" Maximum="100" Height="4"
                              VerticalAlignment="Center" Margin="0,4,0,0"
-                             Foreground="#CCCCCC" Background="#333333"/>
+                             Foreground="{DynamicResource TextBrush}" Background="#333333"/>
                 <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding MemoryText}"
                            FontSize="11" Foreground="#FFFFFF" Margin="8,4,0,0" Width="36"
                            TextAlignment="Right"/>
