@@ -17,6 +17,8 @@ public partial class DiscordViewModel : ViewModelBase
     [ObservableProperty] private bool _showJoinButton;
     [ObservableProperty] private bool _showLauncherPresence;
     [ObservableProperty] private bool _showLauncherDetails;
+    [ObservableProperty] private bool _showServerRegion;
+    [ObservableProperty] private bool _showFlagCount;
 
     public DiscordViewModel(SettingsService settingsService, DiscordRpcService discord, RobloxApiService robloxApi)
     {
@@ -33,6 +35,8 @@ public partial class DiscordViewModel : ViewModelBase
         _showJoinButton         = s.DiscordShowJoinButton;
         _showLauncherPresence   = s.DiscordShowLauncherPresence;
         _showLauncherDetails    = s.DiscordShowLauncherDetails;
+        _showServerRegion       = s.DiscordShowServerRegion;
+        _showFlagCount          = s.DiscordShowFlagCount;
     }
 
     partial void OnDiscordRpcEnabledChanged(bool value)
@@ -66,6 +70,12 @@ public partial class DiscordViewModel : ViewModelBase
 
     partial void OnShowLauncherDetailsChanged(bool value)
         => _settingsService.Update(s => s.DiscordShowLauncherDetails = value);
+
+    partial void OnShowServerRegionChanged(bool value)
+        => _settingsService.Update(s => s.DiscordShowServerRegion = value);
+
+    partial void OnShowFlagCountChanged(bool value)
+        => _settingsService.Update(s => s.DiscordShowFlagCount = value);
 
     private async Task ApplyUserLabelAsync()
     {

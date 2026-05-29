@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text.Json;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -53,6 +54,8 @@ public partial class FastFlagsViewModel : ViewModelBase
     [ObservableProperty] private string _newProfileName = string.Empty;
     [ObservableProperty] private bool _isPresetPanelOpen;
     [ObservableProperty] private bool _isPresetActive;
+    [ObservableProperty] private bool _isBulkImportPanelOpen;
+    [ObservableProperty] private string _bulkImportText = string.Empty;
 
     public IReadOnlyList<PresetGroup> PresetGroups => FastFlagBundles.Groups;
 
@@ -287,6 +290,95 @@ public partial class FastFlagsViewModel : ViewModelBase
 
     [RelayCommand]
     private void TogglePresetPanel() => IsPresetPanelOpen = !IsPresetPanelOpen;
+
+    [RelayCommand]
+    private void ToggleBulkImportPanel()
+    {
+        IsBulkImportPanelOpen = !IsBulkImportPanelOpen;
+        if (IsBulkImportPanelOpen) IsPresetPanelOpen = false;
+    }
+
+    [RelayCommand]
+    private async Task BulkImportAsync()
+    {
+        var text = BulkImportText.Trim();
+        if (string.IsNullOrEmpty(text))
+        {
+            await ShowStatusAsync("Nothing to import", isError: true);
+            return;
+        }
+
+        var parsed = TryParseFlags(text);
+        if (parsed == null || parsed.Count == 0)
+        {
+            await ShowStatusAsync("Could not parse flags — use JSON or Key=Value format", isError: true);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(_service.GetSavePath()))
+        {
+            await ShowStatusAsync("Roblox not found", isError: true);
+            return;
+        }
+
+        foreach (var (key, val) in parsed)
+        {
+            _service.Set(key, val);
+            var existing = _allFlags.FirstOrDefault(f => f.Name == key);
+            if (existing != null)
+                existing.Value = val;
+            else
+            {
+                var (desc, cat) = FlagDescriptions.Lookup(key);
+                _allFlags.Add(new FlagEntry(key, val)
+                    { Description = desc, Category = cat, DeleteAction = RemoveFlagAsync });
+            }
+        }
+
+        ApplyFilter();
+        await _service.SaveAsync();
+        BulkImportText = string.Empty;
+        IsBulkImportPanelOpen = false;
+        await ShowStatusAsync($"Imported {parsed.Count} flag{(parsed.Count == 1 ? "" : "s")}");
+    }
+
+    private static Dictionary<string, string>? TryParseFlags(string text)
+    {
+        // JSON object
+        text = text.Trim();
+        if (text.StartsWith('{'))
+        {
+            try
+            {
+                var doc = JsonDocument.Parse(text);
+                var result = new Dictionary<string, string>();
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                {
+                    var val = prop.Value.ValueKind == JsonValueKind.String
+                        ? prop.Value.GetString() ?? ""
+                        : prop.Value.GetRawText();
+                    result[prop.Name] = val;
+                }
+                return result.Count > 0 ? result : null;
+            }
+            catch { return null; }
+        }
+
+        // Key=Value per line
+        var dict = new Dictionary<string, string>();
+        foreach (var line in text.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith('#')) continue;
+            var sep = trimmed.IndexOf('=');
+            if (sep <= 0) continue;
+            var key = trimmed[..sep].Trim();
+            var val = trimmed[(sep + 1)..].Trim();
+            if (!string.IsNullOrEmpty(key))
+                dict[key] = val;
+        }
+        return dict.Count > 0 ? dict : null;
+    }
 
     [RelayCommand]
     private async Task TogglePresetAsync()

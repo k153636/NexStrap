@@ -526,10 +526,12 @@ public partial class HomeViewModel : ViewModelBase
     // "JP → US Server · 12 Flags" / "US Server" / "12 Flags" / null
     private string? FormatState()
     {
-        var flagCount = _fastFlags.GetAll().Count;
-        var flagStr   = flagCount > 0 ? $"{flagCount} Flags" : null;
+        var s = _settings.Settings;
 
-        if (_currentServerCode == null)
+        var flagCount = _fastFlags.GetAll().Count;
+        var flagStr   = s.DiscordShowFlagCount && flagCount > 0 ? $"{flagCount} Flags" : null;
+
+        if (!s.DiscordShowServerRegion || _currentServerCode == null)
             return flagStr;
 
         var server = _myCountryCode != null

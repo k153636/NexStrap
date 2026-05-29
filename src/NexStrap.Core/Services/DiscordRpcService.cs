@@ -146,6 +146,7 @@ public class DiscordRpcService : IDisposable
 
     public void SetUpdatingPresence(string? userAvatarUrl = null)
     {
+        if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
         string? label; lock (_lock) { label = _userLabel; }
         SetPresence(
             details: "Roblox updating",

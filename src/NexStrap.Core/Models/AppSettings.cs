@@ -31,6 +31,8 @@ public class AppSettings
     public bool DiscordShowJoinButton { get; set; } = true;
     public bool DiscordShowLauncherPresence { get; set; } = true;
     public bool DiscordShowLauncherDetails { get; set; } = true;
+    public bool DiscordShowServerRegion { get; set; } = true;
+    public bool DiscordShowFlagCount { get; set; } = true;
     public bool StartWithWindows { get; set; } = false;
     public double BackgroundVignetteIntensity { get; set; } = 0.0;
     public double BackgroundVignetteRange { get; set; } = 0.15;

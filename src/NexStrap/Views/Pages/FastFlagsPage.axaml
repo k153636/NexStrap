@@ -49,7 +49,7 @@
 
         <!-- Controls -->
         <Grid Grid.Row="2" Margin="24,0,24,8"
-              ColumnDefinitions="*,8,Auto,8,Auto,8,Auto,8,Auto">
+              ColumnDefinitions="*,8,Auto,8,Auto,8,Auto,8,Auto,8,Auto">
             <TextBox Grid.Column="0" Text="{Binding SearchText}"
                      Watermark="Search..." Background="{DynamicResource SurfaceBg}" BorderBrush="#2E2E2E"
                      Foreground="#FFFFFF" CornerRadius="10" Padding="12,7" FontSize="12"/>
@@ -64,7 +64,14 @@
                         ConverterParameter='#2A2A2A,#141414'}"
                     Foreground="{DynamicResource TextBrush}"
                     FontSize="12" Padding="12,7" CornerRadius="10"/>
-            <Button Grid.Column="6" Command="{Binding HotReloadCommand}"
+            <Button Grid.Column="6" Content="Bulk Import"
+                    Command="{Binding ToggleBulkImportPanelCommand}"
+                    Background="{Binding IsBulkImportPanelOpen,
+                        Converter={StaticResource BoolToColorConverter},
+                        ConverterParameter='#2A2A2A,#141414'}"
+                    Foreground="{DynamicResource TextBrush}"
+                    FontSize="12" Padding="12,7" CornerRadius="10"/>
+            <Button Grid.Column="8" Command="{Binding HotReloadCommand}"
                     Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
                     Padding="12,7" CornerRadius="10">
                 <StackPanel Orientation="Horizontal" Spacing="5">
@@ -72,7 +79,7 @@
                     <TextBlock Text="Hot Reload" FontSize="12"/>
                 </StackPanel>
             </Button>
-            <Button Grid.Column="8" Command="{Binding SaveCommand}"
+            <Button Grid.Column="10" Command="{Binding SaveCommand}"
                     IsEnabled="{Binding !IsSaving}"
                     Background="#FFFFFF" Foreground="#080808"
                     Padding="16,7" CornerRadius="10">
@@ -164,6 +171,44 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Bulk Import Panel Overlay -->
+        <Border Grid.Row="3" Grid.RowSpan="2"
+                IsVisible="{Binding IsBulkImportPanelOpen}"
+                Background="#CC080808" CornerRadius="12"
+                Margin="24,0,24,0" ZIndex="10"
+                IsHitTestVisible="{Binding IsBulkImportPanelOpen}">
+            <Grid RowDefinitions="Auto,*,Auto" Margin="16,14">
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                    <StackPanel Grid.Column="0" Spacing="2">
+                        <TextBlock Text="Bulk Import" FontSize="14" FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                        <TextBlock Text="Paste JSON or Key=Value per line" FontSize="11" Foreground="{DynamicResource MutedBrush}"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="✕"
+                            Command="{Binding ToggleBulkImportPanelCommand}"
+                            Background="Transparent" Foreground="{DynamicResource MutedBrush}"
+                            Padding="6,2" FontSize="13" CornerRadius="6"/>
+                </Grid>
+                <TextBox Grid.Row="1"
+                         Text="{Binding BulkImportText}"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         Watermark='{}{&#10;  "FFlagExample": "true",&#10;  "DFIntExample": "60"&#10;}'
+                         Background="#0D0D0D" Foreground="#CCCCCC"
+                         BorderBrush="#2E2E2E" CornerRadius="8"
+                         Padding="12,10"
+                         FontFamily="Consolas,Courier New,monospace"
+                         FontSize="12"
+                         VerticalContentAlignment="Top"/>
+                <Button Grid.Row="2"
+                        Content="Import"
+                        Command="{Binding BulkImportCommand}"
+                        HorizontalAlignment="Stretch"
+                        Background="#FFFFFF" Foreground="#080808"
+                        FontWeight="SemiBold" FontSize="13"
+                        Padding="0,10" CornerRadius="8" Margin="0,10,0,0"/>
             </Grid>
         </Border>
 

@@ -92,6 +92,26 @@
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowJoinButton}"
                                       OnContent="ON" OffContent="OFF"/>
                     </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Show server region" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Shows your country → server region (e.g. JP → US Server)"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowServerRegion}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Show Fast Flags count" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Shows the number of active Fast Flags (e.g. 12 Flags)"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowFlagCount}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
                 </StackPanel>
             </Border>
 
