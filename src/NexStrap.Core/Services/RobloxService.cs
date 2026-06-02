@@ -869,6 +869,8 @@ public class RobloxService
     /// ChangeDisplaySettings と違い完全モード再設定を行うため
     /// Intel/NVIDIA ドライバーのデフォルトパネルスケール（フルパネル）が適用され黒帯が出ない。
     /// </summary>
+    private const uint INTERNAL_DISPLAY = 0x80000000; // DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INTERNAL
+
     private bool ApplyResolutionViaSetDisplayConfig(int width, int height)
     {
         try
@@ -885,28 +887,46 @@ public class RobloxService
                     uint np2 = np, nm2 = nm;
                     if (QueryDisplayConfigPtr(qf, ref np2, pBuf, ref nm2, mBuf, IntPtr.Zero) != 0) continue;
 
-                    // ソースモード (infoType == 1) の width/height を変更
-                    // DISPLAYCONFIG_MODE_INFO: infoType(4)+id(4)+adapterId(8)+union(offset 16~)
-                    // DISPLAYCONFIG_SOURCE_MODE: width(4) at union+0, height(4) at union+4
+                    // 内蔵パネル (INTERNAL) のパスが参照するソースモードインデックスを収集
+                    // デュアルモニター時に外部モニター非対応解像度で全体が失敗するのを防ぐ
+                    var internalSrcIdx = new System.Collections.Generic.HashSet<int>();
+                    for (int i = 0; i < np2; i++)
+                    {
+                        uint outTech = (uint)Marshal.ReadInt32(pBuf, i * PATH_SIZE + PATH_TGT_OTECH);
+                        if (outTech == INTERNAL_DISPLAY)
+                        {
+                            int srcModeIdx = Marshal.ReadInt32(pBuf, i * PATH_SIZE + PATH_SRC_MIDX) & 0xFFFF;
+                            internalSrcIdx.Add(srcModeIdx);
+                            Log($"  Internal path[{i}] srcModeIdx={srcModeIdx} outTech=0x{outTech:X}");
+                        }
+                        else
+                        {
+                            Log($"  External path[{i}] outTech=0x{outTech:X} — skipping");
+                        }
+                    }
+
+                    if (internalSrcIdx.Count == 0) { Log("No internal display found"); continue; }
+
+                    // 内蔵パネルのソースモードのみ変更
                     bool changed = false;
                     for (int i = 0; i < nm2; i++)
                     {
                         int baseOff = i * modeSize;
-                        uint infoType = (uint)Marshal.ReadInt32(mBuf, baseOff);
-                        if (infoType != 1) continue; // 1 = SOURCE mode
+                        if ((uint)Marshal.ReadInt32(mBuf, baseOff) != 1) continue; // SOURCE mode only
+                        if (!internalSrcIdx.Contains(i)) continue; // internal only
 
                         int origW = Marshal.ReadInt32(mBuf, baseOff + 16);
                         int origH = Marshal.ReadInt32(mBuf, baseOff + 20);
-                        Log($"  mode[{i}] modeSize={modeSize} SOURCE {origW}x{origH} → {width}x{height}");
+                        Log($"  Modifying mode[{i}] modeSize={modeSize} {origW}x{origH} → {width}x{height}");
                         Marshal.WriteInt32(mBuf, baseOff + 16, width);
                         Marshal.WriteInt32(mBuf, baseOff + 20, height);
                         changed = true;
                     }
-                    if (!changed) { Log($"No SOURCE mode found (modeSize={modeSize})"); continue; }
+                    if (!changed) { Log($"No internal SOURCE mode found (modeSize={modeSize})"); continue; }
 
                     uint flags = SDC_SUPPLIED | SDC_APPLY | SDC_CHANGES | SDC_NO_OPT | SDC_VMAWARE;
                     var r = SetDisplayConfigPtr(np2, pBuf, nm2, mBuf, flags);
-                    Log($"SetDisplayConfig resolution {width}x{height} (modeSize={modeSize}) result={r}");
+                    Log($"SetDisplayConfig internal resolution {width}x{height} (modeSize={modeSize}) result={r}");
                     if (r == 0) return true;
                 }
                 finally { Marshal.FreeHGlobal(pBuf); Marshal.FreeHGlobal(mBuf); }
