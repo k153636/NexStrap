@@ -811,29 +811,31 @@ public class RobloxService
     [StructLayout(LayoutKind.Sequential)]
     private struct ScPathSrc { public ScLuid adapterId; public uint id, modeIdx, flags; }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     private struct ScPathTgt {
-        public ScLuid adapterId;
-        public uint id, modeIdx, outTech, rotation;
-        public uint scaling;          // DISPLAYCONFIG_SCALING
-        public ScRational refreshRate;
-        public uint scanLineOrder;
-        [MarshalAs(UnmanagedType.Bool)] public bool available;
-        public uint statusFlags;
-    }
+        public ScLuid adapterId;                           // 8
+        public uint id, modeIdx, outTech, rotation;        // 4×4=16
+        public uint scaling;                               // 4  ← DISPLAYCONFIG_SCALING
+        public ScRational refreshRate;                     // 8
+        public uint scanLineOrder;                         // 4
+        public byte available;                             // 1  ← BOOLEAN は BYTE (1バイト)
+        public byte _pad0, _pad1, _pad2;                   // 3  padding
+        public uint statusFlags;                           // 4
+    }   // total = 48 bytes
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     private struct ScPath { public ScPathSrc src; public ScPathTgt tgt; public uint flags; }
+    // total = 20 + 48 + 4 = 72 bytes
 
-    [StructLayout(LayoutKind.Explicit, Size = 80)]
+    [StructLayout(LayoutKind.Explicit, Size = 64)]
     private struct ScMode {
+        // DISPLAYCONFIG_MODE_INFO = 4(infoType)+4(id)+8(luid)+48(union) = 64 bytes
         [FieldOffset( 0)] public uint infoType;
         [FieldOffset( 4)] public uint id;
         [FieldOffset( 8)] public ScLuid adapterId;
         [FieldOffset(16)] public long _u0; [FieldOffset(24)] public long _u1;
         [FieldOffset(32)] public long _u2; [FieldOffset(40)] public long _u3;
         [FieldOffset(48)] public long _u4; [FieldOffset(56)] public long _u5;
-        [FieldOffset(64)] public long _u6; [FieldOffset(72)] public long _u7;
     }
 
     [DllImport("user32.dll")] private static extern uint GetDisplayConfigBufferSizes(uint flags, out uint paths, out uint modes);
