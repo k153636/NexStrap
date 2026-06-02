@@ -13,11 +13,12 @@
                        Foreground="#FFFFFF" Margin="0,0,0,2"/>
 
             <!-- Status bar -->
-            <Border CornerRadius="10" Padding="14,10"
-                    Background="{Binding IsActive, Converter={x:Static BoolConverters.Select}, ConverterParameter='#1A4ADE80,#0DFFFFFF'}">
+            <Border CornerRadius="10" Padding="14,10" Background="{DynamicResource CardBg}">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <Ellipse Grid.Column="0" Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,10,0"
-                             Fill="{Binding IsActive, Converter={x:Static BoolConverters.Select}, ConverterParameter='#4ADE80,#505050'}"/>
+                             Fill="#4ADE80" IsVisible="{Binding IsActive}"/>
+                    <Ellipse Grid.Column="0" Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,10,0"
+                             Fill="#505050" IsVisible="{Binding IsActive, Converter={x:Static BoolConverters.Not}}"/>
                     <TextBlock Grid.Column="1" Text="{Binding StatusText}"
                                Foreground="#FFFFFF" FontSize="13" VerticalAlignment="Center"/>
                     <Button Grid.Column="2" Content="Restore" Command="{Binding RestoreCommand}"
@@ -63,16 +64,15 @@
                     <ItemsControl ItemsSource="{Binding Presets}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal" HorizontalGap="8" VerticalGap="8"/>
+                                <WrapPanel Orientation="Horizontal"/>
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="vm:ResolutionPreset">
                                 <Button Command="{Binding $parent[ItemsControl].((vm:StretchResolutionViewModel)DataContext).SelectPresetCommand}"
                                         CommandParameter="{Binding}"
-                                        Padding="0" CornerRadius="10" BorderThickness="1.5"
-                                        BorderBrush="{Binding $parent[ItemsControl].((vm:StretchResolutionViewModel)DataContext).SelectedPreset,
-                                                     Converter={x:Static ObjectConverters.IsNotNull}}"
+                                        Margin="0,0,8,8"
+                                        Padding="0" CornerRadius="10"
                                         Background="{DynamicResource CardBg}">
                                     <StackPanel Spacing="4" Margin="14,10">
                                         <TextBlock Text="{Binding Label}" Foreground="#FFFFFF"

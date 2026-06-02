@@ -98,7 +98,7 @@
 
                 <ui:NavigationViewItem Content="Stretch" Tag="Stretch">
                     <ui:NavigationViewItem.IconSource>
-                        <ui:SymbolIconSource Symbol="Resize"/>
+                        <ui:SymbolIconSource Symbol="Crop"/>
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
