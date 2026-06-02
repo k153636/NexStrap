@@ -11,13 +11,13 @@
 
         <!-- Multi Instance warning banner -->
         <Border Grid.Row="0" Margin="24,12,24,0"
-                Background="#33FF9500" CornerRadius="10" Padding="14,10"
+                Background="#111111" CornerRadius="10" Padding="14,10"
                 IsVisible="{Binding IsMultiInstanceWarningVisible}">
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10"
                             VerticalAlignment="Center">
-                    <TextBlock Text="⚠" FontSize="14" Foreground="#FF9500" VerticalAlignment="Center"/>
-                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#FFCC66"
+                    <TextBlock Text="⚠" FontSize="14" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#888888"
                                VerticalAlignment="Center">
                         <Run Text="Multi Instance が有効です。複数インスタンスを使用する場合、"/>
                         <Run Text="Roblox 側で手動ログインが必要になります。"/>
@@ -25,7 +25,7 @@
                 </StackPanel>
                 <Button Grid.Column="1" Content="✕"
                         Command="{Binding DismissMultiInstanceWarningCommand}"
-                        Background="Transparent" Foreground="#FF9500"
+                        Background="Transparent" Foreground="#888888"
                         Padding="6,4" FontSize="13" CornerRadius="6"
                         VerticalAlignment="Center"/>
             </Grid>
