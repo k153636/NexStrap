@@ -45,7 +45,12 @@ class Program
         RequestHighPerformanceGpu();
 
         using var mutex = new Mutex(true, "NexStrap_SingleInstance", out bool createdNew);
-        if (!createdNew) return;
+        if (!createdNew)
+        {
+            // 既に起動中 → 既存ウィンドウを前面に表示してから終了
+            BringExistingWindowToFront();
+            return;
+        }
 
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
             WriteCrashLog("UnhandledException", e.ExceptionObject as Exception);
@@ -232,6 +237,25 @@ class Program
             using var key = Registry.CurrentUser.CreateSubKey(
                 @"Software\Microsoft\DirectX\UserGpuPreferences");
             key.SetValue(exePath, "GpuPreference=2;", RegistryValueKind.String);
+        }
+        catch { }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h, int cmd);
+
+    private static void BringExistingWindowToFront()
+    {
+        try
+        {
+            var existing = System.Diagnostics.Process.GetProcessesByName("NexStrap")
+                .Where(p => p.Id != Environment.ProcessId && !p.HasExited)
+                .FirstOrDefault();
+            if (existing == null) return;
+            var hwnd = existing.MainWindowHandle;
+            if (hwnd == IntPtr.Zero) return;
+            ShowWindow(hwnd, 9); // SW_RESTORE
+            SetForegroundWindow(hwnd);
         }
         catch { }
     }

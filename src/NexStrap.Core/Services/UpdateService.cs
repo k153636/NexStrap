@@ -9,7 +9,7 @@ public class UpdateService
     private const string GithubApiUrl = "https://api.github.com/repos/k153636/NexStrap/releases/latest";
     private const string AssetName    = "NexStrap.exe";
 
-    private static readonly HttpClient Http = new();
+    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(10) };
 
     static UpdateService()
     {
