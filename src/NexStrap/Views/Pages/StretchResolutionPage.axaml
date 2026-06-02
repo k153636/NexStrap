@@ -71,8 +71,8 @@
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="vm:ResolutionPreset">
-                                <Button Command="{Binding $parent[ItemsControl].((vm:StretchResolutionViewModel)DataContext).SelectPresetCommand}"
+                            <DataTemplate>
+                                <Button Command="{Binding $parent[ItemsControl].DataContext.SelectPresetCommand}"
                                         CommandParameter="{Binding}"
                                         Margin="0,0,8,8"
                                         Padding="0" CornerRadius="10"
