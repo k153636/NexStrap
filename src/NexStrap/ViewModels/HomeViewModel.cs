@@ -592,7 +592,10 @@ public partial class HomeViewModel : ViewModelBase
             CpuCoreLimit:        s.CpuAffinityEnabled ? s.CpuCoreLimit : 0,
             MemoryOptimization:  s.MemoryOptimizationEnabled,
             CleanupOldVersions:  s.CleanupOldVersions,
-            CookieToInject:      cookie
+            CookieToInject:      cookie,
+            StretchResolution:   s.StretchResolutionEnabled,
+            StretchWidth:        s.StretchResolutionWidth,
+            StretchHeight:       s.StretchResolutionHeight
         );
         var launched = await _roblox.LaunchAsync(launchArgs, autoUpdate: s.AutoUpdateRoblox, options: opts);
         if (!launched)

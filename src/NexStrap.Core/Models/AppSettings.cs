@@ -37,6 +37,11 @@ public class AppSettings
     public double BackgroundVignetteRange { get; set; } = 0.15;
     public string BackgroundVignetteColor { get; set; } = "#000000";
 
+    // Stretched Resolution
+    public bool StretchResolutionEnabled { get; set; } = false;
+    public int  StretchResolutionWidth   { get; set; } = 1280;
+    public int  StretchResolutionHeight  { get; set; } = 960;
+
     // Roblox behavior
     public bool MultiInstanceEnabled    { get; set; } = false;
     public bool SuppressCrashHandler    { get; set; } = true;

@@ -19,7 +19,10 @@ public record LaunchOptions(
     int     CpuCoreLimit         = 0,
     bool    MemoryOptimization   = false,
     bool    CleanupOldVersions   = true,
-    string? CookieToInject       = null   // 起動直前に RobloxCookies.dat へ書き込むクッキー
+    string? CookieToInject       = null,
+    bool    StretchResolution    = false,
+    int     StretchWidth         = 1280,
+    int     StretchHeight        = 960
 );
 
 public class RobloxService
@@ -363,6 +366,10 @@ public class RobloxService
             Log(ok ? "Cookie injected successfully before launch" : "Cookie injection failed (file may be locked)");
         }
 
+        // Stretch Resolution — Roblox 起動前に解像度を変更
+        if (options.StretchResolution)
+            ApplyStretchResolution(options.StretchWidth, options.StretchHeight);
+
         Log($"Launching: {playerPath} args={launchArgs ?? "(none)"}");
         SetStatus(RobloxStatus.Launching);
         var proc = TryStartProcess(playerPath, launchArgs);
@@ -441,6 +448,13 @@ public class RobloxService
         // RobloxCrashHandler 抑制 (起動後に出現するため最大3回リトライ)
         if (opts.SuppressCrashHandler)
         {
+            var hasWindow = await WaitForMainWindowAsync(proc, TimeSpan.FromSeconds(10));
+            if (!hasWindow)
+            {
+                Log("Skipped RobloxCrashHandler suppression because Roblox has no main window");
+                return;
+            }
+
             for (int attempt = 0; attempt < 3; attempt++)
             {
                 await Task.Delay(800);
@@ -457,6 +471,29 @@ public class RobloxService
                 if (handlers.Length > 0) break;
             }
         }
+    }
+
+    private static async Task<bool> WaitForMainWindowAsync(Process proc, TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            try
+            {
+                if (proc.HasExited) return false;
+                proc.Refresh();
+                if (proc.MainWindowHandle != IntPtr.Zero)
+                    return true;
+            }
+            catch
+            {
+                return false;
+            }
+
+            await Task.Delay(500);
+        }
+
+        return false;
     }
 
     // -------------------------------------------------------------------------
@@ -763,6 +800,61 @@ public class RobloxService
     }
 
     // -------------------------------------------------------------------------
+    // Stretched Resolution — ChangeDisplaySettings (Win32)
+    // -------------------------------------------------------------------------
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    private struct DEVMODE
+    {
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string dmDeviceName;
+        public short dmSpecVersion, dmDriverVersion, dmSize, dmDriverExtra;
+        public int   dmFields;
+        public int   dmPositionX, dmPositionY, dmDisplayOrientation, dmDisplayFixedOutput;
+        public short dmColor, dmDuplex, dmYResolution, dmTTOption, dmCollate;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string dmFormName;
+        public short dmLogPixels;
+        public int   dmBitsPerPel, dmPelsWidth, dmPelsHeight, dmDisplayFlags, dmDisplayFrequency;
+        public int   dmICMMethod, dmICMIntent, dmMediaType, dmDitherType;
+        public int   dmReserved1, dmReserved2, dmPanningWidth, dmPanningHeight;
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Ansi)]
+    private static extern bool EnumDisplaySettings(string? device, int mode, ref DEVMODE dm);
+    [DllImport("user32.dll")]
+    private static extern int ChangeDisplaySettings(ref DEVMODE dm, int flags);
+
+    private const int ENUM_CURRENT_SETTINGS = -1;
+    private const int DM_PELSWIDTH  = 0x80000;
+    private const int DM_PELSHEIGHT = 0x100000;
+    private const int DISP_CHANGE_SUCCESSFUL = 0;
+
+    private DEVMODE _originalDevMode;
+    private bool    _stretchActive;
+
+    public bool ApplyStretchResolution(int width, int height)
+    {
+        var dm = new DEVMODE { dmSize = (short)Marshal.SizeOf<DEVMODE>() };
+        if (!EnumDisplaySettings(null, ENUM_CURRENT_SETTINGS, ref dm)) return false;
+
+        _originalDevMode = dm;
+        dm.dmPelsWidth  = width;
+        dm.dmPelsHeight = height;
+        dm.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT;
+
+        bool ok = ChangeDisplaySettings(ref dm, 0) == DISP_CHANGE_SUCCESSFUL;
+        if (ok) _stretchActive = true;
+        Log(ok ? $"Stretch resolution applied: {width}x{height}" : $"Stretch resolution failed: {width}x{height}");
+        return ok;
+    }
+
+    public void RestoreResolution()
+    {
+        if (!_stretchActive) return;
+        ChangeDisplaySettings(ref _originalDevMode, 0);
+        _stretchActive = false;
+        Log("Display resolution restored");
+    }
+
+    // -------------------------------------------------------------------------
     // Process management helpers
     // -------------------------------------------------------------------------
     private static Process? TryStartProcess(string playerPath, string? launchArgs, string? isolatedDataDir = null)
@@ -792,6 +884,7 @@ public class RobloxService
     private async Task MonitorProcessAsync(Process process)
     {
         try { await process.WaitForExitAsync(); } catch { }
+        RestoreResolution(); // Stretch Resolution を使っていた場合に復元
         SetStatus(RobloxStatus.Idle);
     }
 

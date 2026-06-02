@@ -25,6 +25,9 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private string _browserHomepage = string.Empty;
     [ObservableProperty] private string _statusMessage = string.Empty;
     [ObservableProperty] private bool _startWithWindows;
+    [ObservableProperty] private bool _stretchResolutionEnabled;
+    [ObservableProperty] private int  _stretchResolutionWidth;
+    [ObservableProperty] private int  _stretchResolutionHeight;
     [ObservableProperty] private bool _multiInstanceEnabled;
     [ObservableProperty] private bool _suppressCrashHandler;
     [ObservableProperty] private bool _cpuAffinityEnabled;
@@ -47,6 +50,9 @@ public partial class SettingsViewModel : ViewModelBase
         _multiThreadingEnabled = s.MultiThreadingEnabled;
         _browserHomepage = s.BrowserHomepage;
         _startWithWindows = IsStartupRegistered();
+        _stretchResolutionEnabled = s.StretchResolutionEnabled;
+        _stretchResolutionWidth   = s.StretchResolutionWidth;
+        _stretchResolutionHeight  = s.StretchResolutionHeight;
         _multiInstanceEnabled    = s.MultiInstanceEnabled;
         _suppressCrashHandler    = s.SuppressCrashHandler;
         _cpuAffinityEnabled      = s.CpuAffinityEnabled;
@@ -101,6 +107,9 @@ public partial class SettingsViewModel : ViewModelBase
             s.MultiThreadingEnabled = MultiThreadingEnabled;
             s.BrowserHomepage = BrowserHomepage;
             s.StartWithWindows = StartWithWindows;
+            s.StretchResolutionEnabled = StretchResolutionEnabled;
+            s.StretchResolutionWidth   = StretchResolutionWidth;
+            s.StretchResolutionHeight  = StretchResolutionHeight;
             s.MultiInstanceEnabled    = MultiInstanceEnabled;
             s.SuppressCrashHandler    = SuppressCrashHandler;
             s.CpuAffinityEnabled      = CpuAffinityEnabled;
@@ -122,6 +131,9 @@ public partial class SettingsViewModel : ViewModelBase
         FpsUnlockEnabled = defaults.FpsUnlockEnabled;
         MultiThreadingEnabled = defaults.MultiThreadingEnabled;
         BrowserHomepage = defaults.BrowserHomepage;
+        StretchResolutionEnabled = defaults.StretchResolutionEnabled;
+        StretchResolutionWidth   = defaults.StretchResolutionWidth;
+        StretchResolutionHeight  = defaults.StretchResolutionHeight;
         MultiInstanceEnabled    = defaults.MultiInstanceEnabled;
         SuppressCrashHandler    = defaults.SuppressCrashHandler;
         CpuAffinityEnabled      = defaults.CpuAffinityEnabled;
@@ -182,6 +194,9 @@ public partial class SettingsViewModel : ViewModelBase
             FpsUnlockEnabled       = s.FpsUnlockEnabled;
             MultiThreadingEnabled  = s.MultiThreadingEnabled;
             BrowserHomepage        = s.BrowserHomepage;
+            StretchResolutionEnabled = s.StretchResolutionEnabled;
+            StretchResolutionWidth   = s.StretchResolutionWidth;
+            StretchResolutionHeight  = s.StretchResolutionHeight;
             MultiInstanceEnabled    = s.MultiInstanceEnabled;
             SuppressCrashHandler    = s.SuppressCrashHandler;
             CpuAffinityEnabled      = s.CpuAffinityEnabled;

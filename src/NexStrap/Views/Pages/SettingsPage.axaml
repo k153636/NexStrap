@@ -83,6 +83,38 @@
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Stretched Resolution" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Change display resolution before launch for GPU stretching"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding StretchResolutionEnabled}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding StretchResolutionEnabled}">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Resolution" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Width × Height (e.g. 1280×960 for 4:3)"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                            <NumericUpDown Value="{Binding StretchResolutionWidth}"
+                                           Minimum="640" Maximum="3840" Increment="1"
+                                           Width="80" FontSize="12"
+                                           Background="#080808" Foreground="#FFFFFF"
+                                           BorderBrush="#2A2A2A"/>
+                            <TextBlock Text="×" Foreground="{DynamicResource FgSub}"
+                                       VerticalAlignment="Center" FontSize="13"/>
+                            <NumericUpDown Value="{Binding StretchResolutionHeight}"
+                                           Minimum="480" Maximum="2160" Increment="1"
+                                           Width="80" FontSize="12"
+                                           Background="#080808" Foreground="#FFFFFF"
+                                           BorderBrush="#2A2A2A"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
                             <TextBlock Text="Multi-instance" Foreground="#FFFFFF" FontSize="13"/>
                             <TextBlock Text="Allow multiple Roblox windows at the same time"
                                        Foreground="{DynamicResource FgSub}" FontSize="11"/>
