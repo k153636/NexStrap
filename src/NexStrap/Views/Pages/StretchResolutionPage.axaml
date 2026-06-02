@@ -43,32 +43,11 @@
 
             <!-- GPU note -->
             <Border Background="#0DFFD700" CornerRadius="10" Padding="14,10">
-                <StackPanel Spacing="6">
-                    <TextBlock Text="⚠  One-time setup required for full stretch (no black bars)"
+                <StackPanel Spacing="4">
+                    <TextBlock Text="⚠  GPU scaling must be set to Full-screen for stretch to work"
                                Foreground="#FFD700" FontSize="12" FontWeight="SemiBold"/>
                     <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}" TextWrapping="Wrap"
                                Text="Additional setup may be required depending on your environment."/>
-                    <TextBlock FontSize="12" Foreground="#FFFFFF" FontWeight="SemiBold">
-                        <Run Text="Laptop (Intel iGPU):"/>
-                    </TextBlock>
-                    <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}" TextWrapping="Wrap">
-                        <Run Text="Intel Graphics Command Center → Display → Scale → Full Screen"/>
-                    </TextBlock>
-                    <TextBlock FontSize="12" Foreground="#FFFFFF" FontWeight="SemiBold">
-                        <Run Text="Desktop NVIDIA:"/>
-                    </TextBlock>
-                    <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}" TextWrapping="Wrap">
-                        <Run Text="NVIDIA Control Panel → Display → Adjust desktop size and position → Scaling: Full-screen → Perform on: GPU"/>
-                    </TextBlock>
-                    <TextBlock FontSize="12" Foreground="#FFFFFF" FontWeight="SemiBold">
-                        <Run Text="AMD:"/>
-                    </TextBlock>
-                    <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}" TextWrapping="Wrap">
-                        <Run Text="AMD Software → Display → GPU Scaling ON → Scale Mode: Full Panel"/>
-                    </TextBlock>
-                    <TextBlock FontSize="11" Foreground="#FFD700" TextWrapping="Wrap">
-                        <Run Text="設定は一度だけ行えば以降は自動で有効になります"/>
-                    </TextBlock>
                 </StackPanel>
             </Border>
 
