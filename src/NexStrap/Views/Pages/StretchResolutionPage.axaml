@@ -77,12 +77,8 @@
                                         Margin="0,0,8,8"
                                         Padding="0" CornerRadius="10"
                                         Background="{DynamicResource CardBg}">
-                                    <StackPanel Spacing="4" Margin="14,10">
-                                        <TextBlock Text="{Binding Label}" Foreground="#FFFFFF"
-                                                   FontSize="15" FontWeight="SemiBold"/>
-                                        <TextBlock Text="{Binding Description}" Foreground="{DynamicResource FgSub}"
-                                                   FontSize="10" MaxWidth="160" TextWrapping="Wrap"/>
-                                    </StackPanel>
+                                    <TextBlock Text="{Binding Label}" Foreground="#FFFFFF"
+                                               FontSize="13" Margin="14,10"/>
                                 </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
