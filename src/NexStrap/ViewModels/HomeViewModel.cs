@@ -50,7 +50,8 @@ public partial class HomeViewModel : ViewModelBase
     private readonly Dictionary<int, SlotGame>                    _activeGames   = new();
     private readonly Dictionary<int, (string? Url, string? Label)> _slotUsers    = new();
     private readonly Dictionary<int, uint>                         _slotPids      = new();
-    private int    _activeFocusedSlot = -1;
+    private int    _activeFocusedSlot  = -1;
+    private bool   _robloxHasFocus     = false;
     private Timer? _focusTimer;
     private Timer? _presenceHeartbeat;
 
@@ -485,7 +486,7 @@ public partial class HomeViewModel : ViewModelBase
         }
         catch { }
 
-        // アクティブウィンドウを500msごとに監視 → フォーカス中のアカウントのアバターを表示
+        // アクティブウィンドウを500msごとに監視
         _focusTimer = new Timer(_ =>
         {
             try
@@ -499,9 +500,24 @@ public partial class HomeViewModel : ViewModelBase
                 {
                     if (kv.Value == focusPid) { matched = kv.Key; break; }
                 }
-                if (matched == null) return;          // Roblox 以外がフォーカス
-                if (matched.Value == _activeFocusedSlot) return; // 変化なし
 
+                // Stretch Res: Roblox ウィンドウのフォーカス変化を検出
+                bool nowFocused = matched != null;
+                if (nowFocused != _robloxHasFocus && IsRobloxRunning)
+                {
+                    _robloxHasFocus = nowFocused;
+                    var s = _settings.Settings;
+                    if (s.StretchResolutionEnabled)
+                    {
+                        if (nowFocused)
+                            _roblox.ApplyStretchResolution(s.StretchResolutionWidth, s.StretchResolutionHeight);
+                        else
+                            _roblox.RestoreResolution();
+                    }
+                }
+
+                if (matched == null) return;
+                if (matched.Value == _activeFocusedSlot) return;
                 _activeFocusedSlot = matched.Value;
                 if (_gameDetected) UpdateGamePresence();
             }
