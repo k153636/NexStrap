@@ -800,6 +800,73 @@ public class RobloxService
     }
 
     // -------------------------------------------------------------------------
+    // Display Scaling — SetDisplayConfig で GPU/モニター設定を上書き
+    // DISPLAYCONFIG_SCALING_STRETCHED(3) = 黒帯なし強制引き伸ばし
+    // -------------------------------------------------------------------------
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ScLuid { public uint L; public int H; }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ScRational { public uint N; public uint D; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ScPathSrc { public ScLuid adapterId; public uint id, modeIdx, flags; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ScPathTgt {
+        public ScLuid adapterId;
+        public uint id, modeIdx, outTech, rotation;
+        public uint scaling;          // DISPLAYCONFIG_SCALING
+        public ScRational refreshRate;
+        public uint scanLineOrder;
+        [MarshalAs(UnmanagedType.Bool)] public bool available;
+        public uint statusFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ScPath { public ScPathSrc src; public ScPathTgt tgt; public uint flags; }
+
+    [StructLayout(LayoutKind.Explicit, Size = 80)]
+    private struct ScMode {
+        [FieldOffset( 0)] public uint infoType;
+        [FieldOffset( 4)] public uint id;
+        [FieldOffset( 8)] public ScLuid adapterId;
+        [FieldOffset(16)] public long _u0; [FieldOffset(24)] public long _u1;
+        [FieldOffset(32)] public long _u2; [FieldOffset(40)] public long _u3;
+        [FieldOffset(48)] public long _u4; [FieldOffset(56)] public long _u5;
+        [FieldOffset(64)] public long _u6; [FieldOffset(72)] public long _u7;
+    }
+
+    [DllImport("user32.dll")] private static extern uint GetDisplayConfigBufferSizes(uint flags, out uint paths, out uint modes);
+    [DllImport("user32.dll")] private static extern uint QueryDisplayConfig(uint flags, ref uint paths, [Out] ScPath[] pa, ref uint modes, [Out] ScMode[] ma, IntPtr topId);
+    [DllImport("user32.dll")] private static extern uint SetDisplayConfig(uint paths, ScPath[] pa, uint modes, ScMode[] ma, uint flags);
+
+    private const uint QDC_ACTIVE  = 0x2;
+    private const uint SDC_APPLY   = 0x200;
+    private const uint SDC_SUPPLIED = 0x10;
+    private const uint SDC_CHANGES  = 0x1000;
+    private const uint SC_STRETCHED = 3;
+    private const uint SC_ASPECT    = 4;
+    private uint _origScaling = SC_ASPECT;
+
+    private void ApplyDisplayScaling(bool stretch)
+    {
+        try
+        {
+            GetDisplayConfigBufferSizes(QDC_ACTIVE, out uint np, out uint nm);
+            var paths = new ScPath[np]; var modes = new ScMode[nm];
+            if (QueryDisplayConfig(QDC_ACTIVE, ref np, paths, ref nm, modes, IntPtr.Zero) != 0) return;
+
+            if (stretch) _origScaling = paths.Length > 0 ? paths[0].tgt.scaling : SC_ASPECT;
+            uint target = stretch ? SC_STRETCHED : _origScaling;
+            for (int i = 0; i < paths.Length; i++) paths[i].tgt.scaling = target;
+
+            var r = SetDisplayConfig(np, paths, nm, modes, SDC_SUPPLIED | SDC_APPLY | SDC_CHANGES);
+            Log($"SetDisplayConfig scaling={target} result={r}");
+        }
+        catch (Exception ex) { Log($"ApplyDisplayScaling: {ex.Message}"); }
+    }
+
+    // -------------------------------------------------------------------------
     // Stretched Resolution — ChangeDisplaySettings (Win32)
     // -------------------------------------------------------------------------
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
@@ -881,7 +948,10 @@ public class RobloxService
         SetGlobalBasicBool("Fullscreen", true);
         Log($"Roblox Fullscreen set to true (was {_originalFullscreen})");
 
-        // 2. 表示解像度を変更
+        // 2. Windows スケーリングを強制引き伸ばしに変更（黒帯排除）
+        ApplyDisplayScaling(true);
+
+        // 3. 表示解像度を変更
         dm.dmPelsWidth  = width;
         dm.dmPelsHeight = height;
         dm.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT;
@@ -900,6 +970,9 @@ public class RobloxService
         ChangeDisplaySettings(ref _originalDevMode, 0);
         _stretchActive = false;
         Log("Display resolution restored");
+
+        // Windows スケーリングを元に戻す
+        ApplyDisplayScaling(false);
 
         // Roblox のフルスクリーン設定を元に戻す
         SetGlobalBasicBool("Fullscreen", _originalFullscreen);
