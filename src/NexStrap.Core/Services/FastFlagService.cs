@@ -99,6 +99,17 @@ public class FastFlagService
 
     public void ApplyPerformanceSettings(AppSettings settings)
     {
+        if (settings.FpsUnlockEnabled)
+        {
+            Set("DFIntTaskSchedulerTargetFps", "9999");
+            Set("FFlagTaskSchedulerLimitTargetFpsTo2402", "False");
+        }
+        else
+        {
+            Remove("DFIntTaskSchedulerTargetFps");
+            Remove("FFlagTaskSchedulerLimitTargetFpsTo2402");
+        }
+
         if (settings.MultiThreadingEnabled)
         {
             // スレッド数はコア数に比例させる（2400 は過大でコンテキストスイッチが増加する）

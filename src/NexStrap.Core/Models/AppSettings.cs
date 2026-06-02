@@ -10,6 +10,7 @@ public class AppSettings
     public bool MinimizeToTray { get; set; } = true;
     public string ActiveProfileId { get; set; } = string.Empty;
     public string RobloxInstallPath { get; set; } = string.Empty;
+    public bool FpsUnlockEnabled { get; set; } = false;  // 9999 FPS（公式 240 上限を超える）
     public bool MultiThreadingEnabled { get; set; } = false;
     public string BrowserHomepage { get; set; } = "https://www.youtube.com";
     public bool HotReloadEnabled { get; set; } = true;

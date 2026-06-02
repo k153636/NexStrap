@@ -19,6 +19,16 @@
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="FPS Unlock (9999)" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Remove 240 FPS cap via FastFlags (requires hardware to go above 240)"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding FpsUnlockEnabled}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
                             <TextBlock Text="Multi-threading" Foreground="#FFFFFF" FontSize="13"/>
                             <TextBlock Text="Tune scheduler flags for CPU thread utilization"
                                        Foreground="{DynamicResource FgSub}" FontSize="11"/>
