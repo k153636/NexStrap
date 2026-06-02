@@ -28,21 +28,32 @@ public class UpdateService
             var tag        = root.GetProperty("tag_name").GetString()?.TrimStart('v') ?? "";
             if (!Version.TryParse(tag, out var latest)) return null;
 
-            // AssemblyInformationalVersion (<Version> in csproj) を優先して読む。
-            // GetName().Version は単一ファイル EXE 環境で信頼性が低い場合があるため。
-            var infoVer = Assembly.GetEntryAssembly()
-                ?.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()
-                ?.InformationalVersion
-                ?? Assembly.GetExecutingAssembly()
-                    .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()
+            // PE ファイルのバージョンリソースから直接読む（最も信頼性が高い）。
+            // Assembly.GetExecutingAssembly() は NexStrap.Core.dll を指すため
+            // NexStrap.exe とは別バージョンになる場合があり使用しない。
+            Version? current = null;
+            var exePath = Environment.ProcessPath;
+            if (exePath != null && File.Exists(exePath))
+            {
+                var fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(exePath);
+                if (!string.IsNullOrEmpty(fvi.FileVersion))
+                    Version.TryParse(fvi.FileVersion, out current);
+            }
+
+            // フォールバック: エントリアセンブリの InformationalVersion
+            if (current == null)
+            {
+                var infoVer = Assembly.GetEntryAssembly()
+                    ?.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()
                     ?.InformationalVersion;
+                var vStr = infoVer?.Split('+')[0].Split('-')[0];
+                if (Version.TryParse(vStr, out var v2)) current = v2;
+            }
 
-            // "1.0.4+abc123" や "1.0.4-beta" のサフィックスを除去
-            var versionStr = infoVer?.Split('+')[0].Split('-')[0];
-            var current = Version.TryParse(versionStr, out var v) ? v
-                        : Assembly.GetEntryAssembly()?.GetName().Version
-                       ?? Assembly.GetExecutingAssembly().GetName().Version;
+            // 最終フォールバック: AssemblyName.Version
+            current ??= Assembly.GetEntryAssembly()?.GetName().Version;
 
+            RobloxService.Log($"UpdateCheck: current={current} latest={latest}");
             if (current != null && latest <= current) return null;
 
             foreach (var asset in root.GetProperty("assets").EnumerateArray())
