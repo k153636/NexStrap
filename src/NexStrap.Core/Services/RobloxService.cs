@@ -406,7 +406,7 @@ public class RobloxService
     }
 
     /// <summary>CPU アフィニティ・メモリ上限・クラッシュハンドラ抑制を起動後に適用する。</summary>
-    private async Task PostLaunchAsync(Process proc, LaunchOptions opts)
+    public async Task PostLaunchAsync(Process proc, LaunchOptions opts)
     {
         await Task.Delay(1500); // Roblox の初期化を少し待つ
 
