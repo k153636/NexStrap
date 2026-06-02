@@ -379,5 +379,6 @@ public partial class App : Application
         services.AddSingleton<AccountService>();
         services.AddTransient<AccountViewModel>();
         services.AddTransient<FriendsViewModel>();
+        services.AddTransient<StretchResolutionViewModel>();
     }
 }

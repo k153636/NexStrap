@@ -1,0 +1,128 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NexStrap.ViewModels"
+             xmlns:helpers="using:NexStrap.Helpers"
+             x:Class="NexStrap.Views.Pages.StretchResolutionPage"
+             x:DataType="vm:StretchResolutionViewModel"
+             Background="Transparent">
+
+    <ScrollViewer>
+        <StackPanel Spacing="10" Margin="24,20" helpers:AnimationHelper.StaggerChildren="True">
+
+            <TextBlock Text="Stretch Resolution" FontSize="22" FontWeight="Bold"
+                       Foreground="#FFFFFF" Margin="0,0,0,2"/>
+
+            <!-- Status bar -->
+            <Border CornerRadius="10" Padding="14,10"
+                    Background="{Binding IsActive, Converter={x:Static BoolConverters.Select}, ConverterParameter='#1A4ADE80,#0DFFFFFF'}">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Ellipse Grid.Column="0" Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,10,0"
+                             Fill="{Binding IsActive, Converter={x:Static BoolConverters.Select}, ConverterParameter='#4ADE80,#505050'}"/>
+                    <TextBlock Grid.Column="1" Text="{Binding StatusText}"
+                               Foreground="#FFFFFF" FontSize="13" VerticalAlignment="Center"/>
+                    <Button Grid.Column="2" Content="Restore" Command="{Binding RestoreCommand}"
+                            IsVisible="{Binding IsActive}"
+                            Background="#1AFF4444" Foreground="{DynamicResource FgDanger}"
+                            FontSize="11" Padding="12,4" CornerRadius="6"/>
+                </Grid>
+            </Border>
+
+            <!-- Apply on Launch toggle -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="2">
+                        <TextBlock Text="Apply on Roblox Launch" Foreground="#FFFFFF" FontSize="13"/>
+                        <TextBlock Text="Automatically change resolution before Roblox starts, restore on exit"
+                                   Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding ApplyOnLaunch}"
+                                  OnContent="ON" OffContent="OFF"/>
+                </Grid>
+            </Border>
+
+            <!-- GPU note -->
+            <Border Background="#0DFFD700" CornerRadius="10" Padding="14,10">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="⚠  GPU Scaling required for full stretch (no black bars)"
+                               Foreground="#FFD700" FontSize="12" FontWeight="SemiBold"/>
+                    <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}" TextWrapping="Wrap">
+                        <Run Text="NVIDIA: NVIDIA Control Panel → Adjust desktop size and position → Scaling: Full-screen"/>
+                    </TextBlock>
+                    <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}" TextWrapping="Wrap">
+                        <Run Text="AMD: AMD Software → Display → GPU Scaling ON → Scale Mode: Full Panel"/>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Presets -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Presets" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource FgSub}"/>
+
+                    <ItemsControl ItemsSource="{Binding Presets}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" HorizontalGap="8" VerticalGap="8"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:ResolutionPreset">
+                                <Button Command="{Binding $parent[ItemsControl].((vm:StretchResolutionViewModel)DataContext).SelectPresetCommand}"
+                                        CommandParameter="{Binding}"
+                                        Padding="0" CornerRadius="10" BorderThickness="1.5"
+                                        BorderBrush="{Binding $parent[ItemsControl].((vm:StretchResolutionViewModel)DataContext).SelectedPreset,
+                                                     Converter={x:Static ObjectConverters.IsNotNull}}"
+                                        Background="{DynamicResource CardBg}">
+                                    <StackPanel Spacing="4" Margin="14,10">
+                                        <TextBlock Text="{Binding Label}" Foreground="#FFFFFF"
+                                                   FontSize="15" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding Description}" Foreground="{DynamicResource FgSub}"
+                                                   FontSize="10" MaxWidth="160" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- Custom resolution -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Custom" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource FgSub}"/>
+
+                    <Grid ColumnDefinitions="*,12,*,Auto,Auto" RowDefinitions="Auto">
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <TextBlock Text="Width" Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                            <NumericUpDown Value="{Binding CustomWidth}"
+                                           Minimum="640" Maximum="3840" Increment="1"
+                                           Background="#080808" Foreground="#FFFFFF"
+                                           BorderBrush="#2A2A2A" FontSize="13"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="×" Foreground="{DynamicResource FgSub}"
+                                   VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                                   Margin="0,0,0,8" FontSize="16"/>
+                        <StackPanel Grid.Column="2" Spacing="4">
+                            <TextBlock Text="Height" Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                            <NumericUpDown Value="{Binding CustomHeight}"
+                                           Minimum="480" Maximum="2160" Increment="1"
+                                           Background="#080808" Foreground="#FFFFFF"
+                                           BorderBrush="#2A2A2A" FontSize="13"/>
+                        </StackPanel>
+                        <Button Grid.Column="3" Content="Save" Command="{Binding SaveCustomCommand}"
+                                Margin="10,0,0,0" VerticalAlignment="Bottom"
+                                Background="{DynamicResource OverlayBg}" Foreground="{DynamicResource FgSub}"
+                                FontSize="12" Padding="14,8" CornerRadius="8"/>
+                        <Button Grid.Column="4" Content="Apply Now" Command="{Binding ApplyNowCommand}"
+                                Margin="8,0,0,0" VerticalAlignment="Bottom"
+                                Background="#FFFFFF" Foreground="#080808"
+                                FontWeight="SemiBold" FontSize="12" Padding="14,8" CornerRadius="8"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

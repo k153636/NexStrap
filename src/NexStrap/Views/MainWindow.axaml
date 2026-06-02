@@ -96,6 +96,12 @@
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
+                <ui:NavigationViewItem Content="Stretch" Tag="Stretch">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Resize"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+
                 <ui:NavigationViewItem Content="Stats" Tag="Stats">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="List"/>
@@ -173,6 +179,9 @@
                         </DataTemplate>
                         <DataTemplate DataType="vm:FriendsViewModel">
                             <pages:FriendsPage/>
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:StretchResolutionViewModel">
+                            <pages:StretchResolutionPage/>
                         </DataTemplate>
                     </TransitioningContentControl.DataTemplates>
                 </TransitioningContentControl>

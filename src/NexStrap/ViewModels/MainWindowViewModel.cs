@@ -29,6 +29,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public DevViewModel DevVM { get; }
     public AccountViewModel AccountVM { get; }
     public FriendsViewModel FriendsVM { get; }
+    public StretchResolutionViewModel StretchVM { get; }
 
     public MainWindowViewModel(
         DiscordRpcService discord,
@@ -44,7 +45,8 @@ public partial class MainWindowViewModel : ViewModelBase
         StatsViewModel statsVM,
         DevViewModel devVM,
         AccountViewModel accountVM,
-        FriendsViewModel friendsVM)
+        FriendsViewModel friendsVM,
+        StretchResolutionViewModel stretchVM)
     {
         _discord = discord;
         _settings = settings;
@@ -61,6 +63,7 @@ public partial class MainWindowViewModel : ViewModelBase
         DevVM = devVM;
         AccountVM = accountVM;
         FriendsVM = friendsVM;
+        StretchVM = stretchVM;
         _currentPage = homeVM;
 
         IsDiscordAppIdMissing = false;
@@ -144,6 +147,7 @@ public partial class MainWindowViewModel : ViewModelBase
             "Settings" => SettingsVM,
             "Account" => AccountVM,
             "Friends" => FriendsVM,
+            "Stretch" => StretchVM,
             _ => HomeVM
         };
 
