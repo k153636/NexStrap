@@ -97,17 +97,40 @@ public class FastFlagService
             _currentFlags[preset.Name] = preset.Value;
     }
 
+    // GlobalBasicSettings_13.xml の FramerateCap を書き換える
+    private static void ApplyRobloxFramerateCap(int cap)
+    {
+        var path = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Roblox", "GlobalBasicSettings_13.xml");
+        if (!File.Exists(path)) return;
+        try
+        {
+            var xml = File.ReadAllText(path);
+            var updated = System.Text.RegularExpressions.Regex.Replace(
+                xml,
+                @"<int name=""FramerateCap"">\d+</int>",
+                $"<int name=\"FramerateCap\">{cap}</int>");
+            File.WriteAllText(path, updated);
+        }
+        catch { }
+    }
+
     public void ApplyPerformanceSettings(AppSettings settings)
     {
         if (settings.FpsUnlockEnabled)
         {
             Set("DFIntTaskSchedulerTargetFps", "9999");
             Set("FFlagTaskSchedulerLimitTargetFpsTo2402", "False");
+            // in-game FramerateCap も 0（無制限）に設定
+            ApplyRobloxFramerateCap(0);
         }
         else
         {
             Remove("DFIntTaskSchedulerTargetFps");
             Remove("FFlagTaskSchedulerLimitTargetFpsTo2402");
+            // 無効化時は公式上限 240 に戻す
+            ApplyRobloxFramerateCap(240);
         }
 
         if (settings.MultiThreadingEnabled)
