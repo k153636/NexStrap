@@ -864,6 +864,58 @@ public class RobloxService
     private const int PATH_TGT_OTECH  = 36;  // targetInfo.outputTechnology (20+16)
     private const int PATH_TGT_SCALE  = 44;  // targetInfo.scaling (20+24)
 
+    /// <summary>
+    /// SetDisplayConfig でソースモードの解像度を変更する。
+    /// ChangeDisplaySettings と違い完全モード再設定を行うため
+    /// Intel/NVIDIA ドライバーのデフォルトパネルスケール（フルパネル）が適用され黒帯が出ない。
+    /// </summary>
+    private bool ApplyResolutionViaSetDisplayConfig(int width, int height)
+    {
+        try
+        {
+            uint qf = QDC_ACTIVE | QDC_VMAWARE;
+            if (GetDisplayConfigBufferSizes(qf, out uint np, out uint nm) != 0) return false;
+
+            foreach (int modeSize in new[] { 64, 80 })
+            {
+                var pBuf = Marshal.AllocHGlobal(PATH_SIZE * (int)np);
+                var mBuf = Marshal.AllocHGlobal(modeSize * (int)nm);
+                try
+                {
+                    uint np2 = np, nm2 = nm;
+                    if (QueryDisplayConfigPtr(qf, ref np2, pBuf, ref nm2, mBuf, IntPtr.Zero) != 0) continue;
+
+                    // ソースモード (infoType == 1) の width/height を変更
+                    // DISPLAYCONFIG_MODE_INFO: infoType(4)+id(4)+adapterId(8)+union(offset 16~)
+                    // DISPLAYCONFIG_SOURCE_MODE: width(4) at union+0, height(4) at union+4
+                    bool changed = false;
+                    for (int i = 0; i < nm2; i++)
+                    {
+                        int baseOff = i * modeSize;
+                        uint infoType = (uint)Marshal.ReadInt32(mBuf, baseOff);
+                        if (infoType != 1) continue; // 1 = SOURCE mode
+
+                        int origW = Marshal.ReadInt32(mBuf, baseOff + 16);
+                        int origH = Marshal.ReadInt32(mBuf, baseOff + 20);
+                        Log($"  mode[{i}] modeSize={modeSize} SOURCE {origW}x{origH} → {width}x{height}");
+                        Marshal.WriteInt32(mBuf, baseOff + 16, width);
+                        Marshal.WriteInt32(mBuf, baseOff + 20, height);
+                        changed = true;
+                    }
+                    if (!changed) { Log($"No SOURCE mode found (modeSize={modeSize})"); continue; }
+
+                    uint flags = SDC_SUPPLIED | SDC_APPLY | SDC_CHANGES | SDC_NO_OPT | SDC_VMAWARE;
+                    var r = SetDisplayConfigPtr(np2, pBuf, nm2, mBuf, flags);
+                    Log($"SetDisplayConfig resolution {width}x{height} (modeSize={modeSize}) result={r}");
+                    if (r == 0) return true;
+                }
+                finally { Marshal.FreeHGlobal(pBuf); Marshal.FreeHGlobal(mBuf); }
+            }
+        }
+        catch (Exception ex) { Log($"ApplyResolutionViaSetDisplayConfig: {ex.Message}"); }
+        return false;
+    }
+
     private void ApplyDisplayScaling(bool stretch)
     {
         try
@@ -1001,17 +1053,26 @@ public class RobloxService
         SetGlobalBasicBool("Fullscreen", true);
         Log($"Roblox Fullscreen set to true (was {_originalFullscreen})");
 
-        // 2. Windows スケーリングを強制引き伸ばしに変更（黒帯排除）
-        ApplyDisplayScaling(true);
-
-        // 3. 表示解像度を変更
-        dm.dmPelsWidth  = width;
-        dm.dmPelsHeight = height;
-        dm.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT;
-
-        bool ok = ChangeDisplaySettings(ref dm, 0) == DISP_CHANGE_SUCCESSFUL;
-        if (ok) _stretchActive = true;
-        Log(ok ? $"Stretch resolution applied: {width}x{height}" : $"Stretch resolution failed: {width}x{height}");
+        // 2. SetDisplayConfig でソース解像度を変更（完全モード再設定 → ドライバーがフルパネルスケールを適用）
+        //    失敗時は従来の ChangeDisplaySettings にフォールバック
+        bool ok;
+        if (ApplyResolutionViaSetDisplayConfig(width, height))
+        {
+            ok = true;
+            _stretchActive = true;
+            Log($"Stretch resolution applied via SetDisplayConfig: {width}x{height}");
+        }
+        else
+        {
+            // フォールバック: ChangeDisplaySettings + SetDisplayConfig でスケーリング強制
+            ApplyDisplayScaling(true);
+            dm.dmPelsWidth  = width;
+            dm.dmPelsHeight = height;
+            dm.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT;
+            ok = ChangeDisplaySettings(ref dm, 0) == DISP_CHANGE_SUCCESSFUL;
+            if (ok) _stretchActive = true;
+            Log(ok ? $"Stretch resolution applied via ChangeDisplaySettings: {width}x{height}" : $"Stretch resolution failed: {width}x{height}");
+        }
         return ok;
     }
 
