@@ -839,31 +839,82 @@ public class RobloxService
     }
 
     [DllImport("user32.dll")] private static extern uint GetDisplayConfigBufferSizes(uint flags, out uint paths, out uint modes);
-    [DllImport("user32.dll")] private static extern uint QueryDisplayConfig(uint flags, ref uint paths, [Out] ScPath[] pa, ref uint modes, [Out] ScMode[] ma, IntPtr topId);
-    [DllImport("user32.dll")] private static extern uint SetDisplayConfig(uint paths, ScPath[] pa, uint modes, ScMode[] ma, uint flags);
+    // IntPtr 版 — struct marshaling を完全にバイパスしてオフセット直接操作
+    [DllImport("user32.dll", EntryPoint = "QueryDisplayConfig")]
+    private static extern uint QueryDisplayConfigPtr(uint f, ref uint np, IntPtr pa, ref uint nm, IntPtr ma, IntPtr id);
+    [DllImport("user32.dll", EntryPoint = "SetDisplayConfig")]
+    private static extern uint SetDisplayConfigPtr(uint np, IntPtr pa, uint nm, IntPtr ma, uint flags);
 
-    private const uint QDC_ACTIVE  = 0x2;
-    private const uint SDC_APPLY   = 0x200;
+    private const uint QDC_ACTIVE   = 0x2;
+    private const uint QDC_VMAWARE  = 0x10;
+    private const uint SDC_APPLY    = 0x200;
     private const uint SDC_SUPPLIED = 0x10;
     private const uint SDC_CHANGES  = 0x1000;
+    private const uint SDC_NO_OPT   = 0x400;
+    private const uint SDC_VMAWARE  = 0x80000;
     private const uint SC_STRETCHED = 3;
     private const uint SC_ASPECT    = 4;
     private uint _origScaling = SC_ASPECT;
+
+    // DISPLAYCONFIG_PATH_INFO 内のフィールドオフセット
+    // sourceInfo(20) + targetInfo: adapterId(8)+id(4)+modeIdx(4)+outTech(4)+rot(4)+scaling(4)=offset 44
+    private const int PATH_SIZE       = 72;
+    private const int PATH_SRC_MIDX   = 12;  // sourceInfo.modeInfoIdx
+    private const int PATH_TGT_MIDX   = 32;  // targetInfo.modeInfoIdx  (20+12)
+    private const int PATH_TGT_OTECH  = 36;  // targetInfo.outputTechnology (20+16)
+    private const int PATH_TGT_SCALE  = 44;  // targetInfo.scaling (20+24)
 
     private void ApplyDisplayScaling(bool stretch)
     {
         try
         {
-            GetDisplayConfigBufferSizes(QDC_ACTIVE, out uint np, out uint nm);
-            var paths = new ScPath[np]; var modes = new ScMode[nm];
-            if (QueryDisplayConfig(QDC_ACTIVE, ref np, paths, ref nm, modes, IntPtr.Zero) != 0) return;
+            uint qf = QDC_ACTIVE | QDC_VMAWARE;
+            if (GetDisplayConfigBufferSizes(qf, out uint np, out uint nm) != 0) { Log("GetDisplayConfigBufferSizes failed"); return; }
+            Log($"DisplayConfig buffers: paths={np} modes={nm}");
 
-            if (stretch) _origScaling = paths.Length > 0 ? paths[0].tgt.scaling : SC_ASPECT;
-            uint target = stretch ? SC_STRETCHED : _origScaling;
-            for (int i = 0; i < paths.Length; i++) paths[i].tgt.scaling = target;
+            // sizeof(DISPLAYCONFIG_MODE_INFO): 64 or 80 depending on SDK/Windows version → try both
+            foreach (int modeSize in new[] { 64, 80 })
+            {
+                var pBuf = Marshal.AllocHGlobal(PATH_SIZE * (int)np);
+                var mBuf = Marshal.AllocHGlobal(modeSize * (int)nm);
+                try
+                {
+                    uint np2 = np, nm2 = nm;
+                    var qr = QueryDisplayConfigPtr(qf, ref np2, pBuf, ref nm2, mBuf, IntPtr.Zero);
+                    if (qr != 0) { Log($"QueryDisplayConfig(modeSize={modeSize}) fail={qr}"); continue; }
 
-            var r = SetDisplayConfig(np, paths, nm, modes, SDC_SUPPLIED | SDC_APPLY | SDC_CHANGES);
-            Log($"SetDisplayConfig scaling={target} result={r}");
+                    for (int i = 0; i < np2; i++)
+                    {
+                        int curScale = Marshal.ReadInt32(pBuf, i * PATH_SIZE + PATH_TGT_SCALE);
+                        int outTech  = Marshal.ReadInt32(pBuf, i * PATH_SIZE + PATH_TGT_OTECH);
+                        Log($"  path[{i}] modeSize={modeSize} scaling={curScale} outTech=0x{outTech:X}");
+                        if (stretch && i == 0) _origScaling = (uint)curScale;
+                    }
+
+                    uint target = stretch ? SC_STRETCHED : _origScaling;
+                    for (int i = 0; i < np2; i++)
+                        Marshal.WriteInt32(pBuf, i * PATH_SIZE + PATH_TGT_SCALE, (int)target);
+
+                    // 試行A: modes ありで適用
+                    uint fA = SDC_SUPPLIED | SDC_APPLY | SDC_CHANGES | SDC_NO_OPT | SDC_VMAWARE;
+                    var rA = SetDisplayConfigPtr(np2, pBuf, nm2, mBuf, fA);
+                    Log($"SetDisplayConfig A (modeSize={modeSize}) scaling={target} result={rA}");
+                    if (rA == 0) return;
+
+                    // 試行B: modeIdx を INVALID に設定して modes なし
+                    for (int i = 0; i < np2; i++)
+                    {
+                        Marshal.WriteInt32(pBuf, i * PATH_SIZE + PATH_SRC_MIDX, -1);
+                        Marshal.WriteInt32(pBuf, i * PATH_SIZE + PATH_TGT_MIDX, -1);
+                    }
+                    uint fB = SDC_SUPPLIED | SDC_APPLY | SDC_CHANGES | SDC_VMAWARE;
+                    var rB = SetDisplayConfigPtr(np2, pBuf, 0, IntPtr.Zero, fB);
+                    Log($"SetDisplayConfig B (modeSize={modeSize},noModes) scaling={target} result={rB}");
+                    if (rB == 0) return;
+                }
+                finally { Marshal.FreeHGlobal(pBuf); Marshal.FreeHGlobal(mBuf); }
+            }
+            Log("All SetDisplayConfig attempts failed");
         }
         catch (Exception ex) { Log($"ApplyDisplayScaling: {ex.Message}"); }
     }
