@@ -49,8 +49,8 @@
             <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="2">
-                        <TextBlock Text="Apply on Roblox Launch" Foreground="#FFFFFF" FontSize="13"/>
-                        <TextBlock Text="Automatically change resolution before Roblox starts, restore on exit"
+                        <TextBlock Text="Auto Apply" Foreground="#FFFFFF" FontSize="13"/>
+                        <TextBlock Text="Apply when Roblox is running, restore on exit"
                                    Foreground="{DynamicResource FgSub}" FontSize="11"/>
                     </StackPanel>
                     <ToggleSwitch Grid.Column="1" IsChecked="{Binding ApplyOnLaunch}"

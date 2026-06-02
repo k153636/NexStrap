@@ -804,6 +804,17 @@ public partial class HomeViewModel : ViewModelBase
             // 全インスタンス終了 → スロットをすべてクリア
             _activeGames.Clear();
             _gameDetected = false;
+
+            // Stretch Res: Roblox 終了時に解像度を復元
+            if (_settings.Settings.StretchResolutionEnabled)
+                _roblox.RestoreResolution();
+        }
+        else
+        {
+            // Stretch Res: Roblox 起動時に自動で解像度を適用
+            var s = _settings.Settings;
+            if (s.StretchResolutionEnabled)
+                _roblox.ApplyStretchResolution(s.StretchResolutionWidth, s.StretchResolutionHeight);
         }
         if (Application.Current is App app)
             app.SetPlayingMode(value);

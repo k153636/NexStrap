@@ -1232,6 +1232,9 @@ public class RobloxService
 
     public bool ApplyStretchResolution(int width, int height)
     {
+        // 既に適用済みなら二重適用しない
+        if (_stretchActive) return true;
+
         // 現在の解像度を保存
         var dm = new DEVMODE { dmSize = (short)Marshal.SizeOf<DEVMODE>() };
         if (!EnumDisplaySettings(null, ENUM_CURRENT_SETTINGS, ref dm)) return false;
