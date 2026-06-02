@@ -61,7 +61,26 @@ public partial class SettingsViewModel : ViewModelBase
         _cleanupOldVersions      = s.CleanupOldVersions;
     }
 
-    partial void OnStartWithWindowsChanged(bool value) => SetStartupRegistry(value);
+    // 各プロパティ変更時に即座に保存（自動保存）
+    private void AutoSave(Action<AppSettings> update) => _settingsService.Update(update);
+
+    partial void OnStartWithWindowsChanged(bool value)     { SetStartupRegistry(value); AutoSave(s => s.StartWithWindows = value); }
+    partial void OnShowPerformanceOverlayChanged(bool v)   => AutoSave(s => s.ShowPerformanceOverlay = v);
+    partial void OnAutoUpdateRobloxChanged(bool v)         => AutoSave(s => s.AutoUpdateRoblox = v);
+    partial void OnMinimizeToTrayChanged(bool v)           => AutoSave(s => s.MinimizeToTray = v);
+    partial void OnHotReloadEnabledChanged(bool v)         => AutoSave(s => s.HotReloadEnabled = v);
+    partial void OnFpsUnlockEnabledChanged(bool v)         => AutoSave(s => s.FpsUnlockEnabled = v);
+    partial void OnMultiThreadingEnabledChanged(bool v)    => AutoSave(s => s.MultiThreadingEnabled = v);
+    partial void OnBrowserHomepageChanged(string v)        => AutoSave(s => s.BrowserHomepage = v);
+    partial void OnStretchResolutionEnabledChanged(bool v) => AutoSave(s => s.StretchResolutionEnabled = v);
+    partial void OnStretchResolutionWidthChanged(int v)    => AutoSave(s => s.StretchResolutionWidth = v);
+    partial void OnStretchResolutionHeightChanged(int v)   => AutoSave(s => s.StretchResolutionHeight = v);
+    partial void OnMultiInstanceEnabledChanged(bool v)     => AutoSave(s => s.MultiInstanceEnabled = v);
+    partial void OnSuppressCrashHandlerChanged(bool v)     => AutoSave(s => s.SuppressCrashHandler = v);
+    partial void OnCpuAffinityEnabledChanged(bool v)       => AutoSave(s => s.CpuAffinityEnabled = v);
+    partial void OnCpuCoreLimitChanged(int v)              => AutoSave(s => s.CpuCoreLimit = v);
+    partial void OnMemoryOptimizationEnabledChanged(bool v)=> AutoSave(s => s.MemoryOptimizationEnabled = v);
+    partial void OnCleanupOldVersionsChanged(bool v)       => AutoSave(s => s.CleanupOldVersions = v);
 
     private static bool IsStartupRegistered()
     {
@@ -95,52 +114,26 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Save()
-    {
-        _settingsService.Update(s =>
-        {
-            s.ShowPerformanceOverlay = ShowPerformanceOverlay;
-            s.AutoUpdateRoblox = AutoUpdateRoblox;
-            s.MinimizeToTray = MinimizeToTray;
-            s.HotReloadEnabled = HotReloadEnabled;
-            s.FpsUnlockEnabled = FpsUnlockEnabled;
-            s.MultiThreadingEnabled = MultiThreadingEnabled;
-            s.BrowserHomepage = BrowserHomepage;
-            s.StartWithWindows = StartWithWindows;
-            s.StretchResolutionEnabled = StretchResolutionEnabled;
-            s.StretchResolutionWidth   = StretchResolutionWidth;
-            s.StretchResolutionHeight  = StretchResolutionHeight;
-            s.MultiInstanceEnabled    = MultiInstanceEnabled;
-            s.SuppressCrashHandler    = SuppressCrashHandler;
-            s.CpuAffinityEnabled      = CpuAffinityEnabled;
-            s.CpuCoreLimit            = CpuCoreLimit;
-            s.MemoryOptimizationEnabled = MemoryOptimizationEnabled;
-            s.CleanupOldVersions      = CleanupOldVersions;
-        });
-        StatusMessage = "Settings saved";
-    }
-
-    [RelayCommand]
     private void ResetToDefaults()
     {
-        var defaults = new AppSettings();
-        ShowPerformanceOverlay = defaults.ShowPerformanceOverlay;
-        AutoUpdateRoblox = defaults.AutoUpdateRoblox;
-        MinimizeToTray = defaults.MinimizeToTray;
-        HotReloadEnabled = defaults.HotReloadEnabled;
-        FpsUnlockEnabled = defaults.FpsUnlockEnabled;
-        MultiThreadingEnabled = defaults.MultiThreadingEnabled;
-        BrowserHomepage = defaults.BrowserHomepage;
-        StretchResolutionEnabled = defaults.StretchResolutionEnabled;
-        StretchResolutionWidth   = defaults.StretchResolutionWidth;
-        StretchResolutionHeight  = defaults.StretchResolutionHeight;
-        MultiInstanceEnabled    = defaults.MultiInstanceEnabled;
-        SuppressCrashHandler    = defaults.SuppressCrashHandler;
-        CpuAffinityEnabled      = defaults.CpuAffinityEnabled;
-        CpuCoreLimit            = defaults.CpuCoreLimit;
-        MemoryOptimizationEnabled = defaults.MemoryOptimizationEnabled;
-        CleanupOldVersions      = defaults.CleanupOldVersions;
-        Save();
+        var d = new AppSettings();
+        ShowPerformanceOverlay    = d.ShowPerformanceOverlay;
+        AutoUpdateRoblox          = d.AutoUpdateRoblox;
+        MinimizeToTray            = d.MinimizeToTray;
+        HotReloadEnabled          = d.HotReloadEnabled;
+        FpsUnlockEnabled          = d.FpsUnlockEnabled;
+        MultiThreadingEnabled     = d.MultiThreadingEnabled;
+        BrowserHomepage           = d.BrowserHomepage;
+        StretchResolutionEnabled  = d.StretchResolutionEnabled;
+        StretchResolutionWidth    = d.StretchResolutionWidth;
+        StretchResolutionHeight   = d.StretchResolutionHeight;
+        MultiInstanceEnabled      = d.MultiInstanceEnabled;
+        SuppressCrashHandler      = d.SuppressCrashHandler;
+        CpuAffinityEnabled        = d.CpuAffinityEnabled;
+        CpuCoreLimit              = d.CpuCoreLimit;
+        MemoryOptimizationEnabled = d.MemoryOptimizationEnabled;
+        CleanupOldVersions        = d.CleanupOldVersions;
+        // 各 OnXxxChanged が自動保存するので明示的な Save 不要
     }
 
     [RelayCommand]
