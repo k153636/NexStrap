@@ -39,6 +39,7 @@ public class AppSettings
 
     // Stretched Resolution
     public bool StretchResolutionEnabled { get; set; } = false;
+    public bool StretchWarningDismissed  { get; set; } = false;
     public int  StretchResolutionWidth   { get; set; } = 1280;
     public int  StretchResolutionHeight  { get; set; } = 960;
 

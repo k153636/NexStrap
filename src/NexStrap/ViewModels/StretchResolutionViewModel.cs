@@ -22,6 +22,7 @@ public partial class StretchResolutionViewModel : ViewModelBase
     ];
 
     [ObservableProperty] private bool   _applyOnLaunch;
+    [ObservableProperty] private bool   _warningVisible;
     [ObservableProperty] private int    _customWidth;
     [ObservableProperty] private int    _customHeight;
     [ObservableProperty] private bool   _isActive;
@@ -34,7 +35,8 @@ public partial class StretchResolutionViewModel : ViewModelBase
         _roblox   = roblox;
 
         var s = settings.Settings;
-        _applyOnLaunch = s.StretchResolutionEnabled;
+        _applyOnLaunch  = s.StretchResolutionEnabled;
+        _warningVisible = !s.StretchWarningDismissed;
         _customWidth   = s.StretchResolutionWidth;
         _customHeight  = s.StretchResolutionHeight;
 
@@ -50,6 +52,13 @@ public partial class StretchResolutionViewModel : ViewModelBase
             s.StretchResolutionWidth   = CustomWidth;
             s.StretchResolutionHeight  = CustomHeight;
         });
+
+    [RelayCommand]
+    private void DismissWarning()
+    {
+        WarningVisible = false;
+        _settings.Update(s => s.StretchWarningDismissed = true);
+    }
 
     [RelayCommand]
     private void SelectPreset(ResolutionPreset preset)
