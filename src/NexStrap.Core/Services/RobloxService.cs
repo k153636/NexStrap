@@ -829,13 +829,59 @@ public class RobloxService
 
     private DEVMODE _originalDevMode;
     private bool    _stretchActive;
+    private bool    _originalFullscreen;
+
+    // GlobalBasicSettings_13.xml のパス（全 Roblox アカウント共通）
+    private static readonly string GlobalBasicSettingsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Roblox", "GlobalBasicSettings_13.xml");
+
+    /// <summary>
+    /// GlobalBasicSettings の bool 値を書き換える。
+    /// name="Fullscreen" → true/false
+    /// </summary>
+    private static bool SetGlobalBasicBool(string name, bool value)
+    {
+        try
+        {
+            if (!File.Exists(GlobalBasicSettingsPath)) return false;
+            var xml = File.ReadAllText(GlobalBasicSettingsPath);
+            var updated = System.Text.RegularExpressions.Regex.Replace(
+                xml,
+                $@"<bool name=""{name}"">(true|false)</bool>",
+                $"<bool name=\"{name}\">{(value ? "true" : "false")}</bool>");
+            File.WriteAllText(GlobalBasicSettingsPath, updated);
+            return true;
+        }
+        catch { return false; }
+    }
+
+    private static bool GetGlobalBasicBool(string name)
+    {
+        try
+        {
+            if (!File.Exists(GlobalBasicSettingsPath)) return false;
+            var xml = File.ReadAllText(GlobalBasicSettingsPath);
+            var m = System.Text.RegularExpressions.Regex.Match(
+                xml, $@"<bool name=""{name}"">(true|false)</bool>");
+            return m.Success && m.Groups[1].Value == "true";
+        }
+        catch { return false; }
+    }
 
     public bool ApplyStretchResolution(int width, int height)
     {
+        // 現在の解像度を保存
         var dm = new DEVMODE { dmSize = (short)Marshal.SizeOf<DEVMODE>() };
         if (!EnumDisplaySettings(null, ENUM_CURRENT_SETTINGS, ref dm)) return false;
-
         _originalDevMode = dm;
+
+        // 1. Roblox を強制フルスクリーンに設定（ウィンドウモードでは GPU stretch が効かない）
+        _originalFullscreen = GetGlobalBasicBool("Fullscreen");
+        SetGlobalBasicBool("Fullscreen", true);
+        Log($"Roblox Fullscreen set to true (was {_originalFullscreen})");
+
+        // 2. 表示解像度を変更
         dm.dmPelsWidth  = width;
         dm.dmPelsHeight = height;
         dm.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT;
@@ -849,9 +895,15 @@ public class RobloxService
     public void RestoreResolution()
     {
         if (!_stretchActive) return;
+
+        // 表示解像度を復元
         ChangeDisplaySettings(ref _originalDevMode, 0);
         _stretchActive = false;
         Log("Display resolution restored");
+
+        // Roblox のフルスクリーン設定を元に戻す
+        SetGlobalBasicBool("Fullscreen", _originalFullscreen);
+        Log($"Roblox Fullscreen restored to {_originalFullscreen}");
     }
 
     // -------------------------------------------------------------------------
