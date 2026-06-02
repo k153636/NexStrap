@@ -104,7 +104,34 @@ public partial class App : Application
         {
             // Keep the app alive during the startup sequence; main window is shown at the end
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            _ = RunStartupSequenceAsync(robloxService, settingsService, desktop);
+            _ = RunStartupSequenceAsync(robloxService, settingsService, desktop)
+                .ContinueWith(t =>
+                {
+                    if (!t.IsFaulted) return;
+                    var ex = t.Exception?.InnerException ?? t.Exception;
+                    Dispatcher.UIThread.InvokeAsync(async () =>
+                    {
+                        var msg = $"NexStrap failed to start:\n\n{ex?.Message}\n\n" +
+                                  $"Check %LOCALAPPDATA%\\NexStrap\\crash.log for details.";
+                        var box = new Avalonia.Controls.Window
+                        {
+                            Title  = "NexStrap - Startup Error",
+                            Width  = 480, Height = 200,
+                            CanResize = false,
+                            WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterScreen,
+                            Content = new Avalonia.Controls.TextBlock
+                            {
+                                Text = msg, Margin = new Avalonia.Thickness(20),
+                                TextWrapping = Avalonia.Media.TextWrapping.Wrap
+                            }
+                        };
+                        box.Show();
+                        RobloxService.Log($"Startup failed: {ex}");
+                        await Task.Delay(8000);
+                        box.Close();
+                        desktop.Shutdown(1);
+                    });
+                });
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -158,6 +185,7 @@ public partial class App : Application
             mainWindow.Show();
             mainWindow.Activate();
         });
+        RobloxService.Log("Main window shown");
     }
 
     private static void ApplyPerformanceFlags(FastFlagService fastFlags, SettingsService settings)
