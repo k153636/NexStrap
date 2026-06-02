@@ -24,11 +24,23 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        var services = new ServiceCollection();
-        ConfigureServices(services);
-        Services = services.BuildServiceProvider();
+        try
+        {
+            var services = new ServiceCollection();
+            ConfigureServices(services);
+            Services = services.BuildServiceProvider();
+        }
+        catch (Exception ex)
+        {
+            RobloxService.Log($"DI initialization failed: {ex}");
+            // サービス初期化に失敗した場合は即座にクラッシュログを残して終了
+            var msg = $"NexStrap failed to initialize:\n\n{ex.Message}\n\nCheck %LOCALAPPDATA%\\NexStrap\\crash.log";
+            NativeMessageBox(msg, "NexStrap Error");
+            Environment.Exit(1);
+            return;
+        }
 
-        JumpListService.Initialize();
+        try { JumpListService.Initialize(); } catch { }
 
         // 起動のたびに現在の EXE パスでプロトコルを更新（Debug/Release/移動後も Web 経由が機能する）
         RobloxService.RegisterProtocolHandler();
@@ -187,6 +199,10 @@ public partial class App : Application
         });
         RobloxService.Log("Main window shown");
     }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
+    private static void NativeMessageBox(string text, string caption) => MessageBox(IntPtr.Zero, text, caption, 0x10);
 
     private static void ApplyPerformanceFlags(FastFlagService fastFlags, SettingsService settings)
         => fastFlags.ApplyPerformanceSettings(settings.Settings);

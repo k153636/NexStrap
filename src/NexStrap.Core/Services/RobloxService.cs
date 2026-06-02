@@ -1941,13 +1941,46 @@ public class RobloxService
     // -------------------------------------------------------------------------
     private static bool IsVcRedistInstalled()
     {
+        // 複数の既知パスを確認（VS バージョン・WoW6432Node の違いに対応）
+        var paths = new[]
+        {
+            @"SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\X64",
+            @"SOFTWARE\WoW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\X64",
+            @"SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64",
+        };
+        foreach (var path in paths)
+        {
+            try
+            {
+                using var key = Registry.LocalMachine.OpenSubKey(path);
+                if (key?.GetValue("Installed") is int v && v == 1) return true;
+            }
+            catch { }
+        }
+        // 追加チェック: アンインストールレジストリで VC++ 2015-2022 を探す
         try
         {
-            using var key = Registry.LocalMachine.OpenSubKey(
-                @"SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\X64");
-            return key?.GetValue("Installed") is int v && v == 1;
+            foreach (var uninstallPath in new[]
+            {
+                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+                @"SOFTWARE\WoW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
+            })
+            {
+                using var key = Registry.LocalMachine.OpenSubKey(uninstallPath);
+                if (key == null) continue;
+                foreach (var sub in key.GetSubKeyNames())
+                {
+                    using var entry = key.OpenSubKey(sub);
+                    var name = entry?.GetValue("DisplayName") as string;
+                    if (name != null && name.Contains("Microsoft Visual C++") &&
+                        name.Contains("2015") || name != null && name.Contains("Redistributable") &&
+                        name?.Contains("14.") == true)
+                        return true;
+                }
+            }
         }
-        catch { return false; }
+        catch { }
+        return false;
     }
 
     private async Task CheckAndInstallVcRedistAsync()
