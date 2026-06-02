@@ -78,7 +78,8 @@
                                         Padding="0" CornerRadius="10"
                                         Background="{DynamicResource CardBg}">
                                     <TextBlock Text="{Binding Label}" Foreground="#FFFFFF"
-                                               FontSize="13" Margin="14,10"/>
+                                               FontSize="13" Margin="14,10"
+                                               Width="110" TextAlignment="Center"/>
                                 </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
