@@ -68,8 +68,8 @@
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Tweaks Hot Reload" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Apply tweaks automatically without restarting Roblox"
+                            <TextBlock Text="Fast Flags Hot Reload" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Apply Fast Flags automatically without restarting Roblox"
                                        Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding HotReloadEnabled}"

@@ -78,7 +78,7 @@
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem Content="Tweaks" Tag="FastFlags">
+                <ui:NavigationViewItem Content="Fast Flags" Tag="FastFlags">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="Filter"/>
                     </ui:NavigationViewItem.IconSource>

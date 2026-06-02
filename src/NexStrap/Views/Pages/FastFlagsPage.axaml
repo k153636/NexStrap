@@ -10,7 +10,7 @@
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="24,20,24,12" Spacing="3">
-            <TextBlock Text="Tweaks" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
+            <TextBlock Text="Fast Flags" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
             <TextBlock Text="Fine-tune Roblox's internal settings for better performance"
                        FontSize="11" Foreground="{DynamicResource FgSub}"
                        IsVisible="{Binding SavePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
