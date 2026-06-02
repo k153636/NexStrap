@@ -30,7 +30,11 @@ public partial class App : Application
 
         JumpListService.Initialize();
 
+        // 起動のたびに現在の EXE パスでプロトコルを更新（Debug/Release/移動後も Web 経由が機能する）
+        RobloxService.RegisterProtocolHandler();
+
         var args = Environment.GetCommandLineArgs();
+        RobloxService.Log($"Args: {string.Join(" | ", args)}");
 
         // roblox:// / roblox-player:// protocol launch from browser
         var robloxUrl = args.Skip(1).FirstOrDefault(a =>
@@ -38,7 +42,9 @@ public partial class App : Application
             a.StartsWith("roblox-player://", StringComparison.OrdinalIgnoreCase));
         if (robloxUrl != null)
         {
-            HandleRobloxUrlLaunchAsync(robloxUrl).GetAwaiter().GetResult();
+            RobloxService.Log($"URL detected: {robloxUrl}");
+            // Task.Run でスレッドプール上で実行し Avalonia UI スレッドのデッドロックを回避
+            Task.Run(() => HandleRobloxUrlLaunchAsync(robloxUrl)).GetAwaiter().GetResult();
             Environment.Exit(0);
             return;
         }
@@ -47,7 +53,7 @@ public partial class App : Application
         var idx  = Array.IndexOf(args, "--launch-game");
         if (idx >= 0 && idx + 1 < args.Length && long.TryParse(args[idx + 1], out var placeId))
         {
-            HandleJumpLaunchAsync(placeId).GetAwaiter().GetResult();
+            Task.Run(() => HandleJumpLaunchAsync(placeId)).GetAwaiter().GetResult();
             Environment.Exit(0);
             return;
         }
@@ -169,13 +175,9 @@ public partial class App : Application
             await fastFlags.SaveAsync();
             await mods.ApplyEnabledModsAsync();
 
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName        = $"roblox://experiences/start?placeId={placeId}",
-                UseShellExecute = true
-            });
+            await BloxstrapLaunchAsync(placeId);
         }
-        catch { }
+        catch (Exception ex) { RobloxService.Log($"HandleJumpLaunchAsync: {ex.Message}"); }
     }
 
     private async Task HandleRobloxUrlLaunchAsync(string url)
@@ -185,32 +187,104 @@ public partial class App : Application
             var fastFlags = Services.GetRequiredService<FastFlagService>();
             var settings  = Services.GetRequiredService<SettingsService>();
             var mods      = Services.GetRequiredService<ModService>();
-            var roblox    = Services.GetRequiredService<RobloxService>();
+
+            RobloxService.Log($"Web launch: {url}");
 
             ApplyPerformanceFlags(fastFlags, settings);
             await fastFlags.SaveAsync();
             await mods.ApplyEnabledModsAsync();
 
-            var playerPath = roblox.RobloxPlayerPath;
-            if (playerPath != null)
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(playerPath)
-                {
-                    UseShellExecute  = true,
-                    WorkingDirectory = System.IO.Path.GetDirectoryName(playerPath)!,
-                    Arguments        = url
-                });
-            }
+            var (placeId, gameId, accessCode) = ParseRobloxUrl(url);
+            if (placeId > 0)
+                await BloxstrapLaunchAsync(placeId, gameId, accessCode);
             else
+                RobloxService.Log($"Could not extract placeId from: {url}");
+        }
+        catch (Exception ex) { RobloxService.Log($"HandleRobloxUrlLaunchAsync failed: {ex.Message}"); }
+    }
+
+    /// <summary>
+    /// Bloxstrap 互換の起動フロー:
+    /// 1. gamejoin.roblox.com/v1/join-* で joinScriptUrl + authTicket を取得
+    /// 2. RobloxPlayerBeta に --joinscript で渡す
+    /// join API 失敗時は --launchMode play --placeId にフォールバック
+    /// </summary>
+    private async Task BloxstrapLaunchAsync(long placeId, string? gameId = null, string? accessCode = null)
+    {
+        var roblox    = Services.GetRequiredService<RobloxService>();
+        var robloxApi = Services.GetRequiredService<RobloxApiService>();
+        var accounts  = Services.GetRequiredService<AccountService>();
+
+        var playerPath = roblox.RobloxPlayerPath;
+        if (playerPath == null) { RobloxService.Log("Player not found"); return; }
+        var workDir = System.IO.Path.GetDirectoryName(playerPath)!;
+
+        var cookie = accounts.GetActiveCookie();
+
+        // ── Bloxstrap 方式: join API → --joinscript ──────────────────────────
+        if (cookie != null)
+        {
+            var (joinScriptUrl, authTicket) =
+                await robloxApi.GetJoinInfoAsync(cookie, placeId, gameId, accessCode);
+
+            if (!string.IsNullOrEmpty(joinScriptUrl) && !string.IsNullOrEmpty(authTicket))
             {
-                // Roblox not installed via NexStrap, pass URL to shell
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url)
+                var jArgs = $"--joinscript \"{joinScriptUrl}\" " +
+                            $"--authenticationTicket {authTicket} " +
+                            $"--authenticationUrl \"https://auth.roblox.com\" " +
+                            $"--joinAttemptId {Guid.NewGuid()} " +
+                            $"--joinAttemptOrigin ExperiencesListAndGrid " +
+                            $"--launchMode play";
+                RobloxService.Log($"Bloxstrap launch: placeId={placeId} gameId={gameId}");
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(playerPath)
+                    { UseShellExecute = false, WorkingDirectory = workDir, Arguments = jArgs });
+                return;
+            }
+        }
+
+        // ── フォールバック: --launchMode play --placeId ───────────────────────
+        // アカウント未設定 or join API 失敗 → Roblox 自身のセッションで参加を試みる
+        string fbArgs;
+        if (cookie != null)
+        {
+            RobloxService.Log($"join API failed, fallback with auth: placeId={placeId}");
+            var ticket = await robloxApi.GetAuthTicketAsync(cookie);
+            fbArgs = ticket != null
+                ? $"--launchMode play --placeId {placeId} --authenticationTicket {ticket} --authenticationUrl https://auth.roblox.com"
+                : $"--launchMode play --placeId {placeId}";
+        }
+        else
+        {
+            RobloxService.Log($"No account, launching without auth: placeId={placeId}");
+            fbArgs = $"--launchMode play --placeId {placeId}";
+        }
+
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(playerPath)
+            { UseShellExecute = false, WorkingDirectory = workDir, Arguments = fbArgs });
+    }
+
+    /// <summary>roblox:// URL から (placeId, gameId, accessCode) を抽出する。</summary>
+    private static (long PlaceId, string? GameId, string? AccessCode) ParseRobloxUrl(string url)
+    {
+        long placeId = 0; string? gameId = null, accessCode = null;
+        try
+        {
+            var q = url.Contains('?') ? url[(url.IndexOf('?') + 1)..] : string.Empty;
+            foreach (var kv in q.Split('&'))
+            {
+                var p = kv.Split('=', 2);
+                if (p.Length != 2) continue;
+                var val = Uri.UnescapeDataString(p[1]);
+                switch (p[0].ToLowerInvariant())
                 {
-                    UseShellExecute = true
-                });
+                    case "placeid":    long.TryParse(val, out placeId); break;
+                    case "gameid":     gameId     = val; break;
+                    case "accesscode": accessCode = val; break;
+                }
             }
         }
         catch { }
+        return (placeId, gameId, accessCode);
     }
 
     private void OnTrayIconClicked(object? sender, EventArgs e) => ShowMainWindow();

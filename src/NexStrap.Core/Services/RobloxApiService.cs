@@ -187,6 +187,60 @@ public class RobloxApiService
         catch { return null; }
     }
 
+    /// <summary>
+    /// Bloxstrap 互換: gamejoin.roblox.com/v1/join-* API を呼び joinScriptUrl と authTicket を返す。
+    /// gameId 指定で特定サーバー参加、accessCode でプライベートサーバー参加。
+    /// </summary>
+    public async Task<(string? JoinScriptUrl, string? AuthTicket)> GetJoinInfoAsync(
+        string cookie, long placeId, string? gameId = null, string? accessCode = null)
+    {
+        try
+        {
+            // CSRF トークン取得
+            using var csrf1 = new HttpRequestMessage(HttpMethod.Post,
+                "https://auth.roblox.com/v1/authentication-ticket");
+            csrf1.Headers.TryAddWithoutValidation("Cookie", $".ROBLOSECURITY={cookie}");
+            csrf1.Headers.TryAddWithoutValidation("Referer", "https://www.roblox.com");
+            csrf1.Content = new StringContent("", Encoding.UTF8, "application/json");
+            var r1 = await Http.SendAsync(csrf1);
+            if (!r1.Headers.TryGetValues("x-csrf-token", out var toks)) return (null, null);
+            var csrf = toks.First();
+
+            // join エンドポイントとボディを決定
+            string endpoint;
+            JObject body;
+            if (!string.IsNullOrEmpty(accessCode))
+            {
+                endpoint = "https://gamejoin.roblox.com/v1/join-private-game";
+                body = new JObject { ["placeId"] = placeId, ["accessCode"] = accessCode, ["linkCode"] = accessCode };
+            }
+            else if (!string.IsNullOrEmpty(gameId))
+            {
+                endpoint = "https://gamejoin.roblox.com/v1/join-game-instance";
+                body = new JObject { ["placeId"] = placeId, ["gameId"] = gameId, ["isTeleport"] = false };
+            }
+            else
+            {
+                endpoint = "https://gamejoin.roblox.com/v1/join-game";
+                body = new JObject { ["placeId"] = placeId, ["guestData"] = "" };
+            }
+
+            using var req = new HttpRequestMessage(HttpMethod.Post, endpoint);
+            req.Headers.TryAddWithoutValidation("Cookie", $".ROBLOSECURITY={cookie}");
+            req.Headers.TryAddWithoutValidation("X-CSRF-Token", csrf);
+            req.Headers.TryAddWithoutValidation("Referer", "https://www.roblox.com");
+            req.Content = new StringContent(body.ToString(), Encoding.UTF8, "application/json");
+
+            var resp = await Http.SendAsync(req);
+            if (!resp.IsSuccessStatusCode) return (null, null);
+
+            var json = JObject.Parse(await resp.Content.ReadAsStringAsync());
+            return (json["joinScriptUrl"]?.Value<string>(),
+                    json["authenticationTicket"]?.Value<string>());
+        }
+        catch { return (null, null); }
+    }
+
     public async Task<List<FriendPresenceDetail>> GetFriendPresenceDetailsAsync(IList<long> userIds)
     {
         try

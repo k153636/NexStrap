@@ -10,8 +10,6 @@ public class AppSettings
     public bool MinimizeToTray { get; set; } = true;
     public string ActiveProfileId { get; set; } = string.Empty;
     public string RobloxInstallPath { get; set; } = string.Empty;
-    public int TargetFps { get; set; } = 144;
-    public bool FpsUnlockEnabled { get; set; } = false;
     public bool MultiThreadingEnabled { get; set; } = false;
     public string BrowserHomepage { get; set; } = "https://www.youtube.com";
     public bool HotReloadEnabled { get; set; } = true;

@@ -52,6 +52,7 @@ public partial class HomeViewModel : ViewModelBase
     private readonly Dictionary<int, uint>                         _slotPids      = new();
     private int    _activeFocusedSlot = -1;
     private Timer? _focusTimer;
+    private Timer? _presenceHeartbeat;
 
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] private static extern uint   GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
@@ -448,14 +449,11 @@ public partial class HomeViewModel : ViewModelBase
             });
         };
 
-        // Discord 再接続時にゲーム中なら in-game presence を復元、それ以外はページ presence
+        // Discord 再接続時は RefreshPresence で正しく復元（_activeGames が空の場合も考慮）
         _discord.ConnectionChanged += (_, connected) =>
         {
             if (!connected) return;
-            if (_gameDetected)
-                UpdateGamePresence();
-            else
-                _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+            RefreshPresence();
         };
 
         // 新しい Roblox インスタンス起動時: 最新のプロセスをそのスロットに関連付ける
@@ -509,6 +507,14 @@ public partial class HomeViewModel : ViewModelBase
             }
             catch { }
         }, null, 500, 500);
+
+        // 15秒ごとにゲーム中の presence を再送する。
+        // PlaceJoined 中の API 待機レースや Discord 側の無音ドロップで presence が消えた場合の保険。
+        _presenceHeartbeat = new Timer(_ =>
+        {
+            try { if (_gameDetected) UpdateGamePresence(); }
+            catch { }
+        }, null, 15_000, 15_000);
 
         // 起動時にすでに NexStrap が起動した Roblox が動いていれば IsRobloxRunning を立てる
         if (_roblox.IsNexStrapRobloxRunning())
@@ -711,7 +717,13 @@ public partial class HomeViewModel : ViewModelBase
         var games = _activeGames.Values.ToList();
         if (games.Count == 0)
         {
-            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+            // _activeGames が未準備（PlaceJoined の API 待機中）でも in-game presence を維持する。
+            // ゲーム中なら最後に既知のゲーム情報でフォールバック。ゲーム外のみページ presence にする。
+            if (_gameDetected)
+                _discord.SetInGamePresence(_lastGameName ?? "Roblox", _lastGameIconUrl,
+                    _userAvatarUrl, FormatState(), _lastGameCreator, _lastPlaceId);
+            else
+                _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
             return;
         }
 

@@ -16,7 +16,32 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        // DirectX アダプター初期化より前に設定する必要がある
+        // 起動のたびにプロトコルハンドラを現在の EXE パスで更新
+        NexStrap.Core.Services.RobloxService.RegisterProtocolHandler();
+
+        // ── プロトコルハンドラ / ジャンプリスト ──────────────────────────────
+        // Avalonia 初期化より前に処理する。
+        // Avalonia のレンダリング初期化が完了する前に URL 処理が必要なため、
+        // また単一インスタンス mutex の影響を受けないようにするため。
+        // ブラウザからは "roblox-player:1+key:value+..." 形式で届く（スラッシュなし）
+        var robloxUrl = args.FirstOrDefault(a =>
+            a.StartsWith("roblox://", StringComparison.OrdinalIgnoreCase) ||
+            a.StartsWith("roblox-player:", StringComparison.OrdinalIgnoreCase));
+
+        if (robloxUrl != null)
+        {
+            HandleProtocolUrl(robloxUrl);
+            return;
+        }
+
+        var jumpIdx = Array.IndexOf(args, "--launch-game");
+        if (jumpIdx >= 0 && jumpIdx + 1 < args.Length && long.TryParse(args[jumpIdx + 1], out var jumpPlaceId))
+        {
+            HandleJumpGame(jumpPlaceId);
+            return;
+        }
+
+        // ── 通常起動（メインウィンドウ） ─────────────────────────────────────
         RequestHighPerformanceGpu();
 
         using var mutex = new Mutex(true, "NexStrap_SingleInstance", out bool createdNew);
@@ -32,6 +57,134 @@ class Program
         };
 
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+    }
+
+    /// <summary>
+    /// roblox:// / roblox-player: URI を処理してゲームに参加する（Avalonia 不使用）。
+    /// Bloxstrap v2.6.0+ と同一: URI を RobloxPlayerBeta.exe にそのまま渡す。
+    /// </summary>
+    private static void HandleProtocolUrl(string url)
+    {
+        NexStrap.Core.Services.RobloxService.Log($"HandleProtocolUrl: {url[..Math.Min(120, url.Length)]}");
+        try
+        {
+            var settings  = new NexStrap.Core.Services.SettingsService();
+            var roblox    = new NexStrap.Core.Services.RobloxService();
+            var fastFlags = new NexStrap.Core.Services.FastFlagService(roblox);
+            var mods      = new NexStrap.Core.Services.ModService(roblox);
+
+            fastFlags.ApplyPerformanceSettings(settings.Settings);
+            fastFlags.SaveAsync().GetAwaiter().GetResult();
+            mods.ApplyEnabledModsAsync().GetAwaiter().GetResult();
+
+            var playerPath = roblox.RobloxPlayerPath;
+            if (playerPath == null) { NexStrap.Core.Services.RobloxService.Log("Player not found"); return; }
+
+            // Bloxstrap 方式: URI を解析せずそのまま RobloxPlayerBeta.exe に渡す
+            NexStrap.Core.Services.RobloxService.Log($"Launching: {playerPath}");
+            var psi = new System.Diagnostics.ProcessStartInfo(playerPath)
+            {
+                UseShellExecute = false,
+                WorkingDirectory = Path.GetDirectoryName(playerPath)!,
+                Arguments = url
+            };
+            System.Diagnostics.Process.Start(psi);
+        }
+        catch (Exception ex) { NexStrap.Core.Services.RobloxService.Log($"HandleProtocolUrl failed: {ex.Message}"); }
+    }
+
+    /// <summary>ジャンプリスト経由のゲーム起動（Avalonia 不使用）。</summary>
+    private static void HandleJumpGame(long placeId)
+    {
+        NexStrap.Core.Services.RobloxService.Log($"HandleJumpGame: placeId={placeId}");
+        try
+        {
+            var settings  = new NexStrap.Core.Services.SettingsService();
+            var roblox    = new NexStrap.Core.Services.RobloxService();
+            var fastFlags = new NexStrap.Core.Services.FastFlagService(roblox);
+            var mods      = new NexStrap.Core.Services.ModService(roblox);
+            var robloxApi = new NexStrap.Core.Services.RobloxApiService();
+            var accounts  = new NexStrap.Core.Services.AccountService();
+
+            fastFlags.ApplyPerformanceSettings(settings.Settings);
+            fastFlags.SaveAsync().GetAwaiter().GetResult();
+            mods.ApplyEnabledModsAsync().GetAwaiter().GetResult();
+
+            BloxstrapLaunch(roblox, robloxApi, accounts, placeId);
+        }
+        catch (Exception ex) { NexStrap.Core.Services.RobloxService.Log($"HandleJumpGame failed: {ex.Message}"); }
+    }
+
+    private static void BloxstrapLaunch(
+        NexStrap.Core.Services.RobloxService roblox,
+        NexStrap.Core.Services.RobloxApiService robloxApi,
+        NexStrap.Core.Services.AccountService accounts,
+        long placeId, string? gameId = null, string? accessCode = null)
+    {
+        var playerPath = roblox.RobloxPlayerPath;
+        if (playerPath == null) { NexStrap.Core.Services.RobloxService.Log("Player not found"); return; }
+        var workDir = Path.GetDirectoryName(playerPath)!;
+
+        var cookie = accounts.GetActiveCookie();
+        if (cookie != null)
+        {
+            var (joinScriptUrl, authTicket) =
+                robloxApi.GetJoinInfoAsync(cookie, placeId, gameId, accessCode).GetAwaiter().GetResult();
+
+            if (!string.IsNullOrEmpty(joinScriptUrl) && !string.IsNullOrEmpty(authTicket))
+            {
+                var jArgs = $"--joinscript \"{joinScriptUrl}\" " +
+                            $"--authenticationTicket {authTicket} " +
+                            $"--authenticationUrl \"https://auth.roblox.com\" " +
+                            $"--joinAttemptId {Guid.NewGuid()} " +
+                            $"--joinAttemptOrigin ExperiencesListAndGrid " +
+                            $"--launchMode play";
+                NexStrap.Core.Services.RobloxService.Log($"Bloxstrap launch OK: placeId={placeId}");
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(playerPath)
+                    { UseShellExecute = false, WorkingDirectory = workDir, Arguments = jArgs });
+                return;
+            }
+
+            var ticket = robloxApi.GetAuthTicketAsync(cookie).GetAwaiter().GetResult();
+            if (ticket != null)
+            {
+                var fbArgs = $"--launchMode play --placeId {placeId} " +
+                             $"--authenticationTicket {ticket} --authenticationUrl https://auth.roblox.com";
+                NexStrap.Core.Services.RobloxService.Log($"Fallback launch: placeId={placeId}");
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(playerPath)
+                    { UseShellExecute = false, WorkingDirectory = workDir, Arguments = fbArgs });
+                return;
+            }
+        }
+
+        // アカウント未設定 or チケット取得失敗 → placeId のみで起動
+        NexStrap.Core.Services.RobloxService.Log($"No-auth launch: placeId={placeId}");
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(playerPath)
+            { UseShellExecute = false, WorkingDirectory = workDir,
+              Arguments = $"--launchMode play --placeId {placeId}" });
+    }
+
+    private static (long PlaceId, string? GameId, string? AccessCode) ParseRobloxUrl(string url)
+    {
+        long placeId = 0; string? gameId = null, accessCode = null;
+        try
+        {
+            var q = url.Contains('?') ? url[(url.IndexOf('?') + 1)..] : string.Empty;
+            foreach (var kv in q.Split('&'))
+            {
+                var p = kv.Split('=', 2);
+                if (p.Length != 2) continue;
+                var val = Uri.UnescapeDataString(p[1]);
+                switch (p[0].ToLowerInvariant())
+                {
+                    case "placeid":    long.TryParse(val, out placeId); break;
+                    case "gameid":     gameId     = val; break;
+                    case "accesscode": accessCode = val; break;
+                }
+            }
+        }
+        catch { }
+        return (placeId, gameId, accessCode);
     }
 
     private static void RequestHighPerformanceGpu()

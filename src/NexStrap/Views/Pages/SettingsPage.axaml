@@ -19,16 +19,6 @@
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="FPS Unlock" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Apply flags for uncapped frame rate"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding FpsUnlockEnabled}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
                             <TextBlock Text="Multi-threading" Foreground="#FFFFFF" FontSize="13"/>
                             <TextBlock Text="Tune scheduler flags for CPU thread utilization"
                                        Foreground="{DynamicResource FgSub}" FontSize="11"/>

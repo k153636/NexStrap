@@ -77,7 +77,7 @@ public class RobloxService
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "NexStrap", "debug.log");
 
-    private static void Log(string message)
+    public static void Log(string message)
     {
         try
         {
@@ -1367,6 +1367,42 @@ public class RobloxService
         }
         Log("Failed to fetch version GUID from all sources");
         return null;
+    }
+
+    // -------------------------------------------------------------------------
+    // Protocol handler registration — roblox:// / roblox-player://
+    // -------------------------------------------------------------------------
+    /// <summary>
+    /// 起動のたびに現在の EXE パスで roblox:// プロトコルを再登録する。
+    /// Debug / Release / 移動後など、どのパスで起動しても Web 経由が機能するようにする。
+    /// </summary>
+    public static void RegisterProtocolHandler()
+    {
+        var exe = Environment.ProcessPath;
+        if (string.IsNullOrEmpty(exe)) return;
+
+        var command = $"\"{exe}\" \"%1\"";
+        var versionFolder = Path.GetFileName(
+            Directory.GetDirectories(VersionsDir).FirstOrDefault() ?? string.Empty);
+
+        foreach (var scheme in new[] { "roblox", "roblox-player" })
+        {
+            try
+            {
+                using var root = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{scheme}");
+                root.SetValue("", $"URL:{scheme} Protocol");
+                root.SetValue("URL Protocol", "");
+
+                using var icon = root.CreateSubKey("DefaultIcon");
+                icon.SetValue("", exe);
+
+                using var cmd = root.CreateSubKey(@"shell\open\command");
+                cmd.SetValue("", command);
+                if (!string.IsNullOrEmpty(versionFolder))
+                    cmd.SetValue("version", versionFolder);
+            }
+            catch (Exception ex) { Log($"RegisterProtocolHandler({scheme}): {ex.Message}"); }
+        }
     }
 
     // -------------------------------------------------------------------------
