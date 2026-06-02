@@ -871,6 +871,177 @@ public class RobloxService
     /// </summary>
     private const uint INTERNAL_DISPLAY = 0x80000000; // DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INTERNAL
 
+    /// <summary>
+    /// QueryDisplayConfig で現在の設定を取得し、無変更で SetDisplayConfig に渡す。
+    /// CCD パスを通ることで Intel/NVIDIA ドライバーがフルモード再設定を行い
+    /// フルパネルスケール（引き伸ばし）が適用される。
+    /// Windows Settings でリフレッシュレートを変更するのと同じ効果。
+    /// </summary>
+    /// <summary>
+    /// 1280×960 で利用可能な「現在とは異なる Hz」を探して一時的に切り替え、すぐ戻す。
+    /// Windows Settings でリフレッシュレートを変更すると黒帯が消える現象を自動再現。
+    /// </summary>
+    private void TriggerFullModeSetByHzToggle(int width, int height)
+    {
+        try
+        {
+            var cur = new DEVMODE { dmSize = (short)Marshal.SizeOf<DEVMODE>() };
+            if (!EnumDisplaySettings(null, ENUM_CURRENT_SETTINGS, ref cur)) return;
+            int origHz = cur.dmDisplayFrequency;
+            Log($"TriggerHzToggle: current Hz={origHz} at {width}x{height}");
+
+            // 現在と違う Hz を探す
+            int altHz = -1;
+            for (int n = 0; ; n++)
+            {
+                var m = new DEVMODE { dmSize = (short)Marshal.SizeOf<DEVMODE>() };
+                if (!EnumDisplaySettings(null, n, ref m)) break;
+                if (m.dmPelsWidth == width && m.dmPelsHeight == height &&
+                    m.dmDisplayFrequency != origHz && m.dmDisplayFrequency > 0)
+                {
+                    altHz = m.dmDisplayFrequency;
+                    break;
+                }
+            }
+
+            if (altHz < 0) { Log("TriggerHzToggle: no alternate Hz found"); return; }
+
+            Log($"TriggerHzToggle: switching {origHz}Hz → {altHz}Hz → {origHz}Hz");
+            const int DM_FREQ = 0x400000;
+
+            // 別 Hz に切り替え（Intel ドライバーのフルモード再設定を起動）
+            var dm1 = cur;
+            dm1.dmPelsWidth = width; dm1.dmPelsHeight = height;
+            dm1.dmDisplayFrequency = altHz;
+            dm1.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_FREQ;
+            var r1 = ChangeDisplaySettings(ref dm1, 0);
+            Log($"TriggerHzToggle switch to {altHz}Hz: {r1}");
+
+            // 元の Hz に戻す
+            var dm2 = cur;
+            dm2.dmPelsWidth = width; dm2.dmPelsHeight = height;
+            dm2.dmDisplayFrequency = origHz;
+            dm2.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_FREQ;
+            var r2 = ChangeDisplaySettings(ref dm2, 0);
+            Log($"TriggerHzToggle restore to {origHz}Hz: {r2}");
+        }
+        catch (Exception ex) { Log($"TriggerHzToggle: {ex.Message}"); }
+    }
+
+    /// <summary>
+    /// QDC_ONLY_ACTIVE_PATHS で取得した target mode の Hz を 1 フレーム分だけ変えて
+    /// SetDisplayConfig で適用する。Windows Settings の Hz 変更と同じ操作。
+    /// </summary>
+    private void TrySetDisplayConfigWithHzNudge()
+    {
+        try
+        {
+            const uint QF = QDC_ACTIVE; // NO virtual-mode-aware → tgtModeIdx が直接インデックス
+            if (GetDisplayConfigBufferSizes(QF, out uint np, out uint nm) != 0) return;
+
+            const int MODE_SIZE = 64;
+            var pBuf = Marshal.AllocHGlobal(PATH_SIZE * (int)np);
+            var mBuf = Marshal.AllocHGlobal(MODE_SIZE * (int)nm);
+            try
+            {
+                uint np2 = np, nm2 = nm;
+                if (QueryDisplayConfigPtr(QF, ref np2, pBuf, ref nm2, mBuf, IntPtr.Zero) != 0) return;
+
+                // 内蔵ディスプレイの path を探して tgtModeIdx を取得
+                for (int i = 0; i < np2; i++)
+                {
+                    uint ot = (uint)Marshal.ReadInt32(pBuf, i * PATH_SIZE + PATH_TGT_OTECH);
+                    if (ot != INTERNAL_DISPLAY) continue;
+
+                    int tgtIdx = Marshal.ReadInt32(pBuf, i * PATH_SIZE + PATH_TGT_MIDX);
+                    Log($"HzNudge: internal path[{i}] tgtModeIdx={tgtIdx} nm={nm2}");
+                    if (tgtIdx < 0 || tgtIdx >= nm2) { Log("HzNudge: invalid tgtIdx"); break; }
+
+                    // target mode: DISPLAYCONFIG_VIDEO_SIGNAL_INFO の pixelRate は offset 16
+                    // hSyncFreq(N=20,D=24), vSyncFreq(N=28,D=32)
+                    int mBase = tgtIdx * MODE_SIZE + 16; // union start in MODE_INFO
+                    uint pixRateHi = (uint)Marshal.ReadInt32(mBuf, mBase + 4); // high 32 of UINT64
+                    uint vNumer   = (uint)Marshal.ReadInt32(mBuf, mBase + 20);
+                    uint vDenom   = (uint)Marshal.ReadInt32(mBuf, mBase + 24);
+                    Log($"HzNudge: vSyncFreq={vNumer}/{vDenom} ({(vDenom>0?(double)vNumer/vDenom:0):F2}Hz)");
+
+                    // Hz を +1 してから元に戻す（各 SetDisplayConfig を独立して試みる）
+                    uint origNumer = vNumer;
+                    Marshal.WriteInt32(mBuf, mBase + 20, (int)(vNumer + vDenom)); // +1Hz
+                    var r1 = SetDisplayConfigPtr(np2, pBuf, nm2, mBuf,
+                        SDC_SUPPLIED | SDC_APPLY | SDC_CHANGES | SDC_NO_OPT);
+                    Log($"HzNudge +1Hz result={r1}");
+
+                    Marshal.WriteInt32(mBuf, mBase + 20, (int)origNumer); // restore
+                    var r2 = SetDisplayConfigPtr(np2, pBuf, nm2, mBuf,
+                        SDC_SUPPLIED | SDC_APPLY | SDC_CHANGES | SDC_NO_OPT);
+                    Log($"HzNudge restore result={r2}");
+                    break;
+                }
+            }
+            finally { Marshal.FreeHGlobal(pBuf); Marshal.FreeHGlobal(mBuf); }
+        }
+        catch (Exception ex) { Log($"TrySetDisplayConfigWithHzNudge: {ex.Message}"); }
+    }
+
+    private void ReapplyCurrentConfigViaSetDisplayConfig()
+    {
+        try
+        {
+            const uint SDC_USE_DB_CURRENT = 0xF; // SDC_TOPOLOGY_INTERNAL|CLONE|EXTEND|EXTERNAL
+            const uint SDC_SAVE_DB        = 0x800;
+
+            // 試行0: QDC_ONLY_ACTIVE_PATHS (no VMAWARE) で target mode の Hz を微調整して再適用
+            // → Windows Settings が Hz 変更に使う SetDisplayConfig と同等の操作
+            TrySetDisplayConfigWithHzNudge();
+
+            // 試行1: データベースの現在トポロジを再適用（パスなし）
+            // Windows Settings が内部的に行うことと同等
+            var r0 = SetDisplayConfigPtr(0, IntPtr.Zero, 0, IntPtr.Zero,
+                SDC_USE_DB_CURRENT | SDC_APPLY);
+            Log($"ReapplyUseDbCurrent result={r0}");
+            if (r0 == 0) return;
+
+            // 試行2: オーバーサイズバッファで QueryDisplayConfig → SetDisplayConfig
+            // PATH_SIZE の計算ミスによるバッファオーバーフロー回避のため 256 バイト/要素で確保
+            foreach (uint qf in new uint[] { QDC_ACTIVE, QDC_ACTIVE | QDC_VMAWARE })
+            {
+                if (GetDisplayConfigBufferSizes(qf, out uint np, out uint nm) != 0) continue;
+
+                const int OVERSIZED_PATH = 256;
+                const int OVERSIZED_MODE = 256;
+                var pBuf = Marshal.AllocHGlobal(OVERSIZED_PATH * (int)np);
+                var mBuf = Marshal.AllocHGlobal(OVERSIZED_MODE * (int)nm);
+                try
+                {
+                    // ゼロ初期化
+                    for (int i = 0; i < OVERSIZED_PATH * np; i++) Marshal.WriteByte(pBuf, i, 0);
+                    for (int i = 0; i < OVERSIZED_MODE * nm; i++) Marshal.WriteByte(mBuf, i, 0);
+
+                    uint np2 = np, nm2 = nm;
+                    var qr = QueryDisplayConfigPtr(qf, ref np2, pBuf, ref nm2, mBuf, IntPtr.Zero);
+                    Log($"QueryDisplayConfig qf=0x{qf:X} oversized: result={qr} np={np2} nm={nm2}");
+                    if (qr != 0) continue;
+
+                    foreach (uint flags in new uint[] {
+                        SDC_SUPPLIED | SDC_APPLY,
+                        SDC_SUPPLIED | SDC_APPLY | SDC_CHANGES,
+                        SDC_SUPPLIED | SDC_APPLY | SDC_NO_OPT | SDC_CHANGES,
+                        SDC_SUPPLIED | SDC_APPLY | SDC_NO_OPT | SDC_VMAWARE | SDC_CHANGES,
+                        SDC_SUPPLIED | SDC_APPLY | SDC_SAVE_DB | SDC_CHANGES,
+                    })
+                    {
+                        var r = SetDisplayConfigPtr(np2, pBuf, nm2, mBuf, flags);
+                        Log($"Reapply oversized qf=0x{qf:X} flags=0x{flags:X} result={r}");
+                        if (r == 0) return;
+                    }
+                }
+                finally { Marshal.FreeHGlobal(pBuf); Marshal.FreeHGlobal(mBuf); }
+            }
+        }
+        catch (Exception ex) { Log($"ReapplyCurrentConfig: {ex.Message}"); }
+    }
+
     private bool ApplyResolutionViaSetDisplayConfig(int width, int height)
     {
         try
@@ -892,16 +1063,14 @@ public class RobloxService
                     var internalSrcIdx = new System.Collections.Generic.HashSet<int>();
                     for (int i = 0; i < np2; i++)
                     {
-                        uint outTech = (uint)Marshal.ReadInt32(pBuf, i * PATH_SIZE + PATH_TGT_OTECH);
+                        uint outTech  = (uint)Marshal.ReadInt32(pBuf, i * PATH_SIZE + PATH_TGT_OTECH);
+                        int srcModeIdx = Marshal.ReadInt32(pBuf, i * PATH_SIZE + PATH_SRC_MIDX);
+                        int tgtModeIdx = Marshal.ReadInt32(pBuf, i * PATH_SIZE + PATH_TGT_MIDX);
+                        int pathFlags  = Marshal.ReadInt32(pBuf, i * PATH_SIZE + (PATH_SIZE - 4));
+                        Log($"  path[{i}] outTech=0x{outTech:X} srcIdx={srcModeIdx} tgtIdx={tgtModeIdx} pathFlags=0x{pathFlags:X}");
                         if (outTech == INTERNAL_DISPLAY)
                         {
-                            int srcModeIdx = Marshal.ReadInt32(pBuf, i * PATH_SIZE + PATH_SRC_MIDX) & 0xFFFF;
-                            internalSrcIdx.Add(srcModeIdx);
-                            Log($"  Internal path[{i}] srcModeIdx={srcModeIdx} outTech=0x{outTech:X}");
-                        }
-                        else
-                        {
-                            Log($"  External path[{i}] outTech=0x{outTech:X} — skipping");
+                            internalSrcIdx.Add(srcModeIdx & 0xFFFF);
                         }
                     }
 
@@ -1084,14 +1253,14 @@ public class RobloxService
         }
         else
         {
-            // フォールバック: ChangeDisplaySettings + SetDisplayConfig でスケーリング強制
-            ApplyDisplayScaling(true);
+            // SetDisplayConfig は NVIDIA Optimus + Intel iGPU 環境で全パターン result=87
+            // → ChangeDisplaySettings で解像度のみ変更（黒帯はユーザーが Intel GCC で設定）
             dm.dmPelsWidth  = width;
             dm.dmPelsHeight = height;
             dm.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT;
             ok = ChangeDisplaySettings(ref dm, 0) == DISP_CHANGE_SUCCESSFUL;
             if (ok) _stretchActive = true;
-            Log(ok ? $"Stretch resolution applied via ChangeDisplaySettings: {width}x{height}" : $"Stretch resolution failed: {width}x{height}");
+            Log(ok ? $"Stretch resolution applied: {width}x{height}" : $"Stretch resolution failed: {width}x{height}");
         }
         return ok;
     }
