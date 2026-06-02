@@ -12,6 +12,23 @@
             <TextBlock Text="Stretch Res" FontSize="22" FontWeight="Bold"
                        Foreground="#FFFFFF" Margin="0,0,0,2"/>
 
+            <!-- GPU note -->
+            <Border Background="#111111" CornerRadius="10" Padding="14,10"
+                    IsVisible="{Binding WarningVisible}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Text="⚠  GPU scaling must be set to Full-screen for stretch to work"
+                                   Foreground="#FFFFFF" FontSize="12" FontWeight="SemiBold"/>
+                        <TextBlock FontSize="11" Foreground="#888888" TextWrapping="Wrap"
+                                   Text="Additional setup may be required depending on your environment."/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="✕" Command="{Binding DismissWarningCommand}"
+                            Background="Transparent" Foreground="#888888"
+                            Padding="6,4" FontSize="13" CornerRadius="6"
+                            VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
             <!-- Status bar -->
             <Border CornerRadius="10" Padding="14,10" Background="{DynamicResource CardBg}">
                 <Grid ColumnDefinitions="Auto,*,Auto">
@@ -38,23 +55,6 @@
                     </StackPanel>
                     <ToggleSwitch Grid.Column="1" IsChecked="{Binding ApplyOnLaunch}"
                                   OnContent="ON" OffContent="OFF"/>
-                </Grid>
-            </Border>
-
-            <!-- GPU note -->
-            <Border Background="#111111" CornerRadius="10" Padding="14,10"
-                    IsVisible="{Binding WarningVisible}">
-                <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Grid.Column="0" Spacing="4">
-                        <TextBlock Text="⚠  GPU scaling must be set to Full-screen for stretch to work"
-                                   Foreground="#FFFFFF" FontSize="12" FontWeight="SemiBold"/>
-                        <TextBlock FontSize="11" Foreground="#888888" TextWrapping="Wrap"
-                                   Text="Additional setup may be required depending on your environment."/>
-                    </StackPanel>
-                    <Button Grid.Column="1" Content="✕" Command="{Binding DismissWarningCommand}"
-                            Background="Transparent" Foreground="#888888"
-                            Padding="6,4" FontSize="13" CornerRadius="6"
-                            VerticalAlignment="Center"/>
                 </Grid>
             </Border>
 
