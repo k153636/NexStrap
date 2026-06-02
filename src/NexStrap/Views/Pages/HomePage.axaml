@@ -147,11 +147,17 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Empty state -->
-                <TextBlock Text="No recent games" FontSize="12" Foreground="{DynamicResource FgMuted}"
-                           HorizontalAlignment="Center" Margin="0,16,0,0"
-                           IsVisible="{Binding RecentGames.Count,
-                               Converter={StaticResource IntToZeroConverter}}"/>
+                <!-- Empty state — first-time user guidance -->
+                <Border IsVisible="{Binding RecentGames.Count, Converter={StaticResource IntToZeroConverter}}"
+                        Margin="0,8,0,0" Padding="20,16" CornerRadius="12" Background="#0DFFFFFF">
+                    <StackPanel Spacing="6" HorizontalAlignment="Center">
+                        <TextBlock Text="🎮  Ready to play?" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="#FFFFFF" HorizontalAlignment="Center"/>
+                        <TextBlock TextWrapping="Wrap" TextAlignment="Center" MaxWidth="320"
+                                   FontSize="12" Foreground="{DynamicResource FgSub}"
+                                   Text="Hit Launch to start Roblox. Games you play will appear here."/>
+                    </StackPanel>
+                </Border>
 
                 <ItemsControl ItemsSource="{Binding RecentGames}">
                     <ItemsControl.ItemTemplate>

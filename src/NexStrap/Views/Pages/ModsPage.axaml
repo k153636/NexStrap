@@ -11,6 +11,8 @@
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="24,20,24,12" Spacing="3">
             <TextBlock Text="Mods" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
+            <TextBlock Text="Customize textures, sounds, and fonts in Roblox"
+                       FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,2,0,0"/>
         </StackPanel>
 
         <!-- Action Bar -->
@@ -83,10 +85,12 @@
             <PathIcon Data="{StaticResource IconPackage}" Width="40" Height="40"
                       Foreground="{DynamicResource FgMuted}" HorizontalAlignment="Center"/>
             <StackPanel Spacing="4" HorizontalAlignment="Center">
-                <TextBlock Text="No mods installed" FontSize="14" Foreground="{DynamicResource MutedBrush}"
+                <TextBlock Text="No mods yet" FontSize="14" Foreground="{DynamicResource MutedBrush}"
                            HorizontalAlignment="Center"/>
-                <TextBlock Text="Click &quot;+ Import Mod&quot; to add a folder"
-                           FontSize="12" Foreground="{DynamicResource FgMuted}" HorizontalAlignment="Center"/>
+                <TextBlock TextAlignment="Center" MaxWidth="260"
+                           FontSize="12" Foreground="{DynamicResource FgMuted}" HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           Text="Mods let you replace textures, sounds, and fonts in Roblox. Click &quot;+ Import Mod&quot; to get started."/>
             </StackPanel>
         </StackPanel>
 

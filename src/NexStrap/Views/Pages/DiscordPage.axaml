@@ -11,6 +11,8 @@
 
             <TextBlock Text="Discord" FontSize="22" FontWeight="Bold"
                        Foreground="#FFFFFF" Margin="0,0,0,2"/>
+            <TextBlock Text="Show your game status on Discord"
+                       FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
 
             <!-- Connection -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">

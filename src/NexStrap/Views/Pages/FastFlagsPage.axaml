@@ -10,11 +10,12 @@
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="24,20,24,12" Spacing="3">
-            <TextBlock Text="Fast Flags" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
-            <TextBlock Text="{Binding SavePath, StringFormat='Save path: {0}'}"
-                       FontSize="11" Foreground="{DynamicResource FgMuted}" FontFamily="Consolas,monospace"
+            <TextBlock Text="Tweaks" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
+            <TextBlock Text="Fine-tune Roblox's internal settings for better performance"
+                       FontSize="11" Foreground="{DynamicResource FgSub}"
                        IsVisible="{Binding SavePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-            <TextBlock Text="Roblox not found" FontSize="11" Foreground="{DynamicResource MutedBrush}"
+            <TextBlock Text="Roblox not found — launch Roblox once to enable tweaks"
+                       FontSize="11" Foreground="{DynamicResource MutedBrush}"
                        IsVisible="{Binding SavePath, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
         </StackPanel>
 

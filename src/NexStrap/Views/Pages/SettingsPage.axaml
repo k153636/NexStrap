@@ -11,6 +11,8 @@
 
             <TextBlock Text="Settings" FontSize="22" FontWeight="Bold"
                        Foreground="#FFFFFF" Margin="0,0,0,2"/>
+            <TextBlock Text="Customize how NexStrap and Roblox behave"
+                       FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
 
             <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
                 <StackPanel Spacing="12">
@@ -30,7 +32,7 @@
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
                             <TextBlock Text="Multi-threading" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Tune scheduler flags for CPU thread utilization"
+                            <TextBlock Text="Use more CPU threads — may improve performance on multi-core PCs"
                                        Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding MultiThreadingEnabled}"
@@ -66,8 +68,8 @@
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Fast Flags Hot Reload" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Reload flags on launch and when needed"
+                            <TextBlock Text="Tweaks Hot Reload" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Apply tweaks automatically without restarting Roblox"
                                        Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding HotReloadEnabled}"
@@ -93,8 +95,8 @@
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Suppress Crash Handler" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Kill RobloxCrashHandler to prevent crash dialogs"
+                            <TextBlock Text="Hide Crash Dialog" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Suppress the popup that appears when Roblox crashes"
                                        Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding SuppressCrashHandler}"
@@ -104,7 +106,7 @@
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
                             <TextBlock Text="Memory Optimization" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Limit Roblox working set to reduce memory pressure"
+                            <TextBlock Text="Cap Roblox's RAM usage — useful on PCs with less than 8 GB RAM"
                                        Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding MemoryOptimizationEnabled}"
@@ -114,7 +116,7 @@
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
                             <TextBlock Text="CPU Affinity" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Restrict Roblox to a subset of CPU cores"
+                            <TextBlock Text="Limit which CPU cores Roblox uses (advanced)"
                                        Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding CpuAffinityEnabled}"
@@ -124,7 +126,7 @@
                     <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding CpuAffinityEnabled}">
                         <StackPanel Grid.Column="0" Spacing="2">
                             <TextBlock Text="CPU Core Limit" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Max cores to use (0 = all cores)"
+                            <TextBlock Text="Number of cores to use (0 = no limit, use all cores)"
                                        Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <NumericUpDown Grid.Column="1" Value="{Binding CpuCoreLimit}"

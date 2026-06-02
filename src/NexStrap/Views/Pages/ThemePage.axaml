@@ -12,6 +12,8 @@
 
             <TextBlock Text="Theme" FontSize="22" FontWeight="Bold"
                        Foreground="#FFFFFF" Margin="0,0,0,2"/>
+            <TextBlock Text="Change colors, backgrounds, and visual style"
+                       FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
 
             <!-- Appearance -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">

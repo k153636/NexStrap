@@ -11,6 +11,8 @@
 
             <TextBlock Text="Stats" FontSize="22" FontWeight="Bold"
                        Foreground="#FFFFFF" Margin="0,0,0,2"/>
+            <TextBlock Text="Your Roblox play history and time breakdown"
+                       FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
 
             <!-- Summary cards -->
             <Grid ColumnDefinitions="*,8,*,8,*">

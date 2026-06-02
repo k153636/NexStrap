@@ -11,6 +11,8 @@
 
             <TextBlock Text="Account" FontSize="22" FontWeight="Bold"
                        Foreground="#FFFFFF" Margin="0,0,0,2"/>
+            <TextBlock Text="Add your Roblox account to log in automatically"
+                       FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
 
             <!-- Import section -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14"
