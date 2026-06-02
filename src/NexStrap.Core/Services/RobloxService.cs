@@ -14,11 +14,12 @@ public record BootstrapperProgress(string Message, double Percent, bool IsIndete
 
 /// <summary>Options passed to LaunchAsync that control post-launch behavior.</summary>
 public record LaunchOptions(
-    bool MultiInstance      = false,
-    bool SuppressCrashHandler = false,
-    int  CpuCoreLimit       = 0,
-    bool MemoryOptimization = false,
-    bool CleanupOldVersions = true
+    bool    MultiInstance        = false,
+    bool    SuppressCrashHandler = false,
+    int     CpuCoreLimit         = 0,
+    bool    MemoryOptimization   = false,
+    bool    CleanupOldVersions   = true,
+    string? CookieToInject       = null   // 起動直前に RobloxCookies.dat へ書き込むクッキー
 );
 
 public class RobloxService
@@ -30,6 +31,32 @@ public class RobloxService
     private static extern IntPtr CreateMutex(IntPtr lpAttr, bool bInitialOwner, string lpName);
     [DllImport("kernel32.dll")] private static extern bool ReleaseMutex(IntPtr h);
     [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr h);
+
+    [DllImport("ntdll.dll")]
+    private static extern uint NtQuerySystemInformation(uint infoClass, IntPtr buffer, uint bufferSize, out uint returnLength);
+    [DllImport("ntdll.dll")]
+    private static extern uint NtDuplicateObject(IntPtr srcProcess, IntPtr srcHandle, IntPtr dstProcess, out IntPtr dstHandle, uint access, uint attrs, uint options);
+    [DllImport("ntdll.dll")]
+    private static extern uint NtQueryObject(IntPtr handle, uint objInfoClass, IntPtr buffer, uint bufSize, out uint returnLength);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SystemHandleEntry
+    {
+        public uint   Pid;
+        public byte   ObjectType;
+        public byte   Flags;
+        public ushort Handle;
+        public IntPtr Object;
+        public uint   Access;
+    }
+
+    private const uint SysHandleInfo       = 16;
+    private const uint DupCloseSource      = 0x1;
+    private const uint DupSameAccess       = 0x2;
+    private const uint ProcDupHandle       = 0x0040;
+    private const uint StatusInfoLenMismatch = 0xC0000004;
 
     // -------------------------------------------------------------------------
     // HTTP clients
@@ -329,6 +356,13 @@ public class RobloxService
 
         if (playerPath == null) { SetStatus(RobloxStatus.Idle); return false; }
 
+        // 起動直前にクッキーを注入（タイミングを最小化）
+        if (options.CookieToInject != null)
+        {
+            var ok = InjectAccountCookie(options.CookieToInject);
+            Log(ok ? "Cookie injected successfully before launch" : "Cookie injection failed (file may be locked)");
+        }
+
         Log($"Launching: {playerPath} args={launchArgs ?? "(none)"}");
         SetStatus(RobloxStatus.Launching);
         var proc = TryStartProcess(playerPath, launchArgs);
@@ -350,6 +384,11 @@ public class RobloxService
         }
 
         if (playerPath == null) { SetStatus(RobloxStatus.Idle); return false; }
+        if (options.CookieToInject != null)
+        {
+            var ok = InjectAccountCookie(options.CookieToInject);
+            Log(ok ? "Cookie injected (retry path)" : "Cookie injection failed (retry path)");
+        }
         SetStatus(RobloxStatus.Launching);
         proc = TryStartProcess(playerPath, launchArgs);
         if (proc == null) { SetStatus(RobloxStatus.Idle); return false; }
@@ -384,13 +423,14 @@ public class RobloxService
             catch (Exception ex) { Log($"CPU affinity failed: {ex.Message}"); }
         }
 
-        // メモリ上限 (Voidstrap 方式: RAM の半分 or 2GB の小さいほう)
+        // メモリ上限 (RAM の半分 or 4GB の小さいほう)
+        // 2GB 上限では現代の Roblox が頻繁にページアウトしパフォーマンスが低下するため 4GB に変更
         if (opts.MemoryOptimization)
         {
             try
             {
                 var info  = GC.GetGCMemoryInfo();
-                long maxWs = Math.Min(2L * 1024 * 1024 * 1024,
+                long maxWs = Math.Min(4L * 1024 * 1024 * 1024,
                                       info.TotalAvailableMemoryBytes / 2);
                 proc.MaxWorkingSet = new IntPtr(maxWs);
                 Log($"MaxWorkingSet set to {maxWs / 1_048_576}MB");
@@ -398,33 +438,142 @@ public class RobloxService
             catch (Exception ex) { Log($"Memory optimization failed: {ex.Message}"); }
         }
 
-        // RobloxCrashHandler 抑制 (起動 ~800ms 後に出現するので少し待つ)
+        // RobloxCrashHandler 抑制 (起動後に出現するため最大3回リトライ)
         if (opts.SuppressCrashHandler)
         {
-            await Task.Delay(800);
-            foreach (var handler in Process.GetProcessesByName("RobloxCrashHandler"))
+            for (int attempt = 0; attempt < 3; attempt++)
             {
-                try
+                await Task.Delay(800);
+                var handlers = Process.GetProcessesByName("RobloxCrashHandler");
+                foreach (var h in handlers)
                 {
-                    if (!handler.CloseMainWindow())
-                        handler.Kill(entireProcessTree: true);
-                    Log($"Suppressed RobloxCrashHandler (PID {handler.Id})");
+                    try
+                    {
+                        if (!h.CloseMainWindow()) h.Kill(entireProcessTree: true);
+                        Log($"Suppressed RobloxCrashHandler (PID {h.Id})");
+                    }
+                    catch { }
                 }
-                catch { }
+                if (handlers.Length > 0) break;
             }
         }
     }
 
     // -------------------------------------------------------------------------
-    // Multi-instance: NexStrap が ROBLOX_singletonMutex を保持する
+    // Account cookie injection — RobloxCookies.dat に対象アカウントを書き込む
+    // -------------------------------------------------------------------------
+    private static readonly string RobloxCookiesPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Roblox", "LocalStorage", "RobloxCookies.dat");
+
+    public static void ClearRobloxCookies()
+    {
+        try { File.Delete(RobloxCookiesPath); } catch { }
+    }
+
+    private static readonly string AppStoragePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Roblox", "LocalStorage", "appStorage.json");
+
+    /// <summary>
+    /// appStorage.json のセッション関連フィールドをクリアする。
+    /// Roblox が保存済みセッションを使わず auth ticket を使うようにするため。
+    /// </summary>
+    public static void ClearAppStorageSession()
+    {
+        if (!File.Exists(AppStoragePath)) return;
+        try
+        {
+            var json = File.ReadAllText(AppStoragePath);
+            var obj  = Newtonsoft.Json.Linq.JObject.Parse(json);
+            // セッション関連フィールドを空にする
+            obj["CredentialValue"] = "";
+            obj["AccountBlob"]     = "";
+            if (obj.ContainsKey("WebLogin")) obj["WebLogin"] = Newtonsoft.Json.Linq.JValue.CreateNull();
+            File.WriteAllText(AppStoragePath, obj.ToString(Newtonsoft.Json.Formatting.None));
+            Log("AppStorage session cleared for multi-account launch");
+        }
+        catch (Exception ex) { Log($"ClearAppStorageSession failed: {ex.Message}"); }
+    }
+
+    public static bool InjectAccountCookie(string robloSecurityCookie, string? targetPath = null)
+    {
+        var cookiesFilePath = targetPath ?? RobloxCookiesPath;
+        try
+        {
+            string cookiesJson;
+            if (File.Exists(cookiesFilePath))
+            {
+                cookiesJson = File.ReadAllText(cookiesFilePath);
+                var obj     = System.Text.Json.JsonDocument.Parse(cookiesJson).RootElement;
+                if (!obj.TryGetProperty("CookiesData", out var cookiesDataElem)) goto write_fresh;
+                var encB64  = cookiesDataElem.GetString();
+                if (encB64 == null) goto write_fresh;
+
+                var encrypted = Convert.FromBase64String(encB64);
+                var decrypted = ProtectedData.Unprotect(encrypted, null, DataProtectionScope.CurrentUser);
+                var text      = System.Text.Encoding.UTF8.GetString(decrypted);
+
+                // Netscape cookie 形式: フィールドはタブ区切り、6番目が name、7番目が value
+                var lines  = text.Split('\n').ToList();
+                bool found = false;
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    var parts = lines[i].Split('\t');
+                    if (parts.Length >= 7 && parts[5] == ".ROBLOSECURITY")
+                    {
+                        parts[6]  = robloSecurityCookie;
+                        lines[i]  = string.Join("\t", parts);
+                        found     = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    // エントリがなければ追加
+                    lines.Add($"#HttpOnly_.roblox.com\tTRUE\t/\tTRUE\t0\t.ROBLOSECURITY\t{robloSecurityCookie}");
+                }
+
+                var newText      = string.Join("\n", lines);
+                var newBytes     = System.Text.Encoding.UTF8.GetBytes(newText);
+                var newEncrypted = ProtectedData.Protect(newBytes, null, DataProtectionScope.CurrentUser);
+                var newJson      = $"{{\"CookiesVersion\":\"1\",\"CookiesData\":\"{Convert.ToBase64String(newEncrypted)}\"}}";
+                File.WriteAllText(cookiesFilePath, newJson);
+                return true;
+            }
+
+            write_fresh:
+            {
+                var lines    = new[] { $"#HttpOnly_.roblox.com\tTRUE\t/\tTRUE\t0\t.ROBLOSECURITY\t{robloSecurityCookie}" };
+                var bytes    = System.Text.Encoding.UTF8.GetBytes(string.Join("\n", lines));
+                var enc      = ProtectedData.Protect(bytes, null, DataProtectionScope.CurrentUser);
+                var json     = $"{{\"CookiesVersion\":\"1\",\"CookiesData\":\"{Convert.ToBase64String(enc)}\"}}";
+                Directory.CreateDirectory(Path.GetDirectoryName(cookiesFilePath)!);
+                File.WriteAllText(cookiesFilePath, json);
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"InjectAccountCookie failed: {ex.Message}");
+            return false;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Multi-instance: Roblox プロセス内の singletonMutex ハンドルを強制クローズ
     // -------------------------------------------------------------------------
     private void AcquireRobloxSingletonMutex()
     {
-        if (_multiInstanceMutex != IntPtr.Zero) return; // 既に保持中
+        // 既存 Roblox が持つ mutex ハンドルを強制クローズして次の起動が通るようにする
+        CloseRobloxSingletonMutexHandles();
+
+        // NexStrap が mutex を再取得して次の Roblox インスタンスがスタートアップ後に
+        // 解放されたことを検知できるようにする
+        if (_multiInstanceMutex != IntPtr.Zero) return;
         _multiInstanceMutex = CreateMutex(IntPtr.Zero, true, "ROBLOX_singletonMutex");
-        Log(_multiInstanceMutex != IntPtr.Zero
-            ? "Acquired ROBLOX_singletonMutex for multi-instance"
-            : "Failed to acquire ROBLOX_singletonMutex");
+        Log("Multi-instance mutex acquired");
     }
 
     public void ReleaseRobloxSingletonMutex()
@@ -433,7 +582,86 @@ public class RobloxService
         ReleaseMutex(_multiInstanceMutex);
         CloseHandle(_multiInstanceMutex);
         _multiInstanceMutex = IntPtr.Zero;
-        Log("Released ROBLOX_singletonMutex");
+        Log("Multi-instance mutex released");
+    }
+
+    private void CloseRobloxSingletonMutexHandles()
+    {
+        var robloxPids = new HashSet<uint>(
+            Process.GetProcessesByName("RobloxPlayerBeta")
+                   .Concat(Process.GetProcessesByName("RobloxPlayer"))
+                   .Where(p => !p.HasExited)
+                   .Select(p => (uint)p.Id));
+
+        if (robloxPids.Count == 0) return;
+
+        uint bufSize = 4 * 1024 * 1024;
+        IntPtr buf = IntPtr.Zero;
+        try
+        {
+            uint needed;
+            uint status;
+            do
+            {
+                if (buf != IntPtr.Zero) Marshal.FreeHGlobal(buf);
+                buf = Marshal.AllocHGlobal((int)bufSize);
+                status = NtQuerySystemInformation(SysHandleInfo, buf, bufSize, out needed);
+                bufSize = Math.Max(needed + 4096, bufSize * 2);
+            }
+            while (status == StatusInfoLenMismatch);
+
+            if (status != 0) return;
+
+            int count    = Marshal.ReadInt32(buf);
+            int entSz    = Marshal.SizeOf<SystemHandleEntry>();
+            IntPtr start = IntPtr.Add(buf, sizeof(uint));
+            var self     = Process.GetCurrentProcess().Handle;
+
+            for (int i = 0; i < count; i++)
+            {
+                var e = Marshal.PtrToStructure<SystemHandleEntry>(IntPtr.Add(start, i * entSz));
+                if (!robloxPids.Contains(e.Pid)) continue;
+
+                IntPtr robloxProc = OpenProcess(ProcDupHandle, false, e.Pid);
+                if (robloxProc == IntPtr.Zero) continue;
+                try
+                {
+                    IntPtr dup;
+                    if (NtDuplicateObject(robloxProc, (IntPtr)e.Handle, self, out dup, 0, 0, DupSameAccess) != 0)
+                        continue;
+                    try
+                    {
+                        if (!IsHandleNamedMutex(dup, "ROBLOX_singletonMutex")) continue;
+                        NtDuplicateObject(robloxProc, (IntPtr)e.Handle, IntPtr.Zero, out _, 0, 0, DupCloseSource);
+                        Log($"Closed ROBLOX_singletonMutex handle in Roblox PID {e.Pid}");
+                    }
+                    finally { CloseHandle(dup); }
+                }
+                finally { CloseHandle(robloxProc); }
+            }
+        }
+        catch (Exception ex) { Log($"CloseRobloxSingletonMutexHandles: {ex.Message}"); }
+        finally { if (buf != IntPtr.Zero) Marshal.FreeHGlobal(buf); }
+    }
+
+    private static bool IsHandleNamedMutex(IntPtr handle, string targetName)
+    {
+        const int bufSize = 1024;
+        IntPtr buf = Marshal.AllocHGlobal(bufSize);
+        try
+        {
+            uint ret;
+            if (NtQueryObject(handle, 1 /*ObjectNameInformation*/, buf, bufSize, out ret) != 0)
+                return false;
+            // OBJECT_NAME_INFORMATION: UNICODE_STRING (Length, MaxLength, Buffer*)
+            ushort len = (ushort)Marshal.ReadInt16(buf);
+            if (len == 0) return false;
+            IntPtr strPtr = Marshal.ReadIntPtr(IntPtr.Add(buf, IntPtr.Size == 8 ? 8 : 4));
+            string name = Marshal.PtrToStringUni(strPtr, len / 2);
+            return name.EndsWith(targetName, StringComparison.OrdinalIgnoreCase);
+        }
+        catch { return false; }
+        finally { Marshal.FreeHGlobal(buf); }
     }
 
     // -------------------------------------------------------------------------
@@ -537,13 +765,29 @@ public class RobloxService
     // -------------------------------------------------------------------------
     // Process management helpers
     // -------------------------------------------------------------------------
-    private static Process? TryStartProcess(string playerPath, string? launchArgs)
-        => Process.Start(new ProcessStartInfo(playerPath)
+    private static Process? TryStartProcess(string playerPath, string? launchArgs, string? isolatedDataDir = null)
+    {
+        var psi = new ProcessStartInfo(playerPath)
         {
-            UseShellExecute  = true,
             WorkingDirectory = Path.GetDirectoryName(playerPath)!,
             Arguments        = launchArgs ?? string.Empty
-        });
+        };
+
+        if (isolatedDataDir != null)
+        {
+            // UseShellExecute = false で環境変数を上書きできる
+            psi.UseShellExecute = false;
+            foreach (System.Collections.DictionaryEntry kv in System.Environment.GetEnvironmentVariables())
+                psi.Environment[(string)kv.Key] = (string?)kv.Value ?? "";
+            psi.Environment["LOCALAPPDATA"] = isolatedDataDir;
+        }
+        else
+        {
+            psi.UseShellExecute = true;
+        }
+
+        return Process.Start(psi);
+    }
 
     private async Task MonitorProcessAsync(Process process)
     {
@@ -874,6 +1118,7 @@ public class RobloxService
     private async Task<bool> TryDownloadMultipartAsync(string url, string localPath,
         RobloxPackage package, CancellationToken ct)
     {
+        var bytesAtStart = Interlocked.Read(ref _totalDownloadedBytes);
         try
         {
             long contentLength = package.CompressedSize;
@@ -930,6 +1175,9 @@ public class RobloxService
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
+            // 部分的にカウントされたバイト数をロールバックしてプログレスバーの誤計上を防ぐ
+            var bytesAdded = Interlocked.Read(ref _totalDownloadedBytes) - bytesAtStart;
+            if (bytesAdded > 0) Interlocked.Add(ref _totalDownloadedBytes, -bytesAdded);
             Log($"Multipart download failed for {package.Name}: {ex.Message}, falling back");
             try { File.Delete(localPath); } catch { }
             return false;

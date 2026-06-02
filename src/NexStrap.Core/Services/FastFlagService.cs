@@ -113,7 +113,9 @@ public class FastFlagService
 
         if (settings.MultiThreadingEnabled)
         {
-            Set("FIntRuntimeMaxNumOfThreads", "2400");
+            // スレッド数はコア数に比例させる（2400 は過大でコンテキストスイッチが増加する）
+            var maxThreads = Math.Min(Environment.ProcessorCount * 2, 64).ToString();
+            Set("FIntRuntimeMaxNumOfThreads", maxThreads);
             Set("DFIntTaskSchedulerThreadCount", Environment.ProcessorCount.ToString());
         }
         else

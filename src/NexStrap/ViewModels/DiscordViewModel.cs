@@ -8,6 +8,7 @@ public partial class DiscordViewModel : ViewModelBase
     private readonly SettingsService _settingsService;
     private readonly DiscordRpcService _discord;
     private readonly RobloxApiService _robloxApi;
+    private readonly AccountService _accountService;
 
     [ObservableProperty] private bool _discordRpcEnabled;
     [ObservableProperty] private bool _discordAppIdConfigured;
@@ -20,11 +21,12 @@ public partial class DiscordViewModel : ViewModelBase
     [ObservableProperty] private bool _showServerRegion;
     [ObservableProperty] private bool _showFlagCount;
 
-    public DiscordViewModel(SettingsService settingsService, DiscordRpcService discord, RobloxApiService robloxApi)
+    public DiscordViewModel(SettingsService settingsService, DiscordRpcService discord, RobloxApiService robloxApi, AccountService accountService)
     {
         _settingsService = settingsService;
         _discord = discord;
         _robloxApi = robloxApi;
+        _accountService = accountService;
 
         var s = settingsService.Settings;
         _discordRpcEnabled      = s.DiscordRpcEnabled;
@@ -85,7 +87,12 @@ public partial class DiscordViewModel : ViewModelBase
             return;
         }
 
-        var userId = _settingsService.Settings.CachedRobloxUserId;
+        // アクティブアカウント → キャッシュIDの順で参照
+        var activeAccount = _accountService.Accounts.FirstOrDefault(a => a.IsActive)
+                         ?? _accountService.Accounts.FirstOrDefault();
+        var userId = activeAccount?.UserId > 0
+            ? activeAccount.UserId
+            : _settingsService.Settings.CachedRobloxUserId;
         if (userId <= 0) return;
 
         var info = await _robloxApi.GetUserInfoAsync(userId);

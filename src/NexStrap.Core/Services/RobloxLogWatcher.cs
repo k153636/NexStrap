@@ -161,8 +161,16 @@ public class RobloxLogWatcher : IDisposable
         lock (_lock) { StartWatchingFileUnsafe(path, fromEnd); }
     }
 
+    public int CurrentSlotId { get; private set; }
+    public event EventHandler<int>? InstanceSlotChanged;
+
     private void StartWatchingFileUnsafe(string path, bool fromEnd)
     {
+        if (_watchedFile != null && path != _watchedFile)
+        {
+            CurrentSlotId++;
+            InstanceSlotChanged?.Invoke(this, CurrentSlotId);
+        }
         _watchedFile    = path;
         _lastPlaceId    = 0;
         _detectedIp     = string.Empty;
@@ -282,6 +290,7 @@ public class RobloxLogWatcher : IDisposable
             if (firePlaceId > 0)
             {
                 _wasRunning = true;
+                _detectedIp = string.Empty; // 新しいゲームセッションでは必ず ServerIpDetected を発火させる
             }
             else if (_lastPlaceId != 0)
             {

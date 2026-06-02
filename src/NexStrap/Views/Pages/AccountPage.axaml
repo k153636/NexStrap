@@ -16,23 +16,58 @@
             <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14"
                     BoxShadow="0 2 10 0 #22000000">
                 <StackPanel Spacing="10">
-                    <TextBlock Text="Import from Chrome" FontSize="12" FontWeight="SemiBold"
+                    <TextBlock Text="Add Account" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}"/>
+
+                    <!-- Buttons row -->
                     <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Login with Browser"
+                                Command="{Binding LoginWithBrowserCommand}"
+                                Background="#FFFFFF" Foreground="#080808"
+                                FontWeight="SemiBold"
+                                FontSize="12" Padding="14,8" CornerRadius="10"/>
                         <Button Content="Import from Chrome"
                                 Command="{Binding ImportFromChromeCommand}"
                                 IsEnabled="{Binding IsImporting, Converter={x:Static BoolConverters.Not}}"
                                 Background="{DynamicResource OverlayBg}" Foreground="#FFFFFF"
                                 FontSize="12" Padding="14,8" CornerRadius="10"/>
+                        <Button Content="Paste Cookie"
+                                Command="{Binding TogglePastePanelCommand}"
+                                Background="{Binding IsPastePanelOpen,
+                                    Converter={StaticResource BoolToColorConverter},
+                                    ConverterParameter='#2A2A2A,transparent'}"
+                                BorderBrush="#2E2E2E" BorderThickness="1"
+                                Foreground="#FFFFFF" FontSize="12" Padding="14,8" CornerRadius="10"/>
                         <Button Content="Cancel"
                                 Command="{Binding CancelImportCommand}"
                                 IsVisible="{Binding IsImporting}"
                                 Background="#1AFF4444" Foreground="{DynamicResource FgDanger}"
                                 FontSize="12" Padding="14,8" CornerRadius="10"/>
                     </StackPanel>
+
                     <TextBlock Text="Please log in to roblox.com in Chrome…"
                                FontSize="12" Foreground="{DynamicResource SubtextBrush}"
                                IsVisible="{Binding IsWaitingForLogin}"/>
+
+                    <!-- Paste cookie panel -->
+                    <StackPanel Spacing="8" IsVisible="{Binding IsPastePanelOpen}">
+                        <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
+                                   Text="Chrome DevTools → Application → Cookies → roblox.com → .ROBLOSECURITY → Value をコピーして貼り付け"/>
+                        <Grid ColumnDefinitions="*,8,Auto">
+                            <TextBox Grid.Column="0"
+                                     Text="{Binding ManualCookie}"
+                                     Watermark=".ROBLOSECURITY value..."
+                                     Background="{DynamicResource SurfaceBg}"
+                                     Foreground="#FFFFFF" FontSize="12"
+                                     BorderBrush="#2E2E2E" CornerRadius="10" Padding="12,8"
+                                     FontFamily="Consolas,monospace"/>
+                            <Button Grid.Column="2" Content="Add"
+                                    Command="{Binding ImportManuallyCommand}"
+                                    Background="#FFFFFF" Foreground="#080808"
+                                    FontWeight="SemiBold" FontSize="12"
+                                    Padding="20,8" CornerRadius="10"/>
+                        </Grid>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 
@@ -49,7 +84,7 @@
                     <DataTemplate x:DataType="vm:AccountEntryViewModel">
                         <Border Background="{DynamicResource CardBg}" CornerRadius="10" Padding="12,10"
                                 Margin="0,0,0,6" BoxShadow="0 2 8 0 #1A000000">
-                            <Grid ColumnDefinitions="36,*,Auto">
+                            <Grid ColumnDefinitions="36,*,Auto,8,Auto">
 
                                 <!-- Avatar -->
                                 <Border Grid.Column="0" Width="36" Height="36"
@@ -74,18 +109,24 @@
                                                Text="{Binding Username, StringFormat='@{0}'}"/>
                                 </StackPanel>
 
+                                <!-- Instance badge -->
+                                <Border Grid.Column="2" CornerRadius="6" Padding="8,3"
+                                        Background="{DynamicResource OverlayBg}"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding InstanceLabel}"
+                                               FontSize="10" Foreground="{DynamicResource FgSub}"/>
+                                </Border>
+
                                 <!-- Actions -->
-                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
+                                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6"
                                             VerticalAlignment="Center">
                                     <Button Content="Switch"
-                                            Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).SetActiveCommand}"
-                                            CommandParameter="{Binding}"
+                                            Command="{Binding SetActiveCommand}"
                                             Background="{DynamicResource OverlayBg}"
                                             Foreground="#FFFFFF" FontSize="11"
                                             Padding="10,5" CornerRadius="8"/>
                                     <Button Content="Remove"
-                                            Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).RemoveCommand}"
-                                            CommandParameter="{Binding}"
+                                            Command="{Binding RemoveCommand}"
                                             Background="#1AFF4444"
                                             Foreground="{DynamicResource FgDanger}" FontSize="11"
                                             Padding="10,5" CornerRadius="8"/>

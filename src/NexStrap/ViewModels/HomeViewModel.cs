@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -44,6 +45,17 @@ public partial class HomeViewModel : ViewModelBase
     private double           _accumulatedDurationSeconds;
     private GameHistoryEntry? _sessionEntry;
 
+    // スロット別ゲーム情報（マルチインスタンス presence 集約用）
+    private readonly record struct SlotGame(string? Name, string? IconUrl, string? Creator, long PlaceId, string? AvatarUrl, string? UserLabel);
+    private readonly Dictionary<int, SlotGame>                    _activeGames   = new();
+    private readonly Dictionary<int, (string? Url, string? Label)> _slotUsers    = new();
+    private readonly Dictionary<int, uint>                         _slotPids      = new();
+    private int    _activeFocusedSlot = -1;
+    private Timer? _focusTimer;
+
+    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] private static extern uint   GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
+
     private async Task ApplyUserLabelAsync(long userId)
     {
         if (!_settings.Settings.DiscordShowRobloxUsername) return;
@@ -59,6 +71,7 @@ public partial class HomeViewModel : ViewModelBase
     public ObservableCollection<GameEntryViewModel> FavoriteGames { get; } = [];
     public string? UserAvatarUrl => _userAvatarUrl;
 
+    [ObservableProperty] private bool         _isMultiInstanceWarningVisible;
     [ObservableProperty] private bool         _isRobloxRunning;
     [ObservableProperty] private bool         _isLaunching;
     [ObservableProperty] private bool         _isRobloxInstalled;
@@ -192,13 +205,40 @@ public partial class HomeViewModel : ViewModelBase
         // ユーザーID検出 → アバター URL 取得してキャッシュ、フレンド通知開始
         _logWatcher.UserIdDetected += async (_, userId) =>
         {
+            // スロットIDは await 前にスナップショット（await 後は変わっている可能性がある）
+            var slot = _logWatcher.CurrentSlotId;
             try
             {
                 _settings.Update(s => s.CachedRobloxUserId = userId);
                 _friendNotifications.Start(userId);
-                _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(userId);
-                await ApplyUserLabelAsync(userId);
-                if (!IsRobloxRunning && !IsLaunching)
+
+                var avatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(userId);
+
+                // スロット0（最初のインスタンス）はグローバルアバターも更新
+                if (slot == 0) _userAvatarUrl = avatarUrl;
+
+                // ユーザーラベルを取得
+                string? userLabel = null;
+                if (_settings.Settings.DiscordShowRobloxUsername)
+                {
+                    var info = await _robloxApi.GetUserInfoAsync(userId);
+                    if (info is { } u)
+                        userLabel = _settings.Settings.DiscordUseDisplayNameFormat
+                            ? $"{u.displayName} (@{u.username})"
+                            : $"@{u.username}";
+                }
+
+                // スロット別に保存
+                _slotUsers[slot] = (avatarUrl, userLabel);
+                if (_activeGames.TryGetValue(slot, out var game))
+                    _activeGames[slot] = game with { AvatarUrl = avatarUrl, UserLabel = userLabel };
+
+                if (slot == 0)
+                    _discord.SetUserLabel(userLabel);
+
+                if (_gameDetected)
+                    UpdateGamePresence();
+                else if (!IsRobloxRunning && !IsLaunching)
                     _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
             }
             catch { }
@@ -210,8 +250,7 @@ public partial class HomeViewModel : ViewModelBase
             try
             {
                 _currentServerCode = await _robloxApi.GetServerCountryCodeAsync(ip);
-                if (_gameDetected)
-                    _discord.SetInGamePresence(_lastGameName ?? "Roblox", _lastGameIconUrl, _userAvatarUrl, FormatState(), _lastGameCreator, _lastPlaceId);
+                if (_gameDetected) UpdateGamePresence();
             }
             catch { }
         };
@@ -221,13 +260,19 @@ public partial class HomeViewModel : ViewModelBase
         {
             var (placeId, universeIdFromLog) = args;
 
-            // await 前に現在の状態をスナップショット（テレポート判定に使う）
+            // スロットIDは await 後にログファイルが切り替わると変わるため、最初にスナップショット
+            var currentSlot     = _logWatcher.CurrentSlotId;
             var prevDetected    = _gameDetected;
             var prevUniverseId  = _currentUniverseId;
             var prevStartTime   = _gameStartTime;
             var prevAccumulated = _accumulatedDurationSeconds;
 
             var seq = Interlocked.Increment(ref _joinSequence);
+
+            // _gameDetected を await より前に true にして ConnectionChanged が
+            // page presence を送り込む競合ウィンドウを閉じる
+            bool wasPreviouslyDetected = prevDetected;
+            _gameDetected = true;
 
             // ログから universeid: が取れていれば API 呼び出しをスキップ
             long newUniverseId = universeIdFromLog;
@@ -236,10 +281,14 @@ public partial class HomeViewModel : ViewModelBase
                 try { newUniverseId = (await _robloxApi.GetUniverseIdAsync(placeId)) ?? 0; } catch { }
             }
 
-            if (Interlocked.Read(ref _joinSequence) != seq) return;
+            if (Interlocked.Read(ref _joinSequence) != seq)
+            {
+                // 別の join が来たので _gameDetected はそちらに委ねる
+                return;
+            }
 
             // 同じ universeId → テレポート（同一ゲーム内の移動）
-            bool isTeleport = prevDetected && newUniverseId != 0 && newUniverseId == prevUniverseId;
+            bool isTeleport = wasPreviouslyDetected && newUniverseId != 0 && newUniverseId == prevUniverseId;
 
             if (isTeleport)
             {
@@ -252,18 +301,23 @@ public partial class HomeViewModel : ViewModelBase
                 _lastPlaceId       = placeId;
                 _currentServerCode = null;
 
-                // Discord のみ新しいサブプレイス情報で更新
                 try
                 {
                     var (name, iconUrl, creator) = await _robloxApi.GetGameInfoAsync(placeId, newUniverseId);
                     if (Interlocked.Read(ref _joinSequence) != seq || !_gameDetected) return;
-                    _discord.SetInGamePresence(
-                        name ?? _lastGameName ?? "Roblox",
-                        iconUrl ?? _lastGameIconUrl,
-                        _userAvatarUrl,
-                        FormatState(),
-                        creator ?? _lastGameCreator,
-                        placeId);
+
+                    // _lastGame* と _activeGames を新しいサブプレイスで更新。
+                    // 更新しないと Join ボタンが古い placeId を指し、RefreshPresence が古い情報を返す。
+                    var resolvedName    = name    ?? _lastGameName    ?? "Roblox";
+                    var resolvedIcon    = iconUrl ?? _lastGameIconUrl;
+                    var resolvedCreator = creator ?? _lastGameCreator;
+                    _lastGameName    = resolvedName;
+                    _lastGameIconUrl = resolvedIcon;
+                    _lastGameCreator = resolvedCreator;
+                    _slotUsers.TryGetValue(currentSlot, out var tpUser);
+                    _activeGames[currentSlot] = new SlotGame(resolvedName, resolvedIcon, resolvedCreator, placeId, tpUser.Url, tpUser.Label);
+
+                    _discord.SetInGamePresence(resolvedName, resolvedIcon, _userAvatarUrl, FormatState(), resolvedCreator, placeId);
                 }
                 catch { }
                 return;
@@ -271,7 +325,7 @@ public partial class HomeViewModel : ViewModelBase
 
             // ── 新しいゲームセッション ─────────────────────────────────────────
             // 前のセッションがあれば累積時間を確定保存
-            if (prevDetected && prevStartTime.HasValue && _sessionEntry != null)
+            if (wasPreviouslyDetected && prevStartTime.HasValue && _sessionEntry != null)
             {
                 var elapsed = (DateTime.UtcNow - prevStartTime.Value).TotalSeconds;
                 _history.UpdateDuration(_sessionEntry, (int)(prevAccumulated + elapsed));
@@ -279,7 +333,7 @@ public partial class HomeViewModel : ViewModelBase
 
             _accumulatedDurationSeconds = 0;
             _currentServerCode          = null;
-            _gameDetected               = true;
+            // _gameDetected はすでに true（await より前にセット済み）
             _currentUniverseId          = newUniverseId;
             _lastPlaceId                = placeId;
             _gameStartTime              = DateTime.UtcNow;
@@ -287,8 +341,16 @@ public partial class HomeViewModel : ViewModelBase
             _lastGameName               = null;
             _lastGameIconUrl            = null;
             _lastGameCreator            = null;
+
+            // ゲーム参加のたびに PID マッピングを更新（起動後初参加でも正確に追跡）
+            RefreshSlotPids();
+
+            // マルチインスタンス: このスロットのゲームを仮登録（アバター情報を引き継ぐ）
+            _slotUsers.TryGetValue(currentSlot, out var slotUser);
+            _activeGames[currentSlot] = new SlotGame("Roblox", null, null, placeId, slotUser.Url, slotUser.Label);
+
             _discord.ResetGameTimestamp();
-            _discord.SetInGamePresence("Roblox", null, _userAvatarUrl, FormatState(), null, placeId);
+            UpdateGamePresence();
 
             try
             {
@@ -298,7 +360,9 @@ public partial class HomeViewModel : ViewModelBase
                 _lastGameName    = name;
                 _lastGameIconUrl = iconUrl;
                 _lastGameCreator = creator;
-                _discord.SetInGamePresence(name, iconUrl, _userAvatarUrl, FormatState(), creator, placeId);
+                _slotUsers.TryGetValue(currentSlot, out var su);
+                _activeGames[currentSlot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
+                UpdateGamePresence();
 
                 var entry = new GameHistoryEntry { PlaceId = placeId, Name = name, IconUrl = iconUrl, PlayedAt = DateTime.Now };
                 _history.Add(entry);
@@ -349,7 +413,32 @@ public partial class HomeViewModel : ViewModelBase
             _lastGameCreator            = null;
             _gameStartTime              = null;
 
-            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox");
+            // このスロットのエントリを削除
+            _activeGames.Remove(_logWatcher.CurrentSlotId);
+
+            // Robloxプロセス数より activeGames が多い場合は余剰スロットを削除
+            var robloxCount = RobloxLogWatcher.IsRobloxRunning() || _roblox.IsNexStrapRobloxRunning()
+                ? (Process.GetProcessesByName("RobloxPlayerBeta").Length +
+                   Process.GetProcessesByName("RobloxPlayer").Length)
+                : 0;
+            while (_activeGames.Count > robloxCount)
+                _activeGames.Remove(_activeGames.Keys.Min());
+
+            if (_activeGames.Count > 0)
+            {
+                // まだ別インスタンスがプレイ中
+                var remaining = _activeGames[_activeGames.Keys.Max()];
+                _lastGameName    = remaining.Name;
+                _lastGameIconUrl = remaining.IconUrl;
+                _lastGameCreator = remaining.Creator;
+                _lastPlaceId     = remaining.PlaceId;
+                _gameDetected    = true;
+                UpdateGamePresence();
+            }
+            else
+            {
+                _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox");
+            }
             Dispatcher.UIThread.InvokeAsync(() =>
             {
                 StatusText = "Ready";
@@ -364,26 +453,87 @@ public partial class HomeViewModel : ViewModelBase
         {
             if (!connected) return;
             if (_gameDetected)
-                _discord.SetInGamePresence(_lastGameName ?? "Roblox", _lastGameIconUrl, _userAvatarUrl, FormatState(), _lastGameCreator, _lastPlaceId);
+                UpdateGamePresence();
             else
                 _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
         };
 
+        // 新しい Roblox インスタンス起動時: 最新のプロセスをそのスロットに関連付ける
+        _logWatcher.InstanceSlotChanged += (_, slotId) =>
+        {
+            try
+            {
+                var newest = Process.GetProcessesByName("RobloxPlayerBeta")
+                    .Concat(Process.GetProcessesByName("RobloxPlayer"))
+                    .Where(p => !p.HasExited)
+                    .OrderByDescending(p => p.StartTime)
+                    .FirstOrDefault();
+                if (newest != null) _slotPids[slotId] = (uint)newest.Id;
+            }
+            catch { }
+        };
+
         _logWatcher.Start();
+
+        // スロット0 の PID = 最も古い（最初の）Roblox プロセス
+        try
+        {
+            var oldest = Process.GetProcessesByName("RobloxPlayerBeta")
+                .Concat(Process.GetProcessesByName("RobloxPlayer"))
+                .Where(p => !p.HasExited)
+                .OrderBy(p => p.StartTime)
+                .FirstOrDefault();
+            if (oldest != null) _slotPids[0] = (uint)oldest.Id;
+        }
+        catch { }
+
+        // アクティブウィンドウを500msごとに監視 → フォーカス中のアカウントのアバターを表示
+        _focusTimer = new Timer(_ =>
+        {
+            try
+            {
+                GetWindowThreadProcessId(GetForegroundWindow(), out uint focusPid);
+                if (focusPid == 0) return;
+
+                // _slotPids に一致する PID があるか検索
+                int? matched = null;
+                foreach (var kv in _slotPids)
+                {
+                    if (kv.Value == focusPid) { matched = kv.Key; break; }
+                }
+                if (matched == null) return;          // Roblox 以外がフォーカス
+                if (matched.Value == _activeFocusedSlot) return; // 変化なし
+
+                _activeFocusedSlot = matched.Value;
+                if (_gameDetected) UpdateGamePresence();
+            }
+            catch { }
+        }, null, 500, 500);
 
         // 起動時にすでに NexStrap が起動した Roblox が動いていれば IsRobloxRunning を立てる
         if (_roblox.IsNexStrapRobloxRunning())
             IsRobloxRunning = true;
 
-        // 前回セッションのユーザーIDが保存済みならアバター取得・フレンド通知開始
-        var cachedUserId = _settings.Settings.CachedRobloxUserId;
-        if (cachedUserId > 0)
+        // 起動時にアカウント情報を取得: アクティブアカウント → キャッシュIDの順で参照
+        var activeAccount  = _accountService.Accounts.FirstOrDefault(a => a.IsActive)
+                          ?? _accountService.Accounts.FirstOrDefault();
+        var startupUserId  = activeAccount?.UserId > 0
+            ? activeAccount.UserId
+            : _settings.Settings.CachedRobloxUserId;
+
+        if (startupUserId > 0)
         {
-            _friendNotifications.Start(cachedUserId);
+            // アカウントに保存済みのアバターURLをすぐに適用（ネット取得より高速）
+            if (activeAccount?.AvatarUrl != null)
+                _userAvatarUrl = activeAccount.AvatarUrl;
+
+            _friendNotifications.Start(startupUserId);
+
             _ = Task.Run(async () =>
             {
-                _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(cachedUserId);
-                await ApplyUserLabelAsync(cachedUserId);
+                // 最新のアバターURLとユーザーラベルをAPIから取得
+                _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(startupUserId);
+                await ApplyUserLabelAsync(startupUserId);
                 // ゲームプレイ中・Roblox 起動中は上書きしない
                 if (!IsRobloxRunning && !_gameDetected)
                     _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
@@ -395,7 +545,13 @@ public partial class HomeViewModel : ViewModelBase
         {
             _myCountryCode = await _robloxApi.GetMyCountryAsync();
         });
+
+        // Multi Instance ON の場合、起動時に1度だけ警告バナーを表示
+        _isMultiInstanceWarningVisible = _settings.Settings.MultiInstanceEnabled;
     }
+
+    [RelayCommand]
+    private void DismissMultiInstanceWarning() => IsMultiInstanceWarningVisible = false;
 
     [RelayCommand]
     private async Task LaunchRobloxAsync()
@@ -415,10 +571,10 @@ public partial class HomeViewModel : ViewModelBase
         _launchStartTime = DateTime.UtcNow;
 
         string? launchArgs = null;
-        var activeCookie = _accountService.GetActiveCookie();
-        if (activeCookie != null)
+        string? cookie = _accountService.GetActiveCookie();
+        if (cookie != null)
         {
-            var ticket = await _robloxApi.GetAuthTicketAsync(activeCookie);
+            var ticket = await _robloxApi.GetAuthTicketAsync(cookie);
             if (ticket != null)
                 launchArgs = $"--launchMode app --authenticationTicket {ticket} --authenticationUrl https://auth.roblox.com";
         }
@@ -429,7 +585,8 @@ public partial class HomeViewModel : ViewModelBase
             SuppressCrashHandler: s.SuppressCrashHandler,
             CpuCoreLimit:        s.CpuAffinityEnabled ? s.CpuCoreLimit : 0,
             MemoryOptimization:  s.MemoryOptimizationEnabled,
-            CleanupOldVersions:  s.CleanupOldVersions
+            CleanupOldVersions:  s.CleanupOldVersions,
+            CookieToInject:      cookie
         );
         var launched = await _roblox.LaunchAsync(launchArgs, autoUpdate: s.AutoUpdateRoblox, options: opts);
         if (!launched)
@@ -523,7 +680,91 @@ public partial class HomeViewModel : ViewModelBase
         catch { }
     }
 
-    // "JP → US Server · 12 Flags" / "US Server" / "12 Flags" / null
+    private void RefreshSlotPids()
+    {
+        try
+        {
+            var procs = Process.GetProcessesByName("RobloxPlayerBeta")
+                .Concat(Process.GetProcessesByName("RobloxPlayer"))
+                .Where(p => !p.HasExited)
+                .OrderBy(p => p.StartTime)
+                .ToList();
+            _slotPids.Clear();
+            for (int i = 0; i < procs.Count; i++)
+                _slotPids[i] = (uint)procs[i].Id;
+        }
+        catch { }
+    }
+
+    public void RefreshPresence()
+    {
+        if (_activeGames.Count > 0)
+            UpdateGamePresence();
+        else if (_gameDetected)
+            _discord.SetInGamePresence(_lastGameName ?? "Roblox", _lastGameIconUrl, _userAvatarUrl, FormatState(), _lastGameCreator, _lastPlaceId);
+        else
+            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+    }
+
+    private void UpdateGamePresence()
+    {
+        var games = _activeGames.Values.ToList();
+        if (games.Count == 0)
+        {
+            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+            return;
+        }
+
+        // スロット追跡はズレることがあるため、実際のRobloxプロセス数で判定
+        int robloxCount;
+        try
+        {
+            robloxCount = Math.Max(1,
+                Process.GetProcessesByName("RobloxPlayerBeta").Length +
+                Process.GetProcessesByName("RobloxPlayer").Length);
+        }
+        catch { robloxCount = 1; }
+
+        if (robloxCount == 1)
+        {
+            // シングルインスタンス → 最も新しいスロット（最大キー）を表示
+            var g = _activeGames[_activeGames.Keys.Max()];
+            _discord.SetInGamePresence(
+                g.Name ?? "Roblox", g.IconUrl,
+                g.AvatarUrl ?? _userAvatarUrl, FormatState(),
+                g.Creator, g.PlaceId);
+            return;
+        }
+
+        // マルチインスタンス（プロセス数ベース）
+        var unique = games
+            .Select(g => g.Name ?? "Roblox")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // フォーカス中スロットのアバターを使用（フォーカス不明なら最新スロット）
+        var focusedGame = _activeFocusedSlot >= 0 && _activeGames.TryGetValue(_activeFocusedSlot, out var fg)
+            ? fg : _activeGames[_activeGames.Keys.Max()];
+
+        _discord.SetMultiGamePresence(
+            unique, robloxCount,
+            focusedGame.AvatarUrl ?? _userAvatarUrl,
+            focusedGame.UserLabel);
+    }
+
+    // ISO 3166-1 alpha-2 国コード → 国旗絵文字 (例: "JP" → "🇯🇵")
+    // A-Z 以外の文字（Tor "T1"、Bogon "XX" など）はそのままコードを返す
+    private static string ToFlagEmoji(string code)
+    {
+        if (code.Length != 2) return code;
+        var c0 = char.ToUpperInvariant(code[0]);
+        var c1 = char.ToUpperInvariant(code[1]);
+        if (c0 < 'A' || c0 > 'Z' || c1 < 'A' || c1 > 'Z') return code;
+        return char.ConvertFromUtf32(0x1F1E6 + (c0 - 'A'))
+             + char.ConvertFromUtf32(0x1F1E6 + (c1 - 'A'));
+    }
+
+    // "🇯🇵 → 🇸🇬 Server · 12 Flags" / "🇸🇬 Server" / "12 Flags" / null
     private string? FormatState()
     {
         var s = _settings.Settings;
@@ -534,14 +775,21 @@ public partial class HomeViewModel : ViewModelBase
         if (!s.DiscordShowServerRegion || _currentServerCode == null)
             return flagStr;
 
+        var serverFlag = ToFlagEmoji(_currentServerCode);
         var server = _myCountryCode != null
-            ? $"{_myCountryCode} → {_currentServerCode} Server"
-            : $"{_currentServerCode} Server";
+            ? $"{ToFlagEmoji(_myCountryCode)} → {serverFlag} Server"
+            : $"{serverFlag} Server";
 
         return flagStr != null ? $"{server} · {flagStr}" : server;
     }
     partial void OnIsRobloxRunningChanged(bool value)
     {
+        if (!value)
+        {
+            // 全インスタンス終了 → スロットをすべてクリア
+            _activeGames.Clear();
+            _gameDetected = false;
+        }
         if (Application.Current is App app)
             app.SetPlayingMode(value);
     }

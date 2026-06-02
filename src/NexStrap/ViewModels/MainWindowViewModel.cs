@@ -78,6 +78,10 @@ public partial class MainWindowViewModel : ViewModelBase
             else if (!s.DiscordRpcEnabled)
                 discord.Disable();
 
+            // Refresh presence so Discord-related setting changes take effect immediately
+            if (s.DiscordRpcEnabled && discord.IsConnected)
+                homeVM.RefreshPresence();
+
             UpdateOverlayVisibility(s.ShowPerformanceOverlay);
         };
 

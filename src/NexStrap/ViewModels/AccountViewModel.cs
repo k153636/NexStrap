@@ -1,9 +1,13 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Newtonsoft.Json.Linq;
 using NexStrap.Core.Models;
 using NexStrap.Core.Services;
+using NexStrap.Views;
 using System.Collections.ObjectModel;
 
 namespace NexStrap.ViewModels;
@@ -14,17 +18,27 @@ public partial class AccountEntryViewModel : ViewModelBase
 
     public RobloxAccount Account { get; }
 
-    public Guid    Id          => Account.Id;
-    public long    UserId      => Account.UserId;
-    public string  Username    => Account.Username;
-    public string  DisplayName => Account.DisplayName;
-    public bool    IsActive    => Account.IsActive;
+    public Guid    Id            => Account.Id;
+    public long    UserId        => Account.UserId;
+    public string  Username      => Account.Username;
+    public string  DisplayName   => Account.DisplayName;
+    public bool    IsActive      => Account.IsActive;
+    public int     InstanceIndex { get; }
+    public string  InstanceLabel => $"Instance {InstanceIndex + 1}";
+
+    // 親 ViewModel への参照不要にするためコマンドをここに持つ
+    public CommunityToolkit.Mvvm.Input.IRelayCommand SetActiveCommand { get; }
+    public CommunityToolkit.Mvvm.Input.IRelayCommand RemoveCommand    { get; }
 
     [ObservableProperty] private Bitmap? _icon;
 
-    public AccountEntryViewModel(RobloxAccount account)
+    public AccountEntryViewModel(RobloxAccount account, int index,
+        Action<AccountEntryViewModel> setActive, Action<AccountEntryViewModel> remove)
     {
-        Account = account;
+        Account          = account;
+        InstanceIndex    = index;
+        SetActiveCommand = new CommunityToolkit.Mvvm.Input.RelayCommand(() => setActive(this));
+        RemoveCommand    = new CommunityToolkit.Mvvm.Input.RelayCommand(() => remove(this));
         if (!string.IsNullOrEmpty(account.AvatarUrl))
             _ = LoadIconAsync(account.AvatarUrl);
     }
@@ -52,6 +66,8 @@ public partial class AccountViewModel : ViewModelBase
     [ObservableProperty] private string _statusMessage = string.Empty;
     [ObservableProperty] private bool   _isImporting;
     [ObservableProperty] private bool   _isWaitingForLogin;
+    [ObservableProperty] private string _manualCookie = string.Empty;
+    [ObservableProperty] private bool   _isPastePanelOpen;
 
     public AccountViewModel(AccountService accounts, RobloxApiService robloxApi)
     {
@@ -63,8 +79,11 @@ public partial class AccountViewModel : ViewModelBase
     private void Reload()
     {
         Accounts.Clear();
-        foreach (var a in _accounts.Accounts)
-            Accounts.Add(new AccountEntryViewModel(a));
+        var list = _accounts.Accounts;
+        for (int i = 0; i < list.Count; i++)
+            Accounts.Add(new AccountEntryViewModel(list[i], i,
+                e => { _accounts.SetActive(e.Id); Reload(); },
+                e => { _accounts.Remove(e.Id); Reload(); StatusMessage = "Removed"; }));
     }
 
     [RelayCommand]
@@ -148,6 +167,70 @@ public partial class AccountViewModel : ViewModelBase
     {
         _pollCts?.Cancel();
         StatusMessage = "";
+    }
+
+    [RelayCommand]
+    private async Task LoginWithBrowserAsync()
+    {
+        try
+        {
+            var mainWindow = (Application.Current?.ApplicationLifetime
+                as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+
+            var loginWindow = new RobloxLoginWindow();
+            if (mainWindow != null)
+                await loginWindow.ShowDialog(mainWindow);
+            else
+                loginWindow.Show();
+
+            var cookie = loginWindow.CapturedCookie;
+            if (!string.IsNullOrEmpty(cookie))
+                await ImportCookieAsync(cookie);
+        }
+        catch { StatusMessage = "WebView2 not available"; }
+    }
+
+    private async Task ImportCookieAsync(string cookie)
+    {
+        StatusMessage = "Validating...";
+        var userId = await GetAuthenticatedUserIdAsync(cookie);
+        if (userId == null) { StatusMessage = "Invalid or expired cookie"; return; }
+
+        if (_accounts.Accounts.Any(a => a.UserId == userId))
+        { StatusMessage = "Account already added"; return; }
+
+        StatusMessage = "Fetching account info...";
+        var info      = await _robloxApi.GetUserInfoAsync(userId.Value);
+        var avatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(userId.Value);
+
+        var account = new RobloxAccount
+        {
+            UserId      = userId.Value,
+            Username    = info?.username    ?? userId.Value.ToString(),
+            DisplayName = info?.displayName ?? userId.Value.ToString(),
+            AvatarUrl   = avatarUrl,
+        };
+        _accounts.Add(account, cookie);
+        Reload();
+        StatusMessage = $"Added {account.DisplayName}";
+    }
+
+    [RelayCommand]
+    private void TogglePastePanel() => IsPastePanelOpen = !IsPastePanelOpen;
+
+    [RelayCommand]
+    private async Task ImportManuallyAsync()
+    {
+        var raw = ManualCookie.Trim();
+        if (string.IsNullOrEmpty(raw)) { StatusMessage = "Paste your .ROBLOSECURITY cookie first"; return; }
+
+        const string prefix = ".ROBLOSECURITY=";
+        if (raw.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            raw = raw[prefix.Length..].Trim();
+
+        await ImportCookieAsync(raw);
+        ManualCookie     = string.Empty;
+        IsPastePanelOpen = false;
     }
 
     [RelayCommand]

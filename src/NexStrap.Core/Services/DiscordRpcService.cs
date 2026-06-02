@@ -53,8 +53,9 @@ public class DiscordRpcService : IDisposable
             newClient.OnClose += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
             newClient.OnError += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
 
-            newClient.Initialize();
+            // Assign _client BEFORE Initialize() so FlushPresence never sees null during the handshake window
             lock (_lock) { _client = newClient; }
+            newClient.Initialize();
         }
         catch { }
     }
@@ -101,9 +102,10 @@ public class DiscordRpcService : IDisposable
             ? new Button[] { new() { Label = "Join Game", Url = $"https://www.roblox.com/games/{placeId}" } }
             : null;
 
+        // gameIconUrl がない場合も large = roblox キー（アバターを large にしない）
         var (largeImg, largeCaption, smallImg, smallCaption) = gameIconUrl != null
             ? (gameIconUrl, gameName, userAvatarUrl, userAvatarUrl != null ? (label ?? "Profile") : null)
-            : (userAvatarUrl, label ?? "Profile", (string?)null, (string?)null);
+            : ("roblox",    "Roblox",  userAvatarUrl, userAvatarUrl != null ? (label ?? "Profile") : null);
 
         Timestamps? gameTs; lock (_lock) { gameTs = _gameTimestamp; }
         SetPresence(
@@ -115,6 +117,23 @@ public class DiscordRpcService : IDisposable
             smallText: smallCaption,
             buttons: buttons,
             timestamps: gameTs
+        );
+    }
+
+    public void SetMultiGamePresence(
+        IReadOnlyList<string> uniqueNames,
+        int totalInstances,
+        string? focusedAvatarUrl,
+        string? focusedUserLabel)
+    {
+        SetPresence(
+            details:    string.Join(" · ", uniqueNames),
+            state:      $"{totalInstances} instances",
+            largeImage: "roblox",
+            largeText:  "Playing Roblox",
+            smallImage: focusedAvatarUrl,
+            smallText:  focusedAvatarUrl != null ? (focusedUserLabel ?? "Profile") : null,
+            timestamps: _startTimestamp
         );
     }
 

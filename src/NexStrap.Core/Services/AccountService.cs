@@ -46,6 +46,15 @@ public class AccountService
         Save();
     }
 
+    public string? GetCookieByIndex(int index)
+    {
+        if (_accounts.Count == 0) return null;
+        var account = _accounts[index % _accounts.Count];
+        if (string.IsNullOrEmpty(account.EncryptedCookie)) return null;
+        try { return Decrypt(account.EncryptedCookie); }
+        catch { return null; }
+    }
+
     public string? GetActiveCookie()
     {
         var active = _accounts.FirstOrDefault(a => a.IsActive);

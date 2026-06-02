@@ -1,0 +1,10 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="NexStrap.Views.RobloxLoginWindow"
+        Title="Log in to Roblox — NexStrap"
+        Width="480" Height="680"
+        MinWidth="400" MinHeight="500"
+        Background="#080808"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner">
+</Window>

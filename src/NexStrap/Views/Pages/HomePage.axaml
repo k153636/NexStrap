@@ -7,10 +7,32 @@
              x:DataType="vm:HomeViewModel"
              Background="Transparent">
 
-    <Grid RowDefinitions="Auto,*,Auto,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
+
+        <!-- Multi Instance warning banner -->
+        <Border Grid.Row="0" Margin="24,12,24,0"
+                Background="#33FF9500" CornerRadius="10" Padding="14,10"
+                IsVisible="{Binding IsMultiInstanceWarningVisible}">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="⚠" FontSize="14" Foreground="#FF9500" VerticalAlignment="Center"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#FFCC66"
+                               VerticalAlignment="Center">
+                        <Run Text="Multi Instance が有効です。複数インスタンスを使用する場合、"/>
+                        <Run Text="Roblox 側で手動ログインが必要になります。"/>
+                    </TextBlock>
+                </StackPanel>
+                <Button Grid.Column="1" Content="✕"
+                        Command="{Binding DismissMultiInstanceWarningCommand}"
+                        Background="Transparent" Foreground="#FF9500"
+                        Padding="6,4" FontSize="13" CornerRadius="6"
+                        VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
 
         <!-- Header: title + badges -->
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="24,20,24,0">
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="24,20,24,0">
             <StackPanel Grid.Column="0" Spacing="4">
                 <TextBlock Text="NexStrap" FontSize="22" FontWeight="Bold"
                            Foreground="#FFFFFF"/>
@@ -39,7 +61,7 @@
         </Grid>
 
         <!-- Recent Games + Favorites -->
-        <ScrollViewer Grid.Row="1" Margin="0,12,0,0">
+        <ScrollViewer Grid.Row="2" Margin="0,12,0,0">
             <StackPanel Spacing="0" Margin="24,0" helpers:AnimationHelper.StaggerChildren="True">
 
                 <Border Height="1" Background="{DynamicResource SurfaceBg}" Margin="0,0,0,12"/>
@@ -191,7 +213,7 @@
         </ScrollViewer>
 
         <!-- Now Playing bar -->
-        <Border Grid.Row="2" Background="{DynamicResource CardBg}"
+        <Border Grid.Row="3" Background="{DynamicResource CardBg}"
                 Margin="24,0,24,8" CornerRadius="10" Padding="12,8"
                 IsVisible="{Binding HasNowPlaying}">
             <Grid ColumnDefinitions="*,Auto">
@@ -216,7 +238,7 @@
         </Border>
 
         <!-- Launch button pinned to bottom -->
-        <Button Grid.Row="3"
+        <Button Grid.Row="4"
                 Command="{Binding LaunchRobloxCommand}"
                 IsEnabled="{Binding !IsLaunching}"
                 HorizontalAlignment="Stretch"
