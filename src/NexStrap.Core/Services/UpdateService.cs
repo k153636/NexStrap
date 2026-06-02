@@ -28,8 +28,21 @@ public class UpdateService
             var tag        = root.GetProperty("tag_name").GetString()?.TrimStart('v') ?? "";
             if (!Version.TryParse(tag, out var latest)) return null;
 
-            var current = Assembly.GetEntryAssembly()?.GetName().Version
+            // AssemblyInformationalVersion (<Version> in csproj) を優先して読む。
+            // GetName().Version は単一ファイル EXE 環境で信頼性が低い場合があるため。
+            var infoVer = Assembly.GetEntryAssembly()
+                ?.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()
+                ?.InformationalVersion
+                ?? Assembly.GetExecutingAssembly()
+                    .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()
+                    ?.InformationalVersion;
+
+            // "1.0.4+abc123" や "1.0.4-beta" のサフィックスを除去
+            var versionStr = infoVer?.Split('+')[0].Split('-')[0];
+            var current = Version.TryParse(versionStr, out var v) ? v
+                        : Assembly.GetEntryAssembly()?.GetName().Version
                        ?? Assembly.GetExecutingAssembly().GetName().Version;
+
             if (current != null && latest <= current) return null;
 
             foreach (var asset in root.GetProperty("assets").EnumerateArray())
