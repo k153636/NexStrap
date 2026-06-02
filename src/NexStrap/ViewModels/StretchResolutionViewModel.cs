@@ -10,7 +10,7 @@ public partial class StretchResolutionViewModel : ViewModelBase
     private readonly RobloxService   _roblox;
 
     // ── プリセット ──────────────────────────────────────────────────────────
-    public static readonly IReadOnlyList<ResolutionPreset> Presets =
+    public IReadOnlyList<ResolutionPreset> Presets { get; } =
     [
         new("1280 × 960",  1280,  960, "Most popular stretch — Valorant / CS2"),
         new("1440 × 1080", 1440, 1080, "High-res 4:3 — Valorant / CS2"),
