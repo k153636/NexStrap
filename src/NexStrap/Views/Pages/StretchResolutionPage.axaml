@@ -47,7 +47,7 @@
                     <TextBlock Text="⚠  One-time setup required for full stretch (no black bars)"
                                Foreground="#FFD700" FontSize="12" FontWeight="SemiBold"/>
                     <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}" TextWrapping="Wrap"
-                               Text="Depending on your hardware and driver configuration, additional manual setup may be required. The steps below may vary based on your system environment."/>
+                               Text="Additional setup may be required depending on your environment."/>
                     <TextBlock FontSize="12" Foreground="#FFFFFF" FontWeight="SemiBold">
                         <Run Text="Laptop (Intel iGPU):"/>
                     </TextBlock>
