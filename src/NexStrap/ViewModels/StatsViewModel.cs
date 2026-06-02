@@ -71,6 +71,7 @@ public partial class StatsViewModel : ViewModelBase
     private readonly GameHistoryService _history;
 
     [ObservableProperty] private string        _totalPlayTime = "--";
+    [ObservableProperty] private string        _todayPlayTime = "--";
     [ObservableProperty] private int           _totalSessions;
     [ObservableProperty] private string        _topGameName   = "--";
     [ObservableProperty] private string        _topGameTime   = "--";
@@ -114,14 +115,29 @@ public partial class StatsViewModel : ViewModelBase
         TotalSessions = entries.Count;
         TotalPlayTime = FormatSeconds(entries.Sum(e => e.DurationSeconds));
 
+        // 今日のプレイ時間（その日のセッションの DurationSeconds 合計）
+        var todaySec = entries
+            .Where(e => e.PlayedAt.Date == DateTime.Today)
+            .Sum(e => e.DurationSeconds);
+        TodayPlayTime = todaySec > 0 ? FormatSeconds(todaySec) : "--";
+
+        // UniverseId 優先でグルーピング（同じゲームのサブプレイスを統合）
+        // UniverseId = 0 の古いエントリは PlaceId でグルーピング
         var aggregated = entries
-            .GroupBy(e => e.PlaceId)
-            .Select(g => new GameStat(
-                g.First().Name,
-                g.First().IconUrl,
-                g.Count(),
-                g.Sum(e => e.DurationSeconds),
-                g.Max(e => e.PlayedAt)));
+            .GroupBy(e => e.UniverseId != 0 ? e.UniverseId : e.PlaceId)
+            .Select(g =>
+            {
+                // 最も再生数の多い名前・アイコンを代表として使用
+                var best = g.GroupBy(e => e.Name)
+                            .OrderByDescending(n => n.Count())
+                            .First().First();
+                return new GameStat(
+                    best.Name,
+                    best.IconUrl,
+                    g.Count(),
+                    g.Sum(e => e.DurationSeconds),
+                    g.Max(e => e.PlayedAt));
+            });
 
         var grouped = (SortMode switch
         {

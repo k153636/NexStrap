@@ -366,7 +366,7 @@ public partial class HomeViewModel : ViewModelBase
                 _activeGames[currentSlot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
                 UpdateGamePresence();
 
-                var entry = new GameHistoryEntry { PlaceId = placeId, Name = name, IconUrl = iconUrl, PlayedAt = DateTime.Now };
+                var entry = new GameHistoryEntry { PlaceId = placeId, UniverseId = newUniverseId, Name = name, IconUrl = iconUrl, PlayedAt = DateTime.Now };
                 _history.Add(entry);
                 _sessionEntry = entry;
 
