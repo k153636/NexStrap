@@ -154,6 +154,9 @@ public partial class MainWindowViewModel : ViewModelBase
         HomeVM.CurrentPageName = page;
 
         if (page != "Browser" && !HomeVM.IsGameDetected)
-            _discord.SetPagePresence(page, HomeVM.UserAvatarUrl);
+        {
+            var presenceName = page == "Stretch" ? "Stretch Res" : page;
+            _discord.SetPagePresence(presenceName, HomeVM.UserAvatarUrl);
+        }
     }
 }
