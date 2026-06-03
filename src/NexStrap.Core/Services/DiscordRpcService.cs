@@ -177,6 +177,21 @@ public class DiscordRpcService : IDisposable
         );
     }
 
+    public void SetStudioPresence(string? userAvatarUrl = null)
+    {
+        if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
+        string? label; lock (_lock) { label = _userLabel; }
+        SetPresence(
+            details: "Roblox Studio",
+            state: "Editing",
+            largeImage: "roblox_studio",
+            largeText: "Roblox Studio",
+            smallImage: userAvatarUrl,
+            smallText: userAvatarUrl != null ? (label ?? "Profile") : null,
+            timestamps: _startTimestamp
+        );
+    }
+
     private void SetPresence(string? details, string? state, string largeImage, string largeText,
         string? smallImage, string? smallText, Button[]? buttons = null, Timestamps? timestamps = null)
     {

@@ -51,14 +51,17 @@ public partial class HomeViewModel : ViewModelBase
     private readonly Dictionary<int, uint>                         _slotPids      = new();
     private int    _activeFocusedSlot  = -1;
     private bool   _robloxHasFocus     = false;
+    private bool   _studioDetected     = false;
     private Timer? _focusTimer;
     private Timer? _presenceHeartbeat;
+    private Timer? _studioTimer;
 
     private const int FocusTimerInterval   = 500;
     private const int PresenceHeartbeat    = 15_000;
     private const int RestartDelay         = 1_500;
     private const int HotReloadStatusDelay = 2_000;
     private const int LaunchStatusDelay    = 3_000;
+    private const int StudioPollInterval   = 3_000;
 
     private static IEnumerable<Process> GetRobloxProcesses() =>
         Process.GetProcessesByName("RobloxPlayerBeta")
@@ -200,7 +203,10 @@ public partial class HomeViewModel : ViewModelBase
                         break;
                     case RobloxStatus.Idle:
                     case RobloxStatus.NotInstalled:
-                        _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+                        if (_studioDetected)
+                            _discord.SetStudioPresence(_userAvatarUrl);
+                        else
+                            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
                         break;
                 }
             });
@@ -244,6 +250,8 @@ public partial class HomeViewModel : ViewModelBase
 
                 if (_gameDetected)
                     UpdateGamePresence();
+                else if (_studioDetected)
+                    _discord.SetStudioPresence(_userAvatarUrl);
                 else if (!IsRobloxRunning && !IsLaunching)
                     _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
             }
@@ -438,7 +446,10 @@ public partial class HomeViewModel : ViewModelBase
             }
             else
             {
-                _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox");
+                if (_studioDetected)
+                    _discord.SetStudioPresence(_userAvatarUrl);
+                else
+                    _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox");
             }
             Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -529,6 +540,9 @@ public partial class HomeViewModel : ViewModelBase
             try { if (_gameDetected) UpdateGamePresence(); }
             catch { }
         }, null, PresenceHeartbeat, PresenceHeartbeat);
+
+        // Studio プロセスを3秒ごとに監視して presence を切り替える
+        _studioTimer = new Timer(_ => CheckStudioProcess(), null, StudioPollInterval, StudioPollInterval);
 
         // 起動時にすでに NexStrap が起動した Roblox が動いていれば IsRobloxRunning を立てる
         if (_roblox.IsNexStrapRobloxRunning())
@@ -740,6 +754,8 @@ public partial class HomeViewModel : ViewModelBase
             UpdateGamePresence();
         else if (_gameDetected)
             _discord.SetInGamePresence(_lastGameName ?? "Roblox", _lastGameIconUrl, _userAvatarUrl, FormatState(), _lastGameCreator, _lastPlaceId);
+        else if (_studioDetected)
+            _discord.SetStudioPresence(_userAvatarUrl);
         else
             _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
     }
@@ -799,6 +815,45 @@ public partial class HomeViewModel : ViewModelBase
         _lastGameName    = null;
         _lastGameIconUrl = null;
         _lastGameCreator = null;
+    }
+
+    private static bool IsStudioRunning()
+    {
+        try
+        {
+            return Process.GetProcessesByName("RobloxStudioBeta").Any(p => !p.HasExited)
+                || Process.GetProcessesByName("RobloxStudio").Any(p => !p.HasExited);
+        }
+        catch { return false; }
+    }
+
+    private void CheckStudioProcess()
+    {
+        try
+        {
+            var running = IsStudioRunning();
+            if (running == _studioDetected) return;
+            _studioDetected = running;
+
+            if (running)
+            {
+                // ゲームプレイ中は in-game presence を優先
+                if (!_gameDetected)
+                    _discord.SetStudioPresence(_userAvatarUrl);
+            }
+            else
+            {
+                // Studio 終了 — ゲームか通常ページに戻す
+                if (!_gameDetected)
+                {
+                    if (IsRobloxRunning)
+                        _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox");
+                    else
+                        _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+                }
+            }
+        }
+        catch { }
     }
 
     // ISO 3166-1 alpha-2 国コード → 国旗絵文字 (例: "JP" → "🇯🇵")
