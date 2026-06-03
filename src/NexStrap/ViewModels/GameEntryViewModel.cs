@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -8,6 +9,7 @@ namespace NexStrap.ViewModels;
 public partial class GameEntryViewModel : ViewModelBase
 {
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(8) };
+    private static readonly ConcurrentDictionary<string, Bitmap> IconCache = new();
 
     private static readonly Bitmap? Placeholder = LoadPlaceholder();
     private static Bitmap? LoadPlaceholder()
@@ -36,9 +38,14 @@ public partial class GameEntryViewModel : ViewModelBase
     public GameEntryViewModel(GameHistoryEntry entry)
     {
         Entry = entry;
-        _icon = Placeholder;
-        if (!string.IsNullOrEmpty(entry.IconUrl))
-            _ = LoadIconAsync(entry.IconUrl);
+        if (!string.IsNullOrEmpty(entry.IconUrl) && IconCache.TryGetValue(entry.IconUrl, out var cached))
+            _icon = cached;
+        else
+        {
+            _icon = Placeholder;
+            if (!string.IsNullOrEmpty(entry.IconUrl))
+                _ = LoadIconAsync(entry.IconUrl);
+        }
     }
 
     private async Task LoadIconAsync(string url)
@@ -47,7 +54,9 @@ public partial class GameEntryViewModel : ViewModelBase
         {
             var bytes = await Http.GetByteArrayAsync(url);
             using var ms = new MemoryStream(bytes);
-            Icon = new Bitmap(ms);
+            var bmp = new Bitmap(ms);
+            IconCache[url] = bmp;
+            Icon = bmp;
         }
         catch { }
     }
