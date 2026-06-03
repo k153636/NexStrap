@@ -60,20 +60,7 @@ public class DiscordRpcService : IDisposable
         catch { }
     }
 
-    public void SetMediaPresence(string title, string artist, string serviceKey, string? userAvatarUrl = null)
-    {
-        string? label; lock (_lock) { label = _userLabel; }
-        SetPresence(
-            details: string.IsNullOrEmpty(artist) ? $"Music / {title}" : $"Music / {title} — {artist}",
-            state: null,
-            largeImage: serviceKey,
-            largeText: title,
-            smallImage: userAvatarUrl,
-            smallText: userAvatarUrl != null ? (label ?? "Profile") : null
-        );
-    }
-
-    public void SetPagePresence(string pageName, string? userAvatarUrl = null, string prefix = "NexStrap")
+public void SetPagePresence(string pageName, string? userAvatarUrl = null, string prefix = "NexStrap")
     {
         var s = _settings.Settings;
         if (!s.DiscordShowLauncherPresence) { ClearPresence(); return; }
