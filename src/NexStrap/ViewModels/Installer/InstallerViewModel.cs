@@ -99,23 +99,23 @@ public partial class InstallerViewModel : ViewModelBase
         try
         {
             var dir = Path.GetDirectoryName(InstallPath)!;
+            StatusMessage = "Creating directory...";
+            await Task.Delay(300);
             Directory.CreateDirectory(dir);
 
-            // 自分自身をインストール先にコピー
             StatusMessage = "Copying files...";
+            await Task.Delay(400);
             var currentExe = Environment.ProcessPath!;
             if (!string.Equals(currentExe, InstallPath, StringComparison.OrdinalIgnoreCase))
                 File.Copy(currentExe, InstallPath, overwrite: true);
 
-            // レジストリ登録（コントロールパネルのアンインストール一覧）
             StatusMessage = "Registering application...";
+            await Task.Delay(300);
             RegisterUninstall(InstallPath);
-
-            // プロトコルハンドラを新しいパスで更新
             RegisterProtocol(InstallPath);
 
-            // ショートカット作成
             StatusMessage = "Creating shortcuts...";
+            await Task.Delay(300);
             if (DesktopShortcut)
                 CreateShortcut(
                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "NexStrap.lnk"),
@@ -128,8 +128,8 @@ public partial class InstallerViewModel : ViewModelBase
                 CreateShortcut(Path.Combine(smDir, "NexStrap.lnk"), InstallPath);
             }
 
-            await Task.Delay(300);
             StatusMessage = "Done!";
+            await Task.Delay(500);
             Step = InstallerStep.Complete;
         }
         catch (Exception ex)
