@@ -75,7 +75,6 @@ public partial class App : Application
         friendNotif.FriendCameOnline += (_, e) => NotificationService.ShowFriendOnline(e.DisplayName);
 
         // Start media detection
-        _ = Services.GetRequiredService<SmtcService>().StartAsync();
 
         // Show bootstrapper window when Roblox install/update starts
         var robloxService   = Services.GetRequiredService<RobloxService>();
@@ -361,7 +360,6 @@ public partial class App : Application
     private void ApplyServiceModes()
     {
         Services.GetRequiredService<RobloxLogWatcher>().SetBackgroundMode(_isBackground, _isPlaying);
-        Services.GetRequiredService<SmtcService>().SetBackgroundMode(_isBackground, _isPlaying);
         Services.GetRequiredService<FriendNotificationService>().SetBackgroundMode(_isBackground, _isPlaying);
     }
 
@@ -377,7 +375,6 @@ public partial class App : Application
         services.AddSingleton<RobloxLogWatcher>(sp => new RobloxLogWatcher(sp.GetRequiredService<RobloxService>().IsNexStrapRobloxRunning));
         services.AddSingleton<RobloxApiService>();
         services.AddSingleton<PerformanceMonitorService>();
-        services.AddSingleton<SmtcService>();
         services.AddSingleton<GameHistoryService>();
         services.AddSingleton<FriendNotificationService>();
 

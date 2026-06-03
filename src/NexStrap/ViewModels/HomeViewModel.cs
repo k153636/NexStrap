@@ -25,7 +25,6 @@ public partial class HomeViewModel : ViewModelBase
     private readonly GameHistoryService _history;
     private readonly FriendNotificationService _friendNotifications;
     private readonly AccountService _accountService;
-    private readonly SmtcService _smtc;
 
     internal string CurrentPageName { get; set; } = "Home";
     internal bool IsGameDetected => _gameDetected;
@@ -92,10 +91,6 @@ public partial class HomeViewModel : ViewModelBase
     [ObservableProperty] private string       _robloxVersion = "Not detected";
     [ObservableProperty] private HomeSortMode _homeSortOrder = HomeSortMode.RecentFirst;
     [ObservableProperty] private bool         _isSortMenuOpen;
-    [ObservableProperty] private bool         _hasNowPlaying;
-    [ObservableProperty] private string       _nowPlayingTitle  = string.Empty;
-    [ObservableProperty] private string       _nowPlayingArtist = string.Empty;
-    [ObservableProperty] private string       _nowPlayingService = string.Empty;
 
     public bool   IsSortRecent    => HomeSortOrder == HomeSortMode.RecentFirst;
     public bool   IsSortTotalTime => HomeSortOrder == HomeSortMode.TotalTime;
@@ -128,8 +123,7 @@ public partial class HomeViewModel : ViewModelBase
         RobloxApiService robloxApi,
         GameHistoryService history,
         FriendNotificationService friendNotifications,
-        AccountService accountService,
-        SmtcService smtc)
+        AccountService accountService)
     {
         _roblox               = roblox;
         _fastFlags            = fastFlags;
@@ -141,7 +135,6 @@ public partial class HomeViewModel : ViewModelBase
         _history              = history;
         _friendNotifications  = friendNotifications;
         _accountService       = accountService;
-        _smtc                 = smtc;
 
         // 初回インストール後にバージョンフォルダが確定したタイミングでフラグ・Modを適用
         roblox.PreLaunchAsync = async () =>
@@ -150,18 +143,6 @@ public partial class HomeViewModel : ViewModelBase
             await _fastFlags.SaveAsync();
             await _mods.ApplyEnabledModsAsync();
         };
-
-        _smtc.MediaChanged += (_, info) => Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            NowPlayingTitle   = info.Title;
-            NowPlayingArtist  = info.Artist;
-            NowPlayingService = info.ServiceName;
-            HasNowPlaying     = true;
-        });
-        _smtc.MediaStopped += (_, _) => Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            HasNowPlaying = false;
-        });
 
         RebuildGameLists();
         UpdateJumpList();

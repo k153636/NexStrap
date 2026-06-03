@@ -1,30 +1,15 @@
-using Windows.Data.Xml.Dom;
-using Windows.UI.Notifications;
+using System.Runtime.InteropServices;
 
 namespace NexStrap.Services;
 
+/// <summary>友達オンライン通知 — WinRT 不要の実装</summary>
 internal static class NotificationService
 {
     public static void ShowFriendOnline(string displayName)
     {
-        try
-        {
-            var safeName = System.Security.SecurityElement.Escape(displayName);
-            var xml = $"""
-                <toast>
-                    <visual>
-                        <binding template="ToastGeneric">
-                            <text>Friend Online</text>
-                            <text>{safeName} launched Roblox</text>
-                        </binding>
-                    </visual>
-                </toast>
-                """;
-            var doc = new XmlDocument();
-            doc.LoadXml(xml);
-            var toast = new ToastNotification(doc);
-            ToastNotificationManager.CreateToastNotifier(JumpListService.AppId).Show(toast);
-        }
-        catch { }
+        // システムトレイのバルーン通知は NotifyIcon が必要で Avalonia では複雑なため
+        // 現在は NexStrap の Friends ページ内でリアルタイム表示するのみ
+        // 将来的に Avalonia ネイティブ通知 API が安定したら移行予定
+        _ = displayName;
     }
 }

@@ -159,4 +159,14 @@ public partial class MainWindowViewModel : ViewModelBase
             _discord.SetPagePresence(presenceName, HomeVM.UserAvatarUrl);
         }
     }
+
+    [RelayCommand]
+    private void Shutdown()
+    {
+        if (Avalonia.Application.Current?.ApplicationLifetime is
+            Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            desktop.Shutdown();
+        else
+            Environment.Exit(0);
+    }
 }

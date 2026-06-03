@@ -1,10 +1,14 @@
 using Newtonsoft.Json;
 using NexStrap.Core.Models;
+using System.Xml.Linq;
 
 namespace NexStrap.Core.Services;
 
 public class FastFlagService
 {
+    private const int UnlockedFramerateCap = 9999;
+    private const int DefaultFramerateCap = 240;
+
     private readonly RobloxService _robloxService;
     private FileSystemWatcher? _watcher;
     private Dictionary<string, string> _currentFlags = new();
@@ -60,7 +64,6 @@ public class FastFlagService
         FlagsChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    // Hot reload: Roblox が起動中でも flags を書き換えてゲームジョイン時に反映
     public async Task HotReloadAsync(Dictionary<string, string> newFlags)
     {
         _currentFlags = new Dictionary<string, string>(newFlags);
@@ -97,45 +100,67 @@ public class FastFlagService
             _currentFlags[preset.Name] = preset.Value;
     }
 
-    // GlobalBasicSettings_13.xml の FramerateCap を書き換える
+    // Keep Roblox's settings XML valid while allowing NexStrap to lift the FPS cap.
     private static void ApplyRobloxFramerateCap(int cap)
     {
+        cap = Math.Clamp(cap, 1, UnlockedFramerateCap);
         var path = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Roblox", "GlobalBasicSettings_13.xml");
         if (!File.Exists(path)) return;
+
         try
         {
-            var xml = File.ReadAllText(path);
-            var updated = System.Text.RegularExpressions.Regex.Replace(
-                xml,
-                @"<int name=""FramerateCap"">\d+</int>",
-                $"<int name=\"FramerateCap\">{cap}</int>");
-            File.WriteAllText(path, updated);
+            var doc = XDocument.Load(path, LoadOptions.PreserveWhitespace);
+            var properties = doc.Descendants("Properties").FirstOrDefault();
+            if (properties == null) return;
+
+            var capElement = properties.Elements("int")
+                .FirstOrDefault(e => string.Equals((string?)e.Attribute("name"), "FramerateCap", StringComparison.Ordinal));
+
+            if (capElement == null)
+            {
+                capElement = new XElement("int", new XAttribute("name", "FramerateCap"), cap);
+                properties.AddFirst(capElement);
+            }
+            else if (int.TryParse(capElement.Value, out var current) && current == cap)
+            {
+                return;
+            }
+            else
+            {
+                capElement.Value = cap.ToString();
+            }
+
+            var backupPath = path + ".nexstrap.bak";
+            if (!File.Exists(backupPath))
+                File.Copy(path, backupPath, overwrite: false);
+
+            doc.Save(path, SaveOptions.DisableFormatting);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            RobloxService.Log($"ApplyRobloxFramerateCap failed: {ex.Message}");
+        }
     }
 
     public void ApplyPerformanceSettings(AppSettings settings)
     {
         if (settings.FpsUnlockEnabled)
         {
-            Set("DFIntTaskSchedulerTargetFps", "9999");
+            Set("DFIntTaskSchedulerTargetFps", UnlockedFramerateCap.ToString());
             Set("FFlagTaskSchedulerLimitTargetFpsTo2402", "False");
-            // in-game FramerateCap も 0（無制限）に設定
-            ApplyRobloxFramerateCap(0);
+            ApplyRobloxFramerateCap(UnlockedFramerateCap);
         }
         else
         {
             Remove("DFIntTaskSchedulerTargetFps");
             Remove("FFlagTaskSchedulerLimitTargetFpsTo2402");
-            // 無効化時は公式上限 240 に戻す
-            ApplyRobloxFramerateCap(240);
+            ApplyRobloxFramerateCap(DefaultFramerateCap);
         }
 
         if (settings.MultiThreadingEnabled)
         {
-            // スレッド数はコア数に比例させる（2400 は過大でコンテキストスイッチが増加する）
             var maxThreads = Math.Min(Environment.ProcessorCount * 2, 64).ToString();
             Set("FIntRuntimeMaxNumOfThreads", maxThreads);
             Set("DFIntTaskSchedulerThreadCount", Environment.ProcessorCount.ToString());
