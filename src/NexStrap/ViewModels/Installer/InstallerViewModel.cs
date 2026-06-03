@@ -144,10 +144,12 @@ public partial class InstallerViewModel : ViewModelBase
     {
         try
         {
+            // Environment.Exit でインストーラープロセスを完全終了してから起動。
+            // ウィンドウを閉じるだけでは Mutex が解放されず、起動した EXE が Mutex 取得に失敗する。
             Process.Start(new ProcessStartInfo(InstallPath) { UseShellExecute = true });
         }
         catch { }
-        CloseAction?.Invoke();
+        Environment.Exit(0);
     }
 
     [RelayCommand]
