@@ -198,6 +198,15 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
                             VerticalAlignment="Center">
 
+                    <!-- Studio -->
+                    <Button Content="Studio"
+                            Command="{Binding HomeVM.LaunchStudioCommand}"
+                            IsEnabled="{Binding HomeVM.IsStudioLaunching,
+                                Converter={x:Static BoolConverters.Not}}"
+                            Background="{DynamicResource OverlayBg}"
+                            Foreground="{DynamicResource FgSub}"
+                            FontSize="12" Padding="14,8" CornerRadius="8"/>
+
                     <!-- Save and Launch -->
                     <Button Content="Save and Launch"
                             Command="{Binding HomeVM.LaunchRobloxCommand}"

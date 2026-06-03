@@ -383,6 +383,7 @@ public partial class App : Application
         services.AddSingleton<EnvService>();
         services.AddSingleton<SettingsService>();
         services.AddSingleton<RobloxService>();
+        services.AddSingleton<StudioService>();
         services.AddSingleton<FastFlagService>();
         services.AddSingleton<ModService>();
         services.AddSingleton<DiscordRpcService>();

@@ -16,6 +16,7 @@ public enum HomeSortMode { RecentFirst, TotalTime }
 public partial class HomeViewModel : ViewModelBase
 {
     private readonly RobloxService _roblox;
+    private readonly StudioService _studio;
     private readonly FastFlagService _fastFlags;
     private readonly ModService _mods;
     private readonly SettingsService _settings;
@@ -99,6 +100,7 @@ public partial class HomeViewModel : ViewModelBase
     [ObservableProperty] private bool         _isMultiInstanceWarningVisible;
     [ObservableProperty] private bool         _isRobloxRunning;
     [ObservableProperty] private bool         _isLaunching;
+    [ObservableProperty] private bool         _isStudioLaunching;
     [ObservableProperty] private bool         _isRobloxInstalled;
     [ObservableProperty] private string       _statusText    = "Ready";
     [ObservableProperty] private string       _robloxVersion = "Not detected";
@@ -128,6 +130,7 @@ public partial class HomeViewModel : ViewModelBase
 
     public HomeViewModel(
         RobloxService roblox,
+        StudioService studio,
         FastFlagService fastFlags,
         ModService mods,
         SettingsService settings,
@@ -139,6 +142,7 @@ public partial class HomeViewModel : ViewModelBase
         AccountService accountService)
     {
         _roblox               = roblox;
+        _studio               = studio;
         _fastFlags            = fastFlags;
         _mods                 = mods;
         _settings             = settings;
@@ -647,6 +651,25 @@ public partial class HomeViewModel : ViewModelBase
             IsLaunching     = false;
             IsRobloxRunning = false;
         }
+    }
+
+    [RelayCommand]
+    private async Task LaunchStudioAsync()
+    {
+        if (IsStudioLaunching) return;
+
+        IsStudioLaunching = true;
+        StatusText        = "Launching Studio...";
+
+        _discord.SetLaunchingPresence(_userAvatarUrl);
+
+        var launched = await _studio.LaunchAsync();
+        if (!launched)
+            StatusText = "Studio launch failed";
+        else
+            StatusText = IsRobloxRunning ? "Roblox running" : "Ready";
+
+        IsStudioLaunching = false;
     }
 
     [RelayCommand]
