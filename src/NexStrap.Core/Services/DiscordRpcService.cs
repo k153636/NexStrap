@@ -198,7 +198,7 @@ public class DiscordRpcService : IDisposable
         SetPresence(
             details: "Roblox Studio",
             state: "Editing",
-            largeImage: "roblox_studio",
+            largeImage: "robloxstudio",
             largeText: "Roblox Studio",
             smallImage: userAvatarUrl,
             smallText: userAvatarUrl != null ? (label ?? "Profile") : null,
