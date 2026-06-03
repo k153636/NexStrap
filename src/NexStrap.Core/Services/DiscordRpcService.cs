@@ -64,8 +64,8 @@ public class DiscordRpcService : IDisposable
     {
         string? label; lock (_lock) { label = _userLabel; }
         SetPresence(
-            details: "Listening",
-            state: string.IsNullOrEmpty(artist) ? title : $"{title} — {artist}",
+            details: string.IsNullOrEmpty(artist) ? $"Music / {title}" : $"Music / {title} — {artist}",
+            state: null,
             largeImage: serviceKey,
             largeText: title,
             smallImage: userAvatarUrl,
@@ -95,9 +95,7 @@ public class DiscordRpcService : IDisposable
         var s = _settings.Settings;
         string? label; lock (_lock) { label = _userLabel; }
 
-        var details = s.DiscordShowCreator && creator != null
-            ? $"{gameName} · by {creator}"
-            : gameName;
+        var details = $"{gameName} / Playing";
         var buttons = s.DiscordShowJoinButton && placeId > 0
             ? new Button[] { new() { Label = "Join Game", Url = $"https://www.roblox.com/games/{placeId}" } }
             : null;
@@ -127,8 +125,8 @@ public class DiscordRpcService : IDisposable
         string? focusedUserLabel)
     {
         SetPresence(
-            details:    string.Join(" · ", uniqueNames),
-            state:      $"{totalInstances} instances",
+            details:    $"Roblox / {totalInstances} instances",
+            state:      string.Join(" · ", uniqueNames),
             largeImage: "roblox",
             largeText:  "Playing Roblox",
             smallImage: focusedAvatarUrl,
@@ -140,8 +138,8 @@ public class DiscordRpcService : IDisposable
     public void SetDevPresence()
     {
         SetPresence(
-            details: "Developer Mode",
-            state: "NexStrap Internal Tools",
+            details: "NexStrap / Developer",
+            state: null,
             largeImage: "nexstrap",
             largeText: "NexStrap Developer",
             smallImage: null,
@@ -154,7 +152,7 @@ public class DiscordRpcService : IDisposable
         if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
         string? label; lock (_lock) { label = _userLabel; }
         SetPresence(
-            details: "Launching Roblox",
+            details: "Roblox / Launching",
             state: null,
             largeImage: "nexstrap",
             largeText: "NexStrap Launcher · Created by K",
@@ -168,7 +166,7 @@ public class DiscordRpcService : IDisposable
         if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
         string? label; lock (_lock) { label = _userLabel; }
         SetPresence(
-            details: "Updating Roblox",
+            details: "Roblox / Updating",
             state: null,
             largeImage: "nexstrap",
             largeText: "NexStrap Launcher · Created by K",
