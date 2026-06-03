@@ -174,19 +174,21 @@ public partial class FastFlagsViewModel : ViewModelBase
     partial void OnSearchTextChanged(string value) => ApplyFilter();
     partial void OnSelectedCategoryChanged(string value) => ApplyFilter();
 
+    private FlagEntry MakeFlagEntry(string name, string value)
+    {
+        var (desc, cat) = FlagDescriptions.Lookup(name);
+        return new FlagEntry(name, value)
+        {
+            Description  = desc,
+            Category     = cat,
+            DeleteAction = RemoveFlagAsync
+        };
+    }
+
     private void LoadFlags()
     {
         var rawFlags = _service.GetAll();
-        _allFlags = rawFlags.Select(kvp =>
-        {
-            var (desc, cat) = FlagDescriptions.Lookup(kvp.Key);
-            return new FlagEntry(kvp.Key, kvp.Value)
-            {
-                Description  = desc,
-                Category     = cat,
-                DeleteAction = RemoveFlagAsync
-            };
-        }).ToList();
+        _allFlags = rawFlags.Select(kvp => MakeFlagEntry(kvp.Key, kvp.Value)).ToList();
 
         // プリセット情報で上書き（より詳細な場合）
         foreach (var preset in FastFlagPresets.All)
@@ -358,9 +360,7 @@ public partial class FastFlagsViewModel : ViewModelBase
                 existing.Value = val;
             else
             {
-                var (desc, cat) = FlagDescriptions.Lookup(key);
-                _allFlags.Add(new FlagEntry(key, val)
-                    { Description = desc, Category = cat, DeleteAction = RemoveFlagAsync });
+                _allFlags.Add(MakeFlagEntry(key, val));
             }
         }
 

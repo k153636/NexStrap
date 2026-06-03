@@ -54,6 +54,16 @@ public partial class HomeViewModel : ViewModelBase
     private Timer? _focusTimer;
     private Timer? _presenceHeartbeat;
 
+    private const int FocusTimerInterval   = 500;
+    private const int PresenceHeartbeat    = 15_000;
+    private const int RestartDelay         = 1_500;
+    private const int HotReloadStatusDelay = 2_000;
+    private const int LaunchStatusDelay    = 3_000;
+
+    private static IEnumerable<Process> GetRobloxProcesses() =>
+        Process.GetProcessesByName("RobloxPlayerBeta")
+               .Concat(Process.GetProcessesByName("RobloxPlayer"));
+
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] private static extern uint   GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
 
@@ -334,9 +344,7 @@ public partial class HomeViewModel : ViewModelBase
             _lastPlaceId                = placeId;
             _gameStartTime              = DateTime.UtcNow;
             _sessionEntry               = null;
-            _lastGameName               = null;
-            _lastGameIconUrl            = null;
-            _lastGameCreator            = null;
+            ClearLastGameInfo();
 
             // ゲーム参加のたびに PID マッピングを更新（起動後初参加でも正確に追跡）
             RefreshSlotPids();
@@ -378,7 +386,7 @@ public partial class HomeViewModel : ViewModelBase
 
                 if (launchMs.HasValue)
                 {
-                    await Task.Delay(3000);
+                    await Task.Delay(LaunchStatusDelay);
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         if (IsRobloxRunning) StatusText = $"Playing: {name}";
@@ -404,9 +412,7 @@ public partial class HomeViewModel : ViewModelBase
             _accumulatedDurationSeconds = 0;
             _sessionEntry               = null;
             _currentServerCode          = null;
-            _lastGameName               = null;
-            _lastGameIconUrl            = null;
-            _lastGameCreator            = null;
+            ClearLastGameInfo();
             _gameStartTime              = null;
 
             // このスロットのエントリを削除
@@ -414,8 +420,7 @@ public partial class HomeViewModel : ViewModelBase
 
             // Robloxプロセス数より activeGames が多い場合は余剰スロットを削除
             var robloxCount = RobloxLogWatcher.IsRobloxRunning() || _roblox.IsNexStrapRobloxRunning()
-                ? (Process.GetProcessesByName("RobloxPlayerBeta").Length +
-                   Process.GetProcessesByName("RobloxPlayer").Length)
+                ? GetRobloxProcesses().Count()
                 : 0;
             while (_activeGames.Count > robloxCount)
                 _activeGames.Remove(_activeGames.Keys.Min());
@@ -471,8 +476,7 @@ public partial class HomeViewModel : ViewModelBase
         // スロット0 の PID = 最も古い（最初の）Roblox プロセス
         try
         {
-            var oldest = Process.GetProcessesByName("RobloxPlayerBeta")
-                .Concat(Process.GetProcessesByName("RobloxPlayer"))
+            var oldest = GetRobloxProcesses()
                 .Where(p => !p.HasExited)
                 .OrderBy(p => p.StartTime)
                 .FirstOrDefault();
@@ -516,7 +520,7 @@ public partial class HomeViewModel : ViewModelBase
                 if (_gameDetected) UpdateGamePresence();
             }
             catch { }
-        }, null, 500, 500);
+        }, null, FocusTimerInterval, FocusTimerInterval);
 
         // 15秒ごとにゲーム中の presence を再送する。
         // PlaceJoined 中の API 待機レースや Discord 側の無音ドロップで presence が消えた場合の保険。
@@ -524,7 +528,7 @@ public partial class HomeViewModel : ViewModelBase
         {
             try { if (_gameDetected) UpdateGamePresence(); }
             catch { }
-        }, null, 15_000, 15_000);
+        }, null, PresenceHeartbeat, PresenceHeartbeat);
 
         // 起動時にすでに NexStrap が起動した Roblox が動いていれば IsRobloxRunning を立てる
         if (_roblox.IsNexStrapRobloxRunning())
@@ -577,12 +581,11 @@ public partial class HomeViewModel : ViewModelBase
     private async Task RestartRobloxAsync()
     {
         // 起動中の Roblox を強制終了してから再起動
-        foreach (var proc in System.Diagnostics.Process.GetProcessesByName("RobloxPlayerBeta")
-            .Concat(System.Diagnostics.Process.GetProcessesByName("RobloxPlayer")))
+        foreach (var proc in GetRobloxProcesses())
         {
             try { proc.Kill(entireProcessTree: true); } catch { }
         }
-        await Task.Delay(1500);
+        await Task.Delay(RestartDelay);
         await LaunchRobloxAsync();
     }
 
@@ -652,7 +655,7 @@ public partial class HomeViewModel : ViewModelBase
         var flags = _fastFlags.GetAll();
         await _fastFlags.HotReloadAsync(flags);
         StatusText = "Fast Flags hot reloaded";
-        await Task.Delay(2000);
+        await Task.Delay(HotReloadStatusDelay);
         StatusText = _gameDetected && _lastGameName != null ? $"Playing: {_lastGameName}"
                    : IsRobloxRunning                       ? "Playing"
                    :                                         "Ready";
@@ -720,8 +723,7 @@ public partial class HomeViewModel : ViewModelBase
     {
         try
         {
-            var procs = Process.GetProcessesByName("RobloxPlayerBeta")
-                .Concat(Process.GetProcessesByName("RobloxPlayer"))
+            var procs = GetRobloxProcesses()
                 .Where(p => !p.HasExited)
                 .OrderBy(p => p.StartTime)
                 .ToList();
@@ -761,9 +763,7 @@ public partial class HomeViewModel : ViewModelBase
         int robloxCount;
         try
         {
-            robloxCount = Math.Max(1,
-                Process.GetProcessesByName("RobloxPlayerBeta").Length +
-                Process.GetProcessesByName("RobloxPlayer").Length);
+            robloxCount = Math.Max(1, GetRobloxProcesses().Count());
         }
         catch { robloxCount = 1; }
 
@@ -792,6 +792,13 @@ public partial class HomeViewModel : ViewModelBase
             unique, robloxCount,
             focusedGame.AvatarUrl ?? _userAvatarUrl,
             focusedGame.UserLabel);
+    }
+
+    private void ClearLastGameInfo()
+    {
+        _lastGameName    = null;
+        _lastGameIconUrl = null;
+        _lastGameCreator = null;
     }
 
     // ISO 3166-1 alpha-2 国コード → 国旗絵文字 (例: "JP" → "🇯🇵")

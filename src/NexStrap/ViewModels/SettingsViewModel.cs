@@ -38,6 +38,9 @@ public partial class SettingsViewModel : ViewModelBase
 
     public string[] TabNames { get; } = ["General", "Performance", "Roblox", "Data"];
 
+    private const string StartupRegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private static readonly FilePickerFileType JsonFileType = new("JSON") { Patterns = ["*.json"] };
+
     [RelayCommand]
     private void SelectTab(string tab) => SelectedTab = tab;
 
@@ -92,7 +95,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
-            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run");
+            using var key = Registry.CurrentUser.OpenSubKey(StartupRegistryKey);
             return key?.GetValue("NexStrap") != null;
         }
         catch { return false; }
@@ -102,8 +105,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
-            using var key = Registry.CurrentUser.OpenSubKey(
-                @"Software\Microsoft\Windows\CurrentVersion\Run", writable: true);
+            using var key = Registry.CurrentUser.OpenSubKey(StartupRegistryKey, writable: true);
             if (key == null) return;
             if (enable)
             {
@@ -119,28 +121,28 @@ public partial class SettingsViewModel : ViewModelBase
         catch { }
     }
 
-    [RelayCommand]
-    private void ResetToDefaults()
+    private void ApplySettings(AppSettings s)
     {
-        var d = new AppSettings();
-        ShowPerformanceOverlay    = d.ShowPerformanceOverlay;
-        AutoUpdateRoblox          = d.AutoUpdateRoblox;
-        MinimizeToTray            = d.MinimizeToTray;
-        HotReloadEnabled          = d.HotReloadEnabled;
-        FpsUnlockEnabled          = d.FpsUnlockEnabled;
-        MultiThreadingEnabled     = d.MultiThreadingEnabled;
-        BrowserHomepage           = d.BrowserHomepage;
-        StretchResolutionEnabled  = d.StretchResolutionEnabled;
-        StretchResolutionWidth    = d.StretchResolutionWidth;
-        StretchResolutionHeight   = d.StretchResolutionHeight;
-        MultiInstanceEnabled      = d.MultiInstanceEnabled;
-        SuppressCrashHandler      = d.SuppressCrashHandler;
-        CpuAffinityEnabled        = d.CpuAffinityEnabled;
-        CpuCoreLimit              = d.CpuCoreLimit;
-        MemoryOptimizationEnabled = d.MemoryOptimizationEnabled;
-        CleanupOldVersions        = d.CleanupOldVersions;
-        // 各 OnXxxChanged が自動保存するので明示的な Save 不要
+        ShowPerformanceOverlay    = s.ShowPerformanceOverlay;
+        AutoUpdateRoblox          = s.AutoUpdateRoblox;
+        MinimizeToTray            = s.MinimizeToTray;
+        HotReloadEnabled          = s.HotReloadEnabled;
+        FpsUnlockEnabled          = s.FpsUnlockEnabled;
+        MultiThreadingEnabled     = s.MultiThreadingEnabled;
+        BrowserHomepage           = s.BrowserHomepage;
+        StretchResolutionEnabled  = s.StretchResolutionEnabled;
+        StretchResolutionWidth    = s.StretchResolutionWidth;
+        StretchResolutionHeight   = s.StretchResolutionHeight;
+        MultiInstanceEnabled      = s.MultiInstanceEnabled;
+        SuppressCrashHandler      = s.SuppressCrashHandler;
+        CpuAffinityEnabled        = s.CpuAffinityEnabled;
+        CpuCoreLimit              = s.CpuCoreLimit;
+        MemoryOptimizationEnabled = s.MemoryOptimizationEnabled;
+        CleanupOldVersions        = s.CleanupOldVersions;
     }
+
+    [RelayCommand]
+    private void ResetToDefaults() => ApplySettings(new AppSettings());
 
     [RelayCommand]
     private void OpenDataFolder()
@@ -160,7 +162,7 @@ public partial class SettingsViewModel : ViewModelBase
         {
             Title           = "Export Settings",
             SuggestedFileName = "settings.json",
-            FileTypeChoices = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }]
+            FileTypeChoices = [JsonFileType]
         });
         if (file == null) return;
         try
@@ -179,29 +181,13 @@ public partial class SettingsViewModel : ViewModelBase
         {
             Title           = "Import Settings",
             AllowMultiple   = false,
-            FileTypeFilter  = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }]
+            FileTypeFilter  = [JsonFileType]
         });
         if (files.Count == 0) return;
         try
         {
             _settingsService.ImportFrom(files[0].Path.LocalPath);
-            var s = _settingsService.Settings;
-            ShowPerformanceOverlay = s.ShowPerformanceOverlay;
-            AutoUpdateRoblox       = s.AutoUpdateRoblox;
-            MinimizeToTray         = s.MinimizeToTray;
-            HotReloadEnabled       = s.HotReloadEnabled;
-            FpsUnlockEnabled       = s.FpsUnlockEnabled;
-            MultiThreadingEnabled  = s.MultiThreadingEnabled;
-            BrowserHomepage        = s.BrowserHomepage;
-            StretchResolutionEnabled = s.StretchResolutionEnabled;
-            StretchResolutionWidth   = s.StretchResolutionWidth;
-            StretchResolutionHeight  = s.StretchResolutionHeight;
-            MultiInstanceEnabled    = s.MultiInstanceEnabled;
-            SuppressCrashHandler    = s.SuppressCrashHandler;
-            CpuAffinityEnabled      = s.CpuAffinityEnabled;
-            CpuCoreLimit            = s.CpuCoreLimit;
-            MemoryOptimizationEnabled = s.MemoryOptimizationEnabled;
-            CleanupOldVersions      = s.CleanupOldVersions;
+            ApplySettings(_settingsService.Settings);
             StatusMessage = "Settings imported";
         }
         catch { StatusMessage = "Import failed"; }
@@ -215,7 +201,7 @@ public partial class SettingsViewModel : ViewModelBase
         {
             Title             = "Export Game History",
             SuggestedFileName = "history.json",
-            FileTypeChoices   = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }]
+            FileTypeChoices   = [JsonFileType]
         });
         if (file == null) return;
         try
@@ -234,7 +220,7 @@ public partial class SettingsViewModel : ViewModelBase
         {
             Title          = "Import Game History",
             AllowMultiple  = false,
-            FileTypeFilter = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }]
+            FileTypeFilter = [JsonFileType]
         });
         if (files.Count == 0) return;
         try
