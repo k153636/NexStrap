@@ -7,7 +7,7 @@
              x:DataType="vm:HomeViewModel"
              Background="Transparent">
 
-    <Grid RowDefinitions="Auto,Auto,*">
+    <Grid RowDefinitions="Auto,*">
 
         <!-- Multi Instance warning banner -->
         <Border Grid.Row="0" Margin="24,12,24,0"
@@ -29,56 +29,9 @@
             </Grid>
         </Border>
 
-        <!-- Header: Avatar + Account info + Status badges -->
-        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="24,20,24,0">
-
-            <!-- Avatar circle -->
-            <Border Grid.Column="0" Width="44" Height="44" CornerRadius="22"
-                    ClipToBounds="True" Background="{DynamicResource OverlayBg}"
-                    Margin="0,0,12,0">
-                <Image Source="{Binding UserAvatarUrl,
-                           Converter={StaticResource StringToImageConverter}}"
-                       Stretch="UniformToFill"/>
-            </Border>
-
-            <!-- Username + version -->
-            <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                <!-- ユーザー名（取得前は "Guest" と表示） -->
-                <TextBlock FontSize="15" FontWeight="SemiBold" Foreground="#FFFFFF">
-                    <TextBlock.Text>
-                        <Binding Path="UserDisplayName"
-                                 FallbackValue="Guest"
-                                 TargetNullValue="Guest"/>
-                    </TextBlock.Text>
-                </TextBlock>
-                <TextBlock Text="{x:Static vm:HomeViewModel.AppVersion}"
-                           FontSize="11" Foreground="{DynamicResource FgSub}"
-                           FontFamily="Consolas,monospace"/>
-            </StackPanel>
-
-            <!-- Status badges -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
-                        VerticalAlignment="Center">
-                <Border Background="{DynamicResource CardBg}" CornerRadius="20" Padding="10,4"
-                        BorderBrush="#1E1E1E" BorderThickness="1"
-                        IsVisible="{Binding IsRobloxRunning}">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <Ellipse Width="5" Height="5" Fill="#4ADE80" VerticalAlignment="Center"/>
-                        <TextBlock Text="Running" FontSize="11"
-                                   Foreground="{DynamicResource SubtextBrush}"/>
-                    </StackPanel>
-                </Border>
-                <Border Background="{DynamicResource CardBg}" CornerRadius="20" Padding="10,4"
-                        BorderBrush="#1E1E1E" BorderThickness="1"
-                        IsVisible="{Binding IsLaunching}">
-                    <TextBlock Text="{Binding StatusText}" FontSize="11"
-                               Foreground="{DynamicResource FgSub}"/>
-                </Border>
-            </StackPanel>
-        </Grid>
 
         <!-- Game List -->
-        <ScrollViewer Grid.Row="2" Margin="0,12,0,0">
+        <ScrollViewer Grid.Row="1" Margin="0,12,0,0">
             <StackPanel Spacing="0" Margin="24,0" helpers:AnimationHelper.StaggerChildren="True">
 
                 <Border Height="1" Background="{DynamicResource SurfaceBg}" Margin="0,0,0,12"/>
