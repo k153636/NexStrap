@@ -169,4 +169,14 @@ public partial class MainWindowViewModel : ViewModelBase
         else
             Environment.Exit(0);
     }
+
+    [RelayCommand]
+    private void RestartApp()
+    {
+        var exe = Environment.ProcessPath;
+        if (!string.IsNullOrEmpty(exe))
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe)
+                { UseShellExecute = true });
+        Shutdown();
+    }
 }

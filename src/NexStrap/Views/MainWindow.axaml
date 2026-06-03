@@ -212,7 +212,7 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
                             VerticalAlignment="Center">
 
-                    <!-- Save and Launch (primary) -->
+                    <!-- Save and Launch -->
                     <Button Content="Save and Launch"
                             Command="{Binding HomeVM.LaunchRobloxCommand}"
                             IsEnabled="{Binding HomeVM.IsLaunching,
@@ -221,20 +221,19 @@
                             FontSize="12" FontWeight="SemiBold"
                             Padding="14,8" CornerRadius="8"/>
 
-                    <!-- Restart -->
+                    <!-- Restart (NexStrap 再起動) -->
                     <Button Content="Restart"
-                            Command="{Binding HomeVM.RestartRobloxCommand}"
-                            IsEnabled="{Binding HomeVM.IsRobloxRunning}"
-                            Background="{DynamicResource OverlayBg}"
-                            Foreground="{DynamicResource FgSub}"
-                            FontSize="12" Padding="14,8" CornerRadius="8"/>
+                            Command="{Binding RestartAppCommand}"
+                            Background="#FFFFFF" Foreground="#080808"
+                            FontSize="12" FontWeight="SemiBold"
+                            Padding="14,8" CornerRadius="8"/>
 
                     <!-- Save (FastFlags 適用) -->
                     <Button Content="Save"
                             Command="{Binding HomeVM.HotReloadFlagsCommand}"
-                            Background="{DynamicResource OverlayBg}"
-                            Foreground="{DynamicResource FgSub}"
-                            FontSize="12" Padding="14,8" CornerRadius="8"/>
+                            Background="#FFFFFF" Foreground="#080808"
+                            FontSize="12" FontWeight="SemiBold"
+                            Padding="14,8" CornerRadius="8"/>
 
                     <!-- Close -->
                     <Button Content="Close"
