@@ -171,7 +171,7 @@ public class RobloxLogWatcher : IDisposable
             string? file;
             lock (_lock) { file = _watchedFile; }
             return file != null &&
-                   Path.GetFileName(file).StartsWith("RobloxStudio", StringComparison.OrdinalIgnoreCase);
+                   Path.GetFileName(file).Contains("_Studio_", StringComparison.OrdinalIgnoreCase);
         }
     }
 

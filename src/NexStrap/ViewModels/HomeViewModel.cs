@@ -282,17 +282,14 @@ public partial class HomeViewModel : ViewModelBase
         {
             var (placeId, universeIdFromLog) = args;
 
-            // Studio テストプレイ: Studio 起動中 かつ RobloxPlayerBeta も起動中の場合のみ Testing を表示
-            // （エディタでプレースを開いただけの場合は RobloxPlayerBeta が存在しない）
-            if (_studioDetected && RobloxLogWatcher.IsRobloxRunning())
+            // Studio テストプレイ: Studio ログを監視中に PlaceJoined が発火した場合のみ Testing を表示
+            // （エディタでプレースを開いただけでは placeId はログに書き込まれない）
+            if (_logWatcher.IsWatchingStudioLog)
             {
                 _studioPlaytesting = true;
                 _discord.SetStudioPlaytestPresence(null, _userAvatarUrl);
                 return;
             }
-
-            // Studio 起動中だがテストプレイでない（エディタでプレースを開いた）→ presence を変えない
-            if (_studioDetected) return;
 
             // スロットIDは await 後にログファイルが切り替わると変わるため、最初にスナップショット
             var currentSlot     = _logWatcher.CurrentSlotId;
