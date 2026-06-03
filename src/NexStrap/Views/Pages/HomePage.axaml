@@ -41,16 +41,22 @@
                        Stretch="UniformToFill"/>
             </Border>
 
-            <!-- Version + status text -->
+            <!-- Username + version -->
             <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                <TextBlock Text="Roblox" FontSize="15" FontWeight="SemiBold"
-                           Foreground="#FFFFFF"/>
+                <!-- ユーザー名（取得前は "Guest" と表示） -->
+                <TextBlock FontSize="15" FontWeight="SemiBold" Foreground="#FFFFFF">
+                    <TextBlock.Text>
+                        <Binding Path="UserDisplayName"
+                                 FallbackValue="Guest"
+                                 TargetNullValue="Guest"/>
+                    </TextBlock.Text>
+                </TextBlock>
                 <TextBlock Text="{Binding RobloxVersion}"
                            FontSize="11" Foreground="{DynamicResource FgSub}"
                            FontFamily="Consolas,monospace"
                            IsVisible="{Binding RobloxVersion,
                                Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                <TextBlock Text="Not installed" FontSize="11"
+                <TextBlock Text="Roblox not found" FontSize="11"
                            Foreground="{DynamicResource FgMuted}"
                            IsVisible="{Binding RobloxVersion,
                                Converter={x:Static StringConverters.IsNullOrEmpty}}"/>

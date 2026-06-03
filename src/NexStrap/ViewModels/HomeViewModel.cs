@@ -73,6 +73,8 @@ public partial class HomeViewModel : ViewModelBase
     public ObservableCollection<GameEntryViewModel> FavoriteGames { get; } = [];
     public string? UserAvatarUrl => _userAvatarUrl;
 
+    [ObservableProperty] private string? _userDisplayName;
+
     [ObservableProperty] private bool         _isMultiInstanceWarningVisible;
     [ObservableProperty] private bool         _isRobloxRunning;
     [ObservableProperty] private bool         _isLaunching;
@@ -216,15 +218,17 @@ public partial class HomeViewModel : ViewModelBase
 
                 var avatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(userId);
 
-                // スロット0（最初のインスタンス）はグローバルアバターも更新
+                // スロット0（最初のインスタンス）はグローバルアバター・表示名も更新
                 if (slot == 0) _userAvatarUrl = avatarUrl;
 
-                // ユーザーラベルを取得
+                // ユーザー情報を取得（表示名 + Discord ラベル）
                 string? userLabel = null;
-                if (_settings.Settings.DiscordShowRobloxUsername)
+                var userInfo = await _robloxApi.GetUserInfoAsync(userId);
+                if (userInfo is { } u)
                 {
-                    var info = await _robloxApi.GetUserInfoAsync(userId);
-                    if (info is { } u)
+                    if (slot == 0)
+                        UserDisplayName = string.IsNullOrEmpty(u.displayName) ? u.username : u.displayName;
+                    if (_settings.Settings.DiscordShowRobloxUsername)
                         userLabel = _settings.Settings.DiscordUseDisplayNameFormat
                             ? $"{u.displayName} (@{u.username})"
                             : $"@{u.username}";
@@ -548,6 +552,10 @@ public partial class HomeViewModel : ViewModelBase
             // アカウントに保存済みのアバターURLをすぐに適用（ネット取得より高速）
             if (activeAccount?.AvatarUrl != null)
                 _userAvatarUrl = activeAccount.AvatarUrl;
+            if (!string.IsNullOrEmpty(activeAccount?.DisplayName))
+                UserDisplayName = activeAccount.DisplayName;
+            else if (!string.IsNullOrEmpty(activeAccount?.Username))
+                UserDisplayName = activeAccount.Username;
 
             _friendNotifications.Start(startupUserId);
 
