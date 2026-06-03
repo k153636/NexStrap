@@ -93,6 +93,7 @@ public partial class App : Application
 
         // Show bootstrapper window when Roblox install/update starts
         var robloxService   = Services.GetRequiredService<RobloxService>();
+        var studioService   = Services.GetRequiredService<StudioService>();
         var settingsService = Services.GetRequiredService<SettingsService>();
         BootstrapperWindow? bootstrapperWindow = null;
         BootstrapperViewModel? bootstrapperViewModel = null;
@@ -118,12 +119,40 @@ public partial class App : Application
                 }
             }
 
-            // If already on the UI thread (typical: called from RelayCommand), run synchronously
-            // so the window opens BEFORE Process.Start. Otherwise post to the dispatcher.
             if (Dispatcher.UIThread.CheckAccess())
                 HandleStatus();
             else
                 Dispatcher.UIThread.InvokeAsync(HandleStatus);
+        };
+
+        BootstrapperWindow? studioBootstrapperWindow = null;
+        BootstrapperViewModel? studioBootstrapperViewModel = null;
+
+        studioService.StatusChanged += (_, status) =>
+        {
+            void HandleStudioStatus()
+            {
+                if (status is RobloxStatus.Updating && studioBootstrapperWindow == null)
+                {
+                    studioBootstrapperViewModel = new BootstrapperViewModel(studioService, settingsService);
+                    studioBootstrapperWindow = new BootstrapperWindow(studioBootstrapperViewModel);
+                    studioBootstrapperWindow.Closed += (_, _) =>
+                    {
+                        studioBootstrapperWindow = null;
+                        studioBootstrapperViewModel = null;
+                    };
+                    studioBootstrapperWindow.Show();
+                }
+                else if (status is RobloxStatus.Running or RobloxStatus.Idle)
+                {
+                    studioBootstrapperWindow?.Close();
+                }
+            }
+
+            if (Dispatcher.UIThread.CheckAccess())
+                HandleStudioStatus();
+            else
+                Dispatcher.UIThread.InvokeAsync(HandleStudioStatus);
         };
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)

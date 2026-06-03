@@ -31,17 +31,15 @@ public partial class BootstrapperViewModel : ViewModelBase
         _roblox = roblox;
 
         var s = settings.Settings;
-        // Use the dedicated loading-screen image; fall back to main background if not set
         var imgPath            = !string.IsNullOrEmpty(s.BootstrapperImagePath)
                                      ? s.BootstrapperImagePath
                                      : s.BackgroundImagePath;
         BackgroundImagePath    = imgPath;
-        BackgroundBlurRadius   = 0;          // loading screen: no blur
+        BackgroundBlurRadius   = 0;
         BackgroundImageOpacity = 0.85;
         GlassThemeEnabled      = s.GlassThemeEnabled;
         HasBackgroundImage     = !string.IsNullOrEmpty(imgPath);
 
-        // Cancelはセットアップ中は非表示、Roblox起動・更新中のみ表示
         _roblox.StatusChanged += (_, s) =>
         {
             if (s is RobloxStatus.Launching or RobloxStatus.Updating)
@@ -51,6 +49,35 @@ public partial class BootstrapperViewModel : ViewModelBase
         _roblox.BootstrapperProgress += OnProgress;
         _roblox.StatusChanged        += OnStatusChanged;
     }
+
+    public BootstrapperViewModel(StudioService studio, SettingsService settings)
+    {
+        _roblox = null!;
+
+        var s = settings.Settings;
+        var imgPath            = !string.IsNullOrEmpty(s.BootstrapperImagePath)
+                                     ? s.BootstrapperImagePath
+                                     : s.BackgroundImagePath;
+        BackgroundImagePath    = imgPath;
+        BackgroundBlurRadius   = 0;
+        BackgroundImageOpacity = 0.85;
+        GlassThemeEnabled      = s.GlassThemeEnabled;
+        HasBackgroundImage     = !string.IsNullOrEmpty(imgPath);
+
+        _cancelAction = studio.CancelInstall;
+
+        studio.BootstrapperProgress += OnProgress;
+        studio.StatusChanged        += OnStudioStatusChanged;
+
+        _studioDetachAction = () =>
+        {
+            studio.BootstrapperProgress -= OnProgress;
+            studio.StatusChanged        -= OnStudioStatusChanged;
+        };
+    }
+
+    private Action? _cancelAction;
+    private Action? _studioDetachAction;
 
     private void OnProgress(object? sender, BootstrapperProgress p)
     {
@@ -70,16 +97,35 @@ public partial class BootstrapperViewModel : ViewModelBase
             Dispatcher.UIThread.InvokeAsync(() => CloseRequested?.Invoke(this, EventArgs.Empty));
     }
 
+    private void OnStudioStatusChanged(object? sender, RobloxStatus status)
+    {
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (status is RobloxStatus.Updating)
+                IsCancelVisible = true;
+            else if (status is RobloxStatus.Running or RobloxStatus.Idle)
+                CloseRequested?.Invoke(this, EventArgs.Empty);
+        });
+    }
+
     [RelayCommand]
     private void Cancel()
     {
         IsCancelVisible = false;
         StatusText = "Cancelling...";
-        _roblox.CancelInstall();
+        if (_cancelAction != null)
+            _cancelAction();
+        else
+            _roblox.CancelInstall();
     }
 
     public void Detach()
     {
+        if (_studioDetachAction != null)
+        {
+            _studioDetachAction();
+            return;
+        }
         _roblox.BootstrapperProgress -= OnProgress;
         _roblox.StatusChanged        -= OnStatusChanged;
     }
