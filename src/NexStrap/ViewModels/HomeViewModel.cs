@@ -574,6 +574,19 @@ public partial class HomeViewModel : ViewModelBase
     private void DismissMultiInstanceWarning() => IsMultiInstanceWarningVisible = false;
 
     [RelayCommand]
+    private async Task RestartRobloxAsync()
+    {
+        // 起動中の Roblox を強制終了してから再起動
+        foreach (var proc in System.Diagnostics.Process.GetProcessesByName("RobloxPlayerBeta")
+            .Concat(System.Diagnostics.Process.GetProcessesByName("RobloxPlayer")))
+        {
+            try { proc.Kill(entireProcessTree: true); } catch { }
+        }
+        await Task.Delay(1500);
+        await LaunchRobloxAsync();
+    }
+
+    [RelayCommand]
     private async Task LaunchRobloxAsync()
     {
         var multiInstance = _settings.Settings.MultiInstanceEnabled;
