@@ -85,29 +85,50 @@
     <Application.Styles>
         <fa:FluentAvaloniaTheme/>
 
-        <!-- Global button: subtle press feedback -->
+        <!-- Global button styles -->
         <Style Selector="Button">
             <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Transitions">
                 <Transitions>
                     <TransformOperationsTransition Property="RenderTransform"
-                        Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                        Duration="0:0:0.12" Easing="CubicEaseOut"/>
                     <DoubleTransition Property="Opacity"
                         Duration="0:0:0.10" Easing="CubicEaseOut"/>
                 </Transitions>
             </Setter>
         </Style>
-        <Style Selector="Button:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.97)"/>
-            <Setter Property="Opacity" Value="0.82"/>
-        </Style>
         <Style Selector="Button:pointerover">
-            <Setter Property="Opacity" Value="0.90"/>
+            <Setter Property="RenderTransform" Value="scale(1.015)"/>
+            <Setter Property="Opacity" Value="1.0"/>
+        </Style>
+        <Style Selector="Button:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.96)"/>
+            <Setter Property="Opacity" Value="0.78"/>
+        </Style>
+
+        <!-- Card hover (add Classes="card" to hoverable Border elements) -->
+        <Style Selector="Border.card">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.12"/>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.12"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.card:pointerover">
+            <Setter Property="Background" Value="#1E1E1E"/>
+            <Setter Property="BorderBrush" Value="#303030"/>
         </Style>
 
         <!-- ToggleSwitch cursor -->
         <Style Selector="ToggleSwitch">
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <!-- ListBoxItem / NavigationViewItem cursor -->
+        <Style Selector="ListBoxItem">
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
     </Application.Styles>
