@@ -282,8 +282,8 @@ public partial class HomeViewModel : ViewModelBase
         {
             var (placeId, universeIdFromLog) = args;
 
-            // Studio テストプレイ: ゲーム参加フローを走らせず Studio playtest presence を表示
-            if (_logWatcher.IsWatchingStudioLog)
+            // Studio テストプレイ: Studio 起動中なら通常ゲームフローをスキップして playtest presence を表示
+            if (_studioDetected)
             {
                 _studioPlaytesting = true;
                 _discord.SetStudioPlaytestPresence(null, _userAvatarUrl);
