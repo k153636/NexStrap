@@ -197,8 +197,8 @@ public class DiscordRpcService : IDisposable
         if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
         string? label; lock (_lock) { label = _userLabel; }
         SetPresence(
-            details: "Installing Roblox Studio",
-            state: null,
+            details: "Roblox Studio",
+            state: "Installing",
             largeImage: "nexstrap",
             largeText: "NexStrap Launcher · Created by K",
             smallImage: userAvatarUrl,
