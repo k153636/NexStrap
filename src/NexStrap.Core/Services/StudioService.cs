@@ -251,9 +251,9 @@ public class StudioService
             _completedExtractFiles = 0;
             await Task.Run(() =>
             {
-                foreach (var (path, _) in downloadedPaths)
+                foreach (var (path, name) in downloadedPaths)
                 {
-                    if (!path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || !File.Exists(path))
+                    if (!name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || !File.Exists(path))
                         continue;
                     try
                     {
@@ -459,13 +459,22 @@ public class StudioService
             ["BuiltInStandalonePlugins.zip"]      = "BuiltInStandalonePlugins/",
             ["ApplicationConfig.zip"]             = "ApplicationConfig/",
             ["NPRobloxProxy.zip"]                 = "",
+            ["Plugins.zip"]                       = "Plugins/",
+            ["StudioFonts.zip"]                   = "StudioFonts/",
+            ["LibrariesQt5.zip"]                  = "",
+            ["content-qt_translations.zip"]       = "content/qt_translations/",
+            ["content-studio_svg_textures.zip"]   = "content/textures/",
+            ["content-api-docs.zip"]              = "content/api_docs/",
+            ["extracontent-scripts.zip"]          = "ExtraContent/scripts/",
+            ["studiocontent-models.zip"]          = "StudioContent/models/",
+            ["studiocontent-textures.zip"]        = "StudioContent/textures/",
         };
 
     private void ExtractPackage(string localPath, string packageName, string destDir,
         double extStart, double extEnd)
     {
         if (!File.Exists(localPath)) return;
-        if (!localPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) return;
+        if (!packageName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) return;
 
         StudioPackageDirs.TryGetValue(packageName, out var subDir);
         subDir ??= "";
