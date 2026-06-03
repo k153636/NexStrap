@@ -90,12 +90,6 @@
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem Content="Browser" Tag="Browser">
-                    <ui:NavigationViewItem.IconSource>
-                        <ui:SymbolIconSource Symbol="Globe"/>
-                    </ui:NavigationViewItem.IconSource>
-                </ui:NavigationViewItem>
-
                 <ui:NavigationViewItem Content="Stretch Res" Tag="Stretch">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="Crop"/>
@@ -161,9 +155,6 @@
                         </DataTemplate>
                         <DataTemplate DataType="vm:DiscordViewModel">
                             <pages:DiscordPage/>
-                        </DataTemplate>
-                        <DataTemplate DataType="vm:BrowserViewModel">
-                            <pages:BrowserPage/>
                         </DataTemplate>
                         <DataTemplate DataType="vm:ThemeViewModel">
                             <pages:ThemePage/>

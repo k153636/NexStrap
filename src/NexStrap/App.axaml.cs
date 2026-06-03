@@ -402,7 +402,6 @@ public partial class App : Application
         services.AddTransient<ModsViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<DiscordViewModel>();
-        services.AddTransient<BrowserViewModel>();
         services.AddSingleton<UpdateService>();
         services.AddSingleton<AccountService>();
         services.AddTransient<AccountViewModel>();

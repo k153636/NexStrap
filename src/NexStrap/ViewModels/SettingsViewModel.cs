@@ -34,6 +34,12 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private int  _cpuCoreLimit;
     [ObservableProperty] private bool _memoryOptimizationEnabled;
     [ObservableProperty] private bool _cleanupOldVersions;
+    [ObservableProperty] private string _selectedTab = "General";
+
+    public string[] TabNames { get; } = ["General", "Performance", "Roblox", "Data"];
+
+    [RelayCommand]
+    private void SelectTab(string tab) => SelectedTab = tab;
 
     public SettingsViewModel(SettingsService settingsService, GameHistoryService history, RobloxService roblox)
     {

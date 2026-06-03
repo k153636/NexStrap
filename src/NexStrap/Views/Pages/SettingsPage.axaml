@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NexStrap.ViewModels"
              xmlns:helpers="using:NexStrap.Helpers"
@@ -6,262 +6,360 @@
              x:DataType="vm:SettingsViewModel"
              Background="Transparent">
 
-    <ScrollViewer>
-        <StackPanel Spacing="10" Margin="24,20" helpers:AnimationHelper.StaggerChildren="True">
+    <UserControl.Styles>
+        <Style Selector="Button.tab-btn">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#555555"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="MinHeight" Value="38"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="RenderTransform" Value="scale(1)"/>
+        </Style>
+        <!-- グローバルの scale(1.015) ホバーアニメーションを打ち消す -->
+        <Style Selector="Button.tab-btn:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1)"/>
+            <Setter Property="Foreground" Value="#BBBBBB"/>
+        </Style>
+        <Style Selector="Button.tab-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#181818"/>
+        </Style>
+        <!-- グローバルの scale(0.96) 押下アニメーションも打ち消す -->
+        <Style Selector="Button.tab-btn:pressed">
+            <Setter Property="RenderTransform" Value="scale(1)"/>
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+        <Style Selector="Button.tab-btn:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#2A2A2A"/>
+        </Style>
+        <Style Selector="Button.tab-btn.active /template/ ContentPresenter">
+            <Setter Property="Background" Value="#222222"/>
+        </Style>
+        <Style Selector="Button.tab-btn.active">
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.tab-btn.active:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#282828"/>
+        </Style>
+    </UserControl.Styles>
 
-            <TextBlock Text="Settings" FontSize="22" FontWeight="Bold"
-                       Foreground="#FFFFFF" Margin="0,0,0,2"/>
+    <Grid RowDefinitions="Auto,*" Margin="24,20,20,0">
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Spacing="3" Margin="0,0,0,16">
+            <TextBlock Text="Settings" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
             <TextBlock Text="Customize how NexStrap and Roblox behave"
-                       FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
-
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="Performance" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{DynamicResource FgSub}"/>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="FPS Unlock" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Remove 240 FPS cap via FastFlags (requires hardware to go above 240)"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding FpsUnlockEnabled}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Multi-threading" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Use more CPU threads — may improve performance on multi-core PCs"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding MultiThreadingEnabled}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Performance Overlay" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Show FPS and memory usage while playing"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowPerformanceOverlay}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="Roblox" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{DynamicResource FgSub}"/>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Auto-update Roblox" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Automatically install Roblox updates"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoUpdateRoblox}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Fast Flags Hot Reload" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Apply Fast Flags automatically without restarting Roblox"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding HotReloadEnabled}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="Roblox Behavior" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{DynamicResource FgSub}"/>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Multi-instance" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Allow multiple Roblox windows at the same time"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding MultiInstanceEnabled}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Hide Crash Dialog" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Suppress the popup that appears when Roblox crashes"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding SuppressCrashHandler}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Memory Optimization" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Cap Roblox's RAM usage — useful on PCs with less than 8 GB RAM"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding MemoryOptimizationEnabled}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="CPU Affinity" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Limit which CPU cores Roblox uses (advanced)"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding CpuAffinityEnabled}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding CpuAffinityEnabled}">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="CPU Core Limit" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Number of cores to use (0 = no limit, use all cores)"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <NumericUpDown Grid.Column="1" Value="{Binding CpuCoreLimit}"
-                                       Minimum="0" Maximum="64" Increment="1"
-                                       Width="90" FontSize="12"
-                                       Background="#080808" Foreground="#FFFFFF"
-                                       BorderBrush="#2A2A2A"/>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Cleanup Old Versions" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Delete outdated version folders after update"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding CleanupOldVersions}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="App" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{DynamicResource FgSub}"/>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Start with Windows" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Launch NexStrap automatically on login"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding StartWithWindows}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Minimize to Tray" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Close button sends app to system tray"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding MinimizeToTray}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
-
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Browser Homepage" Foreground="#FFFFFF" FontSize="13"/>
-                        <TextBox Text="{Binding BrowserHomepage}"
-                                 Background="#080808" Foreground="#FFFFFF"
-                                 BorderBrush="#2A2A2A" CornerRadius="10"
-                                 Padding="12,7" FontSize="12"/>
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="Data" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{DynamicResource FgSub}"/>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Settings" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Export or import your NexStrap settings"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                            <Button Content="Export" Command="{Binding ExportSettingsCommand}"
-                                    Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
-                                    FontSize="12" Padding="14,6" CornerRadius="8"/>
-                            <Button Content="Import" Command="{Binding ImportSettingsCommand}"
-                                    Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
-                                    FontSize="12" Padding="14,6" CornerRadius="8"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Game History" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Export or import your play history"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                            <Button Content="Export" Command="{Binding ExportHistoryCommand}"
-                                    Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
-                                    FontSize="12" Padding="14,6" CornerRadius="8"/>
-                            <Button Content="Import" Command="{Binding ImportHistoryCommand}"
-                                    Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
-                                    FontSize="12" Padding="14,6" CornerRadius="8"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <Button Content="Open Data Folder" Command="{Binding OpenDataFolderCommand}"
-                            Background="Transparent" Foreground="{DynamicResource FgSub}"
-                            FontSize="12" Padding="0,4" HorizontalAlignment="Left"/>
-                </StackPanel>
-            </Border>
-
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="Uninstall" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{DynamicResource FgSub}"/>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="NexStrap Roblox" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Delete Versions and Downloads folders managed by NexStrap"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <Button Grid.Column="1" Content="Uninstall"
-                                Command="{Binding UninstallNexStrapRobloxCommand}"
-                                Background="#3A1A1A" Foreground="{DynamicResource FgDanger}"
-                                FontSize="12" Padding="14,6" CornerRadius="8"/>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Stock Roblox" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Delete %LOCALAPPDATA%\Roblox and remove registry entries"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <Button Grid.Column="1" Content="Uninstall"
-                                Command="{Binding UninstallStockRobloxCommand}"
-                                Background="#3A1A1A" Foreground="{DynamicResource FgDanger}"
-                                FontSize="12" Padding="14,6" CornerRadius="8"/>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <Button Content="Reset to Defaults"
-                    Command="{Binding ResetToDefaultsCommand}"
-                    Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}" FontSize="12"
-                    Padding="14,8" CornerRadius="10" HorizontalAlignment="Left" Margin="0,4,0,0"/>
-
+                       FontSize="11" Foreground="{DynamicResource FgSub}"/>
         </StackPanel>
-    </ScrollViewer>
+
+        <!-- Sidebar + Content -->
+        <Grid Grid.Row="1" ColumnDefinitions="120,1,*">
+
+            <!-- Left sidebar -->
+            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Top"
+                        HorizontalAlignment="Stretch" Margin="0,0,8,0">
+                <Button Content="General" Classes="tab-btn"
+                        Classes.active="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=General}"
+                        Command="{Binding SelectTabCommand}" CommandParameter="General"/>
+                <Button Content="Performance" Classes="tab-btn"
+                        Classes.active="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Performance}"
+                        Command="{Binding SelectTabCommand}" CommandParameter="Performance"/>
+                <Button Content="Roblox" Classes="tab-btn"
+                        Classes.active="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Roblox}"
+                        Command="{Binding SelectTabCommand}" CommandParameter="Roblox"/>
+                <Button Content="Data" Classes="tab-btn"
+                        Classes.active="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Data}"
+                        Command="{Binding SelectTabCommand}" CommandParameter="Data"/>
+            </StackPanel>
+
+            <!-- Divider -->
+            <Rectangle Grid.Column="1" Fill="#1C1C1C"/>
+
+            <!-- ── General ──────────────────────────────────────────── -->
+            <ScrollViewer Grid.Column="2" Padding="16,0,4,20"
+                          IsVisible="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=General}">
+                <StackPanel Spacing="10">
+
+                    <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="App" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource FgSub}"/>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Start with Windows" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Launch NexStrap automatically on login"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding StartWithWindows}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Minimize to Tray" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Close button sends app to system tray"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding MinimizeToTray}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ── Performance ─────────────────────────────────────── -->
+            <ScrollViewer Grid.Column="2" Padding="16,0,4,20"
+                          IsVisible="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Performance}">
+                <StackPanel Spacing="10">
+
+                    <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Performance" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource FgSub}"/>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="FPS Unlock" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Remove 240 FPS cap via FastFlags (requires hardware to go above 240)"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding FpsUnlockEnabled}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Multi-threading" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Use more CPU threads — may improve performance on multi-core PCs"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding MultiThreadingEnabled}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Performance Overlay" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Show FPS and memory usage while playing"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowPerformanceOverlay}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Fast Flags Hot Reload" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Apply Fast Flags without restarting Roblox"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding HotReloadEnabled}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ── Roblox ───────────────────────────────────────────── -->
+            <ScrollViewer Grid.Column="2" Padding="16,0,4,20"
+                          IsVisible="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Roblox}">
+                <StackPanel Spacing="10">
+
+                    <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Roblox" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource FgSub}"/>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Auto-update Roblox" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Automatically install Roblox updates"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoUpdateRoblox}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Multi-instance" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Allow multiple Roblox windows at the same time"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding MultiInstanceEnabled}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Hide Crash Dialog" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Suppress the popup that appears when Roblox crashes"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding SuppressCrashHandler}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Memory Optimization" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Cap Roblox's RAM usage — useful on PCs with less than 8 GB RAM"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding MemoryOptimizationEnabled}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="CPU Affinity" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Limit which CPU cores Roblox uses (advanced)"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding CpuAffinityEnabled}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding CpuAffinityEnabled}">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="CPU Core Limit" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Number of cores to use (0 = no limit)"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <NumericUpDown Grid.Column="1" Value="{Binding CpuCoreLimit}"
+                                               Minimum="0" Maximum="64" Increment="1"
+                                               Width="90" FontSize="12"
+                                               Background="#080808" Foreground="#FFFFFF"
+                                               BorderBrush="#2A2A2A"/>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Cleanup Old Versions" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Delete outdated version folders after update"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding CleanupOldVersions}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ── Data ────────────────────────────────────────────── -->
+            <ScrollViewer Grid.Column="2" Padding="16,0,4,20"
+                          IsVisible="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Data}">
+                <StackPanel Spacing="10">
+
+                    <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Data" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource FgSub}"/>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Settings" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Export or import your NexStrap settings"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Export" Command="{Binding ExportSettingsCommand}"
+                                            Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                                            FontSize="12" Padding="14,6" CornerRadius="8"/>
+                                    <Button Content="Import" Command="{Binding ImportSettingsCommand}"
+                                            Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                                            FontSize="12" Padding="14,6" CornerRadius="8"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Game History" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Export or import your play history"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Export" Command="{Binding ExportHistoryCommand}"
+                                            Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                                            FontSize="12" Padding="14,6" CornerRadius="8"/>
+                                    <Button Content="Import" Command="{Binding ImportHistoryCommand}"
+                                            Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                                            FontSize="12" Padding="14,6" CornerRadius="8"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Open Data Folder" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Browse NexStrap's local data directory"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="Open" Command="{Binding OpenDataFolderCommand}"
+                                        Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                                        FontSize="12" Padding="14,6" CornerRadius="8"
+                                        VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <TextBlock Text="{Binding StatusMessage}"
+                                       FontSize="11" Foreground="#4ADE80"
+                                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Content="Reset to Defaults"
+                            Command="{Binding ResetToDefaultsCommand}"
+                            Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                            FontSize="12" Padding="14,8" CornerRadius="10" HorizontalAlignment="Left"/>
+
+                    <!-- Danger Zone -->
+                    <Border Background="#0F0808" BorderBrush="#3A1A1A" BorderThickness="1"
+                            CornerRadius="12" Padding="16,12">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Danger Zone" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource FgDanger}"/>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="NexStrap Roblox" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Delete Versions and Downloads folders managed by NexStrap"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="Uninstall"
+                                        Command="{Binding UninstallNexStrapRobloxCommand}"
+                                        Background="#3A1A1A" Foreground="{DynamicResource FgDanger}"
+                                        FontSize="12" Padding="14,6" CornerRadius="8"/>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Stock Roblox" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Delete %LOCALAPPDATA%\Roblox and remove registry entries"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="Uninstall"
+                                        Command="{Binding UninstallStockRobloxCommand}"
+                                        Background="#3A1A1A" Foreground="{DynamicResource FgDanger}"
+                                        FontSize="12" Padding="14,6" CornerRadius="8"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+
+        </Grid>
+    </Grid>
 </UserControl>

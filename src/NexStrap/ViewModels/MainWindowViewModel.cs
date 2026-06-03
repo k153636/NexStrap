@@ -23,7 +23,6 @@ public partial class MainWindowViewModel : ViewModelBase
     public ModsViewModel ModsVM { get; }
     public SettingsViewModel SettingsVM { get; }
     public DiscordViewModel DiscordVM { get; }
-    public BrowserViewModel BrowserVM { get; }
     public ThemeViewModel ThemeVM { get; }
     public StatsViewModel StatsVM { get; }
     public DevViewModel DevVM { get; }
@@ -40,7 +39,6 @@ public partial class MainWindowViewModel : ViewModelBase
         ModsViewModel modsVM,
         SettingsViewModel settingsVM,
         DiscordViewModel discordVM,
-        BrowserViewModel browserVM,
         ThemeViewModel themeVM,
         StatsViewModel statsVM,
         DevViewModel devVM,
@@ -57,7 +55,6 @@ public partial class MainWindowViewModel : ViewModelBase
         ModsVM = modsVM;
         SettingsVM = settingsVM;
         DiscordVM = discordVM;
-        BrowserVM = browserVM;
         ThemeVM = themeVM;
         StatsVM = statsVM;
         DevVM = devVM;
@@ -117,9 +114,6 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateTo(string page)
     {
-        if (page == "Browser")
-            BrowserVM.UserAvatarUrl = HomeVM.UserAvatarUrl;
-
         if (page == "Stats")
             StatsVM.Refresh();
 
@@ -140,7 +134,6 @@ public partial class MainWindowViewModel : ViewModelBase
             "Home" => HomeVM,
             "FastFlags" => FastFlagsVM,
             "Mods" => ModsVM,
-            "Browser" => BrowserVM,
             "Theme" => ThemeVM,
             "Stats" => StatsVM,
             "Discord" => DiscordVM,
@@ -153,7 +146,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         HomeVM.CurrentPageName = page;
 
-        if (page != "Browser" && !HomeVM.IsGameDetected)
+        if (!HomeVM.IsGameDetected)
         {
             var presenceName = page == "Stretch" ? "Stretch Res" : page;
             _discord.SetPagePresence(presenceName, HomeVM.UserAvatarUrl);
