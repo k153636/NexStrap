@@ -70,6 +70,21 @@ public partial class App : Application
             return;
         }
 
+        // 初回起動 → インストーラーを表示
+        if (!NexStrap.ViewModels.Installer.InstallerViewModel.IsInstalled())
+        {
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopForInstaller)
+            {
+                var installerWindow = new NexStrap.Views.Installer.InstallerWindow();
+                desktopForInstaller.MainWindow = installerWindow;
+                desktopForInstaller.ShutdownMode = ShutdownMode.OnMainWindowClose;
+                installerWindow.Show();
+                installerWindow.Activate();
+            }
+            base.OnFrameworkInitializationCompleted();
+            return;
+        }
+
         // Wire friend online → toast notification
         var friendNotif = Services.GetRequiredService<FriendNotificationService>();
         friendNotif.FriendCameOnline += (_, e) => NotificationService.ShowFriendOnline(e.DisplayName);

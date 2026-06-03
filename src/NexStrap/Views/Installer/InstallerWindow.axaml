@@ -1,0 +1,186 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:NexStrap.ViewModels.Installer"
+        x:Class="NexStrap.Views.Installer.InstallerWindow"
+        x:DataType="vm:InstallerViewModel"
+        Title="NexStrap Setup"
+        Width="580" Height="400"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="#080808"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="-1">
+
+    <Grid RowDefinitions="30,*,56">
+
+        <!-- Title bar -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*" IsHitTestVisible="False">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="14,0" Spacing="7"
+                        VerticalAlignment="Center">
+                <Image Source="avares://NexStrap/Assets/nexstrap.png"
+                       Width="14" Height="14" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                <TextBlock Text="NexStrap Setup" FontSize="12" FontWeight="SemiBold"
+                           Foreground="#888888" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Content area -->
+        <Border Grid.Row="1" Margin="32,8,32,0">
+            <Grid>
+                <!-- Welcome Step -->
+                <StackPanel Spacing="16" VerticalAlignment="Center"
+                            IsVisible="{Binding Step,
+                                Converter={x:Static ObjectConverters.Equal},
+                                ConverterParameter={x:Static vm:InstallerStep.Welcome}}">
+                    <Image Source="avares://NexStrap/Assets/nexstrap.png"
+                           Width="56" Height="56" HorizontalAlignment="Left"
+                           RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Welcome to NexStrap" FontSize="22" FontWeight="Bold"
+                                   Foreground="#FFFFFF"/>
+                        <TextBlock Text="{Binding AppVersion, Mode=OneWay}"
+                                   FontSize="12" Foreground="#505050" FontFamily="Consolas,monospace"/>
+                    </StackPanel>
+                    <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#888888" MaxWidth="460"
+                               Text="NexStrap is a third-party Roblox launcher with FastFlags, multi-account support, stretched resolution, and more. Click Next to choose where to install."/>
+                </StackPanel>
+
+                <!-- Install Step -->
+                <StackPanel Spacing="18" IsVisible="{Binding Step,
+                                Converter={x:Static ObjectConverters.Equal},
+                                ConverterParameter={x:Static vm:InstallerStep.Install}}">
+                    <TextBlock Text="Install" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
+
+                    <!-- Install location -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Installation Location" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="#888888"/>
+                        <Grid ColumnDefinitions="*,8,Auto,6,Auto">
+                            <TextBox Grid.Column="0" Text="{Binding InstallPath}"
+                                     Background="#111111" Foreground="#FFFFFF"
+                                     BorderBrush="{Binding PathError,
+                                         Converter={StaticResource BoolToColorConverter},
+                                         ConverterParameter='#FF4444,#2A2A2A'}"
+                                     BorderThickness="1" CornerRadius="8"
+                                     Padding="10,6" FontSize="12" FontFamily="Consolas,monospace"/>
+                            <Button Grid.Column="2" Content="Browse"
+                                    Command="{Binding BrowseCommand}"
+                                    Background="#1A1A1A" Foreground="#888888"
+                                    FontSize="12" Padding="12,6" CornerRadius="8"/>
+                            <Button Grid.Column="4" Content="Default"
+                                    Command="{Binding ResetPathCommand}"
+                                    Background="#1A1A1A" Foreground="#888888"
+                                    FontSize="12" Padding="12,6" CornerRadius="8"/>
+                        </Grid>
+                        <TextBlock Text="{Binding PathErrorMessage}"
+                                   FontSize="11" Foreground="#FF6B6B"
+                                   IsVisible="{Binding PathError}"/>
+                    </StackPanel>
+
+                    <!-- Shortcuts -->
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Shortcuts" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="#888888"/>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="Desktop shortcut"
+                                       Foreground="#FFFFFF" FontSize="13" VerticalAlignment="Center"/>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding DesktopShortcut}"
+                                          OnContent="ON" OffContent="OFF"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="Start Menu shortcut"
+                                       Foreground="#FFFFFF" FontSize="13" VerticalAlignment="Center"/>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding StartMenuShortcut}"
+                                          OnContent="ON" OffContent="OFF"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding StatusMessage}"
+                               FontSize="11" Foreground="#4ADE80"
+                               IsVisible="{Binding StatusMessage,
+                                   Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                </StackPanel>
+
+                <!-- Complete Step -->
+                <StackPanel Spacing="20" VerticalAlignment="Center"
+                            IsVisible="{Binding Step,
+                                Converter={x:Static ObjectConverters.Equal},
+                                ConverterParameter={x:Static vm:InstallerStep.Complete}}">
+                    <TextBlock Text="Installation Complete" FontSize="22" FontWeight="Bold"
+                               Foreground="#FFFFFF"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#888888"
+                               Text="NexStrap has been installed successfully. You can now launch it from the desktop shortcut or Start Menu."/>
+
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="Launch NexStrap"
+                                Command="{Binding LaunchInstalledCommand}"
+                                Background="#FFFFFF" Foreground="#080808"
+                                FontSize="13" FontWeight="SemiBold"
+                                Padding="20,10" CornerRadius="8"/>
+                        <Button Content="Close"
+                                Command="{Binding CloseInstallerCommand}"
+                                Background="#1A1A1A" Foreground="#888888"
+                                FontSize="13" Padding="20,10" CornerRadius="8"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Bottom button bar -->
+        <Border Grid.Row="2" BorderBrush="#1A1A1A" BorderThickness="0,1,0,0"
+                Padding="32,0">
+            <Grid ColumnDefinitions="*,Auto">
+
+                <!-- Progress indicator (dots) -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6"
+                            VerticalAlignment="Center">
+                    <Ellipse Width="6" Height="6" VerticalAlignment="Center">
+                        <Ellipse.Fill>
+                            <SolidColorBrush Color="{Binding Step,
+                                Converter={StaticResource BoolToColorConverter},
+                                ConverterParameter='#FFFFFF,#333333'}"/>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                    <Ellipse Width="6" Height="6" Fill="#333333" VerticalAlignment="Center"/>
+                    <Ellipse Width="6" Height="6" Fill="#333333" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Buttons -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                            VerticalAlignment="Center">
+                    <!-- Back -->
+                    <Button Content="← Back"
+                            Command="{Binding BackCommand}"
+                            Background="#1A1A1A" Foreground="#888888"
+                            FontSize="12" Padding="16,8" CornerRadius="8"
+                            IsVisible="{Binding Step,
+                                Converter={x:Static ObjectConverters.Equal},
+                                ConverterParameter={x:Static vm:InstallerStep.Install}}"/>
+
+                    <!-- Next (Welcome) -->
+                    <Button Content="Next →"
+                            Command="{Binding NextCommand}"
+                            Background="#FFFFFF" Foreground="#080808"
+                            FontSize="12" FontWeight="SemiBold"
+                            Padding="20,8" CornerRadius="8"
+                            IsVisible="{Binding Step,
+                                Converter={x:Static ObjectConverters.Equal},
+                                ConverterParameter={x:Static vm:InstallerStep.Welcome}}"/>
+
+                    <!-- Install (Install step) -->
+                    <Button Content="Install"
+                            Command="{Binding InstallCommand}"
+                            IsEnabled="{Binding IsInstalling,
+                                Converter={x:Static BoolConverters.Not}}"
+                            Background="#FFFFFF" Foreground="#080808"
+                            FontSize="12" FontWeight="SemiBold"
+                            Padding="20,8" CornerRadius="8"
+                            IsVisible="{Binding Step,
+                                Converter={x:Static ObjectConverters.Equal},
+                                ConverterParameter={x:Static vm:InstallerStep.Install}}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
