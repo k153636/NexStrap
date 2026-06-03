@@ -17,11 +17,8 @@
 
         <!-- Title bar -->
         <Grid Grid.Row="0" IsHitTestVisible="False">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
-                        Margin="14,0" Spacing="7">
-                <TextBlock Text="Bulk Import" FontSize="12" FontWeight="SemiBold"
-                           Foreground="#666666" VerticalAlignment="Center"/>
-            </StackPanel>
+            <TextBlock Text="Bulk Import" FontSize="12" FontWeight="SemiBold"
+                       Foreground="#666666" VerticalAlignment="Center" Margin="14,0"/>
         </Grid>
 
         <!-- Content -->

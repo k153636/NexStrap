@@ -29,7 +29,6 @@
             <local:SecondsToTimeConverter x:Key="SecondsToTimeConverter"/>
             <local:StringToImageConverter x:Key="StringToImageConverter"/>
 
-
             <!-- Black/White palette -->
             <SolidColorBrush x:Key="BgBrush"        Color="#080808"/>
             <SolidColorBrush x:Key="SurfaceBrush"   Color="#141414"/>

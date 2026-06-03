@@ -5,6 +5,8 @@ namespace NexStrap.Views.Pages;
 
 public partial class FastFlagsPage : UserControl
 {
+    private FastFlagsViewModel? _vm;
+
     public FastFlagsPage()
     {
         InitializeComponent();
@@ -13,14 +15,30 @@ public partial class FastFlagsPage : UserControl
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
-        if (DataContext is FastFlagsViewModel vm)
+
+        if (_vm != null)
         {
-            vm.OpenBulkImportWindowRequested  += () => OpenWindow(new BulkImportWindow(vm));
-            vm.OpenPresetWindowRequested      += () => OpenWindow(new PresetWindow { DataContext = vm });
-            vm.OpenAddFlagWindowRequested     += () => OpenWindow(new AddFlagWindow(vm));
-            vm.OpenProfileManagerWindowRequested += () => OpenWindow(new ProfileManagerWindow { DataContext = vm });
+            _vm.OpenBulkImportWindowRequested    -= OpenBulkImport;
+            _vm.OpenPresetWindowRequested        -= OpenPreset;
+            _vm.OpenAddFlagWindowRequested       -= OpenAddFlag;
+            _vm.OpenProfileManagerWindowRequested -= OpenProfileMgr;
+        }
+
+        _vm = DataContext as FastFlagsViewModel;
+
+        if (_vm != null)
+        {
+            _vm.OpenBulkImportWindowRequested    += OpenBulkImport;
+            _vm.OpenPresetWindowRequested        += OpenPreset;
+            _vm.OpenAddFlagWindowRequested       += OpenAddFlag;
+            _vm.OpenProfileManagerWindowRequested += OpenProfileMgr;
         }
     }
+
+    private void OpenBulkImport()  => OpenWindow(new BulkImportWindow(_vm!));
+    private void OpenPreset()      => OpenWindow(new PresetWindow { DataContext = _vm });
+    private void OpenAddFlag()     => OpenWindow(new AddFlagWindow(_vm!));
+    private void OpenProfileMgr()  => OpenWindow(new ProfileManagerWindow { DataContext = _vm });
 
     private void OpenWindow(Window win)
     {
