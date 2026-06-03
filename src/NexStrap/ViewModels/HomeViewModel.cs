@@ -54,6 +54,7 @@ public partial class HomeViewModel : ViewModelBase
     private int    _activeFocusedSlot  = -1;
     private bool   _robloxHasFocus     = false;
     private bool   _studioDetected     = false;
+    private bool   _studioPlaytesting  = false;
     private Timer? _focusTimer;
     private Timer? _presenceHeartbeat;
     private Timer? _studioTimer;
@@ -281,6 +282,14 @@ public partial class HomeViewModel : ViewModelBase
         {
             var (placeId, universeIdFromLog) = args;
 
+            // Studio テストプレイ: ゲーム参加フローを走らせず Studio playtest presence を表示
+            if (_logWatcher.IsWatchingStudioLog)
+            {
+                _studioPlaytesting = true;
+                _discord.SetStudioPlaytestPresence(null, _userAvatarUrl);
+                return;
+            }
+
             // スロットIDは await 後にログファイルが切り替わると変わるため、最初にスナップショット
             var currentSlot     = _logWatcher.CurrentSlotId;
             var prevDetected    = _gameDetected;
@@ -414,6 +423,14 @@ public partial class HomeViewModel : ViewModelBase
         // ゲーム退出
         _logWatcher.GameLeft += (_, _) =>
         {
+            // Studio テストプレイ終了 → Studio presence に戻す
+            if (_studioPlaytesting)
+            {
+                _studioPlaytesting = false;
+                _discord.SetStudioPresence(_userAvatarUrl);
+                return;
+            }
+
             // テレポートをまたいだ累積時間 + 最後のサブプレイス経過時間を合計して確定保存
             if (_gameStartTime.HasValue && _sessionEntry != null)
             {

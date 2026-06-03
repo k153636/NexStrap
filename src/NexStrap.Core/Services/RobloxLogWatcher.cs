@@ -164,6 +164,17 @@ public class RobloxLogWatcher : IDisposable
     public int CurrentSlotId { get; private set; }
     public event EventHandler<int>? InstanceSlotChanged;
 
+    public bool IsWatchingStudioLog
+    {
+        get
+        {
+            string? file;
+            lock (_lock) { file = _watchedFile; }
+            return file != null &&
+                   Path.GetFileName(file).StartsWith("RobloxStudio", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     private void StartWatchingFileUnsafe(string path, bool fromEnd)
     {
         if (_watchedFile != null && path != _watchedFile)

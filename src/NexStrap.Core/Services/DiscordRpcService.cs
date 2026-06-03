@@ -177,6 +177,21 @@ public class DiscordRpcService : IDisposable
         );
     }
 
+    public void SetStudioPlaytestPresence(string? gameName = null, string? userAvatarUrl = null)
+    {
+        if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
+        string? label; lock (_lock) { label = _userLabel; }
+        SetPresence(
+            details: "Playtesting in Studio",
+            state: gameName,
+            largeImage: "nexstrap",
+            largeText: "NexStrap Launcher · Created by K",
+            smallImage: userAvatarUrl,
+            smallText: userAvatarUrl != null ? (label ?? "Profile") : null,
+            timestamps: _startTimestamp
+        );
+    }
+
     public void SetInstallingStudioPresence(string? userAvatarUrl = null)
     {
         if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
