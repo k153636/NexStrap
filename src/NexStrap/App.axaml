@@ -107,19 +107,19 @@
             <Setter Property="Opacity" Value="0.78"/>
         </Style>
 
-        <!-- Card hover (add Classes="card" to hoverable Border elements) -->
+        <!-- Card hover — scale で微妙な浮き上がり（グラデーション・背景を変えない） -->
         <Style Selector="Border.card">
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.12"/>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.12"/>
+                    <TransformOperationsTransition Property="RenderTransform"
+                        Duration="0:0:0.12" Easing="CubicEaseOut"/>
                 </Transitions>
             </Setter>
         </Style>
         <Style Selector="Border.card:pointerover">
-            <Setter Property="Background" Value="#1E1E1E"/>
-            <Setter Property="BorderBrush" Value="#303030"/>
+            <Setter Property="RenderTransform" Value="scale(1.008)"/>
         </Style>
 
         <!-- ToggleSwitch cursor -->

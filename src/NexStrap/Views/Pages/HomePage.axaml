@@ -48,7 +48,6 @@
                             <DataTemplate DataType="local:GameEntryViewModel">
                                 <Border Background="{DynamicResource CardBg}" CornerRadius="10"
                                         Padding="12,10" Margin="0,0,0,6" Classes="card"
-                                        BorderBrush="Transparent" BorderThickness="1">
                                     <Grid ColumnDefinitions="44,*,Auto,6,Auto">
                                         <Border Grid.Column="0" Width="44" Height="44"
                                                 CornerRadius="8" ClipToBounds="True"
