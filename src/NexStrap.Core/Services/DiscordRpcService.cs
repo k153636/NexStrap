@@ -154,10 +154,10 @@ public class DiscordRpcService : IDisposable
         if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
         string? label; lock (_lock) { label = _userLabel; }
         SetPresence(
-            details: "Launching",
+            details: "Launching Roblox",
             state: null,
-            largeImage: "roblox_logo1",
-            largeText: "Roblox",
+            largeImage: "nexstrap",
+            largeText: "NexStrap Launcher · Created by K",
             smallImage: userAvatarUrl,
             smallText: userAvatarUrl != null ? (label ?? "Profile") : null
         );
@@ -168,10 +168,24 @@ public class DiscordRpcService : IDisposable
         if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
         string? label; lock (_lock) { label = _userLabel; }
         SetPresence(
-            details: "Roblox updating",
+            details: "Updating Roblox",
             state: null,
-            largeImage: "roblox_logo1",
-            largeText: "Roblox",
+            largeImage: "nexstrap",
+            largeText: "NexStrap Launcher · Created by K",
+            smallImage: userAvatarUrl,
+            smallText: userAvatarUrl != null ? (label ?? "Profile") : null
+        );
+    }
+
+    public void SetInstallingStudioPresence(string? userAvatarUrl = null)
+    {
+        if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
+        string? label; lock (_lock) { label = _userLabel; }
+        SetPresence(
+            details: "Installing Roblox Studio",
+            state: null,
+            largeImage: "nexstrap",
+            largeText: "NexStrap Launcher · Created by K",
             smallImage: userAvatarUrl,
             smallText: userAvatarUrl != null ? (label ?? "Profile") : null
         );

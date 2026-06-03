@@ -545,6 +545,31 @@ public partial class HomeViewModel : ViewModelBase
             catch { }
         }, null, PresenceHeartbeat, PresenceHeartbeat);
 
+        // Studio インストール / 起動状態 → Discord presence
+        _studio.StatusChanged += (_, status) =>
+        {
+            if (_gameDetected) return;
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                switch (status)
+                {
+                    case RobloxStatus.Updating:
+                        _discord.SetInstallingStudioPresence(_userAvatarUrl);
+                        break;
+                    case RobloxStatus.Launching:
+                        _discord.SetLaunchingPresence(_userAvatarUrl);
+                        break;
+                    case RobloxStatus.Running:
+                        _discord.SetStudioPresence(_userAvatarUrl);
+                        break;
+                    case RobloxStatus.Idle:
+                        if (!_studioDetected)
+                            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+                        break;
+                }
+            });
+        };
+
         // Studio プロセスを3秒ごとに監視して presence を切り替える
         _studioTimer = new Timer(_ => CheckStudioProcess(), null, StudioPollInterval, StudioPollInterval);
 
