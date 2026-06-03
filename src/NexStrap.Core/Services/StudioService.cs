@@ -481,7 +481,7 @@ public class StudioService
             ["StudioFonts.zip"]                   = "StudioFonts/",
             ["LibrariesQt5.zip"]                  = "",
             ["content-qt_translations.zip"]       = "content/qt_translations/",
-            ["content-studio_svg_textures.zip"]   = "content/textures/",
+            ["content-studio_svg_textures.zip"]   = "content/studio_svg_textures/",
             ["content-api-docs.zip"]              = "content/api_docs/",
             ["extracontent-scripts.zip"]          = "ExtraContent/scripts/",
             ["studiocontent-models.zip"]          = "StudioContent/models/",
