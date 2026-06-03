@@ -67,7 +67,7 @@ public void SetPagePresence(string pageName, string? userAvatarUrl = null, strin
 
         string? label; lock (_lock) { label = _userLabel; }
         SetPresence(
-            details: s.DiscordShowLauncherDetails ? $"{prefix} / {pageName}" : null,
+            details: s.DiscordShowLauncherDetails ? (prefix == "NexStrap" ? $"{prefix} / {pageName}" : prefix) : null,
             state: null,
             largeImage: "nexstrap",
             largeText: "NexStrap Launcher · Created by K",
@@ -161,6 +161,21 @@ public void SetPagePresence(string pageName, string? userAvatarUrl = null, strin
             largeText: "NexStrap Launcher · Created by K",
             smallImage: userAvatarUrl,
             smallText: userAvatarUrl != null ? (label ?? "Profile") : null
+        );
+    }
+
+    public void SetStudioHomePresence(string? userAvatarUrl = null)
+    {
+        if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
+        string? label; lock (_lock) { label = _userLabel; }
+        SetPresence(
+            details: "Roblox Studio",
+            state: null,
+            largeImage: "nexstrap",
+            largeText: "NexStrap Launcher · Created by K",
+            smallImage: userAvatarUrl,
+            smallText: userAvatarUrl != null ? (label ?? "Profile") : null,
+            timestamps: _startTimestamp
         );
     }
 

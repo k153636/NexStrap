@@ -55,6 +55,7 @@ public partial class HomeViewModel : ViewModelBase
     private bool   _robloxHasFocus     = false;
     private bool   _studioDetected     = false;
     private bool   _studioPlaytesting  = false;
+    private string _lastStudioPresence = string.Empty;
     private Timer? _focusTimer;
     private Timer? _presenceHeartbeat;
     private Timer? _studioTimer;
@@ -212,7 +213,7 @@ public partial class HomeViewModel : ViewModelBase
                     case RobloxStatus.Idle:
                     case RobloxStatus.NotInstalled:
                         if (_studioDetected)
-                            _discord.SetStudioPresence(_userAvatarUrl);
+                            _discord.SetStudioHomePresence(_userAvatarUrl);
                         else
                             _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
                         break;
@@ -901,27 +902,43 @@ public partial class HomeViewModel : ViewModelBase
     {
         try
         {
-            var running = IsStudioRunning();
-            if (running == _studioDetected) return;
-            _studioDetected = running;
+            var studioProc = Process.GetProcessesByName("RobloxStudioBeta")
+                .Concat(Process.GetProcessesByName("RobloxStudio"))
+                .FirstOrDefault(p => !p.HasExited);
+            var running = studioProc != null;
 
-            if (running)
+            if (running != _studioDetected)
             {
-                // ゲームプレイ中は in-game presence を優先
-                if (!_gameDetected)
-                    _discord.SetStudioPresence(_userAvatarUrl);
-            }
-            else
-            {
-                // Studio 終了 — ゲームか通常ページに戻す
-                if (!_gameDetected)
+                _studioDetected = running;
+                _lastStudioPresence = string.Empty;
+
+                if (!running)
                 {
-                    if (IsRobloxRunning)
-                        _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox");
-                    else
-                        _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+                    // Studio 終了 — ゲームか通常ページに戻す
+                    if (!_gameDetected)
+                    {
+                        if (IsRobloxRunning)
+                            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox");
+                        else
+                            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+                    }
+                    return;
                 }
             }
+
+            if (!running || _gameDetected || _studioPlaytesting) return;
+
+            // ウィンドウタイトルで Home / Editing を判定
+            // Home: "Roblox Studio"  / Editing: "PlaceName - Roblox Studio"
+            var title = studioProc!.MainWindowTitle;
+            var newPresence = title.Contains(" - Roblox Studio") ? "Editing" : "Home";
+            if (newPresence == _lastStudioPresence) return;
+            _lastStudioPresence = newPresence;
+
+            if (newPresence == "Editing")
+                _discord.SetStudioPresence(_userAvatarUrl);
+            else
+                _discord.SetStudioHomePresence(_userAvatarUrl);
         }
         catch { }
     }
