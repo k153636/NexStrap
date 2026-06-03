@@ -51,15 +51,9 @@
                                  TargetNullValue="Guest"/>
                     </TextBlock.Text>
                 </TextBlock>
-                <TextBlock Text="{Binding RobloxVersion}"
+                <TextBlock Text="{x:Static vm:HomeViewModel.AppVersion}"
                            FontSize="11" Foreground="{DynamicResource FgSub}"
-                           FontFamily="Consolas,monospace"
-                           IsVisible="{Binding RobloxVersion,
-                               Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                <TextBlock Text="Roblox not found" FontSize="11"
-                           Foreground="{DynamicResource FgMuted}"
-                           IsVisible="{Binding RobloxVersion,
-                               Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
+                           FontFamily="Consolas,monospace"/>
             </StackPanel>
 
             <!-- Status badges -->

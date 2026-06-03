@@ -75,6 +75,15 @@ public partial class HomeViewModel : ViewModelBase
 
     [ObservableProperty] private string? _userDisplayName;
 
+    public static string AppVersion
+    {
+        get
+        {
+            var v = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version;
+            return v != null ? $"v{v.Major}.{v.Minor}.{v.Build}" : "v1.1";
+        }
+    }
+
     [ObservableProperty] private bool         _isMultiInstanceWarningVisible;
     [ObservableProperty] private bool         _isRobloxRunning;
     [ObservableProperty] private bool         _isLaunching;
