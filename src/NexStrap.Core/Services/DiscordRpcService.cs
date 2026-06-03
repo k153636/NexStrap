@@ -82,7 +82,9 @@ public void SetPagePresence(string pageName, string? userAvatarUrl = null, strin
         var s = _settings.Settings;
         string? label; lock (_lock) { label = _userLabel; }
 
-        var details = $"{gameName} / Playing";
+        var details = s.DiscordShowCreator && creator != null
+            ? $"{gameName} · by {creator}"
+            : gameName;
         var buttons = s.DiscordShowJoinButton && placeId > 0
             ? new Button[] { new() { Label = "Join Game", Url = $"https://www.roblox.com/games/{placeId}" } }
             : null;
