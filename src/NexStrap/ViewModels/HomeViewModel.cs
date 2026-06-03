@@ -18,6 +18,7 @@ public partial class HomeViewModel : ViewModelBase
     private readonly RobloxService _roblox;
     private readonly StudioService _studio;
     private readonly FastFlagService _fastFlags;
+    private readonly StudioFastFlagService _studioFastFlags;
     private readonly ModService _mods;
     private readonly SettingsService _settings;
     private readonly DiscordRpcService _discord;
@@ -132,6 +133,7 @@ public partial class HomeViewModel : ViewModelBase
         RobloxService roblox,
         StudioService studio,
         FastFlagService fastFlags,
+        StudioFastFlagService studioFastFlags,
         ModService mods,
         SettingsService settings,
         DiscordRpcService discord,
@@ -144,6 +146,7 @@ public partial class HomeViewModel : ViewModelBase
         _roblox               = roblox;
         _studio               = studio;
         _fastFlags            = fastFlags;
+        _studioFastFlags      = studioFastFlags;
         _mods                 = mods;
         _settings             = settings;
         _discord              = discord;
@@ -688,6 +691,7 @@ public partial class HomeViewModel : ViewModelBase
 
         _discord.SetLaunchingPresence(_userAvatarUrl);
 
+        await _studioFastFlags.SaveAsync();
         var launched = await _studio.LaunchAsync();
         if (!launched)
             StatusText = "Studio launch failed";

@@ -68,6 +68,24 @@ public class StudioService
 
     public string? StudioExePath => FindStudioExePath();
 
+    public string? StudioVersionPath
+    {
+        get
+        {
+            var exe = FindStudioExePath();
+            return exe != null ? Path.GetDirectoryName(exe) : null;
+        }
+    }
+
+    public string ClientSettingsPath
+    {
+        get
+        {
+            var vp = StudioVersionPath;
+            return vp == null ? string.Empty : Path.Combine(vp, "ClientSettings");
+        }
+    }
+
     private static bool IsVersionComplete(string dir) =>
         File.Exists(Path.Combine(dir, "RobloxStudioBeta.exe"));
 
