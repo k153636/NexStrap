@@ -26,28 +26,66 @@
         </Grid>
 
         <!-- Content area -->
-        <Border Grid.Row="1" Margin="32,8,32,0">
+        <Border Grid.Row="1" Margin="24,4,24,0">
             <Grid>
                 <!-- Welcome Step -->
-                <StackPanel Spacing="16" VerticalAlignment="Center"
-                            IsVisible="{Binding Step,
-                                Converter={x:Static ObjectConverters.Equal},
-                                ConverterParameter={x:Static vm:InstallerStep.Welcome}}">
-                    <Image Source="avares://NexStrap/Assets/nexstrap.png"
-                           Width="56" Height="56" HorizontalAlignment="Left"
-                           RenderOptions.BitmapInterpolationMode="HighQuality"/>
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Welcome to NexStrap" FontSize="22" FontWeight="Bold"
-                                   Foreground="#FFFFFF"/>
-                        <TextBlock Text="{Binding AppVersion, Mode=OneWay}"
-                                   FontSize="12" Foreground="#505050" FontFamily="Consolas,monospace"/>
+                <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center"
+                      IsVisible="{Binding Step,
+                          Converter={x:Static ObjectConverters.Equal},
+                          ConverterParameter={x:Static vm:InstallerStep.Welcome}}">
+
+                    <!-- Left: logo -->
+                    <Image Grid.Column="0" Source="avares://NexStrap/Assets/nexstrap.png"
+                           Width="72" Height="72" Margin="0,0,24,0"
+                           RenderOptions.BitmapInterpolationMode="HighQuality"
+                           VerticalAlignment="Center"/>
+
+                    <!-- Right: text -->
+                    <StackPanel Grid.Column="1" Spacing="12" VerticalAlignment="Center">
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="NexStrap" FontSize="24" FontWeight="Bold"
+                                       Foreground="#FFFFFF"/>
+                            <TextBlock Text="{Binding AppVersion, Mode=OneWay}"
+                                       FontSize="11" Foreground="#444444"
+                                       FontFamily="Consolas,monospace"/>
+                        </StackPanel>
+
+                        <!-- Feature highlights -->
+                        <StackPanel Spacing="6">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="⚡" FontSize="13" VerticalAlignment="Center"/>
+                                <TextBlock FontSize="12" Foreground="#CCCCCC" VerticalAlignment="Center">
+                                    <Run Text="FastFlags" FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                                    <Run Text=" — fine-tune Roblox's internals for max performance"/>
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="🖥" FontSize="13" VerticalAlignment="Center"/>
+                                <TextBlock FontSize="12" Foreground="#CCCCCC" VerticalAlignment="Center">
+                                    <Run Text="Stretch Res" FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                                    <Run Text=" — competitive 4:3 stretched resolution"/>
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="👤" FontSize="13" VerticalAlignment="Center"/>
+                                <TextBlock FontSize="12" Foreground="#CCCCCC" VerticalAlignment="Center">
+                                    <Run Text="Multi-Account" FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                                    <Run Text=" — switch Roblox accounts instantly"/>
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="🌐" FontSize="13" VerticalAlignment="Center"/>
+                                <TextBlock FontSize="12" Foreground="#CCCCCC" VerticalAlignment="Center">
+                                    <Run Text="Web Launch" FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                                    <Run Text=" — join games directly from the browser"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </StackPanel>
                     </StackPanel>
-                    <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#888888" MaxWidth="460"
-                               Text="NexStrap is a third-party Roblox launcher with FastFlags, multi-account support, stretched resolution, and more. Click Next to choose where to install."/>
-                </StackPanel>
+                </Grid>
 
                 <!-- Install Step -->
-                <StackPanel Spacing="18" IsVisible="{Binding Step,
+                <StackPanel Spacing="14" IsVisible="{Binding Step,
                                 Converter={x:Static ObjectConverters.Equal},
                                 ConverterParameter={x:Static vm:InstallerStep.Install}}">
                     <TextBlock Text="Install" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
@@ -129,7 +167,7 @@
 
         <!-- Bottom button bar -->
         <Border Grid.Row="2" BorderBrush="#1A1A1A" BorderThickness="0,1,0,0"
-                Padding="32,0">
+                Padding="24,0">
             <Grid ColumnDefinitions="*,Auto">
 
                 <!-- Progress indicator (dots) -->
