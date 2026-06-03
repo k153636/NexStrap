@@ -1,4 +1,5 @@
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using NexStrap.Core.Models;
 
@@ -7,6 +8,17 @@ namespace NexStrap.ViewModels;
 public partial class GameEntryViewModel : ViewModelBase
 {
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(8) };
+
+    private static readonly Bitmap? Placeholder = LoadPlaceholder();
+    private static Bitmap? LoadPlaceholder()
+    {
+        try
+        {
+            using var stream = AssetLoader.Open(new Uri("avares://NexStrap/Assets/nexstrap.png"));
+            return new Bitmap(stream);
+        }
+        catch { return null; }
+    }
 
     public GameHistoryEntry Entry { get; }
 
@@ -24,6 +36,7 @@ public partial class GameEntryViewModel : ViewModelBase
     public GameEntryViewModel(GameHistoryEntry entry)
     {
         Entry = entry;
+        _icon = Placeholder;
         if (!string.IsNullOrEmpty(entry.IconUrl))
             _ = LoadIconAsync(entry.IconUrl);
     }
