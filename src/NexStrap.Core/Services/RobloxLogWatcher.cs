@@ -326,6 +326,10 @@ public class RobloxLogWatcher : IDisposable
 
     private void CheckProcessExit()
     {
+        // Studio testplay runs inside Studio — no RobloxPlayerBeta process exists.
+        // Leave detection is handled by log keywords (StopPlaySolo/Connection closed).
+        if (IsWatchingStudioLog) return;
+
         var running = _isRobloxRunningFunc() || IsRobloxRunning();
         bool shouldFireLeave;
         lock (_lock)
