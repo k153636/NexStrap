@@ -41,7 +41,7 @@
                            VerticalAlignment="Center"/>
 
                     <!-- Right: text -->
-                    <StackPanel Grid.Column="1" Spacing="12" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="1" Spacing="14" VerticalAlignment="Center">
                         <StackPanel Spacing="3">
                             <TextBlock Text="NexStrap" FontSize="24" FontWeight="Bold"
                                        Foreground="#FFFFFF"/>
@@ -50,36 +50,33 @@
                                        FontFamily="Consolas,monospace"/>
                         </StackPanel>
 
-                        <!-- Feature highlights -->
-                        <StackPanel Spacing="6">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="⚡" FontSize="13" VerticalAlignment="Center"/>
-                                <TextBlock FontSize="12" Foreground="#CCCCCC" VerticalAlignment="Center">
-                                    <Run Text="FastFlags" FontWeight="SemiBold" Foreground="#FFFFFF"/>
-                                    <Run Text=" — fine-tune Roblox's internals for max performance"/>
-                                </TextBlock>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="🖥" FontSize="13" VerticalAlignment="Center"/>
-                                <TextBlock FontSize="12" Foreground="#CCCCCC" VerticalAlignment="Center">
-                                    <Run Text="Stretch Res" FontWeight="SemiBold" Foreground="#FFFFFF"/>
-                                    <Run Text=" — competitive 4:3 stretched resolution"/>
-                                </TextBlock>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="👤" FontSize="13" VerticalAlignment="Center"/>
-                                <TextBlock FontSize="12" Foreground="#CCCCCC" VerticalAlignment="Center">
-                                    <Run Text="Multi-Account" FontWeight="SemiBold" Foreground="#FFFFFF"/>
-                                    <Run Text=" — switch Roblox accounts instantly"/>
-                                </TextBlock>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="🌐" FontSize="13" VerticalAlignment="Center"/>
-                                <TextBlock FontSize="12" Foreground="#CCCCCC" VerticalAlignment="Center">
-                                    <Run Text="Web Launch" FontWeight="SemiBold" Foreground="#FFFFFF"/>
-                                    <Run Text=" — join games directly from the browser"/>
-                                </TextBlock>
-                            </StackPanel>
+                        <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="#888888"
+                                   LineHeight="20"
+                                   Text="An open-source launcher that replaces the default Roblox client. Built for players who want full control over how Roblox runs on their PC."/>
+
+                        <!-- Minimal icon pills -->
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Background="#141414" CornerRadius="6" Padding="8,5">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconFlash}"
+                                              Width="11" Height="11" Foreground="#666666"/>
+                                    <TextBlock Text="Performance" FontSize="11" Foreground="#666666"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#141414" CornerRadius="6" Padding="8,5">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconSettings}"
+                                              Width="11" Height="11" Foreground="#666666"/>
+                                    <TextBlock Text="Customization" FontSize="11" Foreground="#666666"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#141414" CornerRadius="6" Padding="8,5">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconGlobe}"
+                                              Width="11" Height="11" Foreground="#666666"/>
+                                    <TextBlock Text="Web Launch" FontSize="11" Foreground="#666666"/>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </StackPanel>
                 </Grid>
