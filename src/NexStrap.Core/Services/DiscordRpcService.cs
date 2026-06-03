@@ -198,8 +198,8 @@ public class DiscordRpcService : IDisposable
         SetPresence(
             details: "Roblox Studio",
             state: "Editing",
-            largeImage: "robloxstudio",
-            largeText: "Roblox Studio",
+            largeImage: "nexstrap",
+            largeText: "NexStrap Launcher · Created by K",
             smallImage: userAvatarUrl,
             smallText: userAvatarUrl != null ? (label ?? "Profile") : null,
             timestamps: _startTimestamp
