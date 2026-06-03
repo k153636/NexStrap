@@ -57,6 +57,13 @@ public partial class FastFlagsViewModel : ViewModelBase
     [ObservableProperty] private bool _isBulkImportPanelOpen;
     [ObservableProperty] private string _bulkImportText = string.Empty;
 
+    public event Action? OpenBulkImportWindowRequested;
+    public event Action? BulkImportCompleted;
+    public event Action? OpenPresetWindowRequested;
+    public event Action? OpenAddFlagWindowRequested;
+    public event Action? FlagAdded;
+    public event Action? OpenProfileManagerWindowRequested;
+
     public IReadOnlyList<PresetGroup> PresetGroups => FastFlagBundles.Groups;
 
     public List<string> Categories { get; } = new()
@@ -275,6 +282,7 @@ public partial class FastFlagsViewModel : ViewModelBase
         NewFlagValue = string.Empty;
         ApplyFilter();
         await _service.SaveAsync();
+        FlagAdded?.Invoke();
         await ShowStatusAsync($"Added and saved {entry.Name}");
     }
 
@@ -292,11 +300,32 @@ public partial class FastFlagsViewModel : ViewModelBase
     private void TogglePresetPanel() => IsPresetPanelOpen = !IsPresetPanelOpen;
 
     [RelayCommand]
+    private void OpenPresetWindow() => OpenPresetWindowRequested?.Invoke();
+
+    [RelayCommand]
     private void ToggleBulkImportPanel()
     {
         IsBulkImportPanelOpen = !IsBulkImportPanelOpen;
         if (IsBulkImportPanelOpen) IsPresetPanelOpen = false;
     }
+
+    [RelayCommand]
+    private void OpenBulkImportWindow()
+    {
+        BulkImportText = string.Empty;
+        OpenBulkImportWindowRequested?.Invoke();
+    }
+
+    [RelayCommand]
+    private void OpenAddFlagWindow()
+    {
+        NewFlagName = string.Empty;
+        NewFlagValue = string.Empty;
+        OpenAddFlagWindowRequested?.Invoke();
+    }
+
+    [RelayCommand]
+    private void OpenProfileManager() => OpenProfileManagerWindowRequested?.Invoke();
 
     [RelayCommand]
     private async Task BulkImportAsync()
@@ -339,6 +368,7 @@ public partial class FastFlagsViewModel : ViewModelBase
         await _service.SaveAsync();
         BulkImportText = string.Empty;
         IsBulkImportPanelOpen = false;
+        BulkImportCompleted?.Invoke();
         await ShowStatusAsync($"Imported {parsed.Count} flag{(parsed.Count == 1 ? "" : "s")}");
     }
 

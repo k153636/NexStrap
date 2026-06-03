@@ -1,0 +1,71 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:NexStrap.ViewModels"
+        x:Class="NexStrap.Views.BulkImportWindow"
+        x:DataType="vm:FastFlagsViewModel"
+        Title="Bulk Import — Fast Flags"
+        Width="520" Height="400"
+        MinWidth="400" MinHeight="320"
+        Background="#080808"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="-1"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True">
+
+    <Grid RowDefinitions="30,*">
+
+        <!-- Title bar -->
+        <Grid Grid.Row="0" IsHitTestVisible="False">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                        Margin="14,0" Spacing="7">
+                <TextBlock Text="Bulk Import" FontSize="12" FontWeight="SemiBold"
+                           Foreground="#666666" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Content -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,*,Auto" Margin="20,4,20,20">
+
+            <!-- Description -->
+            <StackPanel Grid.Row="0" Spacing="2" Margin="0,0,0,12">
+                <TextBlock Text="Paste JSON or Key=Value per line"
+                           FontSize="13" FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                <TextBlock FontSize="11" Foreground="#555555"
+                           Text="Existing flags with the same name will be overwritten."/>
+            </StackPanel>
+
+            <!-- Text input -->
+            <TextBox Grid.Row="1"
+                     Text="{Binding BulkImportText}"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     Watermark='{}{&#10;  "FFlagExample": "true",&#10;  "DFIntExample": "60"&#10;}'
+                     Background="#0D0D0D"
+                     Foreground="#CCCCCC"
+                     BorderBrush="#2A2A2A"
+                     CornerRadius="10"
+                     Padding="14,12"
+                     FontFamily="Consolas,Courier New,monospace"
+                     FontSize="12"
+                     VerticalContentAlignment="Top"/>
+
+            <!-- Buttons -->
+            <Grid Grid.Row="2" ColumnDefinitions="*,8,Auto" Margin="0,12,0,0">
+                <Button Grid.Column="0"
+                        Content="Import"
+                        Command="{Binding BulkImportCommand}"
+                        Background="#FFFFFF" Foreground="#080808"
+                        FontSize="13" FontWeight="SemiBold"
+                        Padding="0,10" CornerRadius="10"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"/>
+                <Button Grid.Column="2"
+                        Content="Cancel"
+                        Background="#1A1A1A" Foreground="#666666"
+                        FontSize="13" Padding="20,10" CornerRadius="10"
+                        Click="Cancel_Click"/>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

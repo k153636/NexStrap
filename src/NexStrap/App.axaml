@@ -29,6 +29,7 @@
             <local:SecondsToTimeConverter x:Key="SecondsToTimeConverter"/>
             <local:StringToImageConverter x:Key="StringToImageConverter"/>
 
+
             <!-- Black/White palette -->
             <SolidColorBrush x:Key="BgBrush"        Color="#080808"/>
             <SolidColorBrush x:Key="SurfaceBrush"   Color="#141414"/>
@@ -40,21 +41,11 @@
             <SolidColorBrush x:Key="FgBrush"        Color="#FFFFFF"/>
 
             <!-- Glass-switchable card brushes (updated in code when glass theme toggles) -->
-            <LinearGradientBrush x:Key="CardBg"     StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#1E1E1E" Offset="0"/><GradientStop Color="#141414" Offset="0.45"/><GradientStop Color="#0C0C0C" Offset="1"/>
-            </LinearGradientBrush>
-            <LinearGradientBrush x:Key="SurfaceBg"  StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#202020" Offset="0"/><GradientStop Color="#161616" Offset="0.45"/><GradientStop Color="#0E0E0E" Offset="1"/>
-            </LinearGradientBrush>
-            <LinearGradientBrush x:Key="ElevatedBg" StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#2A2A2A" Offset="0"/><GradientStop Color="#1E1E1E" Offset="0.45"/><GradientStop Color="#181818" Offset="1"/>
-            </LinearGradientBrush>
-            <LinearGradientBrush x:Key="OverlayBg"  StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#222222" Offset="0"/><GradientStop Color="#181818" Offset="0.45"/><GradientStop Color="#121212" Offset="1"/>
-            </LinearGradientBrush>
-            <LinearGradientBrush x:Key="InputBg"    StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#151515" Offset="0"/><GradientStop Color="#0F0F0F" Offset="0.45"/><GradientStop Color="#080808" Offset="1"/>
-            </LinearGradientBrush>
+            <SolidColorBrush x:Key="CardBg"     Color="#141414"/>
+            <SolidColorBrush x:Key="SurfaceBg"  Color="#161616"/>
+            <SolidColorBrush x:Key="ElevatedBg" Color="#1E1E1E"/>
+            <SolidColorBrush x:Key="OverlayBg"  Color="#181818"/>
+            <SolidColorBrush x:Key="InputBg"    Color="#0F0F0F"/>
 
             <!-- Glass-switchable text colors -->
             <SolidColorBrush x:Key="FgSub"   Color="#888888"/>
@@ -98,28 +89,24 @@
                 </Transitions>
             </Setter>
         </Style>
+        <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{TemplateBinding Background}"/>
+            <Setter Property="Foreground" Value="{TemplateBinding Foreground}"/>
+        </Style>
         <Style Selector="Button:pointerover">
-            <Setter Property="RenderTransform" Value="scale(1.015)"/>
-            <Setter Property="Opacity" Value="1.0"/>
+            <Setter Property="Opacity" Value="0.85"/>
+        </Style>
+        <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{TemplateBinding Background}"/>
+            <Setter Property="Foreground" Value="{TemplateBinding Foreground}"/>
         </Style>
         <Style Selector="Button:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.96)"/>
-            <Setter Property="Opacity" Value="0.78"/>
+            <Setter Property="RenderTransform" Value="scale(0.97)"/>
+            <Setter Property="Opacity" Value="0.90"/>
         </Style>
 
-        <!-- Card hover — scale で微妙な浮き上がり（グラデーション・背景を変えない） -->
         <Style Selector="Border.card">
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <TransformOperationsTransition Property="RenderTransform"
-                        Duration="0:0:0.12" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.card:pointerover">
-            <Setter Property="RenderTransform" Value="scale(1.008)"/>
         </Style>
 
         <!-- ToggleSwitch cursor -->

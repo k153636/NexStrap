@@ -162,9 +162,7 @@ public partial class MainWindow : Window
         else
         {
             foreach (var (key, (top, mid, bot)) in _solidGradients)
-                res[key] = key is "FgSub" or "FgMuted"
-                    ? new SolidColorBrush(top)
-                    : MakeGradient3(top, mid, bot);
+                res[key] = new SolidColorBrush(mid);
         }
 
         // Sidebar pane: same gradient direction as cards

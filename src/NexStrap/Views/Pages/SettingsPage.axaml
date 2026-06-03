@@ -19,20 +19,12 @@
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="RenderTransform" Value="scale(1)"/>
-        </Style>
-        <!-- グローバルの scale(1.015) ホバーアニメーションを打ち消す -->
-        <Style Selector="Button.tab-btn:pointerover">
-            <Setter Property="RenderTransform" Value="scale(1)"/>
-            <Setter Property="Foreground" Value="#BBBBBB"/>
         </Style>
         <Style Selector="Button.tab-btn:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="#181818"/>
         </Style>
-        <!-- グローバルの scale(0.96) 押下アニメーションも打ち消す -->
-        <Style Selector="Button.tab-btn:pressed">
-            <Setter Property="RenderTransform" Value="scale(1)"/>
-            <Setter Property="Opacity" Value="1"/>
+        <Style Selector="Button.tab-btn:pointerover">
+            <Setter Property="Foreground" Value="#BBBBBB"/>
         </Style>
         <Style Selector="Button.tab-btn:pressed /template/ ContentPresenter">
             <Setter Property="Background" Value="#2A2A2A"/>
