@@ -182,8 +182,8 @@ public class DiscordRpcService : IDisposable
         if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
         string? label; lock (_lock) { label = _userLabel; }
         SetPresence(
-            details: "Roblox Studio",
-            state: "Testing",
+            details: "Roblox Studio / Testing",
+            state: null,
             largeImage: "nexstrap",
             largeText: "NexStrap Launcher · Created by K",
             smallImage: userAvatarUrl,
@@ -197,8 +197,8 @@ public class DiscordRpcService : IDisposable
         if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
         string? label; lock (_lock) { label = _userLabel; }
         SetPresence(
-            details: "Roblox Studio",
-            state: "Installing",
+            details: "Roblox Studio / Installing",
+            state: null,
             largeImage: "nexstrap",
             largeText: "NexStrap Launcher · Created by K",
             smallImage: userAvatarUrl,
@@ -211,8 +211,8 @@ public class DiscordRpcService : IDisposable
         if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
         string? label; lock (_lock) { label = _userLabel; }
         SetPresence(
-            details: "Roblox Studio",
-            state: "Editing",
+            details: "Roblox Studio / Editing",
+            state: null,
             largeImage: "nexstrap",
             largeText: "NexStrap Launcher · Created by K",
             smallImage: userAvatarUrl,
