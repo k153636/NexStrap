@@ -116,6 +116,13 @@
                 </ui:NavigationViewItem>
 
                 <!-- Settings サブナビ（Settings ページ時のみ表示） -->
+                <ui:NavigationViewItem Content="Back" Tag="Home"
+                    IsVisible="{Binding IsOnSettingsPage}">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:PathIconSource Data="{StaticResource IconBack}"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+
                 <ui:NavigationViewItem Content="General" Tag="Settings_General"
                     IsVisible="{Binding IsOnSettingsPage}">
                     <ui:NavigationViewItem.IconSource>
