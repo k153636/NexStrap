@@ -169,8 +169,8 @@ public partial class MainWindow : Window
         IBrush paneBrush;
         if (glass)
         {
-            var topA = (byte)Math.Round(0x38 + (0xE8 - 0x38) * t);
-            var botA = (byte)Math.Round(0x28 + (0xD4 - 0x28) * t);
+            var topA = (byte)Math.Round(0x88 + (0xE8 - 0x88) * t);
+            var botA = (byte)Math.Round(0x78 + (0xD4 - 0x78) * t);
             paneBrush = MakeGradient(
                 Color.FromArgb(topA, 0x14, 0x14, 0x14),
                 Color.FromArgb(botA, 0x08, 0x08, 0x08));
