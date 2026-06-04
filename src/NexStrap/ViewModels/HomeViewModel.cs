@@ -409,7 +409,10 @@ public partial class HomeViewModel : ViewModelBase
                     _activeGames[currentSlot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
                 }
                 _awaitingGameInfo = false;
-                UpdateGamePresence();
+                // 新接続の場合は OnReady → ConnectionChanged → RefreshPresence() が presence を確実に送る。
+                // 既に同 App ID で接続済み（early return）の場合は直接更新する。
+                if (!_discord.Initialize(AppConstants.DiscordRobloxAppId))
+                    UpdateGamePresence();
 
                 var entry = new GameHistoryEntry { PlaceId = placeId, UniverseId = newUniverseId, Name = name, IconUrl = iconUrl, PlayedAt = DateTime.Now };
                 _history.Add(entry);
@@ -502,6 +505,7 @@ public partial class HomeViewModel : ViewModelBase
             }
             else
             {
+                _discord.Initialize(AppConstants.DiscordAppId);
                 if (_studioDetected)
                     _discord.SetStudioPresence(_userAvatarUrl);
                 else
@@ -894,7 +898,8 @@ public partial class HomeViewModel : ViewModelBase
                 _activeGames[slot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
             }
             _awaitingGameInfo = false;
-            UpdateGamePresence();
+            if (!_discord.Initialize(AppConstants.DiscordRobloxAppId))
+                UpdateGamePresence();
         }
         catch { _awaitingGameInfo = false; }
     }
@@ -1072,6 +1077,7 @@ public partial class HomeViewModel : ViewModelBase
             lock (_gamesLock) { _activeGames.Clear(); }
             _gameDetected     = false;
             _awaitingGameInfo = false;
+            _discord.Initialize(AppConstants.DiscordAppId);
 
             // Stretch Res: Roblox 終了時に解像度を復元
             if (_settings.Settings.StretchResolutionEnabled)

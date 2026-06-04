@@ -25,20 +25,22 @@ public class DiscordRpcService : IDisposable
 
     public void ResetGameTimestamp() { lock (_lock) { _gameTimestamp = Timestamps.Now; } }
 
-    public void Initialize(string applicationId)
+    /// <returns>true = 新しい接続を開始（OnReady → ConnectionChanged が発火する）/ false = 同 App ID で既に接続済み</returns>
+    public bool Initialize(string applicationId)
     {
-        if (string.IsNullOrWhiteSpace(applicationId)) return;
+        if (string.IsNullOrWhiteSpace(applicationId)) return false;
 
         DiscordRpcClient? oldClient;
         lock (_lock)
         {
-            if (_currentAppId == applicationId && _client != null) return;
+            if (_currentAppId == applicationId && _client != null) return false;
             oldClient        = _client;
             _client          = null;
             _currentAppId    = applicationId;
             _isConnected     = false;
         }
 
+        // ClearPresence() を呼ばず dispose のみ — 切断されるまで旧 presence を維持して空白期間をなくす
         oldClient?.Dispose();
 
         try
@@ -55,7 +57,9 @@ public class DiscordRpcService : IDisposable
             lock (_lock) { _client = newClient; }
             newClient.Initialize();
         }
-        catch { }
+        catch { return false; }
+
+        return true;
     }
 
 public void SetPagePresence(string pageName, string? userAvatarUrl = null, string prefix = "NexStrap")
