@@ -270,11 +270,11 @@
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
                                     <Button Content="Export" Command="{Binding ExportSettingsCommand}"
                                             IsEnabled="{Binding !IsDataLoading}"
-                                            Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                                            Background="{DynamicResource OverlayBg}" Foreground="{DynamicResource FgSub}"
                                             FontSize="12" Padding="14,6" CornerRadius="8"/>
                                     <Button Content="Import" Command="{Binding ImportSettingsCommand}"
                                             IsEnabled="{Binding !IsDataLoading}"
-                                            Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                                            Background="{DynamicResource OverlayBg}" Foreground="{DynamicResource FgSub}"
                                             FontSize="12" Padding="14,6" CornerRadius="8"/>
                                 </StackPanel>
                             </Grid>
@@ -288,11 +288,11 @@
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
                                     <Button Content="Export" Command="{Binding ExportHistoryCommand}"
                                             IsEnabled="{Binding !IsDataLoading}"
-                                            Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                                            Background="{DynamicResource OverlayBg}" Foreground="{DynamicResource FgSub}"
                                             FontSize="12" Padding="14,6" CornerRadius="8"/>
                                     <Button Content="Import" Command="{Binding ImportHistoryCommand}"
                                             IsEnabled="{Binding !IsDataLoading}"
-                                            Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                                            Background="{DynamicResource OverlayBg}" Foreground="{DynamicResource FgSub}"
                                             FontSize="12" Padding="14,6" CornerRadius="8"/>
                                 </StackPanel>
                             </Grid>
@@ -304,7 +304,7 @@
                                                Foreground="{DynamicResource FgSub}" FontSize="11"/>
                                 </StackPanel>
                                 <Button Grid.Column="1" Content="Open" Command="{Binding OpenDataFolderCommand}"
-                                        Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                                        Background="{DynamicResource OverlayBg}" Foreground="{DynamicResource FgSub}"
                                         FontSize="12" Padding="14,6" CornerRadius="8"
                                         VerticalAlignment="Center"/>
                             </Grid>
@@ -317,7 +317,7 @@
 
                     <Button Content="Reset to Defaults"
                             Command="{Binding ResetToDefaultsCommand}"
-                            Background="{DynamicResource CardBg}" Foreground="{DynamicResource FgSub}"
+                            Background="{DynamicResource OverlayBg}" Foreground="{DynamicResource FgSub}"
                             FontSize="12" Padding="14,8" CornerRadius="10" HorizontalAlignment="Left"/>
 
                     <!-- Danger Zone -->
