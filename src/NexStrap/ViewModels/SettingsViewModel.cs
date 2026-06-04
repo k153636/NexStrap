@@ -35,6 +35,7 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private bool _memoryOptimizationEnabled;
     [ObservableProperty] private bool _cleanupOldVersions;
     [ObservableProperty] private string _selectedTab = "General";
+    [ObservableProperty] private bool   _isDataLoading;
 
     public string[] TabNames { get; } = ["General", "Performance", "Roblox", "Data"];
 
@@ -160,17 +161,19 @@ public partial class SettingsViewModel : ViewModelBase
         if (StorageProvider == null) return;
         var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title           = "Export Settings",
+            Title             = "Export Settings",
             SuggestedFileName = "settings.json",
-            FileTypeChoices = [JsonFileType]
+            FileTypeChoices   = [JsonFileType]
         });
         if (file == null) return;
+        IsDataLoading = true;
         try
         {
             _settingsService.ExportTo(file.Path.LocalPath);
             StatusMessage = "Settings exported";
         }
         catch { StatusMessage = "Export failed"; }
+        finally { IsDataLoading = false; }
     }
 
     [RelayCommand]
@@ -179,11 +182,12 @@ public partial class SettingsViewModel : ViewModelBase
         if (StorageProvider == null) return;
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title           = "Import Settings",
-            AllowMultiple   = false,
-            FileTypeFilter  = [JsonFileType]
+            Title          = "Import Settings",
+            AllowMultiple  = false,
+            FileTypeFilter = [JsonFileType]
         });
         if (files.Count == 0) return;
+        IsDataLoading = true;
         try
         {
             _settingsService.ImportFrom(files[0].Path.LocalPath);
@@ -191,6 +195,7 @@ public partial class SettingsViewModel : ViewModelBase
             StatusMessage = "Settings imported";
         }
         catch { StatusMessage = "Import failed"; }
+        finally { IsDataLoading = false; }
     }
 
     [RelayCommand]
@@ -204,12 +209,14 @@ public partial class SettingsViewModel : ViewModelBase
             FileTypeChoices   = [JsonFileType]
         });
         if (file == null) return;
+        IsDataLoading = true;
         try
         {
             _history.ExportTo(file.Path.LocalPath);
             StatusMessage = "History exported";
         }
         catch { StatusMessage = "Export failed"; }
+        finally { IsDataLoading = false; }
     }
 
     [RelayCommand]
@@ -223,12 +230,14 @@ public partial class SettingsViewModel : ViewModelBase
             FileTypeFilter = [JsonFileType]
         });
         if (files.Count == 0) return;
+        IsDataLoading = true;
         try
         {
             _history.ImportFrom(files[0].Path.LocalPath);
             StatusMessage = "History imported — restart to see changes";
         }
         catch { StatusMessage = "Import failed"; }
+        finally { IsDataLoading = false; }
     }
 
     [RelayCommand]
