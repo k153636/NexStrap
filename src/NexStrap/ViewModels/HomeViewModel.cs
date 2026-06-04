@@ -582,7 +582,8 @@ public partial class HomeViewModel : ViewModelBase
                         _discord.SetLaunchingPresence(_userAvatarUrl);
                         break;
                     case RobloxStatus.Running:
-                        _discord.SetStudioPresence(_userAvatarUrl);
+                        // presence はウィンドウタイトル監視の _studioTimer に委ねる
+                        _lastStudioPresence = string.Empty;
                         break;
                     case RobloxStatus.Idle:
                         if (!_studioDetected)
