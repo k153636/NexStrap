@@ -14,7 +14,8 @@
 </div>
 
 <p align="center">
-  A third-party Roblox launcher for Windows with powerful features for power users.
+  A Roblox launcher built for developers and power users —<br>
+  with full <strong>Roblox Studio support</strong>, play stats, friends tracking, and deep customization.
 </p>
 
 <p align="center">
@@ -29,40 +30,62 @@
 
 ---
 
+## Why NexStrap?
+
+| Feature | NexStrap | Bloxstrap |
+|---------|----------|-----------|
+| Roblox Studio install & launch | ✅ | ❌ |
+| Studio Discord presence (Home / Editing / Testing) | ✅ | ❌ |
+| Play stats & game history | ✅ | ❌ |
+| Friends list with notifications | ✅ | ❌ |
+| Fast Flags hot reload | ✅ | ❌ |
+| Multi-account manager | ✅ | ✅ |
+| Mods support | ✅ | ✅ |
+| Discord Rich Presence | ✅ | ✅ |
+| Custom themes & backgrounds | ✅ | ✅ |
+
+---
+
 ## Features
 
-**Discord Rich Presence**
-- Game icon, server region, and elapsed playtime
-- Roblox Studio support — Home / Editing / Testing presence
-- Show Join Game button and creator name
+**🎭 Roblox Studio**
+- Independent Studio install and launch — no official installer needed
+- Discord presence: `Roblox Studio / Home`, `Editing`, `Testing`
+- Separate Fast Flags profile for Studio
 
-**Fast Flags**
+**🎮 Discord Rich Presence**
+- Game icon, server region, and elapsed playtime
+- Studio presence with Home / Editing / Testing states
+- Join Game button and creator name
+
+**⚡ Fast Flags**
 - Edit `ClientAppSettings.json` flags directly
 - Save and load named profiles
 - Preset bundles: Graphics Lite, Render Optimized, Memory/CPU, Network
 - Hot reload — apply flags to a running session without restart
 
-**Multi-Account Manager**
+**👥 Friends**
+- Real-time friends list with online/in-game presence
+- Toast notifications when a friend comes online
+- Avatar thumbnails and last location
+
+**👤 Multi-Account Manager**
 - Manage multiple Roblox accounts
 - Import cookies from Chrome — no password required
 - One-click account switching
 
-**Mods**
-- Import and enable/disable mod folders
-- Apply textures, sounds, and fonts to Roblox's content directory
-
-**Play Stats**
+**📊 Play Stats**
 - Total playtime, session count, top games
 - Per-game breakdown with 7-day bar chart
 
-**Roblox Studio**
-- Independent Studio install and launch
-- Full Discord presence support
-
-**Theme**
+**🎨 Theme**
 - Glass UI with semi-transparent sidebar
 - 8 accent colors + custom color picker
 - Custom background image with blur and brightness
+
+**🔧 Mods**
+- Import and enable/disable mod folders
+- Apply textures, sounds, and fonts to Roblox's content directory
 
 ---
 
@@ -86,6 +109,9 @@ A: No. NexStrap does not interact with the Roblox client the way exploits do. It
 
 **Q: Windows Defender flagged it**
 A: This is a false positive common with unsigned applications. You can review the full source code here to verify it is safe.
+
+**Q: Does it work with Roblox Studio?**
+A: Yes. NexStrap can install and launch Studio independently, with full Discord presence support.
 
 ---
 
