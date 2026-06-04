@@ -1,74 +1,91 @@
-# NexStrap
+<p align="center">
+  <img src="src/NexStrap/Assets/nexstrap.png" width="120" alt="NexStrap Logo">
+</p>
 
-A third-party Roblox launcher for Windows, inspired by Bloxstrap.
+<h1 align="center">NexStrap</h1>
 
-> **Not affiliated with Roblox Corporation.**
+<div align="center">
+
+[![Downloads](https://img.shields.io/github/downloads/k153636/NexStrap/latest/total?color=981bfe)](https://github.com/k153636/NexStrap/releases/latest)
+[![Version](https://img.shields.io/github/v/release/k153636/NexStrap?color=7a39fb)](https://github.com/k153636/NexStrap/releases/latest)
+[![License](https://img.shields.io/github/license/k153636/NexStrap)](LICENSE)
+[![Discord](https://img.shields.io/discord/1511974633056895076?logo=discord&logoColor=white&label=discord&color=5865F2)](https://discord.gg/PPrKt97jRn)
+
+</div>
+
+<p align="center">
+  A third-party Roblox launcher for Windows with powerful features for power users.
+</p>
+
+<p align="center">
+  <img src="Images/preview.png" alt="NexStrap Preview" width="700">
+</p>
+
+> [!CAUTION]
+> The only official place to download NexStrap is this GitHub repository. Any other sources are not affiliated with us.
+
+> [!NOTE]
+> NexStrap is not affiliated with Roblox Corporation.
 
 ---
 
 ## Features
 
-### Home
-- Shows currently playing game with icon, server region, and elapsed time
-- Favorite games list with quick-launch buttons
-- Join Game button from Discord Rich Presence
-- Windows Jump List integration for recent games
+**Discord Rich Presence**
+- Game icon, server region, and elapsed playtime
+- Roblox Studio support — Home / Editing / Testing presence
+- Show Join Game button and creator name
 
-### Friends
-- Real-time friends list with online/in-game presence
-- Avatar thumbnails and last location display
-- Toast notifications when a friend comes online
+**Fast Flags**
+- Edit `ClientAppSettings.json` flags directly
+- Save and load named profiles
+- Preset bundles: Graphics Lite, Render Optimized, Memory/CPU, Network
+- Hot reload — apply flags to a running session without restart
 
-### Account
+**Multi-Account Manager**
 - Manage multiple Roblox accounts
-- Import cookies directly from Chrome (no password required)
-- Switch active account with one click
+- Import cookies from Chrome — no password required
+- One-click account switching
 
-### Fast Flags
-- Read and edit `ClientAppSettings.json` flags
-- Profile system — save and load named flag sets
-- Preset bundles: Graphics Lite, Render Optimized, Memory/CPU, Network Optimized
-- Hot reload: apply flags to a running Roblox session without restart
-- FPS limit slider with instant apply
+**Mods**
+- Import and enable/disable mod folders
+- Apply textures, sounds, and fonts to Roblox's content directory
 
-### Mods
-- Import mod folders (textures, sounds, fonts)
-- Enable/disable individual mods
-- Apply all enabled mods to Roblox's content directory
+**Play Stats**
+- Total playtime, session count, top games
+- Per-game breakdown with 7-day bar chart
 
-### Discord Rich Presence
-- In-game presence: game icon (large) + your avatar (small)
-- Per-toggle display settings:
-  - Show creator name after game title
-  - Show Join Game button
-  - Show launcher presence while outside a game
-  - Show Details text line
+**Roblox Studio**
+- Independent Studio install and launch
+- Full Discord presence support
 
-### Theme
+**Theme**
 - Glass UI with semi-transparent sidebar
 - 8 accent colors + custom color picker
-- Custom background image with blur and brightness sliders
-
-### Settings
-- FPS unlock (removes the 60fps cap)
-- Multi-threading renderer toggle
-- Minimize to system tray
-- Auto-update Roblox on launch
-- Performance overlay
-
-### Stats
-- Total play time, session count, top game
-- Per-game breakdown: time, sessions, last played
-- Sort by time, sessions, last played, or name
-- 7-day bar chart
+- Custom background image with blur and brightness
 
 ---
 
-## Requirements
+## Installing
 
-- Windows 10 (build 19041) or later
-- .NET 9 Desktop Runtime
-- Roblox installed via the official installer
+Download the [latest release](https://github.com/k153636/NexStrap/releases/latest) and run `NexStrap.exe`.
+
+You will need [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/9.0). If it's not installed, Windows will prompt you automatically.
+
+> Windows SmartScreen may show a warning on first launch. Click **More info** → **Run anyway**. This happens because NexStrap is not yet code-signed.
+
+---
+
+## FAQ
+
+**Q: Is this malware?**
+A: No. NexStrap is fully open source — the complete source code is available here on GitHub for anyone to verify.
+
+**Q: Will I get banned from Roblox?**
+A: No. NexStrap does not interact with the Roblox client the way exploits do. It only manages launch settings, FastFlags, and Discord Rich Presence.
+
+**Q: Windows Defender flagged it**
+A: This is a false positive common with unsigned applications. You can review the full source code here to verify it is safe.
 
 ---
 
@@ -79,20 +96,6 @@ git clone https://github.com/k153636/NexStrap.git
 cd NexStrap
 dotnet build src/NexStrap/NexStrap.csproj -c Release
 ```
-
-The output is in `src/NexStrap/bin/Release/net9.0-windows10.0.19041.0/`.
-
----
-
-## Discord Application ID
-
-NexStrap uses Discord Rich Presence. To enable it, create a `.env` file in the project root (or next to the executable) with:
-
-```
-DISCORD_APP_ID=your_application_id
-```
-
-Create a Discord application at [discord.com/developers](https://discord.com/developers/applications) and upload your assets named `nexstrap` and `roblox`.
 
 ---
 
