@@ -36,6 +36,7 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private bool _cleanupOldVersions;
     [ObservableProperty] private string _selectedTab = "General";
     [ObservableProperty] private bool   _isDataLoading;
+    [ObservableProperty] private object _currentTabContent = null!;
 
     public string[] TabNames { get; } = ["General", "Performance", "Roblox", "Data"];
 
@@ -45,11 +46,23 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void SelectTab(string tab) => SelectedTab = tab;
 
+    partial void OnSelectedTabChanged(string value)
+    {
+        CurrentTabContent = value switch
+        {
+            "Performance" => (object)new SettingsPerformanceTab(this),
+            "Roblox"      => new SettingsRobloxTab(this),
+            "Data"        => new SettingsDataTab(this),
+            _             => new SettingsGeneralTab(this),
+        };
+    }
+
     public SettingsViewModel(SettingsService settingsService, GameHistoryService history, RobloxService roblox)
     {
         _settingsService = settingsService;
         _history = history;
         _roblox = roblox;
+        _currentTabContent = new SettingsGeneralTab(this);
 
         var s = settingsService.Settings;
         _showPerformanceOverlay = s.ShowPerformanceOverlay;
@@ -262,3 +275,8 @@ public partial class SettingsViewModel : ViewModelBase
         catch { StatusMessage = "Uninstall failed"; }
     }
 }
+
+public sealed record SettingsGeneralTab(SettingsViewModel VM);
+public sealed record SettingsPerformanceTab(SettingsViewModel VM);
+public sealed record SettingsRobloxTab(SettingsViewModel VM);
+public sealed record SettingsDataTab(SettingsViewModel VM);
