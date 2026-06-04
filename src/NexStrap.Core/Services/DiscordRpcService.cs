@@ -208,12 +208,13 @@ public void SetPagePresence(string pageName, string? userAvatarUrl = null, strin
         );
     }
 
-    public void SetStudioPresence(string? userAvatarUrl = null)
+    public void SetStudioPresence(string? userAvatarUrl = null, string? placeName = null)
     {
         if (!_settings.Settings.DiscordShowLauncherPresence) { ClearPresence(); return; }
         string? label; lock (_lock) { label = _userLabel; }
+        var details = string.IsNullOrEmpty(placeName) ? "Roblox Studio / Editing" : $"Roblox Studio / {placeName}";
         SetPresence(
-            details: "Roblox Studio / Editing",
+            details: details,
             state: null,
             largeImage: "nexstrap",
             largeText: "NexStrap Launcher · Created by K",

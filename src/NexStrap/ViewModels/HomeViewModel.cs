@@ -409,6 +409,7 @@ public partial class HomeViewModel : ViewModelBase
                     _activeGames[currentSlot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
                 }
                 _awaitingGameInfo = false;
+                _discord.Initialize(AppConstants.DiscordRobloxAppId);
                 UpdateGamePresence();
 
                 var entry = new GameHistoryEntry { PlaceId = placeId, UniverseId = newUniverseId, Name = name, IconUrl = iconUrl, PlayedAt = DateTime.Now };
@@ -502,6 +503,7 @@ public partial class HomeViewModel : ViewModelBase
             }
             else
             {
+                _discord.Initialize(AppConstants.DiscordAppId);
                 if (_studioDetected)
                     _discord.SetStudioPresence(_userAvatarUrl);
                 else
@@ -894,6 +896,7 @@ public partial class HomeViewModel : ViewModelBase
                 _activeGames[slot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
             }
             _awaitingGameInfo = false;
+            _discord.Initialize(AppConstants.DiscordRobloxAppId);
             UpdateGamePresence();
         }
         catch { _awaitingGameInfo = false; }
@@ -1024,7 +1027,10 @@ public partial class HomeViewModel : ViewModelBase
             _lastStudioPresence = newPresence;
 
             if (newPresence == "Editing")
-                _discord.SetStudioPresence(_userAvatarUrl);
+            {
+                var placeName = title.Replace(" - Roblox Studio", "").Trim();
+                _discord.SetStudioPresence(_userAvatarUrl, placeName);
+            }
             else
                 _discord.SetStudioHomePresence(_userAvatarUrl);
         }
@@ -1069,6 +1075,7 @@ public partial class HomeViewModel : ViewModelBase
             lock (_gamesLock) { _activeGames.Clear(); }
             _gameDetected     = false;
             _awaitingGameInfo = false;
+            _discord.Initialize(AppConstants.DiscordAppId);
 
             // Stretch Res: Roblox 終了時に解像度を復元
             if (_settings.Settings.StretchResolutionEnabled)
