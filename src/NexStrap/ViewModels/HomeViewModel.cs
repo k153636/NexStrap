@@ -277,7 +277,15 @@ public partial class HomeViewModel : ViewModelBase
             try
             {
                 _currentServerCode = await _robloxApi.GetServerCountryCodeAsync(ip);
-                if (_gameDetected) UpdateGamePresence();
+                if (!_gameDetected) return;
+                // _activeGames が未準備なら最大 1.5 秒待ってリトライ
+                for (int i = 0; i < 3; i++)
+                {
+                    bool hasGames;
+                    lock (_gamesLock) { hasGames = _activeGames.Count > 0; }
+                    if (hasGames) { UpdateGamePresence(); return; }
+                    await Task.Delay(500);
+                }
             }
             catch { }
         };

@@ -153,6 +153,11 @@ public partial class MainWindowViewModel : ViewModelBase
             var presenceName = page == "Stretch" ? "Stretch Res" : page;
             _discord.SetPagePresence(presenceName, HomeVM.UserAvatarUrl);
         }
+        else
+        {
+            // ゲーム中のページ遷移時も presence を再同期（接続タイミングズレを防ぐ）
+            HomeVM.RefreshPresence();
+        }
     }
 
     [RelayCommand]
