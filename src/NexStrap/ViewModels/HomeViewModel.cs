@@ -409,8 +409,10 @@ public partial class HomeViewModel : ViewModelBase
                     _activeGames[currentSlot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
                 }
                 _awaitingGameInfo = false;
-                _discord.Initialize(AppConstants.DiscordRobloxAppId);
-                UpdateGamePresence();
+                // Initialize が新しい接続を開始した場合は OnReady → ConnectionChanged → RefreshPresence() に任せる。
+                // 既に同 App ID で接続済み（early return）の場合は直接更新する。
+                if (!_discord.Initialize(AppConstants.DiscordRobloxAppId))
+                    UpdateGamePresence();
 
                 var entry = new GameHistoryEntry { PlaceId = placeId, UniverseId = newUniverseId, Name = name, IconUrl = iconUrl, PlayedAt = DateTime.Now };
                 _history.Add(entry);
@@ -896,8 +898,8 @@ public partial class HomeViewModel : ViewModelBase
                 _activeGames[slot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
             }
             _awaitingGameInfo = false;
-            _discord.Initialize(AppConstants.DiscordRobloxAppId);
-            UpdateGamePresence();
+            if (!_discord.Initialize(AppConstants.DiscordRobloxAppId))
+                UpdateGamePresence();
         }
         catch { _awaitingGameInfo = false; }
     }
