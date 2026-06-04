@@ -6,9 +6,9 @@
 
 <div align="center">
 
-[![Downloads](https://img.shields.io/github/downloads/k153636/NexStrap/latest/total?color=981bfe)](https://github.com/k153636/NexStrap/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/k153636/NexStrap/total?color=981bfe&label=downloads)](https://github.com/k153636/NexStrap/releases/latest)
 [![Version](https://img.shields.io/github/v/release/k153636/NexStrap?color=7a39fb)](https://github.com/k153636/NexStrap/releases/latest)
-[![License](https://img.shields.io/github/license/k153636/NexStrap)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Discord](https://img.shields.io/discord/1511974633056895076?logo=discord&logoColor=white&label=discord&color=5865F2)](https://discord.gg/PPrKt97jRn)
 
 </div>
