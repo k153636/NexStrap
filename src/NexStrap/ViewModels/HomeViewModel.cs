@@ -32,6 +32,7 @@ public partial class HomeViewModel : ViewModelBase
     internal bool IsGameDetected => _gameDetected;
 
     private volatile bool    _gameDetected;
+    private volatile bool    _awaitingGameInfo;
     private string?          _userAvatarUrl;
     private string?          _myCountryCode;
     private string?          _currentServerCode;
@@ -351,6 +352,10 @@ public partial class HomeViewModel : ViewModelBase
                     var resolvedName    = name    ?? _lastGameName    ?? "Roblox";
                     var resolvedIcon    = iconUrl ?? _lastGameIconUrl;
                     var resolvedCreator = creator ?? _lastGameCreator;
+
+                    // アイコンなし = API失敗 — 古い情報を維持して不完全 Presence を送らない
+                    if (resolvedIcon == null) return;
+
                     _lastGameName    = resolvedName;
                     _lastGameIconUrl = resolvedIcon;
                     _lastGameCreator = resolvedCreator;
@@ -379,6 +384,7 @@ public partial class HomeViewModel : ViewModelBase
             _gameStartTime              = DateTime.UtcNow;
             _sessionEntry               = null;
             ClearLastGameInfo();
+            _awaitingGameInfo           = true;
 
             // ゲーム参加のたびに PID マッピングを更新（起動後初参加でも正確に追跡）
             RefreshSlotPids();
@@ -389,7 +395,10 @@ public partial class HomeViewModel : ViewModelBase
             try
             {
                 var (name, iconUrl, creator) = await _robloxApi.GetGameInfoAsync(placeId, newUniverseId);
-                if (Interlocked.Read(ref _joinSequence) != seq || !_gameDetected) return;
+                if (Interlocked.Read(ref _joinSequence) != seq || !_gameDetected) { _awaitingGameInfo = false; return; }
+
+                // iconUrl == null はAPI取得失敗 — 不完全 Presence は送らない
+                if (iconUrl == null) { _awaitingGameInfo = false; return; }
 
                 _lastGameName    = name;
                 _lastGameIconUrl = iconUrl;
@@ -399,6 +408,7 @@ public partial class HomeViewModel : ViewModelBase
                     _slotUsers.TryGetValue(currentSlot, out var su);
                     _activeGames[currentSlot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
                 }
+                _awaitingGameInfo = false;
                 UpdateGamePresence();
 
                 var entry = new GameHistoryEntry { PlaceId = placeId, UniverseId = newUniverseId, Name = name, IconUrl = iconUrl, PlayedAt = DateTime.Now };
@@ -427,7 +437,7 @@ public partial class HomeViewModel : ViewModelBase
                     });
                 }
             }
-            catch { }
+            catch { _awaitingGameInfo = false; }
         };
 
         // Studio テストプレイ開始
@@ -584,9 +594,19 @@ public partial class HomeViewModel : ViewModelBase
 
         // 15秒ごとにゲーム中の presence を再送する。
         // PlaceJoined 中の API 待機レースや Discord 側の無音ドロップで presence が消えた場合の保険。
-        _presenceHeartbeat = new Timer(_ =>
+        // API取得失敗時は _activeGames が空のままなのでリトライもここで行う。
+        _presenceHeartbeat = new Timer(async _ =>
         {
-            try { if (_gameDetected) UpdateGamePresence(); }
+            try
+            {
+                if (!_gameDetected) return;
+                bool hasGames;
+                lock (_gamesLock) { hasGames = _activeGames.Count > 0; }
+                if (hasGames)
+                    UpdateGamePresence();
+                else if (!_awaitingGameInfo)
+                    await TryFetchGameInfoAndUpdateAsync();
+            }
             catch { }
         }, null, PresenceHeartbeat, PresenceHeartbeat);
 
@@ -847,6 +867,37 @@ public partial class HomeViewModel : ViewModelBase
         catch { }
     }
 
+    private async Task TryFetchGameInfoAndUpdateAsync()
+    {
+        if (!_gameDetected || _awaitingGameInfo || _lastPlaceId == 0) return;
+
+        var placeId    = _lastPlaceId;
+        var universeId = _currentUniverseId;
+        var slot       = _logWatcher.CurrentSlotId;
+        var seq        = Interlocked.Read(ref _joinSequence);
+
+        _awaitingGameInfo = true;
+        try
+        {
+            var (name, iconUrl, creator) = await _robloxApi.GetGameInfoAsync(placeId, universeId);
+
+            if (Interlocked.Read(ref _joinSequence) != seq || !_gameDetected) { _awaitingGameInfo = false; return; }
+            if (iconUrl == null) { _awaitingGameInfo = false; return; }
+
+            _lastGameName    = name;
+            _lastGameIconUrl = iconUrl;
+            _lastGameCreator = creator;
+            lock (_gamesLock)
+            {
+                _slotUsers.TryGetValue(slot, out var su);
+                _activeGames[slot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
+            }
+            _awaitingGameInfo = false;
+            UpdateGamePresence();
+        }
+        catch { _awaitingGameInfo = false; }
+    }
+
     public void RefreshPresence()
     {
         bool hasGames;
@@ -854,7 +905,12 @@ public partial class HomeViewModel : ViewModelBase
         if (hasGames)
             UpdateGamePresence();
         else if (_gameDetected)
-            _discord.SetInGamePresence(_lastGameName ?? "Roblox", _lastGameIconUrl, _userAvatarUrl, FormatState(), _lastGameCreator, _lastPlaceId);
+        {
+            // _awaitingGameInfo == true  → 初回フェッチ中 → no-op（完了後に UpdateGamePresence が呼ばれる）
+            // _awaitingGameInfo == false → 前回フェッチ失敗 → リトライ
+            if (!_awaitingGameInfo)
+                _ = TryFetchGameInfoAndUpdateAsync();
+        }
         else if (_studioDetected)
             _discord.SetStudioPresence(_userAvatarUrl);
         else
@@ -1012,7 +1068,8 @@ public partial class HomeViewModel : ViewModelBase
         {
             // 全インスタンス終了 → スロットをすべてクリア
             lock (_gamesLock) { _activeGames.Clear(); }
-            _gameDetected = false;
+            _gameDetected     = false;
+            _awaitingGameInfo = false;
 
             // Stretch Res: Roblox 終了時に解像度を復元
             if (_settings.Settings.StretchResolutionEnabled)
