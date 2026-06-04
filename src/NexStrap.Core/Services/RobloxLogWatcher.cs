@@ -21,6 +21,8 @@ public class RobloxLogWatcher : IDisposable
     public event EventHandler<long>?   UserIdDetected;
     public event EventHandler?         GameLeft;
     public event EventHandler<string>? ServerIpDetected;
+    public event EventHandler?         StudioPlaySoloStarted;
+    public event EventHandler?         StudioPlaySoloStopped;
 
     private static readonly Regex[] PlaceIdPatterns =
     [
@@ -322,6 +324,16 @@ public class RobloxLogWatcher : IDisposable
         if (firePlaceId > 0)            PlaceJoined?.Invoke(this, (firePlaceId, fireUniverseId));
         if (!string.IsNullOrEmpty(fireIp)) ServerIpDetected?.Invoke(this, fireIp);
         if (fireLeave)                  GameLeft?.Invoke(this, EventArgs.Empty);
+
+        // Studio テストプレイ検知（State: PlaySolo / StopPlaySolo）
+        if (IsWatchingStudioLog)
+        {
+            if (line.Contains("[telemetryLog] State: PlaySolo", StringComparison.Ordinal) &&
+                !line.Contains("Stop", StringComparison.OrdinalIgnoreCase))
+                StudioPlaySoloStarted?.Invoke(this, EventArgs.Empty);
+            else if (line.Contains("State: StopPlaySolo", StringComparison.OrdinalIgnoreCase))
+                StudioPlaySoloStopped?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void CheckProcessExit()

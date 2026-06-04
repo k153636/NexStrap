@@ -283,14 +283,8 @@ public partial class HomeViewModel : ViewModelBase
         {
             var (placeId, universeIdFromLog) = args;
 
-            // Studio テストプレイ: Studio ログを監視中に PlaceJoined が発火した場合のみ Testing を表示
-            // （エディタでプレースを開いただけでは placeId はログに書き込まれない）
-            if (_logWatcher.IsWatchingStudioLog)
-            {
-                _studioPlaytesting = true;
-                _discord.SetStudioPlaytestPresence(null, _userAvatarUrl);
-                return;
-            }
+            // Studio ログの PlaceJoined はエディタ開いた時も発火するため無視
+            if (_logWatcher.IsWatchingStudioLog) return;
 
             // スロットIDは await 後にログファイルが切り替わると変わるため、最初にスナップショット
             var currentSlot     = _logWatcher.CurrentSlotId;
@@ -422,16 +416,23 @@ public partial class HomeViewModel : ViewModelBase
             catch { }
         };
 
+        // Studio テストプレイ開始
+        _logWatcher.StudioPlaySoloStarted += (_, _) =>
+        {
+            _studioPlaytesting = true;
+            _discord.SetStudioPlaytestPresence(null, _userAvatarUrl);
+        };
+
+        // Studio テストプレイ終了 → タイマーにウィンドウタイトル再判定させる
+        _logWatcher.StudioPlaySoloStopped += (_, _) =>
+        {
+            _studioPlaytesting = false;
+            _lastStudioPresence = string.Empty;
+        };
+
         // ゲーム退出
         _logWatcher.GameLeft += (_, _) =>
         {
-            // Studio テストプレイ終了 → Studio presence に戻す
-            if (_studioPlaytesting)
-            {
-                _studioPlaytesting = false;
-                _discord.SetStudioPresence(_userAvatarUrl);
-                return;
-            }
 
             // テレポートをまたいだ累積時間 + 最後のサブプレイス経過時間を合計して確定保存
             if (_gameStartTime.HasValue && _sessionEntry != null)
