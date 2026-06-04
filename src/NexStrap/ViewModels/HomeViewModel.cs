@@ -405,6 +405,7 @@ public partial class HomeViewModel : ViewModelBase
                 var launchMs = _launchStartTime.HasValue
                     ? (DateTime.UtcNow - _launchStartTime.Value).TotalSeconds
                     : (double?)null;
+                _launchStartTime = null;
 
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
@@ -715,6 +716,7 @@ public partial class HomeViewModel : ViewModelBase
         var launched = await _roblox.LaunchAsync(launchArgs, autoUpdate: s.AutoUpdateRoblox, options: opts);
         if (!launched)
         {
+            StatusText      = "Launch failed";
             IsLaunching     = false;
             IsRobloxRunning = false;
         }
@@ -844,7 +846,9 @@ public partial class HomeViewModel : ViewModelBase
 
     public void RefreshPresence()
     {
-        if (_activeGames.Count > 0)
+        bool hasGames;
+        lock (_gamesLock) { hasGames = _activeGames.Count > 0; }
+        if (hasGames)
             UpdateGamePresence();
         else if (_gameDetected)
             _discord.SetInGamePresence(_lastGameName ?? "Roblox", _lastGameIconUrl, _userAvatarUrl, FormatState(), _lastGameCreator, _lastPlaceId);
@@ -959,6 +963,7 @@ public partial class HomeViewModel : ViewModelBase
             // ウィンドウタイトルで Home / Editing を判定
             // Home: "Roblox Studio"  / Editing: "PlaceName - Roblox Studio"
             var title = studioProc!.MainWindowTitle;
+            if (string.IsNullOrEmpty(title)) return; // Studio 起動中はタイトル未確定のためスキップ
             var newPresence = title.Contains(" - Roblox Studio") ? "Editing" : "Home";
             if (newPresence == _lastStudioPresence) return;
             _lastStudioPresence = newPresence;
