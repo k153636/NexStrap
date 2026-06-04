@@ -203,7 +203,15 @@ public partial class MainWindow : Window
         if (e.SelectedItem is not NavigationViewItem item) return;
         var tag = item.Tag?.ToString() ?? "Home";
 
-        if (DataContext is MainWindowViewModel vm)
-            vm.NavigateToCommand.Execute(tag);
+        if (DataContext is not MainWindowViewModel vm) return;
+
+        if (tag.StartsWith("Settings_"))
+        {
+            var subTab = tag["Settings_".Length..];
+            vm.SettingsVM.SelectTabCommand.Execute(subTab);
+            return;
+        }
+
+        vm.NavigateToCommand.Execute(tag);
     }
 }

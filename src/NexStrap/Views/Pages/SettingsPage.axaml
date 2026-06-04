@@ -50,31 +50,11 @@
                        FontSize="11" Foreground="{DynamicResource FgSub}"/>
         </StackPanel>
 
-        <!-- Sidebar + Content -->
-        <Grid Grid.Row="1" ColumnDefinitions="120,1,*">
-
-            <!-- Left sidebar -->
-            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Top"
-                        HorizontalAlignment="Stretch" Margin="0,0,8,0">
-                <Button Content="General" Classes="tab-btn"
-                        Classes.active="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=General}"
-                        Command="{Binding SelectTabCommand}" CommandParameter="General"/>
-                <Button Content="Performance" Classes="tab-btn"
-                        Classes.active="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Performance}"
-                        Command="{Binding SelectTabCommand}" CommandParameter="Performance"/>
-                <Button Content="Roblox" Classes="tab-btn"
-                        Classes.active="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Roblox}"
-                        Command="{Binding SelectTabCommand}" CommandParameter="Roblox"/>
-                <Button Content="Data" Classes="tab-btn"
-                        Classes.active="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Data}"
-                        Command="{Binding SelectTabCommand}" CommandParameter="Data"/>
-            </StackPanel>
-
-            <!-- Divider -->
-            <Rectangle Grid.Column="1" Fill="#1C1C1C"/>
+        <!-- Content (full width) -->
+        <Grid Grid.Row="1">
 
             <!-- ── General ──────────────────────────────────────────── -->
-            <ScrollViewer Grid.Column="2" Padding="16,0,4,20"
+            <ScrollViewer Padding="0,0,4,20"
                           IsVisible="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=General}">
                 <StackPanel Spacing="10">
 
@@ -109,7 +89,7 @@
             </ScrollViewer>
 
             <!-- ── Performance ─────────────────────────────────────── -->
-            <ScrollViewer Grid.Column="2" Padding="16,0,4,20"
+            <ScrollViewer Padding="0,0,4,20"
                           IsVisible="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Performance}">
                 <StackPanel Spacing="10">
 
@@ -164,7 +144,7 @@
             </ScrollViewer>
 
             <!-- ── Roblox ───────────────────────────────────────────── -->
-            <ScrollViewer Grid.Column="2" Padding="16,0,4,20"
+            <ScrollViewer Padding="0,0,4,20"
                           IsVisible="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Roblox}">
                 <StackPanel Spacing="10">
 
@@ -252,7 +232,7 @@
             </ScrollViewer>
 
             <!-- ── Data ────────────────────────────────────────────── -->
-            <ScrollViewer Grid.Column="2" Padding="16,0,4,20"
+            <ScrollViewer Padding="0,0,4,20"
                           IsVisible="{Binding SelectedTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Data}">
                 <StackPanel Spacing="10">
 

@@ -72,39 +72,75 @@
                            SelectionChanged="NavView_SelectionChanged">
 
             <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem Content="Home" Tag="Home">
+                <!-- 通常ナビ（Settings 以外のページ） -->
+                <ui:NavigationViewItem Content="Home" Tag="Home"
+                    IsVisible="{Binding !IsOnSettingsPage}">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="Home"/>
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem Content="Fast Flags" Tag="FastFlags">
+                <ui:NavigationViewItem Content="Fast Flags" Tag="FastFlags"
+                    IsVisible="{Binding !IsOnSettingsPage}">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="Filter"/>
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem Content="Mods" Tag="Mods">
+                <ui:NavigationViewItem Content="Mods" Tag="Mods"
+                    IsVisible="{Binding !IsOnSettingsPage}">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="Add"/>
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem Content="Stretch Res" Tag="Stretch">
+                <ui:NavigationViewItem Content="Stretch Res" Tag="Stretch"
+                    IsVisible="{Binding !IsOnSettingsPage}">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="Crop"/>
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem Content="Stats" Tag="Stats">
+                <ui:NavigationViewItem Content="Stats" Tag="Stats"
+                    IsVisible="{Binding !IsOnSettingsPage}">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="List"/>
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem Content="Friends" Tag="Friends">
+                <ui:NavigationViewItem Content="Friends" Tag="Friends"
+                    IsVisible="{Binding !IsOnSettingsPage}">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="People"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+
+                <!-- Settings サブナビ（Settings ページ時のみ表示） -->
+                <ui:NavigationViewItem Content="General" Tag="Settings_General"
+                    IsVisible="{Binding IsOnSettingsPage}">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Settings"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="Performance" Tag="Settings_Performance"
+                    IsVisible="{Binding IsOnSettingsPage}">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Clock"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="Roblox" Tag="Settings_Roblox"
+                    IsVisible="{Binding IsOnSettingsPage}">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Globe"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="Data" Tag="Settings_Data"
+                    IsVisible="{Binding IsOnSettingsPage}">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Save"/>
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>

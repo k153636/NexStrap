@@ -17,6 +17,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private ViewModelBase _currentPage;
     [ObservableProperty] private bool _isDiscordConnected;
     [ObservableProperty] private bool _isDiscordAppIdMissing;
+    [ObservableProperty] private bool _isOnSettingsPage;
 
     public HomeViewModel HomeVM { get; }
     public FastFlagsViewModel FastFlagsVM { get; }
@@ -143,6 +144,7 @@ public partial class MainWindowViewModel : ViewModelBase
             "Stretch" => StretchVM,
             _ => HomeVM
         };
+        IsOnSettingsPage = page == "Settings";
 
         HomeVM.CurrentPageName = page;
 
