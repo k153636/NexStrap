@@ -16,7 +16,7 @@
                        FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
 
             <!-- Appearance -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Appearance" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}"/>
@@ -38,91 +38,91 @@
                         <TextBlock Text="UI Color" FontSize="11" Foreground="{DynamicResource FgSub}"/>
                         <WrapPanel Orientation="Horizontal">
 
-                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                            <Border Margin="0,0,8,8" CornerRadius="8" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentWhite,
                                         Converter={StaticResource BoolToColorConverter},
                                         ConverterParameter='#FFFFFF,Transparent'}">
                                 <Button Command="{Binding SetAccentColorCommand}"
                                         CommandParameter="#FFFFFF"
-                                        Width="28" Height="28" CornerRadius="18"
+                                        Width="28" Height="28" CornerRadius="8"
                                         Background="#FFFFFF" Padding="0"/>
                             </Border>
 
-                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                            <Border Margin="0,0,8,8" CornerRadius="8" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentBlue,
                                         Converter={StaticResource BoolToColorConverter},
                                         ConverterParameter='#6EA8FF,Transparent'}">
                                 <Button Command="{Binding SetAccentColorCommand}"
                                         CommandParameter="#6EA8FF"
-                                        Width="28" Height="28" CornerRadius="18"
+                                        Width="28" Height="28" CornerRadius="8"
                                         Background="#6EA8FF" Padding="0"/>
                             </Border>
 
-                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                            <Border Margin="0,0,8,8" CornerRadius="8" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentPurple,
                                         Converter={StaticResource BoolToColorConverter},
                                         ConverterParameter='#B470FF,Transparent'}">
                                 <Button Command="{Binding SetAccentColorCommand}"
                                         CommandParameter="#B470FF"
-                                        Width="28" Height="28" CornerRadius="18"
+                                        Width="28" Height="28" CornerRadius="8"
                                         Background="#B470FF" Padding="0"/>
                             </Border>
 
-                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                            <Border Margin="0,0,8,8" CornerRadius="8" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentPink,
                                         Converter={StaticResource BoolToColorConverter},
                                         ConverterParameter='#FF70A6,Transparent'}">
                                 <Button Command="{Binding SetAccentColorCommand}"
                                         CommandParameter="#FF70A6"
-                                        Width="28" Height="28" CornerRadius="18"
+                                        Width="28" Height="28" CornerRadius="8"
                                         Background="#FF70A6" Padding="0"/>
                             </Border>
 
-                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                            <Border Margin="0,0,8,8" CornerRadius="8" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentGreen,
                                         Converter={StaticResource BoolToColorConverter},
                                         ConverterParameter='#4ADE80,Transparent'}">
                                 <Button Command="{Binding SetAccentColorCommand}"
                                         CommandParameter="#4ADE80"
-                                        Width="28" Height="28" CornerRadius="18"
+                                        Width="28" Height="28" CornerRadius="8"
                                         Background="#4ADE80" Padding="0"/>
                             </Border>
 
-                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                            <Border Margin="0,0,8,8" CornerRadius="8" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentOrange,
                                         Converter={StaticResource BoolToColorConverter},
                                         ConverterParameter='#FFAA44,Transparent'}">
                                 <Button Command="{Binding SetAccentColorCommand}"
                                         CommandParameter="#FFAA44"
-                                        Width="28" Height="28" CornerRadius="18"
+                                        Width="28" Height="28" CornerRadius="8"
                                         Background="#FFAA44" Padding="0"/>
                             </Border>
 
-                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                            <Border Margin="0,0,8,8" CornerRadius="8" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentCyan,
                                         Converter={StaticResource BoolToColorConverter},
                                         ConverterParameter='#44DFFF,Transparent'}">
                                 <Button Command="{Binding SetAccentColorCommand}"
                                         CommandParameter="#44DFFF"
-                                        Width="28" Height="28" CornerRadius="18"
+                                        Width="28" Height="28" CornerRadius="8"
                                         Background="#44DFFF" Padding="0"/>
                             </Border>
 
-                            <Border Margin="0,0,8,8" CornerRadius="20" Padding="2"
+                            <Border Margin="0,0,8,8" CornerRadius="8" Padding="2"
                                     BorderThickness="2"
                                     BorderBrush="{Binding IsAccentRed,
                                         Converter={StaticResource BoolToColorConverter},
                                         ConverterParameter='#FF5555,Transparent'}">
                                 <Button Command="{Binding SetAccentColorCommand}"
                                         CommandParameter="#FF5555"
-                                        Width="28" Height="28" CornerRadius="18"
+                                        Width="28" Height="28" CornerRadius="8"
                                         Background="#FF5555" Padding="0"/>
                             </Border>
 
@@ -146,13 +146,13 @@
             </Border>
 
             <!-- Background Image -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Background Image" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}"/>
 
                     <!-- Preview (image set) -->
-                    <Border CornerRadius="10" ClipToBounds="True"
+                    <Border CornerRadius="8" ClipToBounds="True"
                             MaxHeight="320" Background="{DynamicResource InputBg}"
                             IsVisible="{Binding BackgroundImagePath,
                                 Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
@@ -170,7 +170,7 @@
                     </Border>
 
                     <!-- Placeholder (no image) -->
-                    <Border CornerRadius="10" Height="100" Background="{DynamicResource InputBg}"
+                    <Border CornerRadius="8" Height="100" Background="{DynamicResource InputBg}"
                             IsVisible="{Binding BackgroundImagePath,
                                 Converter={x:Static StringConverters.IsNullOrEmpty}}">
                         <StackPanel VerticalAlignment="Center"
@@ -189,13 +189,13 @@
                                 Click="PickImageButton_Click"
                                 Background="#FFFFFF" Foreground="#080808"
                                 FontWeight="SemiBold" FontSize="12"
-                                Padding="14,8" CornerRadius="10"/>
+                                Padding="14,8" CornerRadius="8"/>
                         <Button Content="Remove"
                                 Command="{Binding ClearBackgroundImageCommand}"
                                 IsEnabled="{Binding BackgroundImagePath,
                                     Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                 Background="#141414" Foreground="{DynamicResource FgSub}"
-                                FontSize="12" Padding="14,8" CornerRadius="10"/>
+                                FontSize="12" Padding="14,8" CornerRadius="8"/>
                     </StackPanel>
 
                     <!-- Blur -->
@@ -242,13 +242,13 @@
             </Border>
 
             <!-- Loading Screen -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Loading Screen" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}"/>
 
                     <!-- Preview: exact replica of BootstrapperWindow scaled down -->
-                    <Border CornerRadius="12" ClipToBounds="True"
+                    <Border CornerRadius="8" ClipToBounds="True"
                             Width="387" Height="211" HorizontalAlignment="Center"
                             BorderBrush="#2A2A2A" BorderThickness="1">
                         <Viewbox Stretch="Fill">
@@ -311,7 +311,7 @@
                                         Foreground="{DynamicResource MutedBrush}"
                                         FontSize="11"
                                         Padding="18,5"
-                                        CornerRadius="7"
+                                        CornerRadius="8"
                                         BorderBrush="#222222"
                                         BorderThickness="1"
                                         IsHitTestVisible="False"/>
@@ -326,12 +326,12 @@
                                 Click="PickBootstrapperImageButton_Click"
                                 Background="#FFFFFF" Foreground="#080808"
                                 FontWeight="SemiBold" FontSize="12"
-                                Padding="14,8" CornerRadius="10"/>
+                                Padding="14,8" CornerRadius="8"/>
                         <Button Content="Remove"
                                 Command="{Binding ClearBootstrapperImageCommand}"
                                 IsEnabled="{Binding HasBootstrapperImage}"
                                 Background="#141414" Foreground="{DynamicResource FgSub}"
-                                FontSize="12" Padding="14,8" CornerRadius="10"/>
+                                FontSize="12" Padding="14,8" CornerRadius="8"/>
                     </StackPanel>
 
                 </StackPanel>

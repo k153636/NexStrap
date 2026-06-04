@@ -36,13 +36,13 @@
             <ItemsControl ItemsSource="{Binding Friends}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:FriendEntryViewModel">
-                        <Border Background="{DynamicResource CardBg}" CornerRadius="10" Padding="12,10"
+                        <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="12,10"
                                 Margin="0,0,0,6" BoxShadow="0 2 8 0 #1A000000">
                             <Grid ColumnDefinitions="36,*,Auto">
 
                                 <!-- Avatar -->
                                 <Border Grid.Column="0" Width="36" Height="36"
-                                        CornerRadius="18" ClipToBounds="True"
+                                        CornerRadius="8" ClipToBounds="True"
                                         Background="{DynamicResource OverlayBg}">
                                     <Image Source="{Binding Icon}" Stretch="UniformToFill"/>
                                 </Border>

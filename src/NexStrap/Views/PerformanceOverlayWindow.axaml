@@ -11,7 +11,7 @@
         CanResize="False"
         IsHitTestVisible="False">
 
-    <Border Background="#CC000000" CornerRadius="10" Margin="8">
+    <Border Background="#CC000000" CornerRadius="8" Margin="8">
         <StackPanel Spacing="6" Margin="12,10">
             <TextBlock Text="NexStrap" FontSize="9" Foreground="{DynamicResource MutedBrush}"
                        FontWeight="SemiBold" HorizontalAlignment="Center"/>

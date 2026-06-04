@@ -13,7 +13,7 @@
                        Foreground="#FFFFFF" Margin="0,0,0,2"/>
 
             <!-- GPU note -->
-            <Border Background="#111111" CornerRadius="10" Padding="14,10"
+            <Border Background="#111111" CornerRadius="8" Padding="14,10"
                     IsVisible="{Binding WarningVisible}">
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="4">
@@ -24,13 +24,13 @@
                     </StackPanel>
                     <Button Grid.Column="1" Content="✕" Command="{Binding DismissWarningCommand}"
                             Background="Transparent" Foreground="#888888"
-                            Padding="6,4" FontSize="13" CornerRadius="6"
+                            Padding="6,4" FontSize="13" CornerRadius="8"
                             VerticalAlignment="Center"/>
                 </Grid>
             </Border>
 
             <!-- Status bar -->
-            <Border CornerRadius="10" Padding="14,10" Background="{DynamicResource CardBg}">
+            <Border CornerRadius="8" Padding="14,10" Background="{DynamicResource CardBg}">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <Ellipse Grid.Column="0" Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,10,0"
                              Fill="#4ADE80" IsVisible="{Binding IsActive}"/>
@@ -41,12 +41,12 @@
                     <Button Grid.Column="2" Content="Restore" Command="{Binding RestoreCommand}"
                             IsVisible="{Binding IsActive}"
                             Background="#1AFF4444" Foreground="{DynamicResource FgDanger}"
-                            FontSize="11" Padding="12,4" CornerRadius="6"/>
+                            FontSize="11" Padding="12,4" CornerRadius="8"/>
                 </Grid>
             </Border>
 
             <!-- Apply on Launch toggle -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="2">
                         <TextBlock Text="Auto Apply" Foreground="#FFFFFF" FontSize="13"/>
@@ -59,7 +59,7 @@
             </Border>
 
             <!-- Presets -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Presets" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}"/>
@@ -75,7 +75,7 @@
                                 <Button Command="{Binding $parent[ItemsControl].DataContext.SelectPresetCommand}"
                                         CommandParameter="{Binding}"
                                         Margin="0,0,8,8"
-                                        Padding="0" CornerRadius="10"
+                                        Padding="0" CornerRadius="8"
                                         Background="{DynamicResource CardBg}">
                                     <TextBlock Text="{Binding Label}" Foreground="#FFFFFF"
                                                FontSize="13" Margin="14,10"
@@ -88,7 +88,7 @@
             </Border>
 
             <!-- Custom resolution -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Custom" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}"/>

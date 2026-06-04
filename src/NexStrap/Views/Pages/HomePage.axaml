@@ -11,7 +11,7 @@
 
         <!-- Multi Instance warning banner -->
         <Border Grid.Row="0" Margin="24,12,24,0"
-                Background="#111111" CornerRadius="10" Padding="14,10"
+                Background="#111111" CornerRadius="8" Padding="14,10"
                 IsVisible="{Binding IsMultiInstanceWarningVisible}">
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10"
@@ -24,7 +24,7 @@
                 <Button Grid.Column="1" Content="✕"
                         Command="{Binding DismissMultiInstanceWarningCommand}"
                         Background="Transparent" Foreground="#888888"
-                        Padding="6,4" FontSize="13" CornerRadius="6"
+                        Padding="6,4" FontSize="13" CornerRadius="8"
                         VerticalAlignment="Center"/>
             </Grid>
         </Border>
@@ -46,11 +46,11 @@
                     <ItemsControl ItemsSource="{Binding FavoriteGames}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="local:GameEntryViewModel">
-                                <Border Background="{DynamicResource CardBg}" CornerRadius="10"
+                                <Border Background="{DynamicResource CardBg}" CornerRadius="8"
                                         Padding="14,12" Margin="0,0,0,6" Classes="card">
                                     <Grid ColumnDefinitions="52,*,Auto,6,Auto">
                                                         <Border Grid.Column="0" Width="52" Height="52"
-                                                CornerRadius="10" ClipToBounds="True"
+                                                CornerRadius="8" ClipToBounds="True"
                                                 Background="{DynamicResource OverlayBg}">
                                             <Image Source="{Binding Icon}" Stretch="UniformToFill"/>
                                         </Border>
@@ -70,7 +70,7 @@
                                                 Command="{Binding $parent[UserControl].DataContext.ToggleFavoriteCommand}"
                                                 CommandParameter="{Binding}"
                                                 Background="Transparent" Foreground="#FFCC44"
-                                                FontSize="14" Padding="6,4" CornerRadius="6">
+                                                FontSize="14" Padding="6,4" CornerRadius="8">
                                             ★
                                         </Button>
                                         <Button Grid.Column="4"
@@ -93,7 +93,7 @@
                     <TextBlock Grid.Column="0" Text="Recent Games" FontSize="11" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}" VerticalAlignment="Center"/>
                     <Button Grid.Column="1" Command="{Binding ToggleSortMenuCommand}"
-                            Background="{DynamicResource OverlayBg}" CornerRadius="6" Padding="8,3">
+                            Background="{DynamicResource OverlayBg}" CornerRadius="8" Padding="8,3">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <TextBlock Text="↕" FontSize="10" Foreground="{DynamicResource FgSub}"
                                        VerticalAlignment="Center"/>
@@ -112,7 +112,7 @@
                                 Command="{Binding SetHomeSortCommand}"
                                 CommandParameter="{x:Static local:HomeSortMode.RecentFirst}"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Background="Transparent" Padding="10,6" CornerRadius="6"
+                                Background="Transparent" Padding="10,6" CornerRadius="8"
                                 Foreground="{Binding IsSortRecent,
                                     Converter={StaticResource BoolToColorConverter},
                                     ConverterParameter='#FFFFFF,#505050'}"/>
@@ -120,7 +120,7 @@
                                 Command="{Binding SetHomeSortCommand}"
                                 CommandParameter="{x:Static local:HomeSortMode.TotalTime}"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Background="Transparent" Padding="10,6" CornerRadius="6"
+                                Background="Transparent" Padding="10,6" CornerRadius="8"
                                 Foreground="{Binding IsSortTotalTime,
                                     Converter={StaticResource BoolToColorConverter},
                                     ConverterParameter='#FFFFFF,#505050'}"/>
@@ -129,7 +129,7 @@
 
                 <!-- Empty state -->
                 <Border IsVisible="{Binding RecentGames.Count, Converter={StaticResource IntToZeroConverter}}"
-                        Padding="20,20" CornerRadius="12" Background="#0DFFFFFF" Margin="0,4,0,0">
+                        Padding="20,20" CornerRadius="8" Background="#0DFFFFFF" Margin="0,4,0,0">
                     <StackPanel Spacing="6" HorizontalAlignment="Center">
                         <TextBlock Text="Ready to play?" FontSize="14" FontWeight="SemiBold"
                                    Foreground="#FFFFFF" HorizontalAlignment="Center"/>
@@ -143,7 +143,7 @@
                 <ItemsControl ItemsSource="{Binding RecentGames}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="local:GameEntryViewModel">
-                            <Border Background="{DynamicResource CardBg}" CornerRadius="10"
+                            <Border Background="{DynamicResource CardBg}" CornerRadius="8"
                                     Padding="12,10" Margin="0,0,0,6" Classes="card">
                                 <Grid ColumnDefinitions="44,*,Auto,6,Auto">
                                     <Border Grid.Column="0" Width="44" Height="44"
@@ -171,7 +171,7 @@
                                     <Button Grid.Column="2"
                                             Command="{Binding $parent[UserControl].DataContext.ToggleFavoriteCommand}"
                                             CommandParameter="{Binding}"
-                                            Background="Transparent" Padding="6,4" CornerRadius="6"
+                                            Background="Transparent" Padding="6,4" CornerRadius="8"
                                             Foreground="{Binding IsFavorite,
                                                 Converter={StaticResource BoolToColorConverter},
                                                 ConverterParameter='#FFCC44,#333333'}">

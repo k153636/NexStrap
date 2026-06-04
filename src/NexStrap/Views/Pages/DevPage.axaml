@@ -12,7 +12,7 @@
             <StackPanel Spacing="6" Margin="0,0,0,4">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <TextBlock Text="Developer" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
-                    <Border Background="#1A0A00" CornerRadius="6" Padding="8,3"
+                    <Border Background="#1A0A00" CornerRadius="8" Padding="8,3"
                             BorderBrush="#3A1A00" BorderThickness="1" VerticalAlignment="Center">
                         <TextBlock Text="AUTHOR ONLY" FontSize="10" FontWeight="Bold"
                                    Foreground="#FF6A00" FontFamily="Consolas,monospace"/>
@@ -23,7 +23,7 @@
             </StackPanel>
 
             <!-- App Info -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14">
                 <StackPanel Spacing="10">
                     <TextBlock Text="App Info" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}"/>
                     <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto" HorizontalAlignment="Stretch">
@@ -39,7 +39,7 @@
             </Border>
 
             <!-- Data Stats -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14">
                 <StackPanel Spacing="10">
                     <TextBlock Text="Data" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}"/>
                     <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
@@ -58,7 +58,7 @@
             </Border>
 
             <!-- Paths -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14">
                 <StackPanel Spacing="10">
                     <TextBlock Text="Paths" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}"/>
 
@@ -71,7 +71,7 @@
                             <Button Grid.Column="2" Content="Open"
                                     Command="{Binding OpenDataFolderCommand}"
                                     Background="{DynamicResource ElevatedBg}" Foreground="{DynamicResource SubtextBrush}"
-                                    FontSize="11" Padding="10,4" CornerRadius="7"/>
+                                    FontSize="11" Padding="10,4" CornerRadius="8"/>
                         </Grid>
                     </StackPanel>
 
@@ -84,7 +84,7 @@
                             <Button Grid.Column="2" Content="Open"
                                     Command="{Binding OpenSettingsFileCommand}"
                                     Background="{DynamicResource ElevatedBg}" Foreground="{DynamicResource SubtextBrush}"
-                                    FontSize="11" Padding="10,4" CornerRadius="7"/>
+                                    FontSize="11" Padding="10,4" CornerRadius="8"/>
                         </Grid>
                     </StackPanel>
 
@@ -97,7 +97,7 @@
                             <Button Grid.Column="2" Content="Open"
                                     Command="{Binding OpenHistoryFileCommand}"
                                     Background="{DynamicResource ElevatedBg}" Foreground="{DynamicResource SubtextBrush}"
-                                    FontSize="11" Padding="10,4" CornerRadius="7"/>
+                                    FontSize="11" Padding="10,4" CornerRadius="8"/>
                         </Grid>
                     </StackPanel>
 
@@ -115,7 +115,7 @@
                 <Button Content="Refresh Data"
                         Command="{Binding RefreshCommand}"
                         Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource SubtextBrush}"
-                        FontSize="12" Padding="14,8" CornerRadius="10"/>
+                        FontSize="12" Padding="14,8" CornerRadius="8"/>
             </StackPanel>
 
         </StackPanel>

@@ -25,7 +25,7 @@
                      Text="{Binding NewFlagName}"
                      Watermark="Flag name  (e.g. FFlagXxx)"
                      Background="#0D0D0D" Foreground="#FFFFFF"
-                     BorderBrush="#2A2A2A" CornerRadius="10"
+                     BorderBrush="#2A2A2A" CornerRadius="8"
                      Padding="14,10" FontSize="12"
                      FontFamily="Consolas,Courier New,monospace"/>
 
@@ -33,7 +33,7 @@
                      Text="{Binding NewFlagValue}"
                      Watermark="Value"
                      Background="#0D0D0D" Foreground="#FFFFFF"
-                     BorderBrush="#2A2A2A" CornerRadius="10"
+                     BorderBrush="#2A2A2A" CornerRadius="8"
                      Padding="14,10" FontSize="12"
                      FontFamily="Consolas,Courier New,monospace"/>
 
@@ -43,13 +43,13 @@
                         Command="{Binding AddFlagCommand}"
                         Background="#FFFFFF" Foreground="#080808"
                         FontSize="13" FontWeight="SemiBold"
-                        Padding="0,10" CornerRadius="10"
+                        Padding="0,10" CornerRadius="8"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Center"/>
                 <Button Grid.Column="2"
                         Content="Cancel"
                         Background="#1A1A1A" Foreground="#666666"
-                        FontSize="13" Padding="20,10" CornerRadius="10"
+                        FontSize="13" Padding="20,10" CornerRadius="8"
                         Click="Cancel_Click"/>
             </Grid>
         </Grid>

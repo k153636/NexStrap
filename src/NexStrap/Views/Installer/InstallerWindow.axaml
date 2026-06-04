@@ -56,21 +56,21 @@
 
                         <!-- Minimal icon pills -->
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Border Background="#141414" CornerRadius="6" Padding="8,5">
+                            <Border Background="#141414" CornerRadius="8" Padding="8,5">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <PathIcon Data="{StaticResource IconFlash}"
                                               Width="11" Height="11" Foreground="#666666"/>
                                     <TextBlock Text="Performance" FontSize="11" Foreground="#666666"/>
                                 </StackPanel>
                             </Border>
-                            <Border Background="#141414" CornerRadius="6" Padding="8,5">
+                            <Border Background="#141414" CornerRadius="8" Padding="8,5">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <PathIcon Data="{StaticResource IconSettings}"
                                               Width="11" Height="11" Foreground="#666666"/>
                                     <TextBlock Text="Customization" FontSize="11" Foreground="#666666"/>
                                 </StackPanel>
                             </Border>
-                            <Border Background="#141414" CornerRadius="6" Padding="8,5">
+                            <Border Background="#141414" CornerRadius="8" Padding="8,5">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <PathIcon Data="{StaticResource IconGlobe}"
                                               Width="11" Height="11" Foreground="#666666"/>

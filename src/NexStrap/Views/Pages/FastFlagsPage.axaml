@@ -26,38 +26,38 @@
                      Text="{Binding SearchText}"
                      Watermark="Search flags..."
                      Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF"
-                     BorderBrush="#2E2E2E" CornerRadius="10" Padding="12,7" FontSize="12"/>
+                     BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,7" FontSize="12"/>
 
             <ComboBox Grid.Column="2"
                       ItemsSource="{Binding Categories}"
                       SelectedItem="{Binding SelectedCategory}"
                       Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF"
-                      CornerRadius="10" MinWidth="110" FontSize="12"/>
+                      CornerRadius="8" MinWidth="110" FontSize="12"/>
 
             <Button Grid.Column="4" Content="Presets"
                     Command="{Binding OpenPresetWindowCommand}"
                     Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
-                    FontSize="12" Padding="12,7" CornerRadius="10"/>
+                    FontSize="12" Padding="12,7" CornerRadius="8"/>
 
             <Button Grid.Column="6" Content="Bulk Import"
                     Command="{Binding OpenBulkImportWindowCommand}"
                     Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
-                    FontSize="12" Padding="12,7" CornerRadius="10"/>
+                    FontSize="12" Padding="12,7" CornerRadius="8"/>
 
             <Button Grid.Column="8" Content="+ Add"
                     Command="{Binding OpenAddFlagWindowCommand}"
                     Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
-                    FontSize="12" Padding="12,7" CornerRadius="10"/>
+                    FontSize="12" Padding="12,7" CornerRadius="8"/>
 
             <Button Grid.Column="10" Content="Profiles"
                     Command="{Binding OpenProfileManagerCommand}"
                     Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
-                    FontSize="12" Padding="12,7" CornerRadius="10"/>
+                    FontSize="12" Padding="12,7" CornerRadius="8"/>
 
             <Button Grid.Column="12" Command="{Binding HotReloadCommand}"
                     IsEnabled="{Binding !IsSaving}"
                     Background="#FFFFFF" Foreground="#080808"
-                    Padding="12,7" CornerRadius="10">
+                    Padding="12,7" CornerRadius="8">
                 <StackPanel Orientation="Horizontal" Spacing="5">
                     <PathIcon Data="{StaticResource IconFlash}" Width="11" Height="11" Foreground="#080808"/>
                     <TextBlock Text="Save" FontWeight="SemiBold" FontSize="12"/>
@@ -67,12 +67,12 @@
 
         <!-- Flags list -->
         <Border Grid.Row="2" Margin="24,0,24,14"
-                Background="{DynamicResource SurfaceBg}" CornerRadius="12">
+                Background="{DynamicResource SurfaceBg}" CornerRadius="8">
             <Grid RowDefinitions="Auto,*,Auto">
 
                 <!-- Column header -->
                 <Border Grid.Row="0" Background="{DynamicResource ElevatedBg}"
-                        CornerRadius="12,12,0,0">
+                        CornerRadius="8,8,0,0">
                     <Grid ColumnDefinitions="*,200,100,40" Margin="16,8">
                         <TextBlock Grid.Column="0" Text="Flag Name" FontSize="11"
                                    FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}"/>
@@ -101,7 +101,7 @@
                                 <TextBox Grid.Column="1" Text="{Binding Value}"
                                          Background="#080808" Foreground="#FFFFFF"
                                          BorderBrush="#2E2E2E" Padding="8,5"
-                                         CornerRadius="7" FontFamily="Consolas,Courier New,monospace"
+                                         CornerRadius="8" FontFamily="Consolas,Courier New,monospace"
                                          FontSize="12" Margin="4,2"/>
                                 <Border Grid.Column="2" Background="{DynamicResource ElevatedBg}"
                                         CornerRadius="8" Padding="8,3" Margin="4,0"
@@ -112,7 +112,7 @@
                                 <Button Grid.Column="3"
                                         Command="{Binding DeleteCommand}"
                                         Padding="4,4" Background="Transparent"
-                                        Foreground="{DynamicResource MutedBrush}" CornerRadius="5">
+                                        Foreground="{DynamicResource MutedBrush}" CornerRadius="4">
                                     <TextBlock Text="✕" FontSize="11"/>
                                 </Button>
                             </Grid>

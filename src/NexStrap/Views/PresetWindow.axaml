@@ -34,7 +34,7 @@
             </StackPanel>
 
             <!-- Preset group breakdown -->
-            <Border Grid.Row="1" Background="#0D0D0D" CornerRadius="10" Padding="14,12">
+            <Border Grid.Row="1" Background="#0D0D0D" CornerRadius="8" Padding="14,12">
                 <ScrollViewer>
                     <ItemsControl ItemsSource="{Binding PresetGroups}">
                         <ItemsControl.ItemTemplate>
@@ -68,7 +68,7 @@
                             Converter={StaticResource BoolToColorConverter},
                             ConverterParameter='#888888,#080808'}"
                         FontSize="13" FontWeight="SemiBold"
-                        Padding="0,10" CornerRadius="10"
+                        Padding="0,10" CornerRadius="8"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Center">
                     <TextBlock Text="{Binding IsPresetActive,
@@ -78,7 +78,7 @@
                 <Button Grid.Column="2"
                         Content="Close"
                         Background="#1A1A1A" Foreground="#666666"
-                        FontSize="13" Padding="20,10" CornerRadius="10"
+                        FontSize="13" Padding="20,10" CornerRadius="8"
                         Click="Close_Click"/>
             </Grid>
         </Grid>

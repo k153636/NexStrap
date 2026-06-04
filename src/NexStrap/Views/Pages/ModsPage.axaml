@@ -20,12 +20,12 @@
             <Button Content="+ Import Mod"
                     Click="ImportButton_Click"
                     Background="#FFFFFF" Foreground="#080808" FontWeight="SemiBold"
-                    FontSize="12" Padding="14,8" CornerRadius="10"/>
+                    FontSize="12" Padding="14,8" CornerRadius="8"/>
             <Button Content="Apply All Mods"
                     Command="{Binding ApplyModsCommand}"
                     IsEnabled="{Binding !IsLoading}"
                     Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF"
-                    FontSize="12" Padding="14,8" CornerRadius="10"/>
+                    FontSize="12" Padding="14,8" CornerRadius="8"/>
             <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource SubtextBrush}" FontSize="12"
                        VerticalAlignment="Center"
                        IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -42,7 +42,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="models:Mod">
                         <Border Width="185" Margin="0,0,12,12"
-                                Background="{DynamicResource SurfaceBg}" CornerRadius="14" Padding="14">
+                                Background="{DynamicResource SurfaceBg}" CornerRadius="8" Padding="14">
                             <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
                                 <Border Grid.Row="0" Background="{DynamicResource ElevatedBg}" CornerRadius="8"
                                         Padding="8,4" HorizontalAlignment="Left">

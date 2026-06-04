@@ -15,7 +15,7 @@
                        FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
 
             <!-- Import section -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,14"
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14"
                     BoxShadow="0 2 10 0 #22000000">
                 <StackPanel Spacing="10">
                     <TextBlock Text="Add Account" FontSize="12" FontWeight="SemiBold"
@@ -27,24 +27,24 @@
                                 Command="{Binding LoginWithBrowserCommand}"
                                 Background="#FFFFFF" Foreground="#080808"
                                 FontWeight="SemiBold"
-                                FontSize="12" Padding="14,8" CornerRadius="10"/>
+                                FontSize="12" Padding="14,8" CornerRadius="8"/>
                         <Button Content="Import from Chrome"
                                 Command="{Binding ImportFromChromeCommand}"
                                 IsEnabled="{Binding IsImporting, Converter={x:Static BoolConverters.Not}}"
                                 Background="{DynamicResource OverlayBg}" Foreground="#FFFFFF"
-                                FontSize="12" Padding="14,8" CornerRadius="10"/>
+                                FontSize="12" Padding="14,8" CornerRadius="8"/>
                         <Button Content="Paste Cookie"
                                 Command="{Binding TogglePastePanelCommand}"
                                 Background="{Binding IsPastePanelOpen,
                                     Converter={StaticResource BoolToColorConverter},
                                     ConverterParameter='#2A2A2A,transparent'}"
                                 BorderBrush="#2E2E2E" BorderThickness="1"
-                                Foreground="#FFFFFF" FontSize="12" Padding="14,8" CornerRadius="10"/>
+                                Foreground="#FFFFFF" FontSize="12" Padding="14,8" CornerRadius="8"/>
                         <Button Content="Cancel"
                                 Command="{Binding CancelImportCommand}"
                                 IsVisible="{Binding IsImporting}"
                                 Background="#1AFF4444" Foreground="{DynamicResource FgDanger}"
-                                FontSize="12" Padding="14,8" CornerRadius="10"/>
+                                FontSize="12" Padding="14,8" CornerRadius="8"/>
                     </StackPanel>
 
                     <TextBlock Text="Please log in to roblox.com in Chrome…"
@@ -61,13 +61,13 @@
                                      Watermark=".ROBLOSECURITY value..."
                                      Background="{DynamicResource SurfaceBg}"
                                      Foreground="#FFFFFF" FontSize="12"
-                                     BorderBrush="#2E2E2E" CornerRadius="10" Padding="12,8"
+                                     BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,8"
                                      FontFamily="Consolas,monospace"/>
                             <Button Grid.Column="2" Content="Add"
                                     Command="{Binding ImportManuallyCommand}"
                                     Background="#FFFFFF" Foreground="#080808"
                                     FontWeight="SemiBold" FontSize="12"
-                                    Padding="20,8" CornerRadius="10"/>
+                                    Padding="20,8" CornerRadius="8"/>
                         </Grid>
                     </StackPanel>
                 </StackPanel>
@@ -84,13 +84,13 @@
             <ItemsControl ItemsSource="{Binding Accounts}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:AccountEntryViewModel">
-                        <Border Background="{DynamicResource CardBg}" CornerRadius="10" Padding="12,10"
+                        <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="12,10"
                                 Margin="0,0,0,6" BoxShadow="0 2 8 0 #1A000000">
                             <Grid ColumnDefinitions="36,*,Auto,8,Auto">
 
                                 <!-- Avatar -->
                                 <Border Grid.Column="0" Width="36" Height="36"
-                                        CornerRadius="18" ClipToBounds="True"
+                                        CornerRadius="8" ClipToBounds="True"
                                         Background="{DynamicResource OverlayBg}">
                                     <Image Source="{Binding Icon}" Stretch="UniformToFill"/>
                                 </Border>
@@ -100,7 +100,7 @@
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <TextBlock Text="{Binding DisplayName}" FontSize="13"
                                                    FontWeight="SemiBold" Foreground="#FFFFFF"/>
-                                        <Border CornerRadius="6" Padding="6,2"
+                                        <Border CornerRadius="8" Padding="6,2"
                                                 Background="#1A4ADE80"
                                                 IsVisible="{Binding IsActive}">
                                             <TextBlock Text="Active" FontSize="10"
@@ -112,7 +112,7 @@
                                 </StackPanel>
 
                                 <!-- Instance badge -->
-                                <Border Grid.Column="2" CornerRadius="6" Padding="8,3"
+                                <Border Grid.Column="2" CornerRadius="8" Padding="8,3"
                                         Background="{DynamicResource OverlayBg}"
                                         VerticalAlignment="Center">
                                     <TextBlock Text="{Binding InstanceLabel}"

@@ -91,7 +91,7 @@
                 Foreground="{DynamicResource MutedBrush}"
                 FontSize="11"
                 Padding="18,5"
-                CornerRadius="7"
+                CornerRadius="8"
                 BorderBrush="#222222"
                 BorderThickness="1"/>
 

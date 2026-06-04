@@ -41,7 +41,7 @@
                      Background="#0D0D0D"
                      Foreground="#CCCCCC"
                      BorderBrush="#2A2A2A"
-                     CornerRadius="10"
+                     CornerRadius="8"
                      Padding="14,12"
                      FontFamily="Consolas,Courier New,monospace"
                      FontSize="12"
@@ -54,13 +54,13 @@
                         Command="{Binding BulkImportCommand}"
                         Background="#FFFFFF" Foreground="#080808"
                         FontSize="13" FontWeight="SemiBold"
-                        Padding="0,10" CornerRadius="10"
+                        Padding="0,10" CornerRadius="8"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Center"/>
                 <Button Grid.Column="2"
                         Content="Cancel"
                         Background="#1A1A1A" Foreground="#666666"
-                        FontSize="13" Padding="20,10" CornerRadius="10"
+                        FontSize="13" Padding="20,10" CornerRadius="8"
                         Click="Cancel_Click"/>
             </Grid>
         </Grid>

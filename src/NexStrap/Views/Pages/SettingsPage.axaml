@@ -61,7 +61,7 @@
                 <DataTemplate x:DataType="vm:SettingsGeneralTab">
                     <ScrollViewer Padding="0,0,4,20">
                         <StackPanel Spacing="10">
-                            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
                                 <StackPanel Spacing="12">
                                     <TextBlock Text="App" FontSize="12" FontWeight="SemiBold"
                                                Foreground="{DynamicResource FgSub}"/>
@@ -93,7 +93,7 @@
                 <DataTemplate x:DataType="vm:SettingsPerformanceTab">
                     <ScrollViewer Padding="0,0,4,20">
                         <StackPanel Spacing="10">
-                            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
                                 <StackPanel Spacing="12">
                                     <TextBlock Text="Performance" FontSize="12" FontWeight="SemiBold"
                                                Foreground="{DynamicResource FgSub}"/>
@@ -143,7 +143,7 @@
                 <DataTemplate x:DataType="vm:SettingsRobloxTab">
                     <ScrollViewer Padding="0,0,4,20">
                         <StackPanel Spacing="10">
-                            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
                                 <StackPanel Spacing="12">
                                     <TextBlock Text="Roblox" FontSize="12" FontWeight="SemiBold"
                                                Foreground="{DynamicResource FgSub}"/>
@@ -223,7 +223,7 @@
                 <DataTemplate x:DataType="vm:SettingsDataTab">
                     <ScrollViewer Padding="0,0,4,20">
                         <StackPanel Spacing="10">
-                            <Border Background="{DynamicResource CardBg}" CornerRadius="12" Padding="16,12">
+                            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
                                 <StackPanel Spacing="12">
                                     <TextBlock Text="Data" FontSize="12" FontWeight="SemiBold"
                                                Foreground="{DynamicResource FgSub}"/>
@@ -281,10 +281,10 @@
                             <Button Content="Reset to Defaults"
                                     Command="{Binding VM.ResetToDefaultsCommand}"
                                     Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource FgSub}"
-                                    FontSize="12" Padding="14,8" CornerRadius="10" HorizontalAlignment="Left"/>
+                                    FontSize="12" Padding="14,8" CornerRadius="8" HorizontalAlignment="Left"/>
 
                             <Border Background="#0F0808" BorderBrush="#3A1A1A" BorderThickness="1"
-                                    CornerRadius="12" Padding="16,12">
+                                    CornerRadius="8" Padding="16,12">
                                 <StackPanel Spacing="12">
                                     <TextBlock Text="Danger Zone" FontSize="12" FontWeight="SemiBold"
                                                Foreground="{DynamicResource FgDanger}"/>

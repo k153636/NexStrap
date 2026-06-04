@@ -39,7 +39,7 @@
                      Text="{Binding NewProfileName}"
                      Watermark="New profile name..."
                      Background="#0D0D0D" Foreground="#FFFFFF"
-                     BorderBrush="#2A2A2A" CornerRadius="10"
+                     BorderBrush="#2A2A2A" CornerRadius="8"
                      Padding="14,10" FontSize="12"/>
 
             <!-- Save / Delete -->
@@ -49,14 +49,14 @@
                         Command="{Binding SaveAsProfileCommand}"
                         Background="#FFFFFF" Foreground="#080808"
                         FontSize="13" FontWeight="SemiBold"
-                        Padding="0,10" CornerRadius="10"
+                        Padding="0,10" CornerRadius="8"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Center"/>
                 <Button Grid.Column="2"
                         Content="Delete"
                         Command="{Binding DeleteProfileCommand}"
                         Background="#1A1A1A" Foreground="#666666"
-                        FontSize="13" Padding="20,10" CornerRadius="10"/>
+                        FontSize="13" Padding="20,10" CornerRadius="8"/>
             </Grid>
 
             <!-- Close -->
