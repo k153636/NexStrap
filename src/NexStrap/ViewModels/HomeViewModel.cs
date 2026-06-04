@@ -31,7 +31,7 @@ public partial class HomeViewModel : ViewModelBase
     internal string CurrentPageName { get; set; } = "Home";
     internal bool IsGameDetected => _gameDetected;
 
-    private bool             _gameDetected;
+    private volatile bool    _gameDetected;
     private string?          _userAvatarUrl;
     private string?          _myCountryCode;
     private string?          _currentServerCode;
@@ -51,11 +51,12 @@ public partial class HomeViewModel : ViewModelBase
     private readonly Dictionary<int, SlotGame>                    _activeGames   = new();
     private readonly Dictionary<int, (string? Url, string? Label)> _slotUsers    = new();
     private readonly Dictionary<int, uint>                         _slotPids      = new();
+    private readonly object _gamesLock = new();
     private int    _activeFocusedSlot  = -1;
     private bool   _robloxHasFocus     = false;
-    private bool   _studioDetected     = false;
-    private bool   _studioPlaytesting  = false;
-    private string _lastStudioPresence = string.Empty;
+    private volatile bool   _studioDetected     = false;
+    private volatile bool   _studioPlaytesting  = false;
+    private volatile string _lastStudioPresence = string.Empty;
     private Timer? _focusTimer;
     private Timer? _presenceHeartbeat;
     private Timer? _studioTimer;
@@ -250,9 +251,12 @@ public partial class HomeViewModel : ViewModelBase
                 }
 
                 // スロット別に保存
-                _slotUsers[slot] = (avatarUrl, userLabel);
-                if (_activeGames.TryGetValue(slot, out var game))
-                    _activeGames[slot] = game with { AvatarUrl = avatarUrl, UserLabel = userLabel };
+                lock (_gamesLock)
+                {
+                    _slotUsers[slot] = (avatarUrl, userLabel);
+                    if (_activeGames.TryGetValue(slot, out var game))
+                        _activeGames[slot] = game with { AvatarUrl = avatarUrl, UserLabel = userLabel };
+                }
 
                 if (slot == 0)
                     _discord.SetUserLabel(userLabel);
@@ -370,8 +374,11 @@ public partial class HomeViewModel : ViewModelBase
             RefreshSlotPids();
 
             // マルチインスタンス: このスロットのゲームを仮登録（アバター情報を引き継ぐ）
-            _slotUsers.TryGetValue(currentSlot, out var slotUser);
-            _activeGames[currentSlot] = new SlotGame("Roblox", null, null, placeId, slotUser.Url, slotUser.Label);
+            lock (_gamesLock)
+            {
+                _slotUsers.TryGetValue(currentSlot, out var slotUser);
+                _activeGames[currentSlot] = new SlotGame("Roblox", null, null, placeId, slotUser.Url, slotUser.Label);
+            }
 
             _discord.ResetGameTimestamp();
             UpdateGamePresence();
@@ -384,8 +391,11 @@ public partial class HomeViewModel : ViewModelBase
                 _lastGameName    = name;
                 _lastGameIconUrl = iconUrl;
                 _lastGameCreator = creator;
-                _slotUsers.TryGetValue(currentSlot, out var su);
-                _activeGames[currentSlot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
+                lock (_gamesLock)
+                {
+                    _slotUsers.TryGetValue(currentSlot, out var su);
+                    _activeGames[currentSlot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
+                }
                 UpdateGamePresence();
 
                 var entry = new GameHistoryEntry { PlaceId = placeId, UniverseId = newUniverseId, Name = name, IconUrl = iconUrl, PlayedAt = DateTime.Now };
@@ -451,19 +461,24 @@ public partial class HomeViewModel : ViewModelBase
             _gameStartTime              = null;
 
             // このスロットのエントリを削除
-            _activeGames.Remove(_logWatcher.CurrentSlotId);
-
-            // Robloxプロセス数より activeGames が多い場合は余剰スロットを削除
             var robloxCount = RobloxLogWatcher.IsRobloxRunning() || _roblox.IsNexStrapRobloxRunning()
                 ? GetRobloxProcesses().Count()
                 : 0;
-            while (_activeGames.Count > robloxCount)
-                _activeGames.Remove(_activeGames.Keys.Min());
+            bool hasRemaining;
+            SlotGame remaining = default;
+            lock (_gamesLock)
+            {
+                _activeGames.Remove(_logWatcher.CurrentSlotId);
+                while (_activeGames.Count > robloxCount)
+                    _activeGames.Remove(_activeGames.Keys.Min());
+                hasRemaining = _activeGames.Count > 0;
+                if (hasRemaining)
+                    remaining = _activeGames[_activeGames.Keys.Max()];
+            }
 
-            if (_activeGames.Count > 0)
+            if (hasRemaining)
             {
                 // まだ別インスタンスがプレイ中
-                var remaining = _activeGames[_activeGames.Keys.Max()];
                 _lastGameName    = remaining.Name;
                 _lastGameIconUrl = remaining.IconUrl;
                 _lastGameCreator = remaining.Creator;
@@ -532,9 +547,12 @@ public partial class HomeViewModel : ViewModelBase
 
                 // _slotPids に一致する PID があるか検索
                 int? matched = null;
-                foreach (var kv in _slotPids)
+                lock (_gamesLock)
                 {
-                    if (kv.Value == focusPid) { matched = kv.Key; break; }
+                    foreach (var kv in _slotPids)
+                    {
+                        if (kv.Value == focusPid) { matched = kv.Key; break; }
+                    }
                 }
 
                 // Stretch Res: Roblox ウィンドウのフォーカス変化を検出
@@ -814,9 +832,12 @@ public partial class HomeViewModel : ViewModelBase
                 .Where(p => !p.HasExited)
                 .OrderBy(p => p.StartTime)
                 .ToList();
-            _slotPids.Clear();
-            for (int i = 0; i < procs.Count; i++)
-                _slotPids[i] = (uint)procs[i].Id;
+            lock (_gamesLock)
+            {
+                _slotPids.Clear();
+                for (int i = 0; i < procs.Count; i++)
+                    _slotPids[i] = (uint)procs[i].Id;
+            }
         }
         catch { }
     }
@@ -835,7 +856,8 @@ public partial class HomeViewModel : ViewModelBase
 
     private void UpdateGamePresence()
     {
-        var games = _activeGames.Values.ToList();
+        List<SlotGame> games;
+        lock (_gamesLock) { games = _activeGames.Values.ToList(); }
         if (games.Count == 0)
         {
             // _activeGames が未準備（PlaceJoined の API 待機中）でも in-game presence を維持する。
@@ -858,8 +880,8 @@ public partial class HomeViewModel : ViewModelBase
 
         if (robloxCount == 1)
         {
-            // シングルインスタンス → 最も新しいスロット（最大キー）を表示
-            var g = _activeGames[_activeGames.Keys.Max()];
+            SlotGame g;
+            lock (_gamesLock) { g = _activeGames[_activeGames.Keys.Max()]; }
             _discord.SetInGamePresence(
                 g.Name ?? "Roblox", g.IconUrl,
                 g.AvatarUrl ?? _userAvatarUrl, FormatState(),
@@ -874,8 +896,12 @@ public partial class HomeViewModel : ViewModelBase
             .ToList();
 
         // フォーカス中スロットのアバターを使用（フォーカス不明なら最新スロット）
-        var focusedGame = _activeFocusedSlot >= 0 && _activeGames.TryGetValue(_activeFocusedSlot, out var fg)
-            ? fg : _activeGames[_activeGames.Keys.Max()];
+        SlotGame focusedGame;
+        lock (_gamesLock)
+        {
+            focusedGame = _activeFocusedSlot >= 0 && _activeGames.TryGetValue(_activeFocusedSlot, out var fg)
+                ? fg : _activeGames[_activeGames.Keys.Max()];
+        }
 
         _discord.SetMultiGamePresence(
             unique, robloxCount,
