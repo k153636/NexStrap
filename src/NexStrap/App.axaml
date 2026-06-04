@@ -73,7 +73,7 @@
     </Application.Resources>
 
     <Application.Styles>
-        <fa:FluentAvaloniaTheme/>
+        <fa:FluentAvaloniaTheme CustomAccentColor="#FFFFFF"/>
 
         <!-- Global text shadow — ensures readability on any custom background -->
         <Style Selector="TextBlock">
