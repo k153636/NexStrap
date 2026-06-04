@@ -277,13 +277,15 @@ public partial class HomeViewModel : ViewModelBase
             try
             {
                 _currentServerCode = await _robloxApi.GetServerCountryCodeAsync(ip);
-                if (!_gameDetected) return;
-                // _activeGames が未準備なら最大 1.5 秒待ってリトライ
-                for (int i = 0; i < 3; i++)
+                // _gameDetected が false でも最大 3 秒待つ（UDMUX が PlaceJoined より先の場合）
+                for (int i = 0; i < 6; i++)
                 {
-                    bool hasGames;
-                    lock (_gamesLock) { hasGames = _activeGames.Count > 0; }
-                    if (hasGames) { UpdateGamePresence(); return; }
+                    if (_gameDetected)
+                    {
+                        bool hasGames;
+                        lock (_gamesLock) { hasGames = _activeGames.Count > 0; }
+                        if (hasGames) { UpdateGamePresence(); return; }
+                    }
                     await Task.Delay(500);
                 }
             }
@@ -370,7 +372,7 @@ public partial class HomeViewModel : ViewModelBase
             }
 
             _accumulatedDurationSeconds = 0;
-            _currentServerCode          = null;
+            // _currentServerCode はクリアしない — UDMUX が PlaceJoined より先に来た場合の値を保持
             // _gameDetected はすでに true（await より前にセット済み）
             _currentUniverseId          = newUniverseId;
             _lastPlaceId                = placeId;
