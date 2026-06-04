@@ -877,6 +877,7 @@ public partial class HomeViewModel : ViewModelBase
         var seq        = Interlocked.Read(ref _joinSequence);
 
         _awaitingGameInfo = true;
+        _discord.SetPagePresence(CurrentPageName, _userAvatarUrl); // リトライ中も参加前の状況を維持
         try
         {
             var (name, iconUrl, creator) = await _robloxApi.GetGameInfoAsync(placeId, universeId);
@@ -906,10 +907,10 @@ public partial class HomeViewModel : ViewModelBase
             UpdateGamePresence();
         else if (_gameDetected)
         {
-            // _awaitingGameInfo == true  → 初回フェッチ中 → no-op（完了後に UpdateGamePresence が呼ばれる）
-            // _awaitingGameInfo == false → 前回フェッチ失敗 → リトライ
-            if (!_awaitingGameInfo)
-                _ = TryFetchGameInfoAndUpdateAsync();
+            if (_awaitingGameInfo)
+                _discord.SetPagePresence(CurrentPageName, _userAvatarUrl); // 初回フェッチ中 → 参加前の状況を維持
+            else
+                _ = TryFetchGameInfoAndUpdateAsync(); // フェッチ失敗後 → リトライ（page presence を先に表示）
         }
         else if (_studioDetected)
             _discord.SetStudioPresence(_userAvatarUrl);
@@ -923,10 +924,8 @@ public partial class HomeViewModel : ViewModelBase
         lock (_gamesLock) { games = _activeGames.Values.ToList(); }
         if (games.Count == 0)
         {
-            // _activeGames 未準備（API 待機中）または非ゲーム状態
-            // 情報が揃うまで presence を変更しない（プレースホルダーを表示しない）
-            if (!_gameDetected)
-                _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+            // ゲーム情報未取得（API待機中・失敗中・非ゲーム状態）→ 参加前の状況（page presence）を維持
+            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
             return;
         }
 
