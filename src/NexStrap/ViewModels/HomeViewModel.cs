@@ -373,15 +373,8 @@ public partial class HomeViewModel : ViewModelBase
             // ゲーム参加のたびに PID マッピングを更新（起動後初参加でも正確に追跡）
             RefreshSlotPids();
 
-            // マルチインスタンス: このスロットのゲームを仮登録（アバター情報を引き継ぐ）
-            lock (_gamesLock)
-            {
-                _slotUsers.TryGetValue(currentSlot, out var slotUser);
-                _activeGames[currentSlot] = new SlotGame("Roblox", null, null, placeId, slotUser.Url, slotUser.Label);
-            }
-
+            // 情報が揃うまで presence は更新しない（API 完了後に初めて表示）
             _discord.ResetGameTimestamp();
-            UpdateGamePresence();
 
             try
             {
@@ -864,12 +857,9 @@ public partial class HomeViewModel : ViewModelBase
         lock (_gamesLock) { games = _activeGames.Values.ToList(); }
         if (games.Count == 0)
         {
-            // _activeGames が未準備（PlaceJoined の API 待機中）でも in-game presence を維持する。
-            // ゲーム中なら最後に既知のゲーム情報でフォールバック。ゲーム外のみページ presence にする。
-            if (_gameDetected)
-                _discord.SetInGamePresence(_lastGameName ?? "Roblox", _lastGameIconUrl,
-                    _userAvatarUrl, FormatState(), _lastGameCreator, _lastPlaceId);
-            else
+            // _activeGames 未準備（API 待機中）または非ゲーム状態
+            // 情報が揃うまで presence を変更しない（プレースホルダーを表示しない）
+            if (!_gameDetected)
                 _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
             return;
         }
