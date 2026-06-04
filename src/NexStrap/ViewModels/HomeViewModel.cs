@@ -1011,7 +1011,7 @@ public partial class HomeViewModel : ViewModelBase
         if (!value)
         {
             // 全インスタンス終了 → スロットをすべてクリア
-            _activeGames.Clear();
+            lock (_gamesLock) { _activeGames.Clear(); }
             _gameDetected = false;
 
             // Stretch Res: Roblox 終了時に解像度を復元
