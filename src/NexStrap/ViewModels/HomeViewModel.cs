@@ -210,14 +210,9 @@ public partial class HomeViewModel : ViewModelBase
                         _discord.SetLaunchingPresence(_userAvatarUrl);
                         break;
                     case RobloxStatus.Running:
-                        _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
-                        break;
                     case RobloxStatus.Idle:
                     case RobloxStatus.NotInstalled:
-                        if (_studioDetected)
-                            _discord.SetStudioHomePresence(_userAvatarUrl);
-                        else
-                            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+                        RefreshPresence();
                         break;
                 }
             });
@@ -262,12 +257,7 @@ public partial class HomeViewModel : ViewModelBase
                 if (slot == 0)
                     _discord.SetUserLabel(userLabel);
 
-                if (_gameDetected)
-                    UpdateGamePresence();
-                else if (_studioDetected)
-                    _discord.SetStudioPresence(_userAvatarUrl);
-                else if (!IsRobloxRunning && !IsLaunching)
-                    _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+                RefreshPresence();
             }
             catch { }
         };
@@ -362,7 +352,7 @@ public partial class HomeViewModel : ViewModelBase
                     _slotUsers.TryGetValue(currentSlot, out var tpUser);
                     _activeGames[currentSlot] = new SlotGame(resolvedName, resolvedIcon, resolvedCreator, placeId, tpUser.Url, tpUser.Label);
 
-                    _discord.SetInGamePresence(resolvedName, resolvedIcon, _userAvatarUrl, FormatState(), resolvedCreator, placeId);
+                    UpdateGamePresence();
                 }
                 catch { }
                 return;
@@ -445,7 +435,7 @@ public partial class HomeViewModel : ViewModelBase
         _logWatcher.StudioPlaySoloStarted += (_, _) =>
         {
             _studioPlaytesting = true;
-            _discord.SetStudioPlaytestPresence(null, _userAvatarUrl);
+            RefreshPresence();
         };
 
         // Studio テストプレイ終了 → タイマーにウィンドウタイトル再判定させる
@@ -499,15 +489,12 @@ public partial class HomeViewModel : ViewModelBase
                 _lastGameCreator = remaining.Creator;
                 _lastPlaceId     = remaining.PlaceId;
                 _gameDetected    = true;
-                UpdateGamePresence();
+                RefreshPresence();
             }
             else
             {
                 _discord.Initialize(AppConstants.DiscordAppId);
-                if (_studioDetected)
-                    _discord.SetStudioPresence(_userAvatarUrl);
-                else
-                    _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+                RefreshPresence();
             }
             Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -631,8 +618,7 @@ public partial class HomeViewModel : ViewModelBase
                         _lastStudioPresence = string.Empty;
                         break;
                     case RobloxStatus.Idle:
-                        if (!_studioDetected)
-                            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+                        RefreshPresence();
                         break;
                 }
             });
@@ -669,9 +655,7 @@ public partial class HomeViewModel : ViewModelBase
                 // 最新のアバターURLとユーザーラベルをAPIから取得
                 _userAvatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(startupUserId);
                 await ApplyUserLabelAsync(startupUserId);
-                // ゲームプレイ中・Roblox 起動中は上書きしない
-                if (!IsRobloxRunning && !_gameDetected)
-                    _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
+                RefreshPresence();
             });
         }
 
@@ -879,7 +863,6 @@ public partial class HomeViewModel : ViewModelBase
         var seq        = Interlocked.Read(ref _joinSequence);
 
         _awaitingGameInfo = true;
-        _discord.SetPagePresence(CurrentPageName, _userAvatarUrl); // リトライ中も参加前の状況を維持
         try
         {
             var (name, iconUrl, creator) = await _robloxApi.GetGameInfoAsync(placeId, universeId);
@@ -906,17 +889,20 @@ public partial class HomeViewModel : ViewModelBase
     {
         bool hasGames;
         lock (_gamesLock) { hasGames = _activeGames.Count > 0; }
+
         if (hasGames)
             UpdateGamePresence();
         else if (_gameDetected)
         {
             if (_awaitingGameInfo)
-                _discord.SetPagePresence(CurrentPageName, _userAvatarUrl); // API 取得中は NexStrap 表示で待機
+                _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
             else
-                _ = TryFetchGameInfoAndUpdateAsync(); // フェッチ失敗後 → リトライ
+                _ = TryFetchGameInfoAndUpdateAsync();
         }
+        else if (_studioPlaytesting)
+            _discord.SetStudioPlaytestPresence(null, _userAvatarUrl);
         else if (_studioDetected)
-            _discord.SetStudioPresence(_userAvatarUrl);
+            CheckStudioProcess(); // ウィンドウタイトルを再読みして Home / Editing を正確に設定
         else
             _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
     }
@@ -1005,12 +991,7 @@ public partial class HomeViewModel : ViewModelBase
                 {
                     // Studio 終了 — ゲームか通常ページに戻す
                     if (!_gameDetected)
-                    {
-                        if (IsRobloxRunning)
-                            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox");
-                        else
-                            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
-                    }
+                        RefreshPresence();
                     return;
                 }
             }

@@ -146,18 +146,8 @@ public partial class MainWindowViewModel : ViewModelBase
         };
         IsOnSettingsPage = page == "Settings";
 
-        HomeVM.CurrentPageName = page;
-
-        if (!HomeVM.IsGameDetected)
-        {
-            var presenceName = page == "Stretch" ? "Stretch Res" : page;
-            _discord.SetPagePresence(presenceName, HomeVM.UserAvatarUrl);
-        }
-        else
-        {
-            // ゲーム中のページ遷移時も presence を再同期（接続タイミングズレを防ぐ）
-            HomeVM.RefreshPresence();
-        }
+        HomeVM.CurrentPageName = page == "Stretch" ? "Stretch Res" : page;
+        HomeVM.RefreshPresence();
     }
 
     [RelayCommand]
