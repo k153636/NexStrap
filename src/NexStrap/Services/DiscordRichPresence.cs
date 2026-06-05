@@ -275,10 +275,9 @@ public sealed class DiscordRichPresence : IDisposable
             case EvRoblox { Running: true }:
                 log.Info("Discord", "Roblox 起動");
                 _games.Clear();
-                _phase        = Phase.RobloxMenu;
-                _fetchRetries = 0;
-                // NexStrap App ID のまま表示を維持 → ギャップなしで「Roblox / Menu」を見せる
-                // Roblox App ID への切り替えはゲーム参加確定（EvGameInfo）まで遅延させる
+                _phase         = Phase.RobloxMenu;
+                _fetchRetries  = 0;
+                await SwitchAppIdAsync(AppConstants.DiscordRobloxAppId);
                 ApplyPresence();
                 break;
 
@@ -288,6 +287,7 @@ public sealed class DiscordRichPresence : IDisposable
                 _phase         = Phase.NexStrapIdle;
                 _universeId    = 0;
                 _fetchRetries  = 0;
+                await SwitchAppIdAsync(AppConstants.DiscordAppId);
                 ApplyPresence();
                 break;
 
@@ -307,6 +307,8 @@ public sealed class DiscordRichPresence : IDisposable
             case EvGameLeft { Slot: var slot, RobloxCount: var count }:
                 log.Info("Discord", $"ゲーム退出 (slot={slot}, robloxCount={count})");
                 HandleGameLeft(slot, count);
+                await SwitchAppIdAsync(
+                    count > 0 ? AppConstants.DiscordRobloxAppId : AppConstants.DiscordAppId);
                 _phase = count > 0
                     ? (_games.Count > 0 ? Phase.InGame : Phase.RobloxMenu)
                     : Phase.NexStrapIdle;
@@ -341,6 +343,7 @@ public sealed class DiscordRichPresence : IDisposable
                 _users.TryGetValue(_currentSlot, out var su);
                 _games[_currentSlot] = new SlotGame(name, icon, creator, pid, su.Url, su.Label);
                 _phase = Phase.InGame;
+                await SwitchAppIdAsync(AppConstants.DiscordRobloxAppId);
                 ApplyPresence();
                 var startedAt = DateTime.UtcNow;
                 GameInfoFetched?.Invoke(this, new GameInfoFetchedArgs(pid, _universeId, name!, icon!, DateTime.Now, startedAt));
@@ -393,6 +396,7 @@ public sealed class DiscordRichPresence : IDisposable
                 if (_phase == Phase.NexStrapIdle || _phase == Phase.Studio)
                 {
                     _phase = Phase.Studio;
+                    await SwitchAppIdAsync(AppConstants.DiscordStudioAppId);
                     ApplyPresence();
                 }
                 break;
@@ -406,6 +410,7 @@ public sealed class DiscordRichPresence : IDisposable
                 if (_phase == Phase.NexStrapIdle || _phase == Phase.Studio)
                 {
                     _phase = det ? Phase.Studio : Phase.NexStrapIdle;
+                    await SwitchAppIdAsync(det ? AppConstants.DiscordStudioAppId : AppConstants.DiscordAppId);
                     ApplyPresence();
                 }
                 break;
@@ -560,17 +565,8 @@ public sealed class DiscordRichPresence : IDisposable
                 return StudioOrPagePresence(s);
 
             case Phase.RobloxMenu:
-            {
-                if (!s.DiscordShowLauncherPresence) return null;
-                string? label; lock (_rpcLock) { label = _userLabel; }
-                return Build("Roblox / Menu", null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label);
-            }
             case Phase.FetchingGame:
-            {
-                if (!s.DiscordShowLauncherPresence) return null;
-                string? label; lock (_rpcLock) { label = _userLabel; }
-                return Build("Roblox / Loading...", null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label);
-            }
+                return null; // メニュー・API取得中は表示なし
 
             case Phase.InGame:
                 return ComputeInGamePresence(s);
@@ -772,10 +768,16 @@ public sealed class DiscordRichPresence : IDisposable
             nc.OnReady += (_, _) =>
             {
                 lock (_rpcLock) { _rpcConnected = true; }
-                Task.Run(() =>
+                _ = Task.Run(async () =>
                 {
+                    // 新クライアントの接続を通知（ApplyPresence が走り新プレゼンスをキューに入れる）
                     Enqueue(new EvDiscordReady());
                     ConnectionChanged?.Invoke(this, true);
+
+                    // 新プレゼンスが Discord に届いてから旧クライアントを解放する。
+                    // 旧クライアントは Discord 側でまだ presence を保持しているため、
+                    // この遅延の間ユーザーには何かが表示され続ける（ギャップなし）。
+                    await Task.Delay(900);
                     oldClient?.Dispose();
                 });
             };
