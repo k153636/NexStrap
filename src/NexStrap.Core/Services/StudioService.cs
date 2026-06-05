@@ -113,21 +113,12 @@ public class StudioService
     // -------------------------------------------------------------------------
     public async Task<bool> LaunchAsync()
     {
-        var exePath = StudioExePath;
-
-        if (exePath == null)
-        {
-            // 未インストール → インストールしてから起動
-            var versionPath = await InstallOrUpdateAsync();
-            exePath = versionPath != null
-                ? Path.Combine(versionPath, "RobloxStudioBeta.exe")
-                : null;
-        }
-        else
-        {
-            // インストール済み → 即起動 & バックグラウンドでアップデートチェック
-            _ = Task.Run(async () => await InstallOrUpdateAsync());
-        }
+        // インストール済みでも常にアップデートチェックを await してから起動。
+        // アップデートなし時は GetLatestVersionGuidCachedAsync のキャッシュが効くためほぼ即時。
+        var versionPath = await InstallOrUpdateAsync();
+        var exePath = versionPath != null
+            ? Path.Combine(versionPath, "RobloxStudioBeta.exe")
+            : null;
 
         if (exePath == null || !File.Exists(exePath)) { SetStatus(RobloxStatus.Idle); return false; }
 
