@@ -57,7 +57,10 @@ public sealed class StudioRpcServer : IDisposable
             var envelope = JsonSerializer.Deserialize<RpcEnvelope>(body, _jsonOptions);
             if (envelope?.Command != null)
             {
-                Logger.Instance.Info("StudioRPC", $"Received: {envelope.Command}");
+                var detail = envelope.Command == "SetRichPresence" && envelope.Data?.Details != null
+                    ? $" ({envelope.Data.Details})"
+                    : string.Empty;
+                Logger.Instance.Info("StudioRPC", $"{envelope.Command}{detail}");
                 MessageReceived?.Invoke(this, new StudioRpcMessage(envelope.Command, envelope.Data));
             }
 

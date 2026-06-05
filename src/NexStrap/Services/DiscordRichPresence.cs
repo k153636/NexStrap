@@ -226,6 +226,14 @@ public sealed class DiscordRichPresence : IDisposable
         }
     }
 
+    private static string AppIdName(string id) => id switch
+    {
+        AppConstants.DiscordAppId       => "NexStrap",
+        AppConstants.DiscordRobloxAppId => "Roblox",
+        AppConstants.DiscordStudioAppId => "Roblox Studio",
+        _                               => id
+    };
+
     private async Task HandleEventAsync(Ev ev)
     {
         var log = NexStrap.Core.Services.Logger.Instance;
@@ -233,7 +241,7 @@ public sealed class DiscordRichPresence : IDisposable
         {
             // ── Roblox 起動 / 終了 ──────────────────────────────────────────
             case EvRoblox { Running: true }:
-                log.Info("Discord", "Roblox started → Phase.RobloxMenu");
+                log.Info("Discord", "Roblox 起動");
                 _games.Clear();
                 _phase         = Phase.RobloxMenu;
                 _fetchRetries  = 0;
@@ -242,7 +250,7 @@ public sealed class DiscordRichPresence : IDisposable
                 break;
 
             case EvRoblox { Running: false }:
-                log.Info("Discord", "Roblox stopped → Phase.NexStrapIdle");
+                log.Info("Discord", "Roblox 終了");
                 _games.Clear();
                 _phase         = Phase.NexStrapIdle;
                 _universeId    = 0;
@@ -265,6 +273,7 @@ public sealed class DiscordRichPresence : IDisposable
 
             // ── ゲーム退出 ──────────────────────────────────────────────────
             case EvGameLeft { Slot: var slot, RobloxCount: var count }:
+                log.Info("Discord", $"ゲーム退出 (slot={slot}, robloxCount={count})");
                 HandleGameLeft(slot, count);
                 await SwitchAppIdAsync(
                     count > 0 ? AppConstants.DiscordRobloxAppId : AppConstants.DiscordAppId);
@@ -282,12 +291,19 @@ public sealed class DiscordRichPresence : IDisposable
                 {
                     _fetchRetries++;
                     if (_fetchRetries < MaxFetchRetries)
-                        _phase = Phase.FetchingGame; // ハートビートでリトライ
+                    {
+                        log.Warning("Discord", $"ゲーム情報取得失敗 ({_fetchRetries}/{MaxFetchRetries}) placeId={pid}");
+                        _phase = Phase.FetchingGame;
+                    }
                     else
-                        _phase = Phase.RobloxMenu;   // 諦める
+                    {
+                        log.Warning("Discord", $"ゲーム情報取得を断念 placeId={pid}");
+                        _phase = Phase.RobloxMenu;
+                    }
                     ApplyPresence();
                     break;
                 }
+                log.Info("Discord", $"ゲーム参加: {name} (placeId={pid})");
                 _gameName     = name;
                 _gameIcon     = icon;
                 _gameCreator  = creator;
@@ -341,7 +357,6 @@ public sealed class DiscordRichPresence : IDisposable
 
             // ── Studio RPC（プラグインからのデータ — ウィンドウタイトルより優先）──
             case EvStudioRpc { Data: var d }:
-                // プラグインが実際にインストール済みの場合のみ処理する
                 if (!StudioPluginInstaller.IsInstalled) break;
                 _studioRpcActive     = true;
                 _studioPlaceName     = d.Details;
@@ -708,7 +723,9 @@ public sealed class DiscordRichPresence : IDisposable
         }
         if (alreadyConnected) return;
 
-        NexStrap.Core.Services.Logger.Instance.Info("Discord", $"Switching App ID → {appId}");
+        var from = AppIdName(_currentAppId);
+        var to   = AppIdName(appId);
+        NexStrap.Core.Services.Logger.Instance.Info("Discord", $"App 切り替え: {from} → {to}");
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         void OnReady(object? _, bool c) { if (c) tcs.TrySetResult(true); }
         ConnectionChanged += OnReady;
@@ -716,9 +733,9 @@ public sealed class DiscordRichPresence : IDisposable
         var completed = await Task.WhenAny(tcs.Task, Task.Delay(3000));
         ConnectionChanged -= OnReady;
         if (completed == tcs.Task)
-            NexStrap.Core.Services.Logger.Instance.Info("Discord", $"App ID ready: {appId}");
+            NexStrap.Core.Services.Logger.Instance.Info("Discord", $"接続完了: {to}");
         else
-            NexStrap.Core.Services.Logger.Instance.Warning("Discord", $"App ID switch timed out: {appId}");
+            NexStrap.Core.Services.Logger.Instance.Warning("Discord", $"接続タイムアウト: {to}");
     }
 
     private void RpcInitialize(string appId)
