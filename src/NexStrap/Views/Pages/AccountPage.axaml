@@ -9,35 +9,85 @@
 
     <Grid RowDefinitions="Auto,*">
 
-        <!-- タイトル + タブスイッチャー -->
-        <StackPanel Grid.Row="0" Margin="24,20,24,0" Spacing="0"
-                    helpers:AnimationHelper.StaggerChildren="True">
-            <TextBlock Text="Account" FontSize="22" FontWeight="Bold"
-                       Foreground="#FFFFFF" Margin="0,0,0,10"/>
+        <!-- タイトル + タブ + + ボタン -->
+        <Grid Grid.Row="0" Margin="24,20,24,0" ColumnDefinitions="*,Auto">
 
-            <StackPanel Orientation="Horizontal" Spacing="4">
-                <Button Content="Accounts"
-                        Command="{Binding SwitchTabCommand}" CommandParameter="Accounts"
-                        Background="{Binding IsAccountsTab,
-                            Converter={StaticResource BoolToColorConverter},
-                            ConverterParameter='#FFFFFF,transparent'}"
-                        Foreground="{Binding IsAccountsTab,
-                            Converter={StaticResource BoolToColorConverter},
-                            ConverterParameter='#080808,#FFFFFF'}"
-                        FontWeight="SemiBold"
-                        FontSize="12" Padding="16,6" CornerRadius="8"/>
-                <Button Content="Friends"
-                        Command="{Binding SwitchTabCommand}" CommandParameter="Friends"
-                        Background="{Binding IsFriendsTab,
-                            Converter={StaticResource BoolToColorConverter},
-                            ConverterParameter='#FFFFFF,transparent'}"
-                        Foreground="{Binding IsFriendsTab,
-                            Converter={StaticResource BoolToColorConverter},
-                            ConverterParameter='#080808,#FFFFFF'}"
-                        FontWeight="SemiBold"
-                        FontSize="12" Padding="16,6" CornerRadius="8"/>
+            <!-- 左: タイトル + タブ -->
+            <StackPanel Grid.Column="0" Spacing="0"
+                        helpers:AnimationHelper.StaggerChildren="True">
+                <TextBlock Text="Account" FontSize="22" FontWeight="Bold"
+                           Foreground="#FFFFFF" Margin="0,0,0,10"/>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Button Content="Accounts"
+                            Command="{Binding SwitchTabCommand}" CommandParameter="Accounts"
+                            Background="{Binding IsAccountsTab,
+                                Converter={StaticResource BoolToColorConverter},
+                                ConverterParameter='#FFFFFF,transparent'}"
+                            Foreground="{Binding IsAccountsTab,
+                                Converter={StaticResource BoolToColorConverter},
+                                ConverterParameter='#080808,#FFFFFF'}"
+                            FontWeight="SemiBold"
+                            FontSize="12" Padding="16,6" CornerRadius="8"/>
+                    <Button Content="Friends"
+                            Command="{Binding SwitchTabCommand}" CommandParameter="Friends"
+                            Background="{Binding IsFriendsTab,
+                                Converter={StaticResource BoolToColorConverter},
+                                ConverterParameter='#FFFFFF,transparent'}"
+                            Foreground="{Binding IsFriendsTab,
+                                Converter={StaticResource BoolToColorConverter},
+                                ConverterParameter='#080808,#FFFFFF'}"
+                            FontWeight="SemiBold"
+                            FontSize="12" Padding="16,6" CornerRadius="8"/>
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
+
+            <!-- 右: + ボタン + ドロップダウン -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Spacing="4">
+                <Button Content="+"
+                        Command="{Binding ToggleAddMethodDropdownCommand}"
+                        Background="{Binding IsAddMethodDropdownOpen,
+                            Converter={StaticResource BoolToColorConverter},
+                            ConverterParameter='#2A2A2A,transparent'}"
+                        Foreground="{DynamicResource FgSub}"
+                        FontSize="18" FontWeight="Light"
+                        Width="32" Height="32" Padding="0"
+                        CornerRadius="8"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"/>
+
+                <!-- ドロップダウンメニュー -->
+                <Border IsVisible="{Binding IsAddMethodDropdownOpen}"
+                        Background="{DynamicResource CardBg}"
+                        CornerRadius="8" Padding="4"
+                        BoxShadow="0 4 16 0 #44000000"
+                        HorizontalAlignment="Right">
+                    <StackPanel Spacing="2" MinWidth="180">
+                        <Button Content="Login with Browser"
+                                Command="{Binding SelectAddMethodCommand}" CommandParameter="Browser"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                Background="Transparent" Foreground="#FFFFFF"
+                                FontSize="12" Padding="12,7" CornerRadius="6"/>
+                        <Button Content="Import from Chrome"
+                                Command="{Binding SelectAddMethodCommand}" CommandParameter="Chrome"
+                                IsEnabled="{Binding IsImporting, Converter={x:Static BoolConverters.Not}}"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                Background="Transparent" Foreground="#FFFFFF"
+                                FontSize="12" Padding="12,7" CornerRadius="6"/>
+                        <Button Content="Paste Cookie"
+                                Command="{Binding SelectAddMethodCommand}" CommandParameter="Cookie"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                Background="Transparent" Foreground="#FFFFFF"
+                                FontSize="12" Padding="12,7" CornerRadius="6"/>
+                        <Button Content="Quick Sign-In"
+                                Command="{Binding SelectAddMethodCommand}" CommandParameter="QuickSignIn"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                Background="Transparent" Foreground="#FFFFFF"
+                                FontSize="12" Padding="12,7" CornerRadius="6"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+        </Grid>
 
         <!-- Accounts タブ -->
         <ScrollViewer Grid.Row="1" IsVisible="{Binding IsAccountsTab}">
@@ -110,101 +160,63 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Add Account（ドロップダウン式） -->
-                <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14"
-                        BoxShadow="0 2 10 0 #22000000">
+                <!-- サブパネル群（ドロップダウン選択後に展開） -->
+                <!-- Cancel -->
+                <StackPanel Orientation="Horizontal" Spacing="8"
+                            IsVisible="{Binding IsImporting}">
+                    <TextBlock Text="Please log in to roblox.com in Chrome…"
+                               FontSize="12" Foreground="{DynamicResource SubtextBrush}"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding IsWaitingForLogin}"/>
+                    <Button Content="Cancel"
+                            Command="{Binding CancelImportCommand}"
+                            Background="#1AFF4444" Foreground="{DynamicResource FgDanger}"
+                            FontSize="12" Padding="14,6" CornerRadius="8"/>
+                </StackPanel>
+
+                <!-- Cookie ペーストパネル -->
+                <Border IsVisible="{Binding IsPastePanelOpen}"
+                        Background="{DynamicResource CardBg}" CornerRadius="8" Padding="14,12">
                     <StackPanel Spacing="8">
-                        <TextBlock Text="Add Account" FontSize="12" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource FgSub}"/>
+                        <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
+                                   Text="Chrome DevTools → Application → Cookies → roblox.com → .ROBLOSECURITY → Value"/>
+                        <Grid ColumnDefinitions="*,8,Auto">
+                            <TextBox Grid.Column="0" Text="{Binding ManualCookie}"
+                                     Watermark=".ROBLOSECURITY value..."
+                                     Background="{DynamicResource SurfaceBg}"
+                                     Foreground="#FFFFFF" FontSize="12"
+                                     BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,8"
+                                     FontFamily="Consolas,monospace"/>
+                            <Button Grid.Column="2" Content="Add"
+                                    Command="{Binding ImportManuallyCommand}"
+                                    Background="#FFFFFF" Foreground="#080808"
+                                    FontWeight="SemiBold" FontSize="12"
+                                    Padding="20,8" CornerRadius="8"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
 
-                        <Button Content="Add New Account"
-                                Command="{Binding ToggleAddMethodDropdownCommand}"
-                                Background="#FFFFFF" Foreground="#080808"
-                                FontWeight="SemiBold" FontSize="12"
-                                HorizontalAlignment="Stretch"
-                                HorizontalContentAlignment="Center"
-                                Padding="14,9" CornerRadius="8"/>
-
-                        <!-- ドロップダウンメニュー -->
-                        <Border IsVisible="{Binding IsAddMethodDropdownOpen}"
-                                Background="{DynamicResource SurfaceBg}"
-                                CornerRadius="8" Padding="4">
-                            <StackPanel Spacing="2">
-                                <Button Content="Login with Browser"
-                                        Command="{Binding SelectAddMethodCommand}" CommandParameter="Browser"
-                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                        Background="Transparent" Foreground="#FFFFFF"
-                                        FontSize="12" Padding="12,7" CornerRadius="6"/>
-                                <Button Content="Import from Chrome"
-                                        Command="{Binding SelectAddMethodCommand}" CommandParameter="Chrome"
-                                        IsEnabled="{Binding IsImporting, Converter={x:Static BoolConverters.Not}}"
-                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                        Background="Transparent" Foreground="#FFFFFF"
-                                        FontSize="12" Padding="12,7" CornerRadius="6"/>
-                                <Button Content="Paste Cookie"
-                                        Command="{Binding SelectAddMethodCommand}" CommandParameter="Cookie"
-                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                        Background="Transparent" Foreground="#FFFFFF"
-                                        FontSize="12" Padding="12,7" CornerRadius="6"/>
-                                <Button Content="Quick Sign-In"
-                                        Command="{Binding SelectAddMethodCommand}" CommandParameter="QuickSignIn"
-                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                        Background="Transparent" Foreground="#FFFFFF"
-                                        FontSize="12" Padding="12,7" CornerRadius="6"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Cancel -->
-                        <Button Content="Cancel"
-                                Command="{Binding CancelImportCommand}"
-                                IsVisible="{Binding IsImporting}"
-                                Background="#1AFF4444" Foreground="{DynamicResource FgDanger}"
-                                FontSize="12" Padding="14,8" CornerRadius="8"/>
-
-                        <TextBlock Text="Please log in to roblox.com in Chrome…"
-                                   FontSize="12" Foreground="{DynamicResource SubtextBrush}"
-                                   IsVisible="{Binding IsWaitingForLogin}"/>
-
-                        <!-- Cookie ペーストパネル -->
-                        <StackPanel Spacing="8" IsVisible="{Binding IsPastePanelOpen}">
-                            <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
-                                       Text="Chrome DevTools → Application → Cookies → roblox.com → .ROBLOSECURITY → Value をコピーして貼り付け"/>
-                            <Grid ColumnDefinitions="*,8,Auto">
-                                <TextBox Grid.Column="0" Text="{Binding ManualCookie}"
-                                         Watermark=".ROBLOSECURITY value..."
-                                         Background="{DynamicResource SurfaceBg}"
-                                         Foreground="#FFFFFF" FontSize="12"
-                                         BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,8"
-                                         FontFamily="Consolas,monospace"/>
-                                <Button Grid.Column="2" Content="Add"
-                                        Command="{Binding ImportManuallyCommand}"
-                                        Background="#FFFFFF" Foreground="#080808"
-                                        FontWeight="SemiBold" FontSize="12"
-                                        Padding="20,8" CornerRadius="8"/>
-                            </Grid>
-                        </StackPanel>
-
-                        <!-- Quick Login パネル（PC-to-PC） -->
-                        <StackPanel Spacing="8" IsVisible="{Binding IsQuickLoginOpen}">
-                            <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
-                                       Text="Enter the 6-digit code from another NexStrap instance to switch instantly"/>
-                            <Grid ColumnDefinitions="*,8,Auto">
-                                <TextBox Grid.Column="0" Text="{Binding QuickLoginInput}"
-                                         Watermark="000000" MaxLength="6"
-                                         Background="{DynamicResource SurfaceBg}"
-                                         Foreground="#FFFFFF" FontSize="18"
-                                         BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,8"
-                                         FontFamily="Consolas,monospace"
-                                         TextAlignment="Center" FontWeight="SemiBold"
-                                         LetterSpacing="6"/>
-                                <Button Grid.Column="2" Content="Login"
-                                        Command="{Binding RedeemCodeAsyncCommand}"
-                                        Background="#FFFFFF" Foreground="#080808"
-                                        FontWeight="SemiBold" FontSize="12"
-                                        Padding="20,8" CornerRadius="8"/>
-                            </Grid>
-                        </StackPanel>
-
+                <!-- Quick Login パネル（PC-to-PC） -->
+                <Border IsVisible="{Binding IsQuickLoginOpen}"
+                        Background="{DynamicResource CardBg}" CornerRadius="8" Padding="14,12">
+                    <StackPanel Spacing="8">
+                        <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
+                                   Text="Enter the 6-digit code from another NexStrap instance"/>
+                        <Grid ColumnDefinitions="*,8,Auto">
+                            <TextBox Grid.Column="0" Text="{Binding QuickLoginInput}"
+                                     Watermark="000000" MaxLength="6"
+                                     Background="{DynamicResource SurfaceBg}"
+                                     Foreground="#FFFFFF" FontSize="18"
+                                     BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,8"
+                                     FontFamily="Consolas,monospace"
+                                     TextAlignment="Center" FontWeight="SemiBold"
+                                     LetterSpacing="6"/>
+                            <Button Grid.Column="2" Content="Login"
+                                    Command="{Binding RedeemCodeAsyncCommand}"
+                                    Background="#FFFFFF" Foreground="#080808"
+                                    FontWeight="SemiBold" FontSize="12"
+                                    Padding="20,8" CornerRadius="8"/>
+                        </Grid>
                     </StackPanel>
                 </Border>
 
