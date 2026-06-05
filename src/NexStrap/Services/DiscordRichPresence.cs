@@ -47,6 +47,8 @@ public sealed class DiscordRichPresence : IDisposable
     private int             _activeFocusedSlot  = -1;
     private int             _currentSlotId;
     private long            _joinSequence;
+    private int             _fetchRetryCount;           // API 取得失敗の連続回数
+    private const int       MaxFetchRetries = 5;        // これを超えたら諦める
 
     private readonly Dictionary<int, SlotGame>                     _activeGames = new();
     private readonly Dictionary<int, (string? Url, string? Label)> _slotUsers   = new();
@@ -153,12 +155,16 @@ public sealed class DiscordRichPresence : IDisposable
         catch { oldClient?.Dispose(); }
     }
 
+    /// <summary>設定変更時に使う Initialize。suppress なしで ConnectionChanged を発火させる。</summary>
+    public Task InitializeForSettingsAsync(string applicationId) =>
+        InitializeAndWaitReadyAsync(applicationId, suppressRefresh: false);
+
     /// <summary>
     /// Initialize() を呼んだ後 OnReady（接続確立）まで待つ。
     /// App ID 切り替え後に確実に接続済み状態で presence を送信するために使う。
     /// タイムアウト以内に接続できなくても例外は投げない。
     /// </summary>
-    private async Task InitializeAndWaitReadyAsync(string applicationId, int timeoutMs = 3000)
+    private async Task InitializeAndWaitReadyAsync(string applicationId, int timeoutMs = 3000, bool suppressRefresh = true)
     {
         bool alreadyConnected;
         lock (_lock) { alreadyConnected = _currentAppId == applicationId && _client != null && _isConnected; }
@@ -169,7 +175,7 @@ public sealed class DiscordRichPresence : IDisposable
         void OnConnected(object? _, bool connected) { if (connected) tcs.TrySetResult(true); }
         ConnectionChanged += OnConnected;
 
-        _suppressAutoRefresh = true;
+        if (suppressRefresh) _suppressAutoRefresh = true;
         try
         {
             Initialize(applicationId);
@@ -178,7 +184,7 @@ public sealed class DiscordRichPresence : IDisposable
         finally
         {
             ConnectionChanged -= OnConnected;
-            _suppressAutoRefresh = false;
+            if (suppressRefresh) _suppressAutoRefresh = false;
         }
     }
 
@@ -193,7 +199,11 @@ public sealed class DiscordRichPresence : IDisposable
     {
         if (running)
         {
-            // Roblox 起動 → Roblox App ID に切り替え（アイコンクリックで Roblox ページが開く）
+            // 前セッションの残留状態をクリア（誤テレポート判定防止）
+            lock (_gamesLock) { _activeGames.Clear(); }
+            _gameDetected     = false;
+            _awaitingGameInfo = false;
+            _fetchRetryCount  = 0;
             await InitializeAndWaitReadyAsync(AppConstants.DiscordRobloxAppId);
             RefreshPresence();
         }
@@ -202,6 +212,7 @@ public sealed class DiscordRichPresence : IDisposable
             lock (_gamesLock) { _activeGames.Clear(); }
             _gameDetected     = false;
             _awaitingGameInfo = false;
+            _fetchRetryCount  = 0;
             await InitializeAndWaitReadyAsync(AppConstants.DiscordAppId);
             RefreshPresence();
         }
@@ -274,6 +285,7 @@ public sealed class DiscordRichPresence : IDisposable
         _currentUniverseId  = newUniverseId;
         _lastPlaceId        = placeId;
         _currentServerCode  = null;
+        _fetchRetryCount    = 0;
         ClearLastGameInfo();
         _awaitingGameInfo   = true;
         ResetGameTimestamp();
@@ -450,6 +462,7 @@ public sealed class DiscordRichPresence : IDisposable
     private async Task TryFetchGameInfoAndUpdateAsync()
     {
         if (!_gameDetected || _awaitingGameInfo || _lastPlaceId == 0) return;
+        if (_fetchRetryCount >= MaxFetchRetries) return; // 連続失敗上限に達したら諦める
 
         var placeId    = _lastPlaceId;
         var universeId = _currentUniverseId;
@@ -461,7 +474,7 @@ public sealed class DiscordRichPresence : IDisposable
         {
             var (name, iconUrl, creator) = await _robloxApi.GetGameInfoAsync(placeId, universeId);
             if (Interlocked.Read(ref _joinSequence) != seq || !_gameDetected) { _awaitingGameInfo = false; return; }
-            if (iconUrl == null) { _awaitingGameInfo = false; return; }
+            if (iconUrl == null) { _fetchRetryCount++; _awaitingGameInfo = false; return; }
 
             _lastGameName    = name;
             _lastGameIconUrl = iconUrl;
@@ -471,6 +484,7 @@ public sealed class DiscordRichPresence : IDisposable
                 _slotUsers.TryGetValue(slot, out var su);
                 _activeGames[slot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
             }
+            _fetchRetryCount  = 0;
             _awaitingGameInfo = false;
             await InitializeAndWaitReadyAsync(AppConstants.DiscordRobloxAppId);
             UpdateGamePresence();

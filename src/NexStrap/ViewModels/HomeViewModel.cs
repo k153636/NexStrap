@@ -452,8 +452,13 @@ public partial class HomeViewModel : ViewModelBase
         };
 
         // ── 起動時 ─────────────────────────────────────────────────────────
+        // Roblox が既に起動していた場合は LogWatcher.Start() より前に App ID を切り替えておく
+        // （既存ログから PlaceJoined が即座に来ても Roblox App ID の状態になる）
         if (_roblox.IsNexStrapRobloxRunning())
+        {
+            _ = _presence.NotifyRobloxRunningChangedAsync(true);
             IsRobloxRunning = true;
+        }
 
         var activeAccount = _accountService.Accounts.FirstOrDefault(a => a.IsActive)
                          ?? _accountService.Accounts.FirstOrDefault();

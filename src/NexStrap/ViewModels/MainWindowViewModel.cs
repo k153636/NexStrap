@@ -76,13 +76,14 @@ public partial class MainWindowViewModel : ViewModelBase
         settings.SettingsChanged += (_, s) =>
         {
             if (s.DiscordRpcEnabled)
-                discord.Initialize(AppConstants.DiscordAppId);
+                // Initialize+接続待ちしてから RefreshPresence（接続前にスキップされる問題を回避）
+                _ = Task.Run(async () =>
+                {
+                    await discord.InitializeForSettingsAsync(AppConstants.DiscordAppId);
+                    homeVM.RefreshPresence();
+                });
             else if (!s.DiscordRpcEnabled)
                 discord.Disable();
-
-            // Refresh presence so Discord-related setting changes take effect immediately
-            if (s.DiscordRpcEnabled && discord.IsConnected)
-                homeVM.RefreshPresence();
 
             UpdateOverlayVisibility(s.ShowPerformanceOverlay);
         };
