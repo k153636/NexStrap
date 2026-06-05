@@ -26,8 +26,9 @@ public partial class HomeViewModel : ViewModelBase
     private readonly RobloxLogWatcher          _logWatcher;
     private readonly RobloxApiService          _robloxApi;
     private readonly GameHistoryService        _history;
-    private readonly FriendNotificationService _friendNotifications;
-    private readonly AccountService            _accountService;
+    private readonly FriendNotificationService                  _friendNotifications;
+    private readonly AccountService                             _accountService;
+    private readonly NexStrap.Core.Services.StudioRpcServer    _studioRpcServer;
 
     // ── ゲームセッション履歴 ──────────────────────────────────────────────
     private string?           _userAvatarUrl;
@@ -126,6 +127,15 @@ public partial class HomeViewModel : ViewModelBase
         _history             = history;
         _friendNotifications = friendNotifications;
         _accountService      = accountService;
+
+        // Studio RPC サーバー起動（プラグインからのデータを受信）
+        _studioRpcServer = new NexStrap.Core.Services.StudioRpcServer();
+        _studioRpcServer.MessageReceived += (_, msg) =>
+        {
+            if (msg.Command == "SetRichPresence" && msg.Data != null)
+                _presence.EnqueueStudioRpcMessage(msg.Data);
+        };
+        _studioRpcServer.Start();
 
         roblox.PreLaunchAsync = async () =>
         {

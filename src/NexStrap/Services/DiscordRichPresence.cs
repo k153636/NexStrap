@@ -43,6 +43,7 @@ public sealed class DiscordRichPresence : IDisposable
     private record EvPage(string Name)                                                 : Ev;
     private record EvDiscordReady                                                      : Ev;
     private record EvStudio(bool Detected, string? PlaceName, bool Testing)            : Ev;
+    private record EvStudioRpc(NexStrap.Core.Services.StudioRpcData Data)             : Ev;
     private record EvCountry(string Code)                                              : Ev;
     private record EvHeartbeat                                                         : Ev;
     private record EvFocus(int? Slot)                                                  : Ev;
@@ -71,6 +72,10 @@ public sealed class DiscordRichPresence : IDisposable
     private bool    _studioDetected;
     private string? _studioPlaceName;
     private bool    _studioTesting;
+    // プラグインからのデータ（ウィンドウタイトル監視より優先）
+    private string? _studioRpcState;
+    private string? _studioRpcScriptType;
+    private bool    _studioRpcActive;  // プラグインが接続中かどうか
     private int     _activeFocusedSlot = -1;
     private int     _currentSlot;
     private int     _robloxCount;
@@ -174,6 +179,7 @@ public sealed class DiscordRichPresence : IDisposable
     public void EnqueueServerCode(string? code)      { if (code != null) Enqueue(new EvServerCode(code)); }
     public void EnqueueStudioPlaytestStarted()       => Enqueue(new EvStudio(_studioDetected, _studioPlaceName, true));
     public void EnqueueStudioPlaytestStopped()       => Enqueue(new EvStudio(_studioDetected, _studioPlaceName, false));
+    public void EnqueueStudioRpcMessage(NexStrap.Core.Services.StudioRpcData data) => Enqueue(new EvStudioRpc(data));
     public void EnqueueFocusChanged(int? slot)       => Enqueue(new EvFocus(slot));
     public void EnqueueRefresh()                     => Enqueue(new EvRefresh());
     public void SetCurrentPage(string page)          => Enqueue(new EvPage(page));
@@ -330,7 +336,22 @@ public sealed class DiscordRichPresence : IDisposable
                 ConnectionChanged?.Invoke(this, true);
                 break;
 
-            // ── Studio 状態 ──────────────────────────────────────────────────
+            // ── Studio RPC（プラグインからのデータ — ウィンドウタイトルより優先）──
+            case EvStudioRpc { Data: var d }:
+                _studioRpcActive     = true;
+                _studioPlaceName     = d.Details;   // プレース名
+                _studioTesting       = d.Testing;
+                _studioRpcState      = d.State;      // "Editing ScriptName (N lines)" など
+                _studioRpcScriptType = d.ScriptType;
+                if (_phase == Phase.NexStrapIdle || _phase == Phase.Studio)
+                {
+                    _phase = Phase.Studio;
+                    await SwitchAppIdAsync(AppConstants.DiscordStudioAppId);
+                    ApplyPresence();
+                }
+                break;
+
+            // ── Studio 状態（ウィンドウタイトル監視 — プラグインが未接続の場合のフォールバック）──
             case EvStudio { Detected: var det, PlaceName: var place, Testing: var test }:
                 _studioDetected  = det;
                 _studioPlaceName = place;
@@ -513,11 +534,38 @@ public sealed class DiscordRichPresence : IDisposable
         if (_phase == Phase.Studio)
         {
             var details = string.IsNullOrEmpty(_studioPlaceName) ? null : $"Working on {_studioPlaceName}";
-            var state   = _studioTesting ? "Testing"
-                        : string.IsNullOrEmpty(_studioPlaceName) ? null
-                        : "Editing";
-            return Build(s.DiscordShowLauncherDetails ? details : null, state, "nexstrap",
-                "NexStrap Launcher · Created by K", _avatarUrl, label, timestamps: ts);
+
+            string? state;
+            string  largeImg = "nexstrap";
+            if (_studioTesting)
+            {
+                state = "Testing";
+            }
+            else if (_studioRpcActive && !string.IsNullOrEmpty(_studioRpcState))
+            {
+                // プラグインからの詳細情報を使用（"Editing ScriptName (N lines)" など）
+                state    = _studioRpcState;
+                largeImg = _studioRpcScriptType?.ToLowerInvariant() switch
+                {
+                    "server script"  => "studio_server",
+                    "local script"   => "studio_client",
+                    "module"
+                    or "server module"
+                    or "client module" => "studio_module",
+                    _ => "nexstrap"
+                };
+            }
+            else
+            {
+                state = string.IsNullOrEmpty(_studioPlaceName) ? null : "Editing";
+            }
+
+            var smallImg  = _studioTesting ? "play_icon" : _avatarUrl;
+            var smallText = _studioTesting ? "Testing"
+                          : _avatarUrl != null ? (label ?? "Profile") : null;
+
+            return Build(s.DiscordShowLauncherDetails ? details : null, state, largeImg,
+                "Roblox Studio", smallImg, smallText, timestamps: ts);
         }
 
         var pageDetails = s.DiscordShowLauncherDetails ? $"NexStrap / {_pageName}" : null;
