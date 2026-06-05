@@ -41,10 +41,8 @@
             <!-- Add ボタン（ドロップダウンは Row 1 オーバーレイ） -->
             <Button Grid.Column="1"
                     Command="{Binding ToggleAddMethodDropdownCommand}"
-                    Background="{Binding IsAddMethodDropdownOpen,
-                        Converter={StaticResource BoolToColorConverter},
-                        ConverterParameter='#2A2A2A,transparent'}"
-                    Foreground="{DynamicResource FgSub}"
+                    Background="#FFFFFF"
+                    Foreground="#080808"
                     FontSize="12"
                     Height="30" Padding="10,0"
                     CornerRadius="8"
