@@ -163,6 +163,8 @@ public class StudioService
     {
         var fontsDir = Path.Combine(studioDir, "StudioFonts");
         if (!Directory.Exists(fontsDir)) return;
+
+        // AddFontResourceEx は GDI 向けで Qt フォントには効かないが念のため実行
         try
         {
             foreach (var file in Directory.GetFiles(fontsDir))
@@ -171,11 +173,19 @@ public class StudioService
                 if (ext is ".otf" or ".ttf")
                     AddFontResourceEx(file, FR_PRIVATE | FR_NOT_ENUM, IntPtr.Zero);
             }
-            Logger.Instance.Info("Studio", $"フォントを登録しました: {fontsDir}");
+        }
+        catch { }
+
+        // Qt はプロセス起動前に qt.conf の [Paths] Fonts= を参照してフォントを読み込む
+        var qtConf = Path.Combine(studioDir, "qt.conf");
+        try
+        {
+            File.WriteAllText(qtConf, "[Paths]\nFonts=StudioFonts\n");
+            Logger.Instance.Info("Studio", $"qt.conf を作成しました: {qtConf}");
         }
         catch (Exception ex)
         {
-            Logger.Instance.Warning("Studio", $"フォント登録失敗: {ex.Message}");
+            Logger.Instance.Warning("Studio", $"qt.conf 作成失敗: {ex.Message}");
         }
     }
 
