@@ -571,7 +571,7 @@ public class StudioService
             ["content-textures3.zip"]             = "content/textures/",
             ["content-models.zip"]                = "content/models/",
             ["content-terrain.zip"]               = "content/terrain/",
-            ["content-platform-fonts.zip"]        = "content/fonts/",
+            ["content-platform-fonts.zip"]        = "PlatformContent/pc/fonts/",
             ["content-platform-dictionaries.zip"] = "PlatformContent/pc/",
             ["extracontent-luapackages.zip"]      = "ExtraContent/LuaPackages/",
             ["extracontent-models.zip"]           = "ExtraContent/models/",
