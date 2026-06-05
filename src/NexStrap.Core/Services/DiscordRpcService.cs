@@ -44,15 +44,19 @@ public class DiscordRpcService : IDisposable
             _startTimestamp = Timestamps.Now;
             var newClient = new DiscordRpcClient(applicationId) { Logger = new NullLogger() };
 
-            // 新接続が確立してから旧クライアントを切る — 両方が同時に生きている瞬間があるため空白がゼロになる
+            // OnReady はライブラリの内部スレッドから呼ばれる。
+            // Task.Run で切り離すことで、内部スレッドから SetPresence を呼ぶ問題を回避する。
             newClient.OnReady += (_, _) =>
             {
                 _isConnected = true;
-                ConnectionChanged?.Invoke(this, true);
-                oldClient?.Dispose();
+                Task.Run(() =>
+                {
+                    ConnectionChanged?.Invoke(this, true);
+                    oldClient?.Dispose(); // 新接続確立後に旧クライアントを切断
+                });
             };
-            newClient.OnClose += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
-            newClient.OnError += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
+            newClient.OnClose += (_, _) => { _isConnected = false; Task.Run(() => ConnectionChanged?.Invoke(this, false)); };
+            newClient.OnError += (_, _) => { _isConnected = false; Task.Run(() => ConnectionChanged?.Invoke(this, false)); };
 
             lock (_lock) { _client = newClient; }
             newClient.Initialize();
@@ -256,23 +260,9 @@ public void SetPagePresence(string pageName, string? userAvatarUrl = null, strin
     {
         RichPresence? presence;
         DiscordRpcClient? client;
-        bool connected;
-        lock (_lock)
-        {
-            presence = _pendingPresence;
-            _pendingPresence = null;
-            client    = _client;
-            connected = _isConnected;
-        }
+        lock (_lock) { presence = _pendingPresence; _pendingPresence = null; client = _client; }
         if (presence == null || client == null) return;
-
-        if (!connected)
-        {
-            // 接続確立前 — pending に戻して OnReady → ConnectionChanged → RefreshPresence() で再送させる
-            lock (_lock) { _pendingPresence ??= presence; }
-            return;
-        }
-
+        // 接続確立前でもライブラリが内部キューに積む。OnReady 後に ConnectionChanged → RefreshPresence() でも再送される。
         try { client.SetPresence(presence); } catch { }
     }
 
