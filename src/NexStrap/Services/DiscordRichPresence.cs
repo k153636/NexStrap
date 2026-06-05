@@ -72,9 +72,6 @@ public sealed class DiscordRichPresence : IDisposable
     private bool    _studioDetected;
     private string? _studioPlaceName;
     private bool    _studioTesting;
-    // プラグインからのデータ（ウィンドウタイトル監視より優先）
-    private string? _studioRpcState;
-    private string? _studioRpcScriptType;
     private bool    _studioRpcActive;  // プラグインが接続中かどうか
     private int     _activeFocusedSlot = -1;
     private int     _currentSlot;
@@ -358,11 +355,9 @@ public sealed class DiscordRichPresence : IDisposable
             // ── Studio RPC（プラグインからのデータ — ウィンドウタイトルより優先）──
             case EvStudioRpc { Data: var d }:
                 if (!StudioPluginInstaller.IsInstalled) break;
-                _studioRpcActive     = true;
-                _studioPlaceName     = d.Details;
-                _studioTesting       = d.Testing;
-                _studioRpcState      = d.State;
-                _studioRpcScriptType = d.ScriptType;
+                _studioRpcActive = true;
+                _studioPlaceName = d.Details;
+                _studioTesting   = d.Testing;
                 if (_phase == Phase.NexStrapIdle || _phase == Phase.Studio)
                 {
                     _phase = Phase.Studio;
@@ -553,39 +548,13 @@ public sealed class DiscordRichPresence : IDisposable
 
         if (_phase == Phase.Studio)
         {
-            var details = string.IsNullOrEmpty(_studioPlaceName) ? null : $"Working on {_studioPlaceName}";
+            var details = string.IsNullOrEmpty(_studioPlaceName) ? null : _studioPlaceName;
+            var state   = _studioTesting ? "Testing" : null;
 
-            string? state;
-            string  largeImg = "nexstrap";
-            if (_studioTesting)
-            {
-                state = "Testing";
-            }
-            else if (_studioRpcActive && !string.IsNullOrEmpty(_studioRpcState))
-            {
-                // プラグインからの詳細情報を使用（"Editing ScriptName (N lines)" など）
-                state    = _studioRpcState;
-                largeImg = _studioRpcScriptType?.ToLowerInvariant() switch
-                {
-                    "server script"  => "studio_server",
-                    "local script"   => "studio_client",
-                    "module"
-                    or "server module"
-                    or "client module" => "studio_module",
-                    _ => "nexstrap"
-                };
-            }
-            else
-            {
-                state = string.IsNullOrEmpty(_studioPlaceName) ? null : "Editing";
-            }
-
-            var smallImg  = _studioTesting ? "play_icon" : _avatarUrl;
-            var smallText = _studioTesting ? "Testing"
-                          : _avatarUrl != null ? (label ?? "Profile") : null;
-
-            return Build(s.DiscordShowLauncherDetails ? details : null, state, largeImg,
-                "Roblox Studio", smallImg, smallText, timestamps: ts);
+            return Build(s.DiscordShowLauncherDetails ? details : null, state,
+                "nexstrap", "Roblox Studio",
+                _avatarUrl, _avatarUrl != null ? (label ?? "Profile") : null,
+                timestamps: ts);
         }
 
         var pageDetails = s.DiscordShowLauncherDetails ? $"NexStrap / {_pageName}" : null;
