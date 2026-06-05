@@ -25,9 +25,13 @@ public class StudioService
         ("https://s3.amazonaws.com/setup.roblox.com", 4000),
     ];
 
-    private static readonly string StudioVersionsDir = Path.Combine(
+    private static readonly string VersionsDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Roblox", "Versions");
+        "NexStrap", "Versions");
+
+    // Player と同じ Versions\ 配下に固定パスで配置（WindowsStudio64）
+    private static readonly string StudioVersionsDir = VersionsDir;
+    private static readonly string StudioDir         = Path.Combine(VersionsDir, "WindowsStudio64");
 
     private static readonly string DownloadsDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -92,19 +96,14 @@ public class StudioService
 
     private string? FindStudioExePath()
     {
+        // 固定パス (WindowsStudio64) を優先チェック
+        if (IsVersionComplete(StudioDir))
+            return Path.Combine(StudioDir, "RobloxStudioBeta.exe");
+
+        // state ファイルによるフォールバック
         var state = LoadState();
         if (state != null && IsVersionComplete(state.VersionPath))
             return Path.Combine(state.VersionPath, "RobloxStudioBeta.exe");
-
-        if (Directory.Exists(StudioVersionsDir))
-        {
-            var found = Directory.GetDirectories(StudioVersionsDir)
-                .Where(IsVersionComplete)
-                .OrderByDescending(d => new DirectoryInfo(d).LastWriteTime)
-                .FirstOrDefault();
-            if (found != null)
-                return Path.Combine(found, "RobloxStudioBeta.exe");
-        }
 
         return null;
     }
@@ -221,7 +220,7 @@ public class StudioService
         await _installLock.WaitAsync();
         try
         {
-            var versionDir = Path.Combine(StudioVersionsDir, versionGuid);
+            var versionDir = StudioDir; // WindowsStudio64 固定パス
 
             if (forceReinstall && Directory.Exists(versionDir))
                 try { Directory.Delete(versionDir, recursive: true); } catch { }
@@ -240,7 +239,7 @@ public class StudioService
             if (!IsVersionComplete(versionDir)) { SetStatus(RobloxStatus.Idle); return null; }
 
             SaveState(versionGuid, versionDir);
-            CleanupOldVersionDirectories(versionGuid);
+            // 固定パス方式ではバージョン別ディレクトリが存在しないためクリーンアップ不要
             RobloxService.Log($"Studio installation complete: {versionDir}");
             return Path.Combine(versionDir, "RobloxStudioBeta.exe");
         }
