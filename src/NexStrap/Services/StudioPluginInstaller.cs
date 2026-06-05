@@ -39,11 +39,11 @@ public static class StudioPluginInstaller
 
             if (File.Exists(PluginPath))
             {
-                var existing = File.ReadAllText(PluginPath, Encoding.UTF8);
+                var existing = File.ReadAllText(PluginPath, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 if (existing == content) return true;
             }
 
-            File.WriteAllText(PluginPath, content, Encoding.UTF8);
+            File.WriteAllText(PluginPath, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
             return true;
         }
         catch { return false; }
@@ -70,7 +70,7 @@ public static class StudioPluginInstaller
             progress?.Report(("Installing Studio plugin...", 80, false));
 
             Directory.CreateDirectory(PluginDir);
-            await File.WriteAllTextAsync(PluginPath, content, Encoding.UTF8, ct);
+            await File.WriteAllTextAsync(PluginPath, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), ct);
 
             log.Info("StudioPlugin", $"Installed to {PluginPath}");
             progress?.Report(("Plugin installed.", 100, false));
@@ -97,8 +97,10 @@ public static class StudioPluginInstaller
             var asm = Assembly.GetExecutingAssembly();
             using var stream = asm.GetManifestResourceStream(ResourceName);
             if (stream == null) return null;
-            using var reader = new StreamReader(stream, Encoding.UTF8);
-            return reader.ReadToEnd();
+            using var reader = new StreamReader(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            var content = reader.ReadToEnd();
+            // BOM が含まれている場合は除去（Lua は U+FEFF を認識しないため）
+            return content.TrimStart('﻿');
         }
         catch { return null; }
     }
