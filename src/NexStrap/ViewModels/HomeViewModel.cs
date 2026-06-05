@@ -677,6 +677,8 @@ public partial class HomeViewModel : ViewModelBase
         }
         else
         {
+            _ = _presence.NotifyRobloxRunningChangedAsync(true);
+
             var s = _settings.Settings;
             if (s.StretchResolutionEnabled)
                 _roblox.ApplyStretchResolution(s.StretchResolutionWidth, s.StretchResolutionHeight);

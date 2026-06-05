@@ -181,12 +181,19 @@ public sealed class DiscordRichPresence : IDisposable
 
     public async Task NotifyRobloxRunningChangedAsync(bool running)
     {
-        if (!running)
+        if (running)
+        {
+            // Roblox 起動 → Roblox App ID に切り替え（アイコンクリックで Roblox ページが開く）
+            await InitializeAndWaitReadyAsync(AppConstants.DiscordRobloxAppId);
+            RefreshPresence();
+        }
+        else
         {
             lock (_gamesLock) { _activeGames.Clear(); }
             _gameDetected     = false;
             _awaitingGameInfo = false;
             await InitializeAndWaitReadyAsync(AppConstants.DiscordAppId);
+            RefreshPresence();
         }
     }
 
@@ -381,7 +388,15 @@ public sealed class DiscordRichPresence : IDisposable
         else if (_studioDetected)
             CheckStudioProcess();
         else
-            SetPagePresence(CurrentPageName ?? "Home", _userAvatarUrl);
+        {
+            // Roblox App ID 使用中かつゲーム情報なし（メニュー画面）→ nexstrap キー未登録のためクリア
+            bool isRobloxAppId;
+            lock (_lock) { isRobloxAppId = _currentAppId == AppConstants.DiscordRobloxAppId; }
+            if (isRobloxAppId)
+                ClearPresence();
+            else
+                SetPagePresence(CurrentPageName ?? "Home", _userAvatarUrl);
+        }
     }
 
     private void UpdateGamePresence()
