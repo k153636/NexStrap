@@ -41,6 +41,7 @@ public partial class HomeViewModel : ViewModelBase
     private readonly Dictionary<int, uint> _slotPids = new();
     private bool                           _robloxHasFocus;
     private Timer?                         _focusTimer;
+    private int?                           _lastDiscordFocusedSlot = null;
 
     private const int FocusTimerInterval   = 500;
     private const int RestartDelay         = 1_500;
@@ -383,8 +384,11 @@ public partial class HomeViewModel : ViewModelBase
                     }
                 }
 
-                if (matched == null) return;
-                _presence.EnqueueFocusChanged(matched.Value);
+                if (matched != _lastDiscordFocusedSlot)
+                {
+                    _lastDiscordFocusedSlot = matched;
+                    _presence.EnqueueFocusChanged(matched);
+                }
             }
             catch { }
         }, null, FocusTimerInterval, FocusTimerInterval);
