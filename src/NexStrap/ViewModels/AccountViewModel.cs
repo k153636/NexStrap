@@ -172,6 +172,22 @@ public partial class AccountViewModel : ViewModelBase
     public Bitmap? ActiveIcon        => Accounts.FirstOrDefault(a => a.IsActive)?.Icon;
     public string  ActiveStatusColor => Accounts.FirstOrDefault(a => a.IsActive)?.StatusColor ?? "#888888";
 
+    // ロード中は "—"、完了後は数値（レイアウトを固定するため IsVisible を使わない）
+    public string FriendsCountDisplay   => IsStatsLoading ? "—" : ActiveFriendsCount.ToString();
+    public string FollowersCountDisplay  => IsStatsLoading ? "—" : ActiveFollowersCount.ToString();
+    public string FollowingsCountDisplay => IsStatsLoading ? "—" : ActiveFollowingsCount.ToString();
+
+    partial void OnIsStatsLoadingChanged(bool _)
+    {
+        OnPropertyChanged(nameof(FriendsCountDisplay));
+        OnPropertyChanged(nameof(FollowersCountDisplay));
+        OnPropertyChanged(nameof(FollowingsCountDisplay));
+    }
+
+    partial void OnActiveFriendsCountChanged(int _)   => OnPropertyChanged(nameof(FriendsCountDisplay));
+    partial void OnActiveFollowersCountChanged(int _)  => OnPropertyChanged(nameof(FollowersCountDisplay));
+    partial void OnActiveFollowingsCountChanged(int _) => OnPropertyChanged(nameof(FollowingsCountDisplay));
+
     // 既存
     [ObservableProperty] private string _statusMessage      = string.Empty;
     [ObservableProperty] private bool   _isImporting;

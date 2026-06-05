@@ -89,29 +89,23 @@
                             </StackPanel>
                         </Grid>
 
-                        <TextBlock Text="Loading stats..." IsVisible="{Binding IsStatsLoading}"
-                                   FontSize="11" Foreground="{DynamicResource FgSub}"
-                                   HorizontalAlignment="Center"/>
-
-                        <Grid ColumnDefinitions="*,*,*"
-                              IsVisible="{Binding IsStatsLoading,
-                                  Converter={x:Static BoolConverters.Not}}">
+                        <Grid ColumnDefinitions="*,*,*">
                             <StackPanel Grid.Column="0" HorizontalAlignment="Center" Spacing="2">
-                                <TextBlock Text="{Binding ActiveFriendsCount}"
+                                <TextBlock Text="{Binding FriendsCountDisplay}"
                                            FontSize="18" FontWeight="Bold" Foreground="#FFFFFF"
                                            HorizontalAlignment="Center"/>
                                 <TextBlock Text="Friends" FontSize="10"
                                            Foreground="{DynamicResource FgSub}" HorizontalAlignment="Center"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" HorizontalAlignment="Center" Spacing="2">
-                                <TextBlock Text="{Binding ActiveFollowersCount}"
+                                <TextBlock Text="{Binding FollowersCountDisplay}"
                                            FontSize="18" FontWeight="Bold" Foreground="#FFFFFF"
                                            HorizontalAlignment="Center"/>
                                 <TextBlock Text="Followers" FontSize="10"
                                            Foreground="{DynamicResource FgSub}" HorizontalAlignment="Center"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2" HorizontalAlignment="Center" Spacing="2">
-                                <TextBlock Text="{Binding ActiveFollowingsCount}"
+                                <TextBlock Text="{Binding FollowingsCountDisplay}"
                                            FontSize="18" FontWeight="Bold" Foreground="#FFFFFF"
                                            HorizontalAlignment="Center"/>
                                 <TextBlock Text="Following" FontSize="10"
