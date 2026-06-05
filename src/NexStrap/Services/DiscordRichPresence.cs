@@ -345,7 +345,8 @@ public sealed class DiscordRichPresence : IDisposable
         }
         else if (robloxCount > 0)
         {
-            // Roblox はまだ起動中（メニュー画面）→ Roblox App ID を維持したまま presence をクリア
+            // Roblox はまだ起動中（メニュー画面）→ Roblox App ID を確実に維持・復旧してからクリア
+            await InitializeAndWaitReadyAsync(AppConstants.DiscordRobloxAppId);
             RefreshPresence();
         }
         else
