@@ -191,13 +191,18 @@ local function subscribeEvents()
         task.defer(sendPresence)
     end))
 
-    -- テスト開始/終了 → 即時送信（強制）
-    table.insert(connections, RunService.RunStart:Connect(function()
-        task.defer(function() sendPresence(true) end)
-    end))
-    table.insert(connections, RunService.RunStop:Connect(function()
-        task.defer(function() sendPresence(true) end)
-    end))
+    -- テスト開始/終了 → IsRunning() の変化をポーリングで検知（専用イベントなし）
+    task.spawn(function()
+        local prev = RunService:IsRunning()
+        while true do
+            task.wait(0.5)
+            local cur = RunService:IsRunning()
+            if cur ~= prev then
+                prev = cur
+                sendPresence(true)
+            end
+        end
+    end)
 
     -- テレポート・PlaceId 変化 → キャッシュ更新 + 再送
     table.insert(connections, game:GetPropertyChangedSignal("PlaceId"):Connect(function()
