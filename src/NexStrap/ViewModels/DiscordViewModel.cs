@@ -46,7 +46,11 @@ public partial class DiscordViewModel : ViewModelBase
     {
         _settingsService.Update(s => s.DiscordRpcEnabled = value);
         if (value)
-            _discord.Initialize(AppConstants.DiscordAppId);
+        {
+            // ゲームプレイ中は Roblox App ID を維持する
+            var appId = _discord.GameDetected ? AppConstants.DiscordRobloxAppId : AppConstants.DiscordAppId;
+            _discord.Initialize(appId);
+        }
         // Disable() is invoked via SettingsChanged → MainWindowViewModel — no duplicate call needed
     }
 

@@ -76,10 +76,11 @@ public partial class MainWindowViewModel : ViewModelBase
         settings.SettingsChanged += (_, s) =>
         {
             if (s.DiscordRpcEnabled)
-                // Initialize+接続待ちしてから RefreshPresence（接続前にスキップされる問題を回避）
+                // ゲームプレイ中は Roblox App ID を維持する
                 _ = Task.Run(async () =>
                 {
-                    await discord.InitializeForSettingsAsync(AppConstants.DiscordAppId);
+                    var appId = discord.GameDetected ? AppConstants.DiscordRobloxAppId : AppConstants.DiscordAppId;
+                    await discord.InitializeForSettingsAsync(appId);
                     homeVM.RefreshPresence();
                 });
             else if (!s.DiscordRpcEnabled)
