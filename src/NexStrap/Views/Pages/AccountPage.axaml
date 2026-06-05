@@ -93,7 +93,7 @@
                                      TextAlignment="Center" FontWeight="SemiBold"
                                      LetterSpacing="6"/>
                             <Button Grid.Column="2" Content="Login"
-                                    Command="{Binding RedeemCodeCommand}"
+                                    Command="{Binding RedeemCodeAsyncCommand}"
                                     Background="#FFFFFF" Foreground="#080808"
                                     FontWeight="SemiBold" FontSize="12"
                                     Padding="20,8" CornerRadius="8"/>

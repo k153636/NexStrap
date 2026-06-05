@@ -55,7 +55,9 @@ public partial class AccountEntryViewModel : ViewModelBase
     [RelayCommand]
     private void GenerateCode()
     {
-        ActiveCode       = _quickLogin.GenerateCode(Account.Id);
+        var code = _quickLogin.GenerateCode(Account.Id);
+        if (code == null) return;
+        ActiveCode       = code;
         CodeSecondsLeft  = (int)_quickLogin.GetRemaining(ActiveCode)!.Value.TotalSeconds;
         OnPropertyChanged(nameof(HasActiveCode));
 
@@ -133,7 +135,7 @@ public partial class AccountViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void RedeemCode()
+    private async Task RedeemCodeAsync()
     {
         var input = QuickLoginInput.Trim();
         if (input.Length != 6 || !input.All(char.IsDigit))
@@ -142,18 +144,43 @@ public partial class AccountViewModel : ViewModelBase
             return;
         }
 
-        var accountId = _quickLogin.Redeem(input);
-        if (accountId == null)
+        var data = _quickLogin.Redeem(input);
+        if (data == null)
         {
             StatusMessage = "Code is invalid or expired";
             return;
         }
 
-        _accounts.SetActive(accountId.Value);
+        // 既にこのアカウントが保存済みなら切り替えるだけ
+        var existing = _accounts.Accounts.FirstOrDefault(a => a.UserId == data.UserId);
+        if (existing != null)
+        {
+            _accounts.SetActive(existing.Id);
+            Reload();
+            QuickLoginInput  = string.Empty;
+            IsQuickLoginOpen = false;
+            StatusMessage    = $"Switched to {data.DisplayName}";
+            return;
+        }
+
+        // 未保存のアカウント → アバター取得してから追加
+        StatusMessage = "Fetching account info...";
+        var avatarUrl = data.AvatarUrl ?? await _robloxApi.GetUserAvatarHeadshotAsync(data.UserId);
+
+        var account = new NexStrap.Core.Models.RobloxAccount
+        {
+            UserId      = data.UserId,
+            Username    = data.Username,
+            DisplayName = data.DisplayName,
+            AvatarUrl   = avatarUrl,
+        };
+        _accounts.Add(account, data.PlaintextCookie);
+        _accounts.SetActive(account.Id);
         Reload();
+
         QuickLoginInput  = string.Empty;
         IsQuickLoginOpen = false;
-        StatusMessage    = "Switched account";
+        StatusMessage    = $"Added & switched to {data.DisplayName}";
     }
 
     [RelayCommand]

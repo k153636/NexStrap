@@ -46,6 +46,14 @@ public class AccountService
         Save();
     }
 
+    public string? GetCookieById(Guid id)
+    {
+        var account = _accounts.FirstOrDefault(a => a.Id == id);
+        if (account == null || string.IsNullOrEmpty(account.EncryptedCookie)) return null;
+        try { return Decrypt(account.EncryptedCookie); }
+        catch { return null; }
+    }
+
     public string? GetCookieByIndex(int index)
     {
         if (_accounts.Count == 0) return null;
@@ -84,14 +92,14 @@ public class AccountService
         catch { }
     }
 
-    private static string Encrypt(string plaintext)
+    internal static string Encrypt(string plaintext)
     {
         var bytes = Encoding.UTF8.GetBytes(plaintext);
         var encrypted = ProtectedData.Protect(bytes, null, DataProtectionScope.CurrentUser);
         return Convert.ToBase64String(encrypted);
     }
 
-    private static string Decrypt(string base64)
+    internal static string Decrypt(string base64)
     {
         var encrypted = Convert.FromBase64String(base64);
         var decrypted = ProtectedData.Unprotect(encrypted, null, DataProtectionScope.CurrentUser);
