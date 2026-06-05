@@ -5,15 +5,9 @@ using NexStrap.Core.Services;
 
 namespace NexStrap.Services;
 
-/// <summary>
-/// Discord Rich Presence の全管理クラス。
-/// RPC クライアント管理・Presence 状態・更新ロジックをここに集約する。
-/// </summary>
 public sealed class DiscordRichPresence : IDisposable
 {
-    // ══════════════════════════════════════════════════════════════════════
-    // Discord RPC クライアント
-    // ══════════════════════════════════════════════════════════════════════
+    // ── RPC クライアント ────────────────────────────────────────────────
 
     private DiscordRpcClient? _client;
     private bool              _isConnected;
@@ -25,17 +19,13 @@ public sealed class DiscordRichPresence : IDisposable
     private RichPresence?     _pendingPresence;
     private string?           _userLabel;
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 外部サービス
-    // ══════════════════════════════════════════════════════════════════════
+    // ── 外部サービス ───────────────────────────────────────────────────
 
     private readonly SettingsService  _settings;
     private readonly RobloxApiService _robloxApi;
     private readonly FastFlagService  _fastFlags;
 
-    // ══════════════════════════════════════════════════════════════════════
-    // Presence 状態（HomeViewModel からフィールド移動）
-    // ══════════════════════════════════════════════════════════════════════
+    // ── Presence 状態 ──────────────────────────────────────────────────
 
     private readonly record struct SlotGame(
         string? Name, string? IconUrl, string? Creator,
@@ -52,7 +42,6 @@ public sealed class DiscordRichPresence : IDisposable
     private volatile bool   _studioDetected;
     private volatile bool   _studioPlaytesting;
     private volatile string _lastStudioPresence = string.Empty;
-    public  string?         CurrentPageName     { get; private set; } = "Home";
     private string?         _userAvatarUrl;
     private string?         _myCountryCode;
     private int             _activeFocusedSlot  = -1;
@@ -63,9 +52,7 @@ public sealed class DiscordRichPresence : IDisposable
     private readonly Dictionary<int, (string? Url, string? Label)> _slotUsers   = new();
     private readonly object _gamesLock = new();
 
-    // ══════════════════════════════════════════════════════════════════════
-    // タイマー
-    // ══════════════════════════════════════════════════════════════════════
+    // ── タイマー ───────────────────────────────────────────────────────
 
     private Timer? _heartbeatTimer;
     private Timer? _studioTimer;
@@ -73,36 +60,24 @@ public sealed class DiscordRichPresence : IDisposable
     private const int HeartbeatMs  = 15_000;
     private const int StudioPollMs =  3_000;
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 公開状態（HomeViewModel が読む）
-    // ══════════════════════════════════════════════════════════════════════
+    // ── 公開状態 ───────────────────────────────────────────────────────
 
-    public bool IsConnected        => _isConnected;
-    public bool GameDetected       => _gameDetected;
-    public long CurrentUniverseId  => _currentUniverseId;
+    public bool    IsConnected       => _isConnected;
+    public bool    GameDetected      => _gameDetected;
+    public long    CurrentUniverseId => _currentUniverseId;
+    public string? CurrentPageName   { get; private set; } = "Home";
 
-    // ══════════════════════════════════════════════════════════════════════
-    // イベント
-    // ══════════════════════════════════════════════════════════════════════
+    // ── イベント ───────────────────────────────────────────────────────
 
-    /// <summary>Discord 接続状態の変化。</summary>
-    public event EventHandler<bool>? ConnectionChanged;
-
-    /// <summary>新規ゲーム参加の API 取得完了。HomeViewModel がゲーム履歴を保存する。</summary>
+    public event EventHandler<bool>?             ConnectionChanged;
     public event EventHandler<GameInfoFetchedArgs>? GameInfoFetched;
-
-    /// <summary>新規ゲームセッション開始が確定（API 取得前）。HomeViewModel が前セッションを確定保存する。</summary>
-    public event EventHandler? SessionEnded;
-
-    /// <summary>テレポート完了。HomeViewModel が累積時間をリセットする。</summary>
-    public event EventHandler? TeleportOccurred;
+    public event EventHandler?                   SessionEnded;
+    public event EventHandler?                   TeleportOccurred;
 
     public sealed record GameInfoFetchedArgs(
         long PlaceId, long UniverseId, string Name, string IconUrl, DateTime PlayedAt, DateTime StartedAt);
 
-    // ══════════════════════════════════════════════════════════════════════
-    // コンストラクタ
-    // ══════════════════════════════════════════════════════════════════════
+    // ── コンストラクタ ─────────────────────────────────────────────────
 
     public DiscordRichPresence(SettingsService settings, RobloxApiService robloxApi, FastFlagService fastFlags)
     {
@@ -133,9 +108,7 @@ public sealed class DiscordRichPresence : IDisposable
         });
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // Discord RPC 管理
-    // ══════════════════════════════════════════════════════════════════════
+    // ── RPC 接続管理 ───────────────────────────────────────────────────
 
     public void Initialize(string applicationId)
     {
@@ -182,9 +155,7 @@ public sealed class DiscordRichPresence : IDisposable
     public void SetCurrentPage(string page) => CurrentPageName = page;
     public void SetUserAvatar(string? url)  => _userAvatarUrl = url;
 
-    // ══════════════════════════════════════════════════════════════════════
-    // HomeViewModel からの通知メソッド
-    // ══════════════════════════════════════════════════════════════════════
+    // ── 外部通知（HomeViewModel から呼ぶ） ─────────────────────────────
 
     public void NotifyRobloxRunningChanged(bool running)
     {
@@ -329,8 +300,9 @@ public sealed class DiscordRichPresence : IDisposable
         RefreshPresence();
     }
 
-    public void NotifyServerCode(string code)
+    public void NotifyServerCode(string? code)
     {
+        if (code == null) return;
         _currentServerCode = code;
         bool hasGames;
         lock (_gamesLock) { hasGames = _activeGames.Count > 0; }
@@ -356,9 +328,7 @@ public sealed class DiscordRichPresence : IDisposable
         if (_gameDetected) UpdateGamePresence();
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // Presence 更新ロジック（HomeViewModel から移動）
-    // ══════════════════════════════════════════════════════════════════════
+    // ── Presence 更新ロジック ──────────────────────────────────────────
 
     public void RefreshPresence()
     {
@@ -519,9 +489,7 @@ public sealed class DiscordRichPresence : IDisposable
         return char.ConvertFromUtf32(0x1F1E6 + (c0 - 'A')) + char.ConvertFromUtf32(0x1F1E6 + (c1 - 'A'));
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // Presence 送信メソッド（旧 DiscordRpcService.SetXxx）
-    // ══════════════════════════════════════════════════════════════════════
+    // ── Presence 送信 ─────────────────────────────────────────────────
 
     public void SetPagePresence(string pageName, string? userAvatarUrl = null, string prefix = "NexStrap")
     {
@@ -616,9 +584,7 @@ public sealed class DiscordRichPresence : IDisposable
         SetPresence(details: details, state: null, largeImage: "nexstrap", largeText: "NexStrap Launcher · Created by K", smallImage: userAvatarUrl, smallText: userAvatarUrl != null ? (label ?? "Profile") : null, timestamps: _startTimestamp);
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 低レベル送信（旧 DiscordRpcService.SetPresence / FlushPresence）
-    // ══════════════════════════════════════════════════════════════════════
+    // ── 低レベル送信 ───────────────────────────────────────────────────
 
     private void SetPresence(string? details, string? state, string largeImage, string largeText,
         string? smallImage, string? smallText, Button[]? buttons = null, Timestamps? timestamps = null)

@@ -65,7 +65,7 @@ public partial class HomeViewModel : ViewModelBase
     internal string CurrentPageName
     {
         get => _presence.CurrentPageName ?? "Home";
-        set { _presence.SetCurrentPage(value); }
+        set => _presence.SetCurrentPage(value);
     }
 
     internal bool IsGameDetected => _presence.GameDetected;
