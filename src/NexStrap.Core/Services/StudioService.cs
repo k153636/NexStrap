@@ -29,9 +29,13 @@ public class StudioService
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "NexStrap", "Versions");
 
-    // Player と同じ Versions\ 配下に固定パスで配置（WindowsStudio64）
-    private static readonly string StudioVersionsDir = VersionsDir;
-    private static readonly string StudioDir         = Path.Combine(VersionsDir, "WindowsStudio64");
+    // Roblox 標準パスに固定名で配置（GUID ではないため公式インストーラーと競合しない）
+    private static readonly string StudioVersionsDir = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Roblox", "Versions");
+    private static readonly string StudioDir = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Roblox", "Versions", "WindowsStudio64");
 
     private static readonly string DownloadsDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
