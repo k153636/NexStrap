@@ -24,9 +24,19 @@ public static class StudioPluginInstaller
     /// <summary>プラグインがインストール済みかどうか。</summary>
     public static bool IsInstalled => File.Exists(PluginPath);
 
+    /// <summary>埋め込みリソースとインストール済みファイルが一致しているか。</summary>
+    public static bool IsUpToDate()
+    {
+        if (!File.Exists(PluginPath)) return false;
+        var content = ReadEmbeddedPlugin();
+        if (content == null) return false;
+        var newBytes      = new UTF8Encoding(false).GetBytes(content);
+        var existingBytes = File.ReadAllBytes(PluginPath);
+        return existingBytes.SequenceEqual(newBytes);
+    }
+
     /// <summary>
-    /// 埋め込みリソースからインストールする（Studio 起動時の更新チェック用）。
-    /// 既存ファイルと内容が同じなら上書きしない。
+    /// 埋め込みリソースからインストール／上書きする。
     /// </summary>
     public static bool EnsureInstalled()
     {
@@ -34,17 +44,7 @@ public static class StudioPluginInstaller
         {
             var content = ReadEmbeddedPlugin();
             if (content == null) return false;
-
             Directory.CreateDirectory(PluginDir);
-
-            if (File.Exists(PluginPath))
-            {
-                // 文字列比較ではなくバイト列で比較（BOM の有無も検出できる）
-                var newBytes      = new UTF8Encoding(false).GetBytes(content);
-                var existingBytes = File.ReadAllBytes(PluginPath);
-                if (existingBytes.SequenceEqual(newBytes)) return true;
-            }
-
             File.WriteAllText(PluginPath, content, new UTF8Encoding(false));
             return true;
         }
