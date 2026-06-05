@@ -389,6 +389,10 @@ public partial class HomeViewModel : ViewModelBase
             // ゲーム参加のたびに PID マッピングを更新（起動後初参加でも正確に追跡）
             RefreshSlotPids();
 
+            // API 取得が始まる前に Roblox App ID への接続をウォームアップする。
+            // API 完了まで数秒かかる間に接続が確立されるため、Initialize() 時に空白期間がゼロになる。
+            _discord.WarmupNextClient(AppConstants.DiscordRobloxAppId);
+
             // 情報が揃うまで presence は更新しない（API 完了後に初めて表示）
             _discord.ResetGameTimestamp();
 
