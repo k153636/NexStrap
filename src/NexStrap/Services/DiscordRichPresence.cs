@@ -335,6 +335,7 @@ public sealed class DiscordRichPresence : IDisposable
                 _studioDetected  = det;
                 _studioPlaceName = place;
                 _studioTesting   = test;
+                if (det) _overlay = OverlayKind.None; // Studio 検出時は Launching 等の overlay をクリア
                 if (_phase == Phase.NexStrapIdle || _phase == Phase.Studio)
                 {
                     _phase = det ? Phase.Studio : Phase.NexStrapIdle;
