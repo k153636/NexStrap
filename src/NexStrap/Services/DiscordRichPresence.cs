@@ -275,9 +275,10 @@ public sealed class DiscordRichPresence : IDisposable
             case EvRoblox { Running: true }:
                 log.Info("Discord", "Roblox 起動");
                 _games.Clear();
-                _phase         = Phase.RobloxMenu;
-                _fetchRetries  = 0;
-                await SwitchAppIdAsync(AppConstants.DiscordRobloxAppId);
+                _phase        = Phase.RobloxMenu;
+                _fetchRetries = 0;
+                // NexStrap App ID のまま表示を維持 → ギャップなしで「Roblox / Menu」を見せる
+                // Roblox App ID への切り替えはゲーム参加確定（EvGameInfo）まで遅延させる
                 ApplyPresence();
                 break;
 
@@ -307,8 +308,8 @@ public sealed class DiscordRichPresence : IDisposable
             case EvGameLeft { Slot: var slot, RobloxCount: var count }:
                 log.Info("Discord", $"ゲーム退出 (slot={slot}, robloxCount={count})");
                 HandleGameLeft(slot, count);
-                await SwitchAppIdAsync(
-                    count > 0 ? AppConstants.DiscordRobloxAppId : AppConstants.DiscordAppId);
+                // ゲーム退出後は常に NexStrap App ID に戻す（InGame 中だけ Roblox App ID を使う設計）
+                await SwitchAppIdAsync(AppConstants.DiscordAppId);
                 _phase = count > 0
                     ? (_games.Count > 0 ? Phase.InGame : Phase.RobloxMenu)
                     : Phase.NexStrapIdle;
@@ -565,8 +566,17 @@ public sealed class DiscordRichPresence : IDisposable
                 return StudioOrPagePresence(s);
 
             case Phase.RobloxMenu:
+            {
+                if (!s.DiscordShowLauncherPresence) return null;
+                string? label; lock (_rpcLock) { label = _userLabel; }
+                return Build("Roblox / Menu", null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label);
+            }
             case Phase.FetchingGame:
-                return null; // メニュー・API取得中は表示なし
+            {
+                if (!s.DiscordShowLauncherPresence) return null;
+                string? label; lock (_rpcLock) { label = _userLabel; }
+                return Build("Roblox / Loading...", null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label);
+            }
 
             case Phase.InGame:
                 return ComputeInGamePresence(s);
