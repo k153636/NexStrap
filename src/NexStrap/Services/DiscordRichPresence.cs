@@ -559,7 +559,7 @@ public sealed class DiscordRichPresence : IDisposable
             string? label; lock (_rpcLock) { label = _userLabel; }
             return _overlay switch
             {
-                OverlayKind.Launching        => Build("Roblox / Launching", null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label),
+                OverlayKind.Launching        => Build("Launching", null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label),
                 OverlayKind.InstallingStudio => Build(null, null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label),
                 OverlayKind.Dev              => Build("NexStrap / Developer", null, "nexstrap", "NexStrap Developer",             null,        null),
                 _                            => null
