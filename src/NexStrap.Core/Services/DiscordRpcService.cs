@@ -25,15 +25,14 @@ public class DiscordRpcService : IDisposable
 
     public void ResetGameTimestamp() { lock (_lock) { _gameTimestamp = Timestamps.Now; } }
 
-    /// <returns>true = 新しい接続を開始（OnReady → ConnectionChanged が発火する）/ false = 同 App ID で既に接続済み</returns>
-    public bool Initialize(string applicationId)
+    public void Initialize(string applicationId)
     {
-        if (string.IsNullOrWhiteSpace(applicationId)) return false;
+        if (string.IsNullOrWhiteSpace(applicationId)) return;
 
         DiscordRpcClient? oldClient;
         lock (_lock)
         {
-            if (_currentAppId == applicationId && _client != null) return false;
+            if (_currentAppId == applicationId && _client != null) return;
             oldClient        = _client;
             _client          = null;
             _currentAppId    = applicationId;
@@ -57,9 +56,7 @@ public class DiscordRpcService : IDisposable
             lock (_lock) { _client = newClient; }
             newClient.Initialize();
         }
-        catch { return false; }
-
-        return true;
+        catch { }
     }
 
 public void SetPagePresence(string pageName, string? userAvatarUrl = null, string prefix = "NexStrap")
@@ -258,8 +255,23 @@ public void SetPagePresence(string pageName, string? userAvatarUrl = null, strin
     {
         RichPresence? presence;
         DiscordRpcClient? client;
-        lock (_lock) { presence = _pendingPresence; _pendingPresence = null; client = _client; }
+        bool connected;
+        lock (_lock)
+        {
+            presence = _pendingPresence;
+            _pendingPresence = null;
+            client    = _client;
+            connected = _isConnected;
+        }
         if (presence == null || client == null) return;
+
+        if (!connected)
+        {
+            // 接続確立前 — pending に戻して OnReady → ConnectionChanged → RefreshPresence() で再送させる
+            lock (_lock) { _pendingPresence ??= presence; }
+            return;
+        }
+
         try { client.SetPresence(presence); } catch { }
     }
 
