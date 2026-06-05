@@ -38,20 +38,25 @@
                 </StackPanel>
             </StackPanel>
 
-            <!-- + ボタンのみ（ドロップダウンは Row 1 オーバーレイ） -->
+            <!-- Add ボタン（ドロップダウンは Row 1 オーバーレイ） -->
             <Button Grid.Column="1"
-                    Content="+"
                     Command="{Binding ToggleAddMethodDropdownCommand}"
                     Background="{Binding IsAddMethodDropdownOpen,
                         Converter={StaticResource BoolToColorConverter},
                         ConverterParameter='#2A2A2A,transparent'}"
                     Foreground="{DynamicResource FgSub}"
-                    FontSize="18" FontWeight="Light"
-                    Width="32" Height="32" Padding="0"
+                    FontSize="12"
+                    Height="30" Padding="10,0"
                     CornerRadius="8"
                     VerticalAlignment="Bottom"
                     HorizontalContentAlignment="Center"
-                    VerticalContentAlignment="Center"/>
+                    VerticalContentAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                    <TextBlock Text="+" FontSize="16" FontWeight="Light"
+                               VerticalAlignment="Center" Margin="0,-1,0,0"/>
+                    <TextBlock Text="Add" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
 
         </Grid>
 
