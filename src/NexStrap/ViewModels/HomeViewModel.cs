@@ -449,6 +449,24 @@ public partial class HomeViewModel : ViewModelBase
 
     public void RefreshPresence() => _presence.EnqueueRefresh();
 
+    private async Task InstallStudioPluginAsync()
+    {
+        var vm = new BootstrapperViewModel(_settings);
+        NexStrap.Views.BootstrapperWindow? win = null;
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            win = new NexStrap.Views.BootstrapperWindow(vm);
+            win.Show();
+        });
+
+        await StudioPluginInstaller.DownloadAndInstallAsync(
+            progress: new Progress<(string Msg, double Pct, bool Indet)>(p =>
+                vm.ReportProgress(p.Msg, p.Pct, p.Indet)));
+
+        await Dispatcher.UIThread.InvokeAsync(() => vm.RequestClose());
+    }
+
     // ══════════════════════════════════════════════════════════════════════
     // コマンド
     // ══════════════════════════════════════════════════════════════════════
@@ -522,7 +540,11 @@ public partial class HomeViewModel : ViewModelBase
         IsStudioLaunching = true;
         StatusText        = "Launching Studio...";
         _presence.EnqueueInstallingStudioPresence();
-        StudioPluginInstaller.EnsureInstalled();
+
+        if (!StudioPluginInstaller.IsInstalled)
+            await InstallStudioPluginAsync();
+        else
+            StudioPluginInstaller.EnsureInstalled(); // 更新チェック
         await _studioFastFlags.SaveAsync();
         var launched = await _studio.LaunchAsync();
         StatusText        = launched ? (IsRobloxRunning ? "Roblox running" : "Ready") : "Studio launch failed";

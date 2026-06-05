@@ -129,4 +129,34 @@ public partial class BootstrapperViewModel : ViewModelBase
         _roblox.BootstrapperProgress -= OnProgress;
         _roblox.StatusChanged        -= OnStatusChanged;
     }
+
+    /// <summary>プラグインダウンロード等、手動制御用コンストラクタ。</summary>
+    public BootstrapperViewModel(SettingsService settings)
+    {
+        _roblox = null!;
+
+        var s = settings.Settings;
+        var imgPath            = !string.IsNullOrEmpty(s.BootstrapperImagePath)
+                                     ? s.BootstrapperImagePath
+                                     : s.BackgroundImagePath;
+        BackgroundImagePath    = imgPath;
+        BackgroundBlurRadius   = 0;
+        BackgroundImageOpacity = 0.85;
+        GlassThemeEnabled      = s.GlassThemeEnabled;
+        HasBackgroundImage     = !string.IsNullOrEmpty(imgPath);
+    }
+
+    /// <summary>手動でウィンドウを閉じるよう要求する。</summary>
+    public void RequestClose() => CloseRequested?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>プログレスを手動で更新する。</summary>
+    public void ReportProgress(string message, double percent, bool indeterminate = false)
+    {
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            StatusText      = message;
+            ProgressValue   = percent;
+            IsIndeterminate = indeterminate;
+        });
+    }
 }
