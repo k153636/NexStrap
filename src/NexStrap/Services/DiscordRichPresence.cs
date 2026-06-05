@@ -150,6 +150,28 @@ public sealed class DiscordRichPresence : IDisposable
         catch { oldClient?.Dispose(); }
     }
 
+    /// <summary>
+    /// Initialize() を呼んだ後 OnReady（接続確立）まで待つ。
+    /// App ID 切り替え後に確実に接続済み状態で presence を送信するために使う。
+    /// タイムアウト以内に接続できなくても例外は投げない。
+    /// </summary>
+    private async Task InitializeAndWaitReadyAsync(string applicationId, int timeoutMs = 3000)
+    {
+        bool alreadyConnected;
+        lock (_lock) { alreadyConnected = _currentAppId == applicationId && _client != null && _isConnected; }
+        if (alreadyConnected) return;
+
+        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        void OnConnected(object? _, bool connected) { if (connected) tcs.TrySetResult(true); }
+        ConnectionChanged += OnConnected;
+
+        Initialize(applicationId);
+
+        await Task.WhenAny(tcs.Task, Task.Delay(timeoutMs));
+        ConnectionChanged -= OnConnected;
+    }
+
     public void SetUserLabel(string? label) { lock (_lock) { _userLabel = label; } }
     public void ResetGameTimestamp()        { lock (_lock) { _gameTimestamp = Timestamps.Now; } }
     public void SetCurrentPage(string page) => CurrentPageName = page;
@@ -254,7 +276,9 @@ public sealed class DiscordRichPresence : IDisposable
                 _activeGames[currentSlot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
             }
             _awaitingGameInfo = false;
-            Initialize(AppConstants.DiscordRobloxAppId);
+            // OnReady まで待ってから presence を送信する — 接続前に SetPresence を呼ぶと
+            // discord-rpc-csharp がキューに積まず、Discord 側で更新されない問題の根本対処
+            await InitializeAndWaitReadyAsync(AppConstants.DiscordRobloxAppId);
             UpdateGamePresence();
 
             GameInfoFetched?.Invoke(this, new GameInfoFetchedArgs(placeId, newUniverseId, name!, iconUrl!, DateTime.Now, startedAt));
@@ -417,7 +441,7 @@ public sealed class DiscordRichPresence : IDisposable
                 _activeGames[slot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
             }
             _awaitingGameInfo = false;
-            Initialize(AppConstants.DiscordRobloxAppId);
+            await InitializeAndWaitReadyAsync(AppConstants.DiscordRobloxAppId);
             UpdateGamePresence();
         }
         catch { _awaitingGameInfo = false; }
