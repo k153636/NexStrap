@@ -16,11 +16,6 @@ public class DiscordRpcService : IDisposable
     private RichPresence? _pendingPresence;
     private string? _userLabel;
 
-    // ウォームアップ用 — ゲーム参加の API 待機中に次の App ID の接続を事前確立しておく
-    private DiscordRpcClient? _warmupClient;
-    private string            _warmupAppId  = string.Empty;
-    private volatile bool     _warmupReady  = false;
-
     public DiscordRpcService(SettingsService settings) => _settings = settings;
 
     public bool IsConnected => _isConnected;
@@ -30,115 +25,39 @@ public class DiscordRpcService : IDisposable
 
     public void ResetGameTimestamp() { lock (_lock) { _gameTimestamp = Timestamps.Now; } }
 
-    /// <summary>
-    /// 次に使う App ID の Discord 接続を事前確立する。
-    /// PlaceJoined の API 待機が始まる前に呼ぶことで、API 完了時には接続済みになり切り替え空白がゼロになる。
-    /// </summary>
-    public void WarmupNextClient(string applicationId)
-    {
-        if (string.IsNullOrWhiteSpace(applicationId)) return;
-
-        DiscordRpcClient? oldWarmup = null;
-        lock (_lock)
-        {
-            // 既にアクティブ or 既に同 ID でウォームアップ中なら不要
-            if ((_currentAppId == applicationId && _client != null) ||
-                (_warmupAppId  == applicationId && _warmupClient != null))
-                return;
-
-            oldWarmup     = _warmupClient;
-            _warmupClient = null;
-            _warmupAppId  = string.Empty;
-            _warmupReady  = false;
-        }
-        oldWarmup?.Dispose();
-
-        var client = new DiscordRpcClient(applicationId) { Logger = new NullLogger() };
-        // OnReady が来たらウォームアップ完了フラグを立てる（presence は設定しない）
-        client.OnReady += (_, _) =>
-        {
-            lock (_lock) { if (_warmupClient == client) _warmupReady = true; }
-        };
-
-        lock (_lock) { _warmupClient = client; _warmupAppId = applicationId; }
-        client.Initialize();
-    }
-
     public void Initialize(string applicationId)
     {
         if (string.IsNullOrWhiteSpace(applicationId)) return;
 
         DiscordRpcClient? oldClient;
-        DiscordRpcClient? warmup     = null;
-        bool              warmupDone = false;
-
         lock (_lock)
         {
             if (_currentAppId == applicationId && _client != null) return;
-
-            // ウォームアップ済みクライアントを引き取る
-            if (_warmupAppId == applicationId && _warmupClient != null)
-            {
-                warmup        = _warmupClient;
-                warmupDone    = _warmupReady;
-                _warmupClient = null;
-                _warmupAppId  = string.Empty;
-                _warmupReady  = false;
-            }
-
             oldClient     = _client;
             _client       = null;
             _currentAppId = applicationId;
             _isConnected  = false;
         }
 
-        if (warmup != null)
+        try
         {
-            // ── ウォームアップクライアントをアクティブに昇格 ──────────────────────
-            warmup.OnClose += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
-            warmup.OnError += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
+            _startTimestamp = Timestamps.Now;
+            var newClient = new DiscordRpcClient(applicationId) { Logger = new NullLogger() };
 
-            if (warmupDone)
+            // 新接続が確立してから旧クライアントを切る — 両方が同時に生きている瞬間があるため空白がゼロになる
+            newClient.OnReady += (_, _) =>
             {
-                // 既に接続確立済み — 旧クライアントを今すぐ切っても新クライアントの presence が即送信できる
-                lock (_lock) { _client = warmup; _isConnected = true; }
-                _startTimestamp = Timestamps.Now;
+                _isConnected = true;
+                ConnectionChanged?.Invoke(this, true);
                 oldClient?.Dispose();
-            }
-            else
-            {
-                // まだ OnReady 未受信 — OnReady が来てから旧クライアントを切る（空白ゼロ保証）
-                warmup.OnReady += (_, _) =>
-                {
-                    lock (_lock) { if (_client != warmup) return; _isConnected = true; }
-                    ConnectionChanged?.Invoke(this, true);
-                    oldClient?.Dispose(); // 新接続確立後に旧クライアントを切断
-                };
-                lock (_lock) { _client = warmup; }
-            }
-        }
-        else
-        {
-            // ── ウォームアップなし — 新クライアントの OnReady 後に旧クライアントを切る ──
-            try
-            {
-                _startTimestamp = Timestamps.Now;
-                var newClient = new DiscordRpcClient(applicationId) { Logger = new NullLogger() };
+            };
+            newClient.OnClose += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
+            newClient.OnError += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
 
-                newClient.OnReady += (_, _) =>
-                {
-                    _isConnected = true;
-                    ConnectionChanged?.Invoke(this, true);
-                    oldClient?.Dispose(); // 新接続確立後に旧クライアントを切断
-                };
-                newClient.OnClose += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
-                newClient.OnError += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
-
-                lock (_lock) { _client = newClient; }
-                newClient.Initialize();
-            }
-            catch { oldClient?.Dispose(); } // 例外時は即 Dispose
+            lock (_lock) { _client = newClient; }
+            newClient.Initialize();
         }
+        catch { oldClient?.Dispose(); }
     }
 
 public void SetPagePresence(string pageName, string? userAvatarUrl = null, string prefix = "NexStrap")
@@ -367,7 +286,6 @@ public void SetPagePresence(string pageName, string? userAvatarUrl = null, strin
     public void Disable()
     {
         DiscordRpcClient? client;
-        DiscordRpcClient? warmup;
         lock (_lock)
         {
             _debounceTimer?.Dispose(); _debounceTimer = null;
@@ -376,30 +294,22 @@ public void SetPagePresence(string pageName, string? userAvatarUrl = null, strin
             client           = _client;
             _client          = null;
             _isConnected     = false;
-            warmup           = _warmupClient;
-            _warmupClient    = null;
-            _warmupAppId     = string.Empty;
-            _warmupReady     = false;
         }
         client?.ClearPresence();
         client?.Dispose();
-        warmup?.Dispose();
         ConnectionChanged?.Invoke(this, false);
     }
 
     public void Dispose()
     {
         DiscordRpcClient? client;
-        DiscordRpcClient? warmup;
         lock (_lock)
         {
             _debounceTimer?.Dispose(); _debounceTimer = null;
-            client        = _client;  _client        = null;
-            warmup        = _warmupClient; _warmupClient = null;
-            _isConnected  = false;
+            client       = _client; _client      = null;
+            _isConnected = false;
         }
         client?.ClearPresence();
         client?.Dispose();
-        warmup?.Dispose();
     }
 }

@@ -389,10 +389,6 @@ public partial class HomeViewModel : ViewModelBase
             // ゲーム参加のたびに PID マッピングを更新（起動後初参加でも正確に追跡）
             RefreshSlotPids();
 
-            // API 取得が始まる前に Roblox App ID への接続をウォームアップする。
-            // API 完了まで数秒かかる間に接続が確立されるため、Initialize() 時に空白期間がゼロになる。
-            _discord.WarmupNextClient(AppConstants.DiscordRobloxAppId);
-
             // 情報が揃うまで presence は更新しない（API 完了後に初めて表示）
             _discord.ResetGameTimestamp();
 
@@ -413,9 +409,6 @@ public partial class HomeViewModel : ViewModelBase
                     _activeGames[currentSlot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
                 }
                 _awaitingGameInfo = false;
-                // Initialize() の後は常に直接 UpdateGamePresence() を呼ぶ。
-                // 接続確立前でもライブラリがキューに積み、OnReady 後に ConnectionChanged → RefreshPresence() でも再送されるため二重チェックになる。
-                _discord.Initialize(AppConstants.DiscordRobloxAppId);
                 UpdateGamePresence();
 
                 var entry = new GameHistoryEntry { PlaceId = placeId, UniverseId = newUniverseId, Name = name, IconUrl = iconUrl, PlayedAt = DateTime.Now };
@@ -509,7 +502,6 @@ public partial class HomeViewModel : ViewModelBase
             }
             else
             {
-                _discord.Initialize(AppConstants.DiscordAppId);
                 if (_studioDetected)
                     _discord.SetStudioPresence(_userAvatarUrl);
                 else
@@ -902,7 +894,6 @@ public partial class HomeViewModel : ViewModelBase
                 _activeGames[slot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
             }
             _awaitingGameInfo = false;
-            _discord.Initialize(AppConstants.DiscordRobloxAppId);
             UpdateGamePresence();
         }
         catch { _awaitingGameInfo = false; }
@@ -1081,6 +1072,7 @@ public partial class HomeViewModel : ViewModelBase
             lock (_gamesLock) { _activeGames.Clear(); }
             _gameDetected     = false;
             _awaitingGameInfo = false;
+            // Roblox 終了時に NexStrap App ID に戻す（切り替えはここ1箇所のみ）
             _discord.Initialize(AppConstants.DiscordAppId);
 
             // Stretch Res: Roblox 終了時に解像度を復元
@@ -1089,6 +1081,9 @@ public partial class HomeViewModel : ViewModelBase
         }
         else
         {
+            // Roblox 起動時に Roblox App ID へ切り替え（空白が発生するのはこの1回のみ）
+            _discord.Initialize(AppConstants.DiscordRobloxAppId);
+
             // Stretch Res: Roblox 起動時に自動で解像度を適用
             var s = _settings.Settings;
             if (s.StretchResolutionEnabled)
