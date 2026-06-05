@@ -288,7 +288,6 @@ public sealed class DiscordRichPresence : IDisposable
                 _phase         = Phase.NexStrapIdle;
                 _universeId    = 0;
                 _fetchRetries  = 0;
-                await SwitchAppIdAsync(AppConstants.DiscordAppId);
                 ApplyPresence();
                 break;
 
@@ -308,8 +307,6 @@ public sealed class DiscordRichPresence : IDisposable
             case EvGameLeft { Slot: var slot, RobloxCount: var count }:
                 log.Info("Discord", $"ゲーム退出 (slot={slot}, robloxCount={count})");
                 HandleGameLeft(slot, count);
-                // ゲーム退出後は常に NexStrap App ID に戻す（InGame 中だけ Roblox App ID を使う設計）
-                await SwitchAppIdAsync(AppConstants.DiscordAppId);
                 _phase = count > 0
                     ? (_games.Count > 0 ? Phase.InGame : Phase.RobloxMenu)
                     : Phase.NexStrapIdle;
@@ -344,7 +341,6 @@ public sealed class DiscordRichPresence : IDisposable
                 _users.TryGetValue(_currentSlot, out var su);
                 _games[_currentSlot] = new SlotGame(name, icon, creator, pid, su.Url, su.Label);
                 _phase = Phase.InGame;
-                await SwitchAppIdAsync(AppConstants.DiscordRobloxAppId);
                 ApplyPresence();
                 var startedAt = DateTime.UtcNow;
                 GameInfoFetched?.Invoke(this, new GameInfoFetchedArgs(pid, _universeId, name!, icon!, DateTime.Now, startedAt));
@@ -397,7 +393,6 @@ public sealed class DiscordRichPresence : IDisposable
                 if (_phase == Phase.NexStrapIdle || _phase == Phase.Studio)
                 {
                     _phase = Phase.Studio;
-                    await SwitchAppIdAsync(AppConstants.DiscordStudioAppId);
                     ApplyPresence();
                 }
                 break;
@@ -411,7 +406,6 @@ public sealed class DiscordRichPresence : IDisposable
                 if (_phase == Phase.NexStrapIdle || _phase == Phase.Studio)
                 {
                     _phase = det ? Phase.Studio : Phase.NexStrapIdle;
-                    await SwitchAppIdAsync(det ? AppConstants.DiscordStudioAppId : AppConstants.DiscordAppId);
                     ApplyPresence();
                 }
                 break;
