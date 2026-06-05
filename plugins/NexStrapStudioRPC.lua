@@ -78,9 +78,13 @@ local function fetchWorkspace(): WorkspaceInfo
     return { name = name, placeId = placeId, isPublic = false }
 end
 
-local function refreshWorkspace(): ()
+-- ワークスペース情報を取得してから presence を送信する。
+-- 先に updatePresence を呼ぶと API 取得前の仮名（"Unsaved Project" 等）が表示されるため
+-- 必ず fetchWorkspace 完了後に送信する。
+local function refreshWorkspaceThenUpdate(): ()
     task.spawn(function()
         workspace = fetchWorkspace()
+        updatePresence(true)
     end)
 end
 
@@ -187,17 +191,15 @@ local function wire(): ()
 
     -- テレポート（PlaceId の変化）
     table.insert(connections, game:GetPropertyChangedSignal("PlaceId"):Connect(function()
-        refreshWorkspace()
-        task.delay(1, function() updatePresence(true) end)
+        task.delay(1, refreshWorkspaceThenUpdate) -- テレポート後に PlaceId が確定してから取得
     end))
 
     -- ゲームロード完了
     if game:IsLoaded() then
-        refreshWorkspace()
+        refreshWorkspaceThenUpdate()
     else
         table.insert(connections, game.Loaded:Connect(function()
-            refreshWorkspace()
-            task.delay(0.5, function() updatePresence(true) end)
+            task.delay(0.5, refreshWorkspaceThenUpdate)
         end))
     end
 
@@ -237,14 +239,12 @@ button.Click:Connect(function()
     })
 
     if enabled then
-        refreshWorkspace()
-        task.defer(function() updatePresence(true) end)
+        refreshWorkspaceThenUpdate()
     end
 end)
 
 plugin.Unloading:Connect(shutdown)
 
--- 初回起動
-refreshWorkspace()
+-- 初回起動（API 取得完了後に送信するため refreshWorkspaceThenUpdate を使う）
 wire()
-task.defer(function() updatePresence(true) end)
+refreshWorkspaceThenUpdate()
