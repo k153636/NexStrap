@@ -18,10 +18,6 @@
   with full <strong>Roblox Studio support</strong>, play stats, friends tracking, and deep customization.
 </p>
 
-<p align="center">
-  <img src="Images/preview.png" alt="NexStrap Preview" width="700">
-</p>
-
 > [!CAUTION]
 > The only official place to download NexStrap is this GitHub repository. Any other sources are not affiliated with us.
 
