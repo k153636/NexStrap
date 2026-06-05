@@ -176,13 +176,14 @@ public class StudioService
 
         // AddFontResource（フラグなし）で GDI に登録。
         // FR_NOT_ENUM を使うと EnumFontFamiliesEx から隠れ Qt が検出できなくなるため使わない。
+        // .ttc（NotoSansCJK 等）はシステム日本語フォントと競合するため除外する
         var registered = 0;
         try
         {
             foreach (var file in Directory.GetFiles(fontsDir))
             {
                 var ext = Path.GetExtension(file).ToLowerInvariant();
-                if (ext is ".otf" or ".ttf" or ".ttc" && AddFontResource(file) > 0)
+                if (ext is ".otf" or ".ttf" && AddFontResource(file) > 0)
                     registered++;
             }
         }
