@@ -210,7 +210,7 @@ public partial class HomeViewModel : ViewModelBase
                         _discord.SetLaunchingPresence(_userAvatarUrl);
                         break;
                     case RobloxStatus.Running:
-                        _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox");
+                        _discord.ClearPresence(); // メニュー状態 — ゲーム情報なしで表示しない
                         break;
                     case RobloxStatus.Idle:
                     case RobloxStatus.NotInstalled:
@@ -505,7 +505,7 @@ public partial class HomeViewModel : ViewModelBase
                 if (_studioDetected)
                     _discord.SetStudioPresence(_userAvatarUrl);
                 else
-                    _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox");
+                    _discord.ClearPresence(); // ゲーム退出後メニュー — ゲーム情報なしで表示しない
             }
             Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -908,14 +908,16 @@ public partial class HomeViewModel : ViewModelBase
         else if (_gameDetected)
         {
             if (_awaitingGameInfo)
-                _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, "Roblox"); // 初回フェッチ中 → Roblox App ID に合わせた表示
+                _discord.ClearPresence(); // API 取得中 — ゲーム情報が揃うまで何も表示しない
             else
                 _ = TryFetchGameInfoAndUpdateAsync(); // フェッチ失敗後 → リトライ
         }
         else if (_studioDetected)
             _discord.SetStudioPresence(_userAvatarUrl);
+        else if (IsRobloxRunning)
+            _discord.ClearPresence(); // Roblox 起動中のメニュー状態 — ゲーム情報なしで表示しない
         else
-            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, IsRobloxRunning ? "Roblox" : "NexStrap");
+            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
     }
 
     private void UpdateGamePresence()
@@ -924,7 +926,7 @@ public partial class HomeViewModel : ViewModelBase
         lock (_gamesLock) { games = _activeGames.Values.ToList(); }
         if (games.Count == 0)
         {
-            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl, IsRobloxRunning ? "Roblox" : "NexStrap");
+            _discord.ClearPresence();
             return;
         }
 
