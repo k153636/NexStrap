@@ -24,34 +24,36 @@ public static class StudioPluginInstaller
     /// <summary>プラグインがインストール済みかどうか。</summary>
     public static bool IsInstalled => File.Exists(PluginPath);
 
-    /// <summary>埋め込みリソースとインストール済みファイルが一致しているか。</summary>
-    public static bool IsUpToDate()
-    {
-        if (!File.Exists(PluginPath)) return false;
-        var content = ReadEmbeddedPlugin();
-        if (content == null) return false;
-        var newBytes      = new UTF8Encoding(false).GetBytes(content);
-        var existingBytes = File.ReadAllBytes(PluginPath);
-        var equal         = existingBytes.SequenceEqual(newBytes);
-        NexStrap.Core.Services.Logger.Instance.Info("StudioPlugin",
-            $"更新チェック: インストール済={existingBytes.Length}B 埋め込み={newBytes.Length}B 最新={equal}");
-        return equal;
-    }
-
     /// <summary>
-    /// 埋め込みリソースからインストール／上書きする。
+    /// GitHub の最新版とインストール済みファイルを比較して更新が必要かどうかを返す。
+    /// ネット接続がない場合や取得失敗時は false（更新不要）を返す。
     /// </summary>
-    public static bool EnsureInstalled()
+    public static async Task<bool> IsUpdateAvailableAsync(CancellationToken ct = default)
     {
+        var log = NexStrap.Core.Services.Logger.Instance;
         try
         {
-            var content = ReadEmbeddedPlugin();
-            if (content == null) return false;
-            Directory.CreateDirectory(PluginDir);
-            File.WriteAllText(PluginPath, content, new UTF8Encoding(false));
-            return true;
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            var remote = await http.GetStringAsync(DownloadUrl, ct);
+            remote = remote.TrimStart('﻿'); // BOM 除去
+
+            if (!File.Exists(PluginPath))
+            {
+                log.Info("StudioPlugin", "未インストール → 更新あり");
+                return true;
+            }
+
+            var existing = await File.ReadAllTextAsync(PluginPath, new UTF8Encoding(false), ct);
+            var needsUpdate = remote != existing;
+            log.Info("StudioPlugin", needsUpdate ? "GitHub と差異あり → 更新あり" : "最新版がインストール済み");
+            return needsUpdate;
         }
-        catch { return false; }
+        catch (OperationCanceledException) { return false; }
+        catch (Exception ex)
+        {
+            log.Warning("StudioPlugin", $"更新チェック失敗（オフライン？）: {ex.Message}");
+            return false;
+        }
     }
 
     /// <summary>
@@ -84,8 +86,17 @@ public static class StudioPluginInstaller
         catch (OperationCanceledException) { return false; }
         catch (Exception ex)
         {
-            log.Warning("StudioPlugin", $"Download failed ({ex.Message}), falling back to embedded resource");
-            return EnsureInstalled();
+            // ダウンロード失敗時は埋め込みリソースにフォールバック
+            log.Warning("StudioPlugin", $"ダウンロード失敗 ({ex.Message})、埋め込みリソースを使用");
+            var embedded = ReadEmbeddedPlugin();
+            if (embedded == null) return false;
+            try
+            {
+                Directory.CreateDirectory(PluginDir);
+                await File.WriteAllTextAsync(PluginPath, embedded, new UTF8Encoding(false), ct);
+                return true;
+            }
+            catch { return false; }
         }
     }
 

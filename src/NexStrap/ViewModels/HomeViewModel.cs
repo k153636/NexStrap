@@ -451,7 +451,7 @@ public partial class HomeViewModel : ViewModelBase
 
     private async Task InstallStudioPluginAsync()
     {
-        var isUpdate = StudioPluginInstaller.IsInstalled && !StudioPluginInstaller.IsUpToDate();
+        var isUpdate = StudioPluginInstaller.IsInstalled; // 既存ファイルあり = アップデート扱い
         var vm = new BootstrapperViewModel(_settings);
         vm.ReportProgress(isUpdate ? "Updating Studio plugin..." : "Installing Studio plugin...", 0, true);
 
@@ -542,8 +542,8 @@ public partial class HomeViewModel : ViewModelBase
         StatusText        = "Launching Studio...";
         _presence.EnqueueInstallingStudioPresence();
 
-        // 未インストール or 最新でない場合はインストーラー UI を表示
-        if (!StudioPluginInstaller.IsInstalled || !StudioPluginInstaller.IsUpToDate())
+        // GitHub と比較して未インストールまたは更新がある場合はインストーラー UI を表示
+        if (await StudioPluginInstaller.IsUpdateAvailableAsync())
             await InstallStudioPluginAsync();
         await _studioFastFlags.SaveAsync();
         var launched = await _studio.LaunchAsync();
