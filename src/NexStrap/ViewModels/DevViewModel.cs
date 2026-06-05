@@ -3,6 +3,7 @@ using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NexStrap.Core.Services;
+using NexStrap.Services;
 
 namespace NexStrap.ViewModels;
 
@@ -12,7 +13,7 @@ public partial class DevViewModel : ViewModelBase
     private readonly FastFlagService _fastFlags;
     private readonly ModService _mods;
     private readonly GameHistoryService _history;
-    private readonly DiscordRpcService _discord;
+    private readonly DiscordRichPresence _discord;
     private readonly RobloxService _roblox;
 
     [ObservableProperty] private string _memoryUsage = string.Empty;
@@ -35,7 +36,7 @@ public partial class DevViewModel : ViewModelBase
         FastFlagService fastFlags,
         ModService mods,
         GameHistoryService history,
-        DiscordRpcService discord,
+        DiscordRichPresence discord,
         RobloxService roblox)
     {
         _settings = settings;

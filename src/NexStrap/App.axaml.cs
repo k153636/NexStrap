@@ -416,7 +416,7 @@ public partial class App : Application
         services.AddSingleton<FastFlagService>();
         services.AddSingleton<StudioFastFlagService>();
         services.AddSingleton<ModService>();
-        services.AddSingleton<DiscordRpcService>();
+        services.AddSingleton<NexStrap.Services.DiscordRichPresence>();
         services.AddSingleton<ProfileService>();
         services.AddSingleton<RobloxLogWatcher>(sp => new RobloxLogWatcher(sp.GetRequiredService<RobloxService>().IsNexStrapRobloxRunning));
         services.AddSingleton<RobloxApiService>();

@@ -3,13 +3,14 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NexStrap.Core.Services;
+using NexStrap.Services;
 using NexStrap.Views;
 
 namespace NexStrap.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    private readonly DiscordRpcService _discord;
+    private readonly DiscordRichPresence _discord;
     private readonly SettingsService _settings;
     private readonly PerformanceMonitorService _perfMonitor;
     private PerformanceOverlayWindow? _overlayWindow;
@@ -32,7 +33,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public StretchResolutionViewModel StretchVM { get; }
 
     public MainWindowViewModel(
-        DiscordRpcService discord,
+        DiscordRichPresence discord,
         SettingsService settings,
         PerformanceMonitorService perfMonitor,
         HomeViewModel homeVM,

@@ -1,12 +1,13 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using NexStrap.Core.Services;
+using NexStrap.Services;
 
 namespace NexStrap.ViewModels;
 
 public partial class DiscordViewModel : ViewModelBase
 {
     private readonly SettingsService _settingsService;
-    private readonly DiscordRpcService _discord;
+    private readonly DiscordRichPresence _discord;
     private readonly RobloxApiService _robloxApi;
     private readonly AccountService _accountService;
 
@@ -21,7 +22,7 @@ public partial class DiscordViewModel : ViewModelBase
     [ObservableProperty] private bool _showServerRegion;
     [ObservableProperty] private bool _showFlagCount;
 
-    public DiscordViewModel(SettingsService settingsService, DiscordRpcService discord, RobloxApiService robloxApi, AccountService accountService)
+    public DiscordViewModel(SettingsService settingsService, DiscordRichPresence discord, RobloxApiService robloxApi, AccountService accountService)
     {
         _settingsService = settingsService;
         _discord = discord;
