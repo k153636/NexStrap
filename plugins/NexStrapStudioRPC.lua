@@ -192,7 +192,10 @@ local function subscribeEvents()
     end))
 
     -- テスト開始/終了 → 即時送信（強制）
-    table.insert(connections, RunService:GetPropertyChangedSignal("IsRunning"):Connect(function()
+    table.insert(connections, RunService.RunStart:Connect(function()
+        task.defer(function() sendPresence(true) end)
+    end))
+    table.insert(connections, RunService.RunStop:Connect(function()
         task.defer(function() sendPresence(true) end)
     end))
 
