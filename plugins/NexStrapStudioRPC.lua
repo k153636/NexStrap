@@ -49,7 +49,7 @@ type RpcEnvelope = {
 
 -- ── State ─────────────────────────────────────────────────────────────────
 
-local enabled       : boolean          = true
+local enabled       : boolean          = plugin ~= nil  -- Studio プラグイン環境以外では無効
 local onCooldown    : boolean          = false
 local lastPayload   : Payload?         = nil
 local workspace     : WorkspaceInfo    = { name = "Unsaved Project", placeId = 0, isPublic = false }
