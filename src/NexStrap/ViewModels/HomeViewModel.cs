@@ -210,7 +210,7 @@ public partial class HomeViewModel : ViewModelBase
                         _discord.SetLaunchingPresence(_userAvatarUrl);
                         break;
                     case RobloxStatus.Running:
-                        _discord.ClearPresence(); // メニュー状態 — ゲーム情報なしで表示しない
+                        _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
                         break;
                     case RobloxStatus.Idle:
                     case RobloxStatus.NotInstalled:
@@ -409,6 +409,7 @@ public partial class HomeViewModel : ViewModelBase
                     _activeGames[currentSlot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
                 }
                 _awaitingGameInfo = false;
+                _discord.Initialize(AppConstants.DiscordRobloxAppId);
                 UpdateGamePresence();
 
                 var entry = new GameHistoryEntry { PlaceId = placeId, UniverseId = newUniverseId, Name = name, IconUrl = iconUrl, PlayedAt = DateTime.Now };
@@ -502,10 +503,11 @@ public partial class HomeViewModel : ViewModelBase
             }
             else
             {
+                _discord.Initialize(AppConstants.DiscordAppId);
                 if (_studioDetected)
                     _discord.SetStudioPresence(_userAvatarUrl);
                 else
-                    _discord.ClearPresence(); // ゲーム退出後メニュー — ゲーム情報なしで表示しない
+                    _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
             }
             Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -894,6 +896,7 @@ public partial class HomeViewModel : ViewModelBase
                 _activeGames[slot] = new SlotGame(name, iconUrl, creator, placeId, su.Url, su.Label);
             }
             _awaitingGameInfo = false;
+            _discord.Initialize(AppConstants.DiscordRobloxAppId);
             UpdateGamePresence();
         }
         catch { _awaitingGameInfo = false; }
@@ -908,14 +911,12 @@ public partial class HomeViewModel : ViewModelBase
         else if (_gameDetected)
         {
             if (_awaitingGameInfo)
-                _discord.ClearPresence(); // API 取得中 — ゲーム情報が揃うまで何も表示しない
+                _discord.SetPagePresence(CurrentPageName, _userAvatarUrl); // API 取得中は NexStrap 表示で待機
             else
                 _ = TryFetchGameInfoAndUpdateAsync(); // フェッチ失敗後 → リトライ
         }
         else if (_studioDetected)
             _discord.SetStudioPresence(_userAvatarUrl);
-        else if (IsRobloxRunning)
-            _discord.ClearPresence(); // Roblox 起動中のメニュー状態 — ゲーム情報なしで表示しない
         else
             _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
     }
@@ -926,7 +927,7 @@ public partial class HomeViewModel : ViewModelBase
         lock (_gamesLock) { games = _activeGames.Values.ToList(); }
         if (games.Count == 0)
         {
-            _discord.ClearPresence();
+            _discord.SetPagePresence(CurrentPageName, _userAvatarUrl);
             return;
         }
 
@@ -1082,9 +1083,6 @@ public partial class HomeViewModel : ViewModelBase
         }
         else
         {
-            // Roblox 起動時に Roblox App ID へ切り替え（空白が発生するのはこの1回のみ）
-            _discord.Initialize(AppConstants.DiscordRobloxAppId);
-
             // Stretch Res: Roblox 起動時に自動で解像度を適用
             var s = _settings.Settings;
             if (s.StretchResolutionEnabled)
