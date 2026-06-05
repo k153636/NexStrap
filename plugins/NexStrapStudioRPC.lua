@@ -1,239 +1,250 @@
--- NexStrap Studio RPC Plugin v1.0.0
--- Based on FroststrapStudioRPC (https://github.com/Froststrap/FroststrapStudioRPC)
--- Sends Studio presence data to NexStrap Launcher via HTTP on port 4876
+--!strict
+-- NexStrap Studio RPC Plugin v2.0.0
+-- Sends Studio presence data to NexStrap Launcher via HTTP on port 4876.
+-- Requires "Allow HTTP Requests" in Experience Settings → Security.
 
-local Selection          = game:GetService("Selection")
-local RunService         = game:GetService("RunService")
-local HttpService        = game:GetService("HttpService")
-local MarketplaceService = game:GetService("MarketplaceService")
-local Players            = game:GetService("Players")
-local StudioService      = game:GetService("StudioService")
+-- ── サービス ──────────────────────────────────────────────────────────────
+
+local Selection           = game:GetService("Selection")
+local RunService          = game:GetService("RunService")
+local HttpService         = game:GetService("HttpService")
+local MarketplaceService  = game:GetService("MarketplaceService")
+local StudioService       = game:GetService("StudioService")
 local ScriptEditorService = game:GetService("ScriptEditorService")
 
-local Plugin = if plugin then plugin else nil
+-- ── 定数 ──────────────────────────────────────────────────────────────────
 
-local NexStrapStudioRPC = {}
+local VERSION         = "2.0.0"
+local PORT            = 4876
+local HTTP_TIMEOUT    = 2
+local UPDATE_INTERVAL = 10   -- 定期送信間隔（秒）
+local COOLDOWN        = 1.5  -- 連続送信の最小間隔（秒）
 
-NexStrapStudioRPC.Config = {
-    enabled        = true,
-    httpTimeout    = 2,
-    updateInterval = 10,
-    port           = 4876,
+-- ── 型定義 ────────────────────────────────────────────────────────────────
+
+type WorkspaceInfo = {
+    name     : string,
+    placeId  : number,
+    isPublic : boolean,
 }
 
-local State = {
-    lastPayload      = {},
-    isCooldown       = false,
-    isInitialized    = false,
-    monitoringThread = nil,
-    connections      = {},
-    cachedWorkspace  = { name = "Unsaved Studio Project", isPublic = false },
+type PresencePayload = {
+    details  : string?,
+    testing  : boolean,
+    placeId  : number,
+    isPublic : boolean,
+    version  : string,
 }
 
-local ScriptTypes = {
-    SERVER        = "Server Script",
-    CLIENT        = "Local Script",
-    SERVER_MODULE = "Server Module",
-    CLIENT_MODULE = "Client Module",
-    MODULE        = "Module",
-    DEVELOPING    = "Developing",
-}
+-- ── モジュール状態 ────────────────────────────────────────────────────────
 
--- ── ヘルパー ───────────────────────────────────────────────────────────────
+local enabled         : boolean        = true
+local initialized     : boolean        = false
+local cooldownActive  : boolean        = false
+local lastPayload     : PresencePayload? = nil
+local monitorHandle   : thread?        = nil
+local connections     : { RBXScriptConnection } = {}
+local workspace_cache : WorkspaceInfo  = { name = "Unsaved Project", placeId = 0, isPublic = false }
 
-local function clearConnections()
-    for _, connection in pairs(State.connections) do
-        if connection then connection:Disconnect() end
-    end
-    table.clear(State.connections)
-end
+-- ── ワークスペース情報 ────────────────────────────────────────────────────
 
-local function getScriptLineCount(scriptObj)
-    if not scriptObj or not scriptObj:IsA("LuaSourceContainer") then return 0 end
-    local ok, source = pcall(function() return ScriptEditorService:GetEditorSource(scriptObj) end)
-    if not ok or not source then
-        ok, source = pcall(function() return scriptObj.Source end)
-    end
-    if not ok or not source then return 0 end
-    local _, n = source:gsub("\n", "")
-    return n + 1
-end
+local function fetchWorkspaceInfo(): WorkspaceInfo
+    local placeId = game.PlaceId
 
-local function getScriptType(scriptObj)
-    if not scriptObj then return ScriptTypes.DEVELOPING end
-
-    if scriptObj:IsA("LocalScript")
-    or (scriptObj:IsA("Script") and scriptObj.RunContext == Enum.RunContext.Client) then
-        return ScriptTypes.CLIENT
-    end
-
-    if scriptObj:IsA("ModuleScript") then
-        local a = scriptObj.Parent
-        while a do
-            if a:IsA("ServerScriptService") or a:IsA("ServerStorage") then
-                return ScriptTypes.SERVER_MODULE
-            elseif a:IsA("StarterPlayer") or a:IsA("StarterGui") or a:IsA("StarterPack") then
-                return ScriptTypes.CLIENT_MODULE
-            end
-            a = a.Parent
-        end
-        return ScriptTypes.MODULE
-    end
-
-    if scriptObj:IsA("Script") then return ScriptTypes.SERVER end
-    return ScriptTypes.DEVELOPING
-end
-
-local function refreshWorkspaceCache()
-    if game.PlaceId > 0 then
-        local ok, info = pcall(function() return MarketplaceService:GetProductInfoAsync(game.PlaceId) end)
-        if ok and info then
-            State.cachedWorkspace.name     = info.Name or "Published Place"
-            State.cachedWorkspace.isPublic = true
-            return
+    if placeId > 0 then
+        local ok, info = pcall(function()
+            return MarketplaceService:GetProductInfoAsync(placeId)
+        end)
+        if ok and info and info.Name then
+            return { name = info.Name, placeId = placeId, isPublic = true }
         end
     end
+
     local name = game.Name
-    State.cachedWorkspace.name     = (name ~= "Place" and name ~= "") and name or "Unsaved Studio Project"
-    State.cachedWorkspace.isPublic = false
+    local displayName = (name ~= "" and name ~= "Place") and name or "Unsaved Project"
+    return { name = displayName, placeId = placeId, isPublic = false }
+end
+
+local function refreshWorkspaceAsync()
+    task.spawn(function()
+        local info = fetchWorkspaceInfo()
+        workspace_cache = info
+    end)
 end
 
 -- ── HTTP 送信 ─────────────────────────────────────────────────────────────
 
-local function sendViaHTTP(payload)
-    if not HttpService.HttpEnabled then return end
+local function post(command: string, data: { [string]: any })
+    if not HttpService.HttpEnabled then
+        warn("[NexStrap] HTTP Requests が無効です。Experience Settings → Security で有効にしてください。")
+        return
+    end
+
+    local body = HttpService:JSONEncode({ command = command, data = data })
+
     task.spawn(function()
-        local url = string.format("http://localhost:%d/rpc", NexStrapStudioRPC.Config.port)
-        pcall(function()
+        local ok, err = pcall(function()
             HttpService:RequestAsync({
-                Url     = url,
+                Url     = string.format("http://localhost:%d/rpc", PORT),
                 Method  = "POST",
                 Headers = { ["Content-Type"] = "application/json" },
-                Body    = HttpService:JSONEncode(payload),
-                Timeout = NexStrapStudioRPC.Config.httpTimeout,
+                Body    = body,
+                Timeout = HTTP_TIMEOUT,
             })
         end)
+        if not ok then
+            -- 接続失敗はサイレントに無視（ランチャーが起動していない場合）
+        end
     end)
+end
+
+-- ── Presence 計算 ─────────────────────────────────────────────────────────
+
+local function buildPayload(): PresencePayload
+    return {
+        details  = workspace_cache.name,
+        testing  = RunService:IsRunning(),
+        placeId  = workspace_cache.placeId,
+        isPublic = workspace_cache.isPublic,
+        version  = VERSION,
+    }
+end
+
+local function payloadsEqual(a: PresencePayload, b: PresencePayload): boolean
+    return a.details  == b.details
+        and a.testing  == b.testing
+        and a.placeId  == b.placeId
+        and a.isPublic == b.isPublic
 end
 
 -- ── Presence 送信 ────────────────────────────────────────────────────────
 
-function NexStrapStudioRPC.SendMessage(data)
-    if State.isCooldown then return end
+local function sendPresence(force: boolean?)
+    if not enabled then return end
+    if cooldownActive and not force then return end
 
-    -- 重複送信を防止
-    local isRedundant = true
-    for k, v in pairs(data) do
-        if State.lastPayload[k] ~= v then isRedundant = false; break end
-    end
-    if isRedundant then return end
+    local payload = buildPayload()
 
-    State.lastPayload = data
-    State.isCooldown  = true
-    task.delay(2, function() State.isCooldown = false end)
+    if not force and lastPayload and payloadsEqual(payload, lastPayload) then return end
 
-    sendViaHTTP({ command = "SetRichPresence", data = data })
+    lastPayload      = payload
+    cooldownActive   = true
+
+    post("SetRichPresence", payload :: { [string]: any })
+
+    task.delay(COOLDOWN, function()
+        cooldownActive = false
+    end)
 end
 
-function NexStrapStudioRPC.UpdatePresence()
-    if not NexStrapStudioRPC.Config.enabled then return end
+-- ── 有効/無効 ─────────────────────────────────────────────────────────────
 
-    local activeScript = StudioService.ActiveScript
-    local scriptObj = (activeScript and activeScript:IsA("LuaSourceContainer")) and activeScript or nil
-
-    if not scriptObj then
-        local selected = Selection:Get()
-        if #selected == 1 and selected[1]:IsA("LuaSourceContainer") then
-            scriptObj = selected[1]
+local function startMonitor()
+    if monitorHandle then return end
+    monitorHandle = task.spawn(function()
+        while enabled do
+            task.wait(UPDATE_INTERVAL)
+            if enabled then sendPresence() end
         end
-    end
-
-    local scriptType = getScriptType(scriptObj)
-    local stateText  = scriptObj
-        and string.format("Editing %s (%d lines)", scriptObj.Name, getScriptLineCount(scriptObj))
-        or "Idling in Studio"
-
-    NexStrapStudioRPC.SendMessage({
-        details    = State.cachedWorkspace.name,
-        state      = stateText,
-        testing    = RunService:IsRunning(),
-        scriptType = scriptType,
-        placeId    = game.PlaceId,
-        isPublic   = State.cachedWorkspace.isPublic,
-        devCount   = math.max(1, #Players:GetPlayers()),
-    })
+        monitorHandle = nil
+    end)
 end
 
--- ── 有効/無効切り替え ─────────────────────────────────────────────────────
+local function stopMonitor()
+    enabled       = false
+    monitorHandle = nil
+end
 
-function NexStrapStudioRPC.SetEnabled(enabled)
-    NexStrapStudioRPC.Config.enabled = enabled
-
-    sendViaHTTP({
-        command = "RPCToggle",
-        data    = {
-            enabled   = enabled,
-            workspace = State.cachedWorkspace.name,
-            isPublic  = State.cachedWorkspace.isPublic,
-        },
+local function setEnabled(value: boolean)
+    enabled = value
+    post("RPCToggle", {
+        enabled   = value,
+        workspace = workspace_cache.name,
+        isPublic  = workspace_cache.isPublic,
     })
-
-    if enabled then
-        refreshWorkspaceCache()
-        NexStrapStudioRPC.UpdatePresence()
-        if not State.monitoringThread then
-            State.monitoringThread = task.spawn(function()
-                while NexStrapStudioRPC.Config.enabled do
-                    task.wait(NexStrapStudioRPC.Config.updateInterval)
-                    NexStrapStudioRPC.UpdatePresence()
-                end
-                State.monitoringThread = nil
-            end)
-        end
+    if value then
+        refreshWorkspaceAsync()
+        task.defer(function() sendPresence(true) end)
+        startMonitor()
     else
-        State.monitoringThread = nil
+        stopMonitor()
     end
+end
+
+-- ── イベント購読 ──────────────────────────────────────────────────────────
+
+local function disconnectAll()
+    for _, c in connections do
+        c:Disconnect()
+    end
+    table.clear(connections)
+end
+
+local function subscribeEvents()
+    -- スクリプト選択変化 → 即時送信
+    table.insert(connections, Selection.SelectionChanged:Connect(function()
+        task.defer(sendPresence)
+    end))
+
+    -- アクティブスクリプト変化 → 即時送信
+    table.insert(connections, StudioService:GetPropertyChangedSignal("ActiveScript"):Connect(function()
+        task.defer(sendPresence)
+    end))
+
+    -- テスト開始/終了 → 即時送信（強制）
+    table.insert(connections, RunService:GetPropertyChangedSignal("IsRunning"):Connect(function()
+        task.defer(function() sendPresence(true) end)
+    end))
+
+    -- テレポート・PlaceId 変化 → キャッシュ更新 + 再送
+    table.insert(connections, game:GetPropertyChangedSignal("PlaceId"):Connect(function()
+        refreshWorkspaceAsync()
+        task.delay(1, function() sendPresence(true) end)
+    end))
+
+    -- ゲーム読み込み完了 → キャッシュ確定
+    table.insert(connections, game.Loaded:Connect(function()
+        refreshWorkspaceAsync()
+        task.delay(0.5, function() sendPresence(true) end)
+    end))
 end
 
 -- ── 初期化 ────────────────────────────────────────────────────────────────
 
-function NexStrapStudioRPC.Initialize()
-    if State.isInitialized or not Plugin then return end
+local function initialize()
+    if initialized or not plugin then return end
+    initialized = true
 
-    local ok, enabled = pcall(function() return HttpService.HttpEnabled end)
-    if ok and not enabled then
-        warn("[NexStrap] HTTP Requests are disabled. Enable them in Experience Settings → Security to use Studio RPC.")
-    end
-
-    local toggleAction = Plugin:CreatePluginAction(
-        "nexstrap_toggle_rpc",
-        "Toggle NexStrap RPC",
-        "Toggle Discord Rich Presence for NexStrap",
-        "rbxassetid://111400040119373",
-        true
+    -- プラグインアクション（ツールバートグル）
+    local toolbar = plugin:CreateToolbar("NexStrap")
+    local button  = toolbar:CreateButton(
+        "Toggle RPC",
+        "Discord Rich Presence のオン/オフ",
+        "rbxassetid://111400040119373"
     )
+    button.Click:Connect(function()
+        setEnabled(not enabled)
+        button:SetActive(enabled)
+    end)
+    button:SetActive(enabled)
 
-    State.connections.Toggle = toggleAction.Triggered:Connect(function()
-        NexStrapStudioRPC.SetEnabled(not NexStrapStudioRPC.Config.enabled)
+    -- プラグインアンロード時のクリーンアップ
+    plugin.Unloading:Connect(function()
+        setEnabled(false)
+        disconnectAll()
     end)
 
-    State.connections.SelectionChanged = Selection.SelectionChanged:Connect(function()
-        task.defer(NexStrapStudioRPC.UpdatePresence)
-    end)
+    subscribeEvents()
 
-    State.connections.ActiveScriptChanged = StudioService:GetPropertyChangedSignal("ActiveScript"):Connect(function()
-        task.defer(NexStrapStudioRPC.UpdatePresence)
-    end)
+    -- 起動時はゲームのロード完了を待ってから初回送信
+    if game:IsLoaded() then
+        refreshWorkspaceAsync()
+        task.delay(0.5, function() sendPresence(true) end)
+    end
+    -- game.Loaded イベントでも送信される（subscribeEvents で登録済み）
 
-    State.connections.Unload = Plugin.Unloading:Connect(function()
-        NexStrapStudioRPC.SetEnabled(false)
-        clearConnections()
-    end)
-
-    refreshWorkspaceCache()
-    NexStrapStudioRPC.SetEnabled(NexStrapStudioRPC.Config.enabled)
-    State.isInitialized = true
+    setEnabled(true)
+    startMonitor()
 end
 
-if Plugin then NexStrapStudioRPC.Initialize() end
-return NexStrapStudioRPC
+initialize()
