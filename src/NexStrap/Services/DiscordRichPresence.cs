@@ -179,14 +179,14 @@ public sealed class DiscordRichPresence : IDisposable
 
     // ── 外部通知（HomeViewModel から呼ぶ） ─────────────────────────────
 
-    public void NotifyRobloxRunningChanged(bool running)
+    public async Task NotifyRobloxRunningChangedAsync(bool running)
     {
         if (!running)
         {
             lock (_gamesLock) { _activeGames.Clear(); }
             _gameDetected     = false;
             _awaitingGameInfo = false;
-            Initialize(AppConstants.DiscordAppId);
+            await InitializeAndWaitReadyAsync(AppConstants.DiscordAppId);
         }
     }
 
@@ -286,7 +286,7 @@ public sealed class DiscordRichPresence : IDisposable
         catch { _awaitingGameInfo = false; }
     }
 
-    public void HandleGameLeft(int currentSlotId, int robloxCount)
+    public async Task HandleGameLeftAsync(int currentSlotId, int robloxCount)
     {
         _gameDetected      = false;
         _currentUniverseId = 0;
@@ -316,7 +316,7 @@ public sealed class DiscordRichPresence : IDisposable
         }
         else
         {
-            Initialize(AppConstants.DiscordAppId);
+            await InitializeAndWaitReadyAsync(AppConstants.DiscordAppId);
             RefreshPresence();
         }
     }

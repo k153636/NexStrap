@@ -333,7 +333,7 @@ public partial class HomeViewModel : ViewModelBase
         _logWatcher.StudioPlaySoloStopped += (_, _) => _presence.NotifyStudioPlaytestStopped();
 
         // ── ゲーム退出 ─────────────────────────────────────────────────────
-        _logWatcher.GameLeft += (_, _) =>
+        _logWatcher.GameLeft += async (_, _) =>
         {
             if (_gameStartTime.HasValue && _sessionEntry != null)
             {
@@ -348,7 +348,7 @@ public partial class HomeViewModel : ViewModelBase
             var robloxCount = RobloxLogWatcher.IsRobloxRunning() || _roblox.IsNexStrapRobloxRunning()
                 ? GetRobloxProcesses().Count() : 0;
 
-            _presence.HandleGameLeft(_logWatcher.CurrentSlotId, robloxCount);
+            await _presence.HandleGameLeftAsync(_logWatcher.CurrentSlotId, robloxCount);
 
             Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -670,7 +670,7 @@ public partial class HomeViewModel : ViewModelBase
     {
         if (!value)
         {
-            _presence.NotifyRobloxRunningChanged(false);
+            _ = _presence.NotifyRobloxRunningChangedAsync(false);
 
             if (_settings.Settings.StretchResolutionEnabled)
                 _roblox.RestoreResolution();
