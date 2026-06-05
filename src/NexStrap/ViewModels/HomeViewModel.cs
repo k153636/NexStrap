@@ -522,6 +522,7 @@ public partial class HomeViewModel : ViewModelBase
         IsStudioLaunching = true;
         StatusText        = "Launching Studio...";
         _presence.EnqueueInstallingStudioPresence();
+        StudioPluginInstaller.EnsureInstalled();
         await _studioFastFlags.SaveAsync();
         var launched = await _studio.LaunchAsync();
         StatusText        = launched ? (IsRobloxRunning ? "Roblox running" : "Ready") : "Studio launch failed";

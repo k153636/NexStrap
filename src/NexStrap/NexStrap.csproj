@@ -34,6 +34,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="..\..\plugins\NexStrapStudioRPC.lua" LogicalName="NexStrap.Plugins.NexStrapStudioRPC.lua" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Update="Views\Pages\HomePage.axaml.cs">
       <DependentUpon>HomePage.axaml</DependentUpon>
     </Compile>

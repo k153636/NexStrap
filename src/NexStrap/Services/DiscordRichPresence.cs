@@ -338,10 +338,12 @@ public sealed class DiscordRichPresence : IDisposable
 
             // ── Studio RPC（プラグインからのデータ — ウィンドウタイトルより優先）──
             case EvStudioRpc { Data: var d }:
+                // プラグインが実際にインストール済みの場合のみ処理する
+                if (!StudioPluginInstaller.IsInstalled) break;
                 _studioRpcActive     = true;
-                _studioPlaceName     = d.Details;   // プレース名
+                _studioPlaceName     = d.Details;
                 _studioTesting       = d.Testing;
-                _studioRpcState      = d.State;      // "Editing ScriptName (N lines)" など
+                _studioRpcState      = d.State;
                 _studioRpcScriptType = d.ScriptType;
                 if (_phase == Phase.NexStrapIdle || _phase == Phase.Studio)
                 {
