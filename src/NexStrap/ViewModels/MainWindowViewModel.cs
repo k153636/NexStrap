@@ -68,24 +68,14 @@ public partial class MainWindowViewModel : ViewModelBase
         IsDiscordAppIdMissing = false;
 
         if (settings.Settings.DiscordRpcEnabled)
-            discord.Initialize(AppConstants.DiscordAppId);
+            discord.SetDiscordEnabled(true);
 
         discord.ConnectionChanged += (_, connected) =>
             Dispatcher.UIThread.InvokeAsync(() => IsDiscordConnected = connected);
 
         settings.SettingsChanged += (_, s) =>
         {
-            if (s.DiscordRpcEnabled)
-                // ゲームプレイ中は Roblox App ID を維持する
-                _ = Task.Run(async () =>
-                {
-                    var appId = discord.GameDetected ? AppConstants.DiscordRobloxAppId : AppConstants.DiscordAppId;
-                    await discord.InitializeForSettingsAsync(appId);
-                    homeVM.RefreshPresence();
-                });
-            else if (!s.DiscordRpcEnabled)
-                discord.Disable();
-
+            discord.SetDiscordEnabled(s.DiscordRpcEnabled);
             UpdateOverlayVisibility(s.ShowPerformanceOverlay);
         };
 
