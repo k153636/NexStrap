@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 
 namespace NexStrap.Core.Services;
@@ -126,12 +127,16 @@ public class StudioService
         try
         {
             var studioDir = Path.GetDirectoryName(exePath)!;
+
+            // NexStrap のカスタムインストールパスでは Roblox 標準インストーラーが行う
+            // フォント登録が行われていないため、起動前に一時登録する
+            RegisterStudioFonts(studioDir);
+
             var psi = new ProcessStartInfo(exePath)
             {
                 UseShellExecute  = false,
                 WorkingDirectory = studioDir
             };
-            // Qt がフォントディレクトリを正しく解決するために明示的に指定
             psi.Environment["QT_QPA_FONTDIR"] = Path.Combine(studioDir, "StudioFonts");
             Process.Start(psi);
             SetStatus(RobloxStatus.Running);
@@ -141,6 +146,36 @@ public class StudioService
         {
             SetStatus(RobloxStatus.Idle);
             return false;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Font Registration
+    // -------------------------------------------------------------------------
+
+    [DllImport("gdi32.dll", CharSet = CharSet.Unicode)]
+    private static extern int AddFontResourceEx(string lpszFilename, uint fl, IntPtr pdv);
+
+    private const uint FR_PRIVATE  = 0x10; // 現プロセスのみ有効（終了時自動削除）
+    private const uint FR_NOT_ENUM = 0x20; // フォント一覧に表示しない
+
+    private static void RegisterStudioFonts(string studioDir)
+    {
+        var fontsDir = Path.Combine(studioDir, "StudioFonts");
+        if (!Directory.Exists(fontsDir)) return;
+        try
+        {
+            foreach (var file in Directory.GetFiles(fontsDir))
+            {
+                var ext = Path.GetExtension(file).ToLowerInvariant();
+                if (ext is ".otf" or ".ttf")
+                    AddFontResourceEx(file, FR_PRIVATE | FR_NOT_ENUM, IntPtr.Zero);
+            }
+            Logger.Instance.Info("Studio", $"フォントを登録しました: {fontsDir}");
+        }
+        catch (Exception ex)
+        {
+            Logger.Instance.Warning("Studio", $"フォント登録失敗: {ex.Message}");
         }
     }
 
