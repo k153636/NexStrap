@@ -168,6 +168,14 @@ public sealed class DiscordRichPresence : IDisposable
         }
     }
 
+    /// <summary>Roblox 起動開始時に呼ぶ。前のセッションの残留状態をクリアする。</summary>
+    public void NotifyLaunchStarted()
+    {
+        lock (_gamesLock) { _activeGames.Clear(); }
+        _gameDetected     = false;
+        _awaitingGameInfo = false;
+    }
+
     /// <summary>PlaceJoined イベントの presence 処理を担当する。</summary>
     public async Task HandlePlaceJoinedAsync(long placeId, long universeIdFromLog, int currentSlot)
     {
@@ -340,7 +348,7 @@ public sealed class DiscordRichPresence : IDisposable
         else if (_gameDetected)
         {
             if (_awaitingGameInfo)
-                SetPagePresence(CurrentPageName ?? "Home", _userAvatarUrl);
+                return; // API 取得完了まで何も変えない（完了後に UpdateGamePresence が呼ばれる）
             else
                 _ = TryFetchGameInfoAndUpdateAsync();
         }

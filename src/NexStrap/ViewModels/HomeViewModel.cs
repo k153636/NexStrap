@@ -514,6 +514,7 @@ public partial class HomeViewModel : ViewModelBase
         if (IsLaunching || (IsRobloxRunning && !multiInstance)) return;
 
         IsLaunching   = true;
+        _presence.NotifyLaunchStarted(); // 前セッションの残留 _gameDetected をクリア
         StatusText    = "Applying flags...";
 
         _fastFlags.ApplyPerformanceSettings(_settings.Settings);
