@@ -33,15 +33,19 @@ public class DiscordRpcService : IDisposable
         lock (_lock)
         {
             if (_currentAppId == applicationId && _client != null) return;
-            oldClient     = _client;
-            _client       = null;
-            _currentAppId = applicationId;
-            _isConnected  = false;
+            oldClient        = _client;
+            _client          = null;
+            _currentAppId    = applicationId;
+            _isConnected     = false;
+            // App ID 切り替え時に古い presence が新クライアントで送信されないようにクリアする
+            _debounceTimer?.Dispose(); _debounceTimer = null;
+            _pendingPresence = null;
         }
 
         try
         {
-            _startTimestamp = Timestamps.Now;
+            Timestamps? ts = Timestamps.Now;
+            lock (_lock) { _startTimestamp = ts; }
             var newClient = new DiscordRpcClient(applicationId) { Logger = new NullLogger() };
 
             // OnReady はライブラリの内部スレッドから呼ばれる。
@@ -231,6 +235,7 @@ public void SetPagePresence(string pageName, string? userAvatarUrl = null, strin
     private void SetPresence(string? details, string? state, string largeImage, string largeText,
         string? smallImage, string? smallText, Button[]? buttons = null, Timestamps? timestamps = null)
     {
+        Timestamps? fallbackTs; lock (_lock) { fallbackTs = _startTimestamp; }
         var presence = new RichPresence
         {
             Details = details,
@@ -242,7 +247,7 @@ public void SetPagePresence(string pageName, string? userAvatarUrl = null, strin
                 SmallImageKey  = smallImage,
                 SmallImageText = smallText
             },
-            Timestamps = timestamps ?? _startTimestamp,
+            Timestamps = timestamps ?? fallbackTs,
             Buttons    = buttons
         };
 
