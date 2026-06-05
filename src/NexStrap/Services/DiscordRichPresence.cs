@@ -513,12 +513,10 @@ public sealed class DiscordRichPresence : IDisposable
         if (_phase == Phase.Studio)
         {
             if (_studioTesting)
-                return Build("Roblox Studio / Testing", null, "nexstrap", "NexStrap Launcher · Created by K",
+                return Build("Testing", null, "nexstrap", "NexStrap Launcher · Created by K",
                     _avatarUrl, label, timestamps: ts);
 
-            var details = string.IsNullOrEmpty(_studioPlaceName)
-                ? "Roblox Studio"
-                : $"Roblox Studio / {_studioPlaceName}";
+            var details = string.IsNullOrEmpty(_studioPlaceName) ? null : _studioPlaceName;
             return Build(s.DiscordShowLauncherDetails ? details : null, null, "nexstrap",
                 "NexStrap Launcher · Created by K", _avatarUrl, label, timestamps: ts);
         }
