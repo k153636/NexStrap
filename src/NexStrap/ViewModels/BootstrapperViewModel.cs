@@ -126,6 +126,7 @@ public partial class BootstrapperViewModel : ViewModelBase
             _studioDetachAction();
             return;
         }
+        if (_roblox == null) return; // 手動制御コンストラクタ使用時は _roblox が null
         _roblox.BootstrapperProgress -= OnProgress;
         _roblox.StatusChanged        -= OnStatusChanged;
     }
