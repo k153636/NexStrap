@@ -92,51 +92,52 @@ public class DiscordRpcService : IDisposable
             _isConnected  = false;
         }
 
-        // ClearPresence() を呼ばず dispose のみ — 旧接続が切れるまで Discord 側の表示を維持
-        oldClient?.Dispose();
-
         if (warmup != null)
         {
             // ── ウォームアップクライアントをアクティブに昇格 ──────────────────────
-            // 切断・エラー時のハンドラーを追加登録
             warmup.OnClose += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
             warmup.OnError += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
 
-            if (!warmupDone)
+            if (warmupDone)
             {
-                // まだ OnReady 未受信 — 受信時に _isConnected を立てて ConnectionChanged を発火
+                // 既に接続確立済み — 旧クライアントを今すぐ切っても新クライアントの presence が即送信できる
+                lock (_lock) { _client = warmup; _isConnected = true; }
+                _startTimestamp = Timestamps.Now;
+                oldClient?.Dispose();
+            }
+            else
+            {
+                // まだ OnReady 未受信 — OnReady が来てから旧クライアントを切る（空白ゼロ保証）
                 warmup.OnReady += (_, _) =>
                 {
                     lock (_lock) { if (_client != warmup) return; _isConnected = true; }
                     ConnectionChanged?.Invoke(this, true);
+                    oldClient?.Dispose(); // 新接続確立後に旧クライアントを切断
                 };
+                lock (_lock) { _client = warmup; }
             }
-
-            lock (_lock)
-            {
-                _client      = warmup;
-                _isConnected = warmupDone; // 既に接続済みなら即座に true
-            }
-
-            if (warmupDone)
-                _startTimestamp = Timestamps.Now;
         }
         else
         {
-            // ── ウォームアップなし — 通常の新規接続 ────────────────────────────────
+            // ── ウォームアップなし — 新クライアントの OnReady 後に旧クライアントを切る ──
             try
             {
                 _startTimestamp = Timestamps.Now;
                 var newClient = new DiscordRpcClient(applicationId) { Logger = new NullLogger() };
 
-                newClient.OnReady += (_, _) => { _isConnected = true;  ConnectionChanged?.Invoke(this, true);  };
+                newClient.OnReady += (_, _) =>
+                {
+                    _isConnected = true;
+                    ConnectionChanged?.Invoke(this, true);
+                    oldClient?.Dispose(); // 新接続確立後に旧クライアントを切断
+                };
                 newClient.OnClose += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
                 newClient.OnError += (_, _) => { _isConnected = false; ConnectionChanged?.Invoke(this, false); };
 
                 lock (_lock) { _client = newClient; }
                 newClient.Initialize();
             }
-            catch { }
+            catch { oldClient?.Dispose(); } // 例外時は即 Dispose
         }
     }
 
