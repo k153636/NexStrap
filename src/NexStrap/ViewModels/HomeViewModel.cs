@@ -358,10 +358,11 @@ public partial class HomeViewModel : ViewModelBase
             });
         };
 
-        // ── Discord 再接続 ─────────────────────────────────────────────────
+        // ── Discord 再接続（意図的な切り替え中は抑制） ────────────────────
         _presence.ConnectionChanged += (_, connected) =>
         {
             if (!connected) return;
+            if (_presence.SuppressAutoRefresh) return;
             _presence.RefreshPresence();
         };
 

@@ -56,16 +56,19 @@ public sealed class DiscordRichPresence : IDisposable
 
     private Timer? _heartbeatTimer;
     private Timer? _studioTimer;
+    // InitializeAndWaitReadyAsync 中の ConnectionChanged による余分な RefreshPresence を抑制
+    private volatile bool _suppressAutoRefresh;
 
     private const int HeartbeatMs  = 15_000;
     private const int StudioPollMs =  3_000;
 
     // ── 公開状態 ───────────────────────────────────────────────────────
 
-    public bool    IsConnected       => _isConnected;
-    public bool    GameDetected      => _gameDetected;
-    public long    CurrentUniverseId => _currentUniverseId;
-    public string? CurrentPageName   { get; private set; } = "Home";
+    public bool    IsConnected        => _isConnected;
+    public bool    GameDetected       => _gameDetected;
+    public long    CurrentUniverseId  => _currentUniverseId;
+    public string? CurrentPageName    { get; private set; } = "Home";
+    public bool    SuppressAutoRefresh => _suppressAutoRefresh;
 
     // ── イベント ───────────────────────────────────────────────────────
 
@@ -166,10 +169,17 @@ public sealed class DiscordRichPresence : IDisposable
         void OnConnected(object? _, bool connected) { if (connected) tcs.TrySetResult(true); }
         ConnectionChanged += OnConnected;
 
-        Initialize(applicationId);
-
-        await Task.WhenAny(tcs.Task, Task.Delay(timeoutMs));
-        ConnectionChanged -= OnConnected;
+        _suppressAutoRefresh = true;
+        try
+        {
+            Initialize(applicationId);
+            await Task.WhenAny(tcs.Task, Task.Delay(timeoutMs));
+        }
+        finally
+        {
+            ConnectionChanged -= OnConnected;
+            _suppressAutoRefresh = false;
+        }
     }
 
     public void SetUserLabel(string? label) { lock (_lock) { _userLabel = label; } }
