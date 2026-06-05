@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NexStrap.ViewModels"
              xmlns:helpers="using:NexStrap.Helpers"
@@ -14,14 +14,13 @@
             <TextBlock Text="Add your Roblox account to log in automatically"
                        FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
 
-            <!-- Import section -->
+            <!-- Add Account section -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14"
                     BoxShadow="0 2 10 0 #22000000">
                 <StackPanel Spacing="10">
                     <TextBlock Text="Add Account" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}"/>
 
-                    <!-- Buttons row -->
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Content="Login with Browser"
                                 Command="{Binding LoginWithBrowserCommand}"
@@ -36,6 +35,13 @@
                         <Button Content="Paste Cookie"
                                 Command="{Binding TogglePastePanelCommand}"
                                 Background="{Binding IsPastePanelOpen,
+                                    Converter={StaticResource BoolToColorConverter},
+                                    ConverterParameter='#2A2A2A,transparent'}"
+                                BorderBrush="#2E2E2E" BorderThickness="1"
+                                Foreground="#FFFFFF" FontSize="12" Padding="14,8" CornerRadius="8"/>
+                        <Button Content="Quick Login"
+                                Command="{Binding ToggleQuickLoginPanelCommand}"
+                                Background="{Binding IsQuickLoginOpen,
                                     Converter={StaticResource BoolToColorConverter},
                                     ConverterParameter='#2A2A2A,transparent'}"
                                 BorderBrush="#2E2E2E" BorderThickness="1"
@@ -70,6 +76,29 @@
                                     Padding="20,8" CornerRadius="8"/>
                         </Grid>
                     </StackPanel>
+
+                    <!-- Quick Login panel -->
+                    <StackPanel Spacing="8" IsVisible="{Binding IsQuickLoginOpen}">
+                        <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
+                                   Text="Enter the 6-digit code shown on another account to switch instantly"/>
+                        <Grid ColumnDefinitions="*,8,Auto">
+                            <TextBox Grid.Column="0"
+                                     Text="{Binding QuickLoginInput}"
+                                     Watermark="000000"
+                                     MaxLength="6"
+                                     Background="{DynamicResource SurfaceBg}"
+                                     Foreground="#FFFFFF" FontSize="18"
+                                     BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,8"
+                                     FontFamily="Consolas,monospace"
+                                     TextAlignment="Center" FontWeight="SemiBold"
+                                     LetterSpacing="6"/>
+                            <Button Grid.Column="2" Content="Login"
+                                    Command="{Binding RedeemCodeCommand}"
+                                    Background="#FFFFFF" Foreground="#080808"
+                                    FontWeight="SemiBold" FontSize="12"
+                                    Padding="20,8" CornerRadius="8"/>
+                        </Grid>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 
@@ -86,55 +115,83 @@
                     <DataTemplate x:DataType="vm:AccountEntryViewModel">
                         <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="12,10"
                                 Margin="0,0,0,6" BoxShadow="0 2 8 0 #1A000000">
-                            <Grid ColumnDefinitions="36,*,Auto,8,Auto">
+                            <StackPanel Spacing="8">
 
-                                <!-- Avatar -->
-                                <Border Grid.Column="0" Width="36" Height="36"
-                                        CornerRadius="8" ClipToBounds="True"
-                                        Background="{DynamicResource OverlayBg}">
-                                    <Image Source="{Binding Icon}" Stretch="UniformToFill"/>
-                                </Border>
+                                <Grid ColumnDefinitions="36,*,Auto,8,Auto">
 
-                                <!-- Name / username -->
-                                <StackPanel Grid.Column="1" Spacing="2" Margin="10,0">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="13"
-                                                   FontWeight="SemiBold" Foreground="#FFFFFF"/>
-                                        <Border CornerRadius="8" Padding="6,2"
-                                                Background="#1A4ADE80"
-                                                IsVisible="{Binding IsActive}">
-                                            <TextBlock Text="Active" FontSize="10"
-                                                       Foreground="#4ADE80"/>
-                                        </Border>
+                                    <!-- Avatar -->
+                                    <Border Grid.Column="0" Width="36" Height="36"
+                                            CornerRadius="8" ClipToBounds="True"
+                                            Background="{DynamicResource OverlayBg}">
+                                        <Image Source="{Binding Icon}" Stretch="UniformToFill"/>
+                                    </Border>
+
+                                    <!-- Name / username -->
+                                    <StackPanel Grid.Column="1" Spacing="2" Margin="10,0">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="13"
+                                                       FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                                            <Border CornerRadius="8" Padding="6,2"
+                                                    Background="#1A4ADE80"
+                                                    IsVisible="{Binding IsActive}">
+                                                <TextBlock Text="Active" FontSize="10"
+                                                           Foreground="#4ADE80"/>
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
+                                                   Text="{Binding Username, StringFormat='@{0}'}"/>
                                     </StackPanel>
-                                    <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
-                                               Text="{Binding Username, StringFormat='@{0}'}"/>
-                                </StackPanel>
 
-                                <!-- Instance badge -->
-                                <Border Grid.Column="2" CornerRadius="8" Padding="8,3"
+                                    <!-- Instance badge -->
+                                    <Border Grid.Column="2" CornerRadius="8" Padding="8,3"
+                                            Background="{DynamicResource OverlayBg}"
+                                            VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding InstanceLabel}"
+                                                   FontSize="10" Foreground="{DynamicResource FgSub}"/>
+                                    </Border>
+
+                                    <!-- Actions -->
+                                    <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6"
+                                                VerticalAlignment="Center">
+                                        <Button Content="Switch"
+                                                Command="{Binding SetActiveCommand}"
+                                                Background="{DynamicResource OverlayBg}"
+                                                Foreground="#FFFFFF" FontSize="11"
+                                                Padding="10,5" CornerRadius="8"/>
+                                        <Button Content="Get Code"
+                                                Command="{Binding GenerateCodeCommand}"
+                                                Background="{DynamicResource OverlayBg}"
+                                                Foreground="#FFFFFF" FontSize="11"
+                                                Padding="10,5" CornerRadius="8"/>
+                                        <Button Content="Remove"
+                                                Command="{Binding RemoveCommand}"
+                                                Background="#1AFF4444"
+                                                Foreground="{DynamicResource FgDanger}" FontSize="11"
+                                                Padding="10,5" CornerRadius="8"/>
+                                    </StackPanel>
+
+                                </Grid>
+
+                                <!-- Code display row -->
+                                <Border IsVisible="{Binding HasActiveCode}"
                                         Background="{DynamicResource OverlayBg}"
-                                        VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding InstanceLabel}"
-                                               FontSize="10" Foreground="{DynamicResource FgSub}"/>
+                                        CornerRadius="6" Padding="12,8">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding ActiveCode}"
+                                                   FontSize="22" FontWeight="Bold"
+                                                   FontFamily="Consolas,monospace"
+                                                   Foreground="#FFFFFF"
+                                                   LetterSpacing="6"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding CodeSecondsLeft, StringFormat='⏱ {0}s'}"
+                                                   FontSize="12" Foreground="{DynamicResource FgSub}"
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
                                 </Border>
 
-                                <!-- Actions -->
-                                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6"
-                                            VerticalAlignment="Center">
-                                    <Button Content="Switch"
-                                            Command="{Binding SetActiveCommand}"
-                                            Background="{DynamicResource OverlayBg}"
-                                            Foreground="#FFFFFF" FontSize="11"
-                                            Padding="10,5" CornerRadius="8"/>
-                                    <Button Content="Remove"
-                                            Command="{Binding RemoveCommand}"
-                                            Background="#1AFF4444"
-                                            Foreground="{DynamicResource FgDanger}" FontSize="11"
-                                            Padding="10,5" CornerRadius="8"/>
-                                </StackPanel>
-
-                            </Grid>
+                            </StackPanel>
                         </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

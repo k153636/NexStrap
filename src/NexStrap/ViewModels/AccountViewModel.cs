@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Newtonsoft.Json.Linq;
@@ -16,6 +17,9 @@ public partial class AccountEntryViewModel : ViewModelBase
 {
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(8) };
 
+    private readonly QuickLoginService _quickLogin;
+    private DispatcherTimer? _timer;
+
     public RobloxAccount Account { get; }
 
     public Guid    Id            => Account.Id;
@@ -26,21 +30,51 @@ public partial class AccountEntryViewModel : ViewModelBase
     public int     InstanceIndex { get; }
     public string  InstanceLabel => $"Instance {InstanceIndex + 1}";
 
-    // 親 ViewModel への参照不要にするためコマンドをここに持つ
     public CommunityToolkit.Mvvm.Input.IRelayCommand SetActiveCommand { get; }
     public CommunityToolkit.Mvvm.Input.IRelayCommand RemoveCommand    { get; }
 
     [ObservableProperty] private Bitmap? _icon;
+    [ObservableProperty] private string? _activeCode;
+    [ObservableProperty] private int     _codeSecondsLeft;
+
+    public bool HasActiveCode => ActiveCode != null;
 
     public AccountEntryViewModel(RobloxAccount account, int index,
-        Action<AccountEntryViewModel> setActive, Action<AccountEntryViewModel> remove)
+        Action<AccountEntryViewModel> setActive, Action<AccountEntryViewModel> remove,
+        QuickLoginService quickLogin)
     {
         Account          = account;
         InstanceIndex    = index;
+        _quickLogin      = quickLogin;
         SetActiveCommand = new CommunityToolkit.Mvvm.Input.RelayCommand(() => setActive(this));
         RemoveCommand    = new CommunityToolkit.Mvvm.Input.RelayCommand(() => remove(this));
         if (!string.IsNullOrEmpty(account.AvatarUrl))
             _ = LoadIconAsync(account.AvatarUrl);
+    }
+
+    [RelayCommand]
+    private void GenerateCode()
+    {
+        ActiveCode       = _quickLogin.GenerateCode(Account.Id);
+        CodeSecondsLeft  = (int)_quickLogin.GetRemaining(ActiveCode)!.Value.TotalSeconds;
+        OnPropertyChanged(nameof(HasActiveCode));
+
+        _timer?.Stop();
+        _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _timer.Tick += (_, _) =>
+        {
+            if (ActiveCode == null) { _timer.Stop(); return; }
+            var rem = _quickLogin.GetRemaining(ActiveCode);
+            if (rem == null)
+            {
+                ActiveCode = null;
+                OnPropertyChanged(nameof(HasActiveCode));
+                _timer.Stop();
+                return;
+            }
+            CodeSecondsLeft = (int)rem.Value.TotalSeconds;
+        };
+        _timer.Start();
     }
 
     private async Task LoadIconAsync(string url)
@@ -57,22 +91,26 @@ public partial class AccountEntryViewModel : ViewModelBase
 
 public partial class AccountViewModel : ViewModelBase
 {
-    private readonly AccountService _accounts;
-    private readonly RobloxApiService _robloxApi;
-    private CancellationTokenSource? _pollCts;
+    private readonly AccountService    _accounts;
+    private readonly RobloxApiService  _robloxApi;
+    private readonly QuickLoginService _quickLogin;
+    private CancellationTokenSource?   _pollCts;
 
     public ObservableCollection<AccountEntryViewModel> Accounts { get; } = [];
 
-    [ObservableProperty] private string _statusMessage = string.Empty;
+    [ObservableProperty] private string _statusMessage      = string.Empty;
     [ObservableProperty] private bool   _isImporting;
     [ObservableProperty] private bool   _isWaitingForLogin;
-    [ObservableProperty] private string _manualCookie = string.Empty;
+    [ObservableProperty] private string _manualCookie       = string.Empty;
     [ObservableProperty] private bool   _isPastePanelOpen;
+    [ObservableProperty] private bool   _isQuickLoginOpen;
+    [ObservableProperty] private string _quickLoginInput    = string.Empty;
 
-    public AccountViewModel(AccountService accounts, RobloxApiService robloxApi)
+    public AccountViewModel(AccountService accounts, RobloxApiService robloxApi, QuickLoginService quickLogin)
     {
-        _accounts = accounts;
-        _robloxApi = robloxApi;
+        _accounts   = accounts;
+        _robloxApi  = robloxApi;
+        _quickLogin = quickLogin;
         Reload();
     }
 
@@ -83,7 +121,39 @@ public partial class AccountViewModel : ViewModelBase
         for (int i = 0; i < list.Count; i++)
             Accounts.Add(new AccountEntryViewModel(list[i], i,
                 e => { _accounts.SetActive(e.Id); Reload(); },
-                e => { _accounts.Remove(e.Id); Reload(); StatusMessage = "Removed"; }));
+                e => { _accounts.Remove(e.Id); Reload(); StatusMessage = "Removed"; },
+                _quickLogin));
+    }
+
+    [RelayCommand]
+    private void ToggleQuickLoginPanel()
+    {
+        IsQuickLoginOpen = !IsQuickLoginOpen;
+        if (!IsQuickLoginOpen) QuickLoginInput = string.Empty;
+    }
+
+    [RelayCommand]
+    private void RedeemCode()
+    {
+        var input = QuickLoginInput.Trim();
+        if (input.Length != 6 || !input.All(char.IsDigit))
+        {
+            StatusMessage = "Enter a valid 6-digit code";
+            return;
+        }
+
+        var accountId = _quickLogin.Redeem(input);
+        if (accountId == null)
+        {
+            StatusMessage = "Code is invalid or expired";
+            return;
+        }
+
+        _accounts.SetActive(accountId.Value);
+        Reload();
+        QuickLoginInput  = string.Empty;
+        IsQuickLoginOpen = false;
+        StatusMessage    = "Switched account";
     }
 
     [RelayCommand]
@@ -155,7 +225,7 @@ public partial class AccountViewModel : ViewModelBase
         }
         finally
         {
-            IsImporting      = false;
+            IsImporting       = false;
             IsWaitingForLogin = false;
             _pollCts?.Dispose();
             _pollCts = null;

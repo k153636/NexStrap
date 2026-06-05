@@ -438,6 +438,7 @@ public partial class App : Application
         services.AddTransient<DiscordViewModel>();
         services.AddSingleton<UpdateService>();
         services.AddSingleton<AccountService>();
+        services.AddSingleton<QuickLoginService>();
         services.AddTransient<AccountViewModel>();
         services.AddTransient<FriendsViewModel>();
         services.AddTransient<StretchResolutionViewModel>();
