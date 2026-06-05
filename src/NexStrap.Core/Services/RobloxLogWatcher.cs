@@ -9,6 +9,7 @@ public class RobloxLogWatcher : IDisposable
     private Timer? _scanTimer;
     private Timer? _processTimer;
     private string? _watchedFile;
+    private uint    _watchedFilePid;
     private long _filePosition;
     private long _lastPlaceId;
     private bool _wasRunning;
@@ -16,6 +17,8 @@ public class RobloxLogWatcher : IDisposable
     private bool _isPlayingMode;
     private readonly object _lock = new();
     private readonly Func<bool> _isRobloxRunningFunc;
+
+    public uint CurrentEventSourcePid { get; private set; }
 
     public event EventHandler<(long placeId, long universeId)>? PlaceJoined;
     public event EventHandler<long>?   UserIdDetected;
@@ -83,10 +86,17 @@ public class RobloxLogWatcher : IDisposable
         {
             if (_isRobloxRunningFunc())
             {
+                bool isStudio = Path.GetFileName(latest).Contains("_Studio_", StringComparison.OrdinalIgnoreCase);
+                if (!isStudio)
+                {
+                    _watchedFilePid = FindOwnerPidForPlayerLog(latest);
+                    CurrentEventSourcePid = _watchedFilePid;
+                }
                 var (placeId, userId, universeId, ip) = ScanForLastPlaceIdAndUser(latest);
                 if (userId > 0) { _detectedUserId = userId; UserIdDetected?.Invoke(this, userId); }
                 if (placeId > 0) { _lastPlaceId = placeId; _wasRunning = true; PlaceJoined?.Invoke(this, (placeId, universeId)); }
                 if (!string.IsNullOrEmpty(ip)) { _detectedIp = ip; ServerIpDetected?.Invoke(this, ip); }
+                CurrentEventSourcePid = 0;
             }
             StartWatchingFile(latest, fromEnd: true);
         }
@@ -154,8 +164,12 @@ public class RobloxLogWatcher : IDisposable
             StartWatchingFileUnsafe(latest, fromEnd: false);
             switched = true;
         }
-        // 新ファイルを即座にポーリングしてゲーム参加を素早く検知
-        if (switched) PollLogFile();
+        if (switched)
+        {
+            bool isStudio = Path.GetFileName(latest).Contains("_Studio_", StringComparison.OrdinalIgnoreCase);
+            _watchedFilePid = isStudio ? 0 : FindOwnerPidForPlayerLog(latest);
+            PollLogFile();
+        }
     }
 
     private void StartWatchingFile(string path, bool fromEnd)
@@ -185,6 +199,7 @@ public class RobloxLogWatcher : IDisposable
             InstanceSlotChanged?.Invoke(this, CurrentSlotId);
         }
         _watchedFile    = path;
+        _watchedFilePid = 0; // resolved lazily in PollLogFile or after this call
         _lastPlaceId    = 0;
         _detectedIp     = string.Empty;
         _detectedUserId = 0;
@@ -237,10 +252,19 @@ public class RobloxLogWatcher : IDisposable
         lock (_lock) { file = _watchedFile; position = _filePosition; }
 
         if (file == null || !File.Exists(file)) return;
+
+        // PIDが未解決なら今解決する（新ファイルに切り替わった直後など）
+        if (_watchedFilePid == 0)
+        {
+            bool isStudio = Path.GetFileName(file).Contains("_Studio_", StringComparison.OrdinalIgnoreCase);
+            if (!isStudio) _watchedFilePid = FindOwnerPidForPlayerLog(file);
+        }
+        CurrentEventSourcePid = _watchedFilePid;
+
         try
         {
             using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            if (fs.Length <= position) return;
+            if (fs.Length <= position) { CurrentEventSourcePid = 0; return; }
 
             fs.Seek(position, SeekOrigin.Begin);
             using var reader = new StreamReader(fs);
@@ -256,6 +280,7 @@ public class RobloxLogWatcher : IDisposable
             }
         }
         catch { }
+        finally { CurrentEventSourcePid = 0; }
     }
 
     private void ProcessLine(string line)
@@ -356,7 +381,12 @@ public class RobloxLogWatcher : IDisposable
             shouldFireLeave = _wasRunning;
             if (_wasRunning) { _wasRunning = false; _lastPlaceId = 0; }
         }
-        if (shouldFireLeave) GameLeft?.Invoke(this, EventArgs.Empty);
+        if (shouldFireLeave)
+        {
+            CurrentEventSourcePid = _watchedFilePid;
+            GameLeft?.Invoke(this, EventArgs.Empty);
+            CurrentEventSourcePid = 0;
+        }
     }
 
     public static bool IsRobloxRunning()
@@ -381,6 +411,79 @@ public class RobloxLogWatcher : IDisposable
         return Directory.GetFiles(LogDir, "*.log")
             .OrderByDescending(File.GetLastWriteTime)
             .FirstOrDefault();
+    }
+
+    // ログファイルの作成時刻とプロセス起動時刻を照合してオーナーPIDを特定する（120秒以内）
+    private static uint FindOwnerPidForPlayerLog(string logFilePath)
+    {
+        try
+        {
+            var created = File.GetCreationTime(logFilePath);
+            Process? best = null;
+            double bestDelta = 120.0;
+            foreach (var p in Process.GetProcessesByName("RobloxPlayerBeta")
+                                     .Concat(Process.GetProcessesByName("RobloxPlayer"))
+                                     .Where(p => !p.HasExited))
+            {
+                try
+                {
+                    var delta = Math.Abs((p.StartTime - created).TotalSeconds);
+                    if (delta < bestDelta) { bestDelta = delta; best = p; }
+                }
+                catch { }
+            }
+            return best != null ? (uint)best.Id : 0;
+        }
+        catch { return 0; }
+    }
+
+    // プロセスの起動時刻に最も近いPlayerログファイルを見つける（120秒以内）
+    private static string? FindLogFileForProcess(Process proc)
+    {
+        if (!Directory.Exists(LogDir)) return null;
+        try
+        {
+            var startTime = proc.StartTime;
+            string? best = null;
+            double bestDelta = 120.0;
+            foreach (var f in Directory.GetFiles(LogDir, "*_Player_*_last.log"))
+            {
+                if (f.Contains("_Studio_", StringComparison.OrdinalIgnoreCase)) continue;
+                var delta = Math.Abs((File.GetCreationTime(f) - startTime).TotalSeconds);
+                if (delta < bestDelta) { bestDelta = delta; best = f; }
+            }
+            return best;
+        }
+        catch { return null; }
+    }
+
+    // 現在監視中のファイル以外の全Playerインスタンスをスキャンし、起動時イベントを発火する
+    public void ScanAllPlayerInstances()
+    {
+        string? watchedFile;
+        lock (_lock) { watchedFile = _watchedFile; }
+
+        var procs = Process.GetProcessesByName("RobloxPlayerBeta")
+                           .Concat(Process.GetProcessesByName("RobloxPlayer"))
+                           .Where(p => !p.HasExited)
+                           .ToList();
+
+        foreach (var proc in procs)
+        {
+            var logFile = FindLogFileForProcess(proc);
+            if (logFile == null || logFile == watchedFile) continue;
+
+            CurrentEventSourcePid = (uint)proc.Id;
+            try
+            {
+                var (placeId, userId, universeId, ip) = ScanForLastPlaceIdAndUser(logFile);
+                if (userId > 0)                    UserIdDetected?.Invoke(this, userId);
+                if (placeId > 0)                   PlaceJoined?.Invoke(this, (placeId, universeId));
+                if (!string.IsNullOrEmpty(ip))     ServerIpDetected?.Invoke(this, ip);
+            }
+            catch { }
+            finally { CurrentEventSourcePid = 0; }
+        }
     }
 
     public void Dispose() => Stop();

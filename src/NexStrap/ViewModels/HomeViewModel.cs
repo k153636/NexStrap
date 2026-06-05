@@ -105,6 +105,17 @@ public partial class HomeViewModel : ViewModelBase
         Process.GetProcessesByName("RobloxPlayerBeta")
                .Concat(Process.GetProcessesByName("RobloxPlayer"));
 
+    private int GetSlotForPid(uint pid)
+    {
+        if (pid == 0) return -1;
+        lock (_slotPids)
+        {
+            foreach (var kv in _slotPids)
+                if (kv.Value == pid) return kv.Key;
+        }
+        return -1;
+    }
+
     // ══════════════════════════════════════════════════════════════════════
     // コンストラクタ
     // ══════════════════════════════════════════════════════════════════════
@@ -190,7 +201,7 @@ public partial class HomeViewModel : ViewModelBase
         // ── ユーザーID検出 ────────────────────────────────────────────────
         _logWatcher.UserIdDetected += async (_, userId) =>
         {
-            var slot = _logWatcher.CurrentSlotId;
+            var slot = GetSlotForPid(_logWatcher.CurrentEventSourcePid);
             try
             {
                 _settings.Update(s => s.CachedRobloxUserId = userId);
@@ -236,8 +247,9 @@ public partial class HomeViewModel : ViewModelBase
         {
             var (placeId, universeIdFromLog) = args;
             if (_logWatcher.IsWatchingStudioLog) return;
+            var sourcePid = _logWatcher.CurrentEventSourcePid;
             RefreshSlotPids();
-            _presence.EnqueuePlaceJoined(placeId, universeIdFromLog, _logWatcher.CurrentSlotId);
+            _presence.EnqueuePlaceJoined(placeId, universeIdFromLog, GetSlotForPid(sourcePid));
         };
 
         // ── DiscordRichPresence → HomeViewModel イベント ──────────────────
@@ -316,7 +328,7 @@ public partial class HomeViewModel : ViewModelBase
 
             var robloxCount = RobloxLogWatcher.IsRobloxRunning() || _roblox.IsNexStrapRobloxRunning()
                 ? GetRobloxProcesses().Count() : 0;
-            _presence.EnqueueGameLeft(_logWatcher.CurrentSlotId, robloxCount);
+            _presence.EnqueueGameLeft(GetSlotForPid(_logWatcher.CurrentEventSourcePid), robloxCount);
 
             Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -349,13 +361,16 @@ public partial class HomeViewModel : ViewModelBase
 
         _logWatcher.Start();
 
+        // 起動済みの全Robloxインスタンスを起動順にスロット0, 1, ... へマッピング
         try
         {
-            var oldest = GetRobloxProcesses().Where(p => !p.HasExited)
-                .OrderBy(p => p.StartTime).FirstOrDefault();
-            if (oldest != null) _slotPids[0] = (uint)oldest.Id;
+            var procs = GetRobloxProcesses().Where(p => !p.HasExited).OrderBy(p => p.StartTime).ToList();
+            lock (_slotPids) { _slotPids.Clear(); for (int i = 0; i < procs.Count; i++) _slotPids[i] = (uint)procs[i].Id; }
         }
         catch { }
+
+        // メインの監視ファイル以外のインスタンスも初期スキャンして_gamesを全スロット分埋める
+        _ = Task.Run(() => _logWatcher.ScanAllPlayerInstances());
 
         // ── フォーカスタイマー ────────────────────────────────────────────
         _focusTimer = new Timer(_ =>
