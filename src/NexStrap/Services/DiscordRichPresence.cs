@@ -716,6 +716,8 @@ public sealed class DiscordRichPresence : IDisposable
     // ══════════════════════════════════════════════════════════════════════
 
     private string _lastStudioPresenceKey = string.Empty;
+    private int    _studioHomeConfirmCount;
+    private const int StudioHomeConfirmThreshold = 3; // 3 ポーリング（9秒）連続でホームが確認されたら確定
 
     private void CheckStudioAndEnqueue()
     {
@@ -728,7 +730,8 @@ public sealed class DiscordRichPresence : IDisposable
 
             if (detected != _studioDetected)
             {
-                _lastStudioPresenceKey = string.Empty;
+                _lastStudioPresenceKey  = string.Empty;
+                _studioHomeConfirmCount = 0;
                 Enqueue(new EvStudio(detected, null, false));
                 return;
             }
@@ -737,12 +740,26 @@ public sealed class DiscordRichPresence : IDisposable
 
             var title = proc!.MainWindowTitle;
             if (string.IsNullOrEmpty(title)) return;
-            var key = title.Contains(" - Roblox Studio") ? title : "home";
-            if (key == _lastStudioPresenceKey) return;
-            _lastStudioPresenceKey = key;
 
-            var placeName = key != "home" ? title.Replace(" - Roblox Studio", "").Trim() : null;
-            Enqueue(new EvStudio(true, placeName, false));
+            if (title.Contains(" - Roblox Studio"))
+            {
+                // プレースが開いている — * (未保存マーク) を除去してから使う
+                _studioHomeConfirmCount = 0;
+                var placeName = title.Replace(" - Roblox Studio", "").Trim().TrimStart('*').Trim();
+                var key       = placeName; // プレース名をキーにする
+                if (key == _lastStudioPresenceKey) return;
+                _lastStudioPresenceKey = key;
+                Enqueue(new EvStudio(true, placeName, false));
+            }
+            else
+            {
+                // ホーム or 不明なタイトル — 一時的な変化を無視するため複数回確認
+                _studioHomeConfirmCount++;
+                if (_studioHomeConfirmCount < StudioHomeConfirmThreshold) return;
+                if (_lastStudioPresenceKey == "home") return;
+                _lastStudioPresenceKey = "home";
+                Enqueue(new EvStudio(true, null, false));
+            }
         }
         catch { }
     }
