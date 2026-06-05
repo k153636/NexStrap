@@ -63,7 +63,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         accountVM.LaunchAsRequested += () =>
         {
-            CurrentPage = HomeVM;
             HomeVM.LaunchRobloxCommand.Execute(null);
         };
         _currentPage = homeVM;
