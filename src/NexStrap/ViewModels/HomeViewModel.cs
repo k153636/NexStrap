@@ -388,7 +388,7 @@ public partial class HomeViewModel : ViewModelBase
                 switch (status)
                 {
                     case RobloxStatus.Updating:  _presence.EnqueueInstallingStudioPresence(); break;
-                    case RobloxStatus.Launching: _presence.EnqueueLaunchingPresence(); break;
+                    case RobloxStatus.Launching: _presence.EnqueueInstallingStudioPresence(); break;
                     case RobloxStatus.Running:   break;
                     case RobloxStatus.Idle:      _presence.EnqueueRefresh(); break;
                 }
@@ -511,7 +511,7 @@ public partial class HomeViewModel : ViewModelBase
         if (IsStudioLaunching) return;
         IsStudioLaunching = true;
         StatusText        = "Launching Studio...";
-        _presence.EnqueueLaunchingPresence();
+        _presence.EnqueueInstallingStudioPresence();
         await _studioFastFlags.SaveAsync();
         var launched = await _studio.LaunchAsync();
         StatusText        = launched ? (IsRobloxRunning ? "Roblox running" : "Ready") : "Studio launch failed";

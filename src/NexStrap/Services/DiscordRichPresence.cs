@@ -478,10 +478,10 @@ public sealed class DiscordRichPresence : IDisposable
             string? label; lock (_rpcLock) { label = _userLabel; }
             return _overlay switch
             {
-                OverlayKind.Launching       => Build("Roblox / Launching",      null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label),
-                OverlayKind.InstallingStudio => Build("Roblox Studio / Install", null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label),
-                OverlayKind.Dev             => Build("NexStrap / Developer",     null, "nexstrap", "NexStrap Developer",              null,        null),
-                _                           => null
+                OverlayKind.Launching        => Build("Roblox / Launching", null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label),
+                OverlayKind.InstallingStudio => Build("Roblox Studio",      null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label),
+                OverlayKind.Dev              => Build("NexStrap / Developer", null, "nexstrap", "NexStrap Developer",             null,        null),
+                _                            => null
             };
         }
 
@@ -516,7 +516,7 @@ public sealed class DiscordRichPresence : IDisposable
                     _avatarUrl, label, timestamps: ts);
 
             var details = string.IsNullOrEmpty(_studioPlaceName)
-                ? (_studioDetected ? "Roblox Studio / Editing" : "Roblox Studio")
+                ? "Roblox Studio"
                 : $"Roblox Studio / {_studioPlaceName}";
             return Build(s.DiscordShowLauncherDetails ? details : null, null, "nexstrap",
                 "NexStrap Launcher · Created by K", _avatarUrl, label, timestamps: ts);
