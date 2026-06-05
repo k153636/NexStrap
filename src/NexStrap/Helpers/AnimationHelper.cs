@@ -47,10 +47,28 @@ public static class AnimationHelper
     public static bool GetAnimateIn(Control e) => e.GetValue(AnimateInProperty);
     public static void SetAnimateIn(Control e, bool v) => e.SetValue(AnimateInProperty, v);
 
+    // ── TriggerStagger — バインドが true になるたびに子要素を一斉アニメ ──────
+    public static readonly AttachedProperty<bool> TriggerStaggerProperty =
+        AvaloniaProperty.RegisterAttached<Panel, bool>(
+            "TriggerStagger", typeof(AnimationHelper));
+
+    public static bool GetTriggerStagger(Panel e) => e.GetValue(TriggerStaggerProperty);
+    public static void SetTriggerStagger(Panel e, bool v) => e.SetValue(TriggerStaggerProperty, v);
+
+    // ── TriggerFadeIn — バインドが true になるたびに単体コントロールをアニメ ─
+    public static readonly AttachedProperty<bool> TriggerFadeInProperty =
+        AvaloniaProperty.RegisterAttached<Control, bool>(
+            "TriggerFadeIn", typeof(AnimationHelper));
+
+    public static bool GetTriggerFadeIn(Control e) => e.GetValue(TriggerFadeInProperty);
+    public static void SetTriggerFadeIn(Control e, bool v) => e.SetValue(TriggerFadeInProperty, v);
+
     static AnimationHelper()
     {
         StaggerChildrenProperty.Changed.AddClassHandler<Panel>(OnStaggerChildrenChanged);
         AnimateInProperty.Changed.AddClassHandler<Control>(OnAnimateInChanged);
+        TriggerStaggerProperty.Changed.AddClassHandler<Panel>(OnTriggerStaggerChanged);
+        TriggerFadeInProperty.Changed.AddClassHandler<Control>(OnTriggerFadeInChanged);
     }
 
     private static void OnStaggerChildrenChanged(Panel panel, AvaloniaPropertyChangedEventArgs e)
@@ -71,6 +89,25 @@ public static class AnimationHelper
             var idx = NextBurstIndex();
             RunAnimation(ctrl, Math.Min(idx * StaggerStep, MaxDelay));
         };
+    }
+
+    private static void OnTriggerStaggerChanged(Panel panel, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (!e.GetNewValue<bool>()) return;
+        // IsVisible が反映されてからアニメを開始
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            for (int i = 0; i < panel.Children.Count; i++)
+                RunAnimation(panel.Children[i], Math.Min(i * StaggerStep, MaxDelay));
+        }, DispatcherPriority.Render);
+    }
+
+    private static void OnTriggerFadeInChanged(Control ctrl, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (!e.GetNewValue<bool>()) return;
+        Dispatcher.UIThread.InvokeAsync(
+            () => RunAnimation(ctrl, 0),
+            DispatcherPriority.Render);
     }
 
     // ── Core animation (DispatcherTimer-driven, 60 fps) ───────────────────

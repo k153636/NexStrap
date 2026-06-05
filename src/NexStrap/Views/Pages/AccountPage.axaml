@@ -41,7 +41,8 @@
 
         <!-- Accounts タブ -->
         <ScrollViewer Grid.Row="1" IsVisible="{Binding IsAccountsTab}">
-            <StackPanel Spacing="10" Margin="24,12,24,20">
+            <StackPanel Spacing="10" Margin="24,12,24,20"
+                        helpers:AnimationHelper.TriggerStagger="{Binding IsAccountsTab}">
 
                 <!-- 統計カード（アクティブアカウントあり時） -->
                 <Border IsVisible="{Binding IsStatsVisible}"
@@ -338,7 +339,8 @@
         </ScrollViewer>
 
         <!-- Friends タブ（Border で DataContext スコープを分離） -->
-        <Border Grid.Row="1" IsVisible="{Binding IsFriendsTab}">
+        <Border Grid.Row="1" IsVisible="{Binding IsFriendsTab}"
+                helpers:AnimationHelper.TriggerFadeIn="{Binding IsFriendsTab}">
             <pages:FriendsPage DataContext="{Binding FriendsVm}"/>
         </Border>
 
