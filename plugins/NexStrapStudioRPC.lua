@@ -87,15 +87,11 @@ end
 -- ── HTTP ──────────────────────────────────────────────────────────────────
 
 local function send(command: string, data: { [string]: unknown }): ()
-    if not HttpService.HttpEnabled then
-        warn("[NexStrap] HTTP Requests が無効です（Experience Settings → Security）")
-        return
-    end
-
     local envelope: RpcEnvelope = { command = command, data = data }
     local body = HttpService:JSONEncode(envelope)
 
     task.spawn(function()
+        -- HTTP が無効 / ランチャー未起動はサイレントに無視（pcall で完全に捕捉）
         pcall(function()
             HttpService:RequestAsync({
                 Url     = ENDPOINT,
