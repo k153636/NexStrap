@@ -159,27 +159,37 @@ public class StudioService
     [DllImport("gdi32.dll", CharSet = CharSet.Unicode)]
     private static extern int AddFontResourceEx(string lpszFilename, uint fl, IntPtr pdv);
 
-    private const uint FR_PRIVATE  = 0x10; // 現プロセスのみ有効（終了時自動削除）
-    private const uint FR_NOT_ENUM = 0x20; // フォント一覧に表示しない
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+    private const uint FR_NOT_ENUM     = 0x20;   // フォント一覧に表示しない
+    private const uint WM_FONTCHANGE   = 0x001D;
+    private static readonly IntPtr HWND_BROADCAST = new IntPtr(0xFFFF);
 
     private static void RegisterStudioFonts(string studioDir)
     {
         var fontsDir = Path.Combine(studioDir, "StudioFonts");
         if (!Directory.Exists(fontsDir)) return;
 
-        // AddFontResourceEx は GDI 向けで Qt フォントには効かないが念のため実行
+        // FR_PRIVATE を使わず全プロセスに公開して登録し、WM_FONTCHANGE でブロードキャスト
+        var registered = 0;
         try
         {
             foreach (var file in Directory.GetFiles(fontsDir))
             {
                 var ext = Path.GetExtension(file).ToLowerInvariant();
-                if (ext is ".otf" or ".ttf")
-                    AddFontResourceEx(file, FR_PRIVATE | FR_NOT_ENUM, IntPtr.Zero);
+                if (ext is ".otf" or ".ttf" && AddFontResourceEx(file, FR_NOT_ENUM, IntPtr.Zero) > 0)
+                    registered++;
             }
         }
         catch { }
 
-        // Qt はプロセス起動前に qt.conf の [Paths] Fonts= を参照してフォントを読み込む
+        if (registered > 0)
+        {
+            SendMessage(HWND_BROADCAST, WM_FONTCHANGE, IntPtr.Zero, IntPtr.Zero);
+            Logger.Instance.Info("Studio", $"フォント {registered} 個を全プロセスに登録し WM_FONTCHANGE を通知しました");
+        }
+
         var qtConf = Path.Combine(studioDir, "qt.conf");
         try
         {
