@@ -15,10 +15,7 @@ public partial class StretchResolutionViewModel : ViewModelBase
         new("1280 × 960",  1280,  960, "Most popular stretch — Valorant / CS2"),
         new("1440 × 1080", 1440, 1080, "High-res 4:3 — Valorant / CS2"),
         new("1024 × 768",  1024,  768, "Classic FPS — Max visibility boost"),
-        new("1152 × 864",  1152,  864, "Mid-range 4:3 — CS2 stretch"),
         new("800 × 600",    800,  600, "Ultra low-res — Maximum FPS"),
-        new("1280 × 1024", 1280, 1024, "5:4 stretch — Some Valorant players"),
-        new("1600 × 1200", 1600, 1200, "High-res 4:3 — Pro players"),
     ];
 
     [ObservableProperty] private bool   _applyOnLaunch;
