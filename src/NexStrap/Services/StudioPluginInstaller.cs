@@ -57,8 +57,10 @@ public static class StudioPluginInstaller
         IProgress<(string Message, double Percent, bool Indeterminate)>? progress = null,
         CancellationToken ct = default)
     {
+        var log = NexStrap.Core.Services.Logger.Instance;
         try
         {
+            log.Info("StudioPlugin", $"Downloading from {DownloadUrl}");
             progress?.Report(("Downloading Studio plugin...", 0, true));
 
             using var http    = new HttpClient();
@@ -70,13 +72,14 @@ public static class StudioPluginInstaller
             Directory.CreateDirectory(PluginDir);
             await File.WriteAllTextAsync(PluginPath, content, Encoding.UTF8, ct);
 
+            log.Info("StudioPlugin", $"Installed to {PluginPath}");
             progress?.Report(("Plugin installed.", 100, false));
             return true;
         }
         catch (OperationCanceledException) { return false; }
-        catch
+        catch (Exception ex)
         {
-            // ダウンロード失敗時は埋め込みリソースにフォールバック
+            log.Warning("StudioPlugin", $"Download failed ({ex.Message}), falling back to embedded resource");
             return EnsureInstalled();
         }
     }

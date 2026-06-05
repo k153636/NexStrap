@@ -57,14 +57,16 @@ public sealed class StudioRpcServer : IDisposable
             var envelope = JsonSerializer.Deserialize<RpcEnvelope>(body, _jsonOptions);
             if (envelope?.Command != null)
             {
+                Logger.Instance.Info("StudioRPC", $"Received: {envelope.Command}");
                 MessageReceived?.Invoke(this, new StudioRpcMessage(envelope.Command, envelope.Data));
             }
 
             ctx.Response.StatusCode = 200;
             ctx.Response.Close();
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Instance.Error("StudioRPC", $"HandleAsync failed: {ex.Message}");
             try { ctx.Response.StatusCode = 400; ctx.Response.Close(); } catch { }
         }
     }

@@ -228,10 +228,12 @@ public sealed class DiscordRichPresence : IDisposable
 
     private async Task HandleEventAsync(Ev ev)
     {
+        var log = NexStrap.Core.Services.Logger.Instance;
         switch (ev)
         {
             // ── Roblox 起動 / 終了 ──────────────────────────────────────────
             case EvRoblox { Running: true }:
+                log.Info("Discord", "Roblox started → Phase.RobloxMenu");
                 _games.Clear();
                 _phase         = Phase.RobloxMenu;
                 _fetchRetries  = 0;
@@ -240,6 +242,7 @@ public sealed class DiscordRichPresence : IDisposable
                 break;
 
             case EvRoblox { Running: false }:
+                log.Info("Discord", "Roblox stopped → Phase.NexStrapIdle");
                 _games.Clear();
                 _phase         = Phase.NexStrapIdle;
                 _universeId    = 0;
@@ -705,12 +708,17 @@ public sealed class DiscordRichPresence : IDisposable
         }
         if (alreadyConnected) return;
 
+        NexStrap.Core.Services.Logger.Instance.Info("Discord", $"Switching App ID → {appId}");
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         void OnReady(object? _, bool c) { if (c) tcs.TrySetResult(true); }
         ConnectionChanged += OnReady;
         RpcInitialize(appId);
-        await Task.WhenAny(tcs.Task, Task.Delay(3000));
+        var completed = await Task.WhenAny(tcs.Task, Task.Delay(3000));
         ConnectionChanged -= OnReady;
+        if (completed == tcs.Task)
+            NexStrap.Core.Services.Logger.Instance.Info("Discord", $"App ID ready: {appId}");
+        else
+            NexStrap.Core.Services.Logger.Instance.Warning("Discord", $"App ID switch timed out: {appId}");
     }
 
     private void RpcInitialize(string appId)

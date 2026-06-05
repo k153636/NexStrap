@@ -189,6 +189,9 @@ public partial class App : Application
                 });
         }
 
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime life)
+            life.Exit += (_, _) => NexStrap.Core.Services.Logger.Instance.Dispose();
+
         base.OnFrameworkInitializationCompleted();
     }
 
