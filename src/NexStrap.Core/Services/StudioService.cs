@@ -157,12 +157,11 @@ public class StudioService
     // -------------------------------------------------------------------------
 
     [DllImport("gdi32.dll", CharSet = CharSet.Unicode)]
-    private static extern int AddFontResourceEx(string lpszFilename, uint fl, IntPtr pdv);
+    private static extern int AddFontResource(string lpszFilename);
 
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
-    private const uint FR_NOT_ENUM   = 0x20;
     private const uint WM_FONTCHANGE = 0x001D;
     private static readonly IntPtr HWND_BROADCAST = new IntPtr(0xFFFF);
 
@@ -175,22 +174,25 @@ public class StudioService
         // GDI・DirectWrite・Qt すべてが参照するため最も確実な方法。
         InstallToUserFonts(fontsDir);
 
-        // GDI 登録（現セッション即時反映用）
+        // AddFontResource（フラグなし）で GDI に登録。
+        // FR_NOT_ENUM を使うと EnumFontFamiliesEx から隠れ Qt が検出できなくなるため使わない。
         var registered = 0;
         try
         {
             foreach (var file in Directory.GetFiles(fontsDir))
             {
                 var ext = Path.GetExtension(file).ToLowerInvariant();
-                if (ext is ".otf" or ".ttf" or ".ttc" &&
-                    AddFontResourceEx(file, FR_NOT_ENUM, IntPtr.Zero) > 0)
+                if (ext is ".otf" or ".ttf" or ".ttc" && AddFontResource(file) > 0)
                     registered++;
             }
         }
         catch { }
 
         if (registered > 0)
-            Logger.Instance.Info("Studio", $"フォント {registered} 個を GDI 登録済み");
+        {
+            SendMessage(HWND_BROADCAST, WM_FONTCHANGE, IntPtr.Zero, IntPtr.Zero);
+            Logger.Instance.Info("Studio", $"フォント {registered} 個を GDI に登録（列挙可能）");
+        }
     }
 
     private static void InstallToUserFonts(string fontsDir)
@@ -228,10 +230,7 @@ public class StudioService
         }
 
         if (installed > 0)
-        {
-            SendMessage(HWND_BROADCAST, WM_FONTCHANGE, IntPtr.Zero, IntPtr.Zero);
             Logger.Instance.Info("Studio", $"フォント {installed} 個をユーザーフォントフォルダにインストールしました: {userFontsDir}");
-        }
         else
         {
             Logger.Instance.Info("Studio", "ユーザーフォント: 全フォントインストール済み");
