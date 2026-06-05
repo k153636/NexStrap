@@ -132,13 +132,9 @@ public class StudioService
         {
             var studioDir = Path.GetDirectoryName(exePath)!;
 
-            // NexStrap のカスタムインストールパスでは Roblox 標準インストーラーが行う
-            // フォント登録が行われていないため、起動前に一時登録する
-            RegisterStudioFonts(studioDir);
-
             var psi = new ProcessStartInfo(exePath)
             {
-                UseShellExecute  = false,
+                UseShellExecute  = true,
                 WorkingDirectory = studioDir
             };
             Process.Start(psi);
