@@ -113,16 +113,13 @@ public class StudioService
     // -------------------------------------------------------------------------
     public async Task<bool> LaunchAsync()
     {
-        var exePath = StudioExePath;
-        if (exePath == null)
-        {
-            SetStatus(RobloxStatus.Updating);
-            var guid = await GetLatestVersionGuidCachedAsync();
-            if (!string.IsNullOrWhiteSpace(guid))
-                exePath = await InstallVersionAsync(guid);
-        }
+        // インストール済みの有無に関わらず常に最新バージョンチェックを行う
+        var versionPath = await InstallOrUpdateAsync();
+        var exePath = versionPath != null
+            ? Path.Combine(versionPath, "RobloxStudioBeta.exe")
+            : null;
 
-        if (exePath == null) { SetStatus(RobloxStatus.Idle); return false; }
+        if (exePath == null || !File.Exists(exePath)) { SetStatus(RobloxStatus.Idle); return false; }
 
         SetStatus(RobloxStatus.Launching);
         try
