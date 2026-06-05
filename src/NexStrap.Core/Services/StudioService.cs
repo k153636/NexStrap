@@ -127,7 +127,11 @@ public class StudioService
         SetStatus(RobloxStatus.Launching);
         try
         {
-            var psi = new ProcessStartInfo(exePath) { UseShellExecute = true };
+            var psi = new ProcessStartInfo(exePath)
+            {
+                UseShellExecute  = false,
+                WorkingDirectory = Path.GetDirectoryName(exePath)!
+            };
             Process.Start(psi);
             SetStatus(RobloxStatus.Running);
             return true;
