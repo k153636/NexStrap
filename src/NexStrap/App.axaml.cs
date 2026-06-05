@@ -132,7 +132,7 @@ public partial class App : Application
         {
             void HandleStudioStatus()
             {
-                if (status is RobloxStatus.Updating && studioBootstrapperWindow == null)
+                if (status is RobloxStatus.Updating or RobloxStatus.Launching && studioBootstrapperWindow == null)
                 {
                     studioBootstrapperViewModel = new BootstrapperViewModel(studioService, settingsService);
                     studioBootstrapperWindow = new BootstrapperWindow(studioBootstrapperViewModel);
