@@ -214,7 +214,9 @@ public class StudioService
         foreach (var src in Directory.GetFiles(fontsDir))
         {
             var ext = Path.GetExtension(src).ToLowerInvariant();
-            if (ext is not (".ttf" or ".otf" or ".ttc")) continue;
+            // .ttc（NotoSansCJK 等）はシステム登録するとシステム日本語フォントと競合するため除外。
+            // Studio が内部で addApplicationFont() を通じて自分でロードする。
+            if (ext is not (".ttf" or ".otf")) continue;
 
             var fileName = Path.GetFileName(src);
             var dst      = Path.Combine(userFontsDir, fileName);
