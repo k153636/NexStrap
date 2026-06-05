@@ -339,6 +339,7 @@ public sealed class DiscordRichPresence : IDisposable
                 if (_phase == Phase.NexStrapIdle || _phase == Phase.Studio)
                 {
                     _phase = det ? Phase.Studio : Phase.NexStrapIdle;
+                    await SwitchAppIdAsync(det ? AppConstants.DiscordStudioAppId : AppConstants.DiscordAppId);
                     ApplyPresence();
                 }
                 break;
