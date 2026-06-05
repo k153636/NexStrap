@@ -631,16 +631,26 @@ public sealed class DiscordRichPresence : IDisposable
                 buttons, gameTs);
         }
 
-        // マルチインスタンス
-        var unique = _games.Values.Select(g => g.Name ?? "Roblox")
-            .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        // マルチインスタンス: フォーカス中ウィンドウをシングルと同じ形式で表示
         var focused = _activeFocusedSlot >= 0 && _games.TryGetValue(_activeFocusedSlot, out var fg)
             ? fg : _games[_games.Keys.Max()];
-        return Build($"Roblox / {count} instances", string.Join(" · ", unique),
-            "roblox", "Playing Roblox",
+
+        var multiDetails = s.DiscordShowCreator && focused.Creator != null
+            ? $"{focused.Name} · by {focused.Creator}" : focused.Name ?? "Roblox";
+
+        var baseState   = FormatState(s);
+        var instanceStr = $"Instances {count}";
+        var multiState  = baseState != null ? $"{instanceStr} · {baseState}" : instanceStr;
+
+        var multiButtons = s.DiscordShowJoinButton && focused.PlaceId > 0
+            ? new Button[] { new() { Label = "Join Game", Url = $"https://www.roblox.com/games/{focused.PlaceId}" } }
+            : null;
+
+        return Build(multiDetails, multiState,
+            focused.IconUrl ?? "roblox", focused.Name ?? "Roblox",
             focused.AvatarUrl ?? _avatarUrl,
             focused.AvatarUrl != null || _avatarUrl != null ? (focused.UserLabel ?? label ?? "Profile") : null,
-            timestamps: _startTs);
+            multiButtons, gameTs);
     }
 
     private string? FormatState(Core.Models.AppSettings s)
