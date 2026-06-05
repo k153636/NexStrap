@@ -548,9 +548,7 @@ public sealed class DiscordRichPresence : IDisposable
 
         if (_phase == Phase.Studio)
         {
-            // プラグインからデータが届くまで（情報が揃うまで）は表示しない
-            if (!_studioRpcActive) return null;
-
+            // プレース名はプラグイン接続後に届く。それまでは details なしで表示
             var details = string.IsNullOrEmpty(_studioPlaceName) ? null : _studioPlaceName;
             var state   = _studioTesting ? "Testing" : null;
 
