@@ -26,15 +26,6 @@
 
 ---
 
-## Discord Rich Presence Preview
-
-<p align="center">
-  <img src="Images/presence-ingame.png" alt="In-Game Presence" width="280">
-  <img src="Images/presence-studio-editing.png" alt="Studio Editing" width="280">
-  <img src="Images/presence-studio-testing.png" alt="Studio Testing" width="280">
-</p>
-
----
 
 ## Why NexStrap?
 
