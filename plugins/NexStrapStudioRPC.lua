@@ -78,16 +78,6 @@ local function fetchWorkspace(): WorkspaceInfo
     return { name = name, placeId = placeId, isPublic = false }
 end
 
--- ワークスペース情報を取得してから presence を送信する。
--- 先に updatePresence を呼ぶと API 取得前の仮名（"Unsaved Project" 等）が表示されるため
--- 必ず fetchWorkspace 完了後に送信する。
-local function refreshWorkspaceThenUpdate(): ()
-    task.spawn(function()
-        workspace = fetchWorkspace()
-        updatePresence(true)
-    end)
-end
-
 -- ── HTTP ──────────────────────────────────────────────────────────────────
 
 local function send(command: string, data: { [string]: unknown }): ()
@@ -143,6 +133,14 @@ local function updatePresence(force: boolean?): ()
     task.delay(COOLDOWN_TIME, function() onCooldown = false end)
 
     send("SetRichPresence", payload :: { [string]: unknown })
+end
+
+-- API 取得完了後にのみ presence を送信する（仮名を表示しないため updatePresence の後に定義）
+local function refreshWorkspaceThenUpdate(): ()
+    task.spawn(function()
+        workspace = fetchWorkspace()
+        updatePresence(true)
+    end)
 end
 
 -- ── Teardown ──────────────────────────────────────────────────────────────
