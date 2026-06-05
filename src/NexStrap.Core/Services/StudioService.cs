@@ -25,9 +25,10 @@ public class StudioService
         ("https://s3.amazonaws.com/setup.roblox.com", 4000),
     ];
 
+    // Froststrap/Bloxstrap と同じパスを使用することで Qt のフォント解決が正しく機能する
     private static readonly string StudioVersionsDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "NexStrap", "StudioVersions");
+        "Roblox", "Versions");
 
     private static readonly string DownloadsDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
