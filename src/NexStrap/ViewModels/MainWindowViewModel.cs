@@ -29,7 +29,6 @@ public partial class MainWindowViewModel : ViewModelBase
     public StatsViewModel StatsVM { get; }
     public DevViewModel DevVM { get; }
     public AccountViewModel AccountVM { get; }
-    public FriendsViewModel FriendsVM { get; }
     public StretchResolutionViewModel StretchVM { get; }
 
     public MainWindowViewModel(
@@ -45,7 +44,6 @@ public partial class MainWindowViewModel : ViewModelBase
         StatsViewModel statsVM,
         DevViewModel devVM,
         AccountViewModel accountVM,
-        FriendsViewModel friendsVM,
         StretchResolutionViewModel stretchVM)
     {
         _discord = discord;
@@ -61,8 +59,13 @@ public partial class MainWindowViewModel : ViewModelBase
         StatsVM = statsVM;
         DevVM = devVM;
         AccountVM = accountVM;
-        FriendsVM = friendsVM;
         StretchVM = stretchVM;
+
+        accountVM.LaunchAsRequested += () =>
+        {
+            CurrentPage = HomeVM;
+            HomeVM.LaunchRobloxCommand.Execute(null);
+        };
         _currentPage = homeVM;
 
         IsDiscordAppIdMissing = false;
@@ -111,9 +114,6 @@ public partial class MainWindowViewModel : ViewModelBase
         if (page == "Stats")
             StatsVM.Refresh();
 
-        if (page == "Friends")
-            _ = FriendsVM.RefreshAsync();
-
         if (page == "Dev")
         {
             DevVM.Refresh();
@@ -133,7 +133,6 @@ public partial class MainWindowViewModel : ViewModelBase
             "Discord" => DiscordVM,
             "Settings" => SettingsVM,
             "Account" => AccountVM,
-            "Friends" => FriendsVM,
             "Stretch" => StretchVM,
             _ => HomeVM
         };

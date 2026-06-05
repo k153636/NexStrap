@@ -1,207 +1,346 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NexStrap.ViewModels"
+             xmlns:pages="using:NexStrap.Views.Pages"
              xmlns:helpers="using:NexStrap.Helpers"
              x:Class="NexStrap.Views.Pages.AccountPage"
              x:DataType="vm:AccountViewModel"
              Background="Transparent">
 
-    <ScrollViewer>
-        <StackPanel Spacing="10" Margin="24,20" helpers:AnimationHelper.StaggerChildren="True">
+    <Grid RowDefinitions="Auto,*">
 
+        <!-- タイトル + タブスイッチャー -->
+        <StackPanel Grid.Row="0" Margin="24,20,24,0" Spacing="0"
+                    helpers:AnimationHelper.StaggerChildren="True">
             <TextBlock Text="Account" FontSize="22" FontWeight="Bold"
-                       Foreground="#FFFFFF" Margin="0,0,0,2"/>
-            <TextBlock Text="Add your Roblox account to log in automatically"
-                       FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
+                       Foreground="#FFFFFF" Margin="0,0,0,10"/>
 
-            <!-- Add Account section -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14"
-                    BoxShadow="0 2 10 0 #22000000">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="Add Account" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{DynamicResource FgSub}"/>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button Content="Accounts"
+                        Command="{Binding SwitchTabCommand}" CommandParameter="Accounts"
+                        Background="{Binding IsAccountsTab,
+                            Converter={StaticResource BoolToColorConverter},
+                            ConverterParameter='#FFFFFF,transparent'}"
+                        Foreground="{Binding IsAccountsTab,
+                            Converter={StaticResource BoolToColorConverter},
+                            ConverterParameter='#080808,#FFFFFF'}"
+                        FontWeight="SemiBold"
+                        FontSize="12" Padding="16,6" CornerRadius="8"/>
+                <Button Content="Friends"
+                        Command="{Binding SwitchTabCommand}" CommandParameter="Friends"
+                        Background="{Binding IsFriendsTab,
+                            Converter={StaticResource BoolToColorConverter},
+                            ConverterParameter='#FFFFFF,transparent'}"
+                        Foreground="{Binding IsFriendsTab,
+                            Converter={StaticResource BoolToColorConverter},
+                            ConverterParameter='#080808,#FFFFFF'}"
+                        FontWeight="SemiBold"
+                        FontSize="12" Padding="16,6" CornerRadius="8"/>
+            </StackPanel>
+        </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Content="Login with Browser"
-                                Command="{Binding LoginWithBrowserCommand}"
+        <!-- Accounts タブ -->
+        <ScrollViewer Grid.Row="1" IsVisible="{Binding IsAccountsTab}">
+            <StackPanel Spacing="10" Margin="24,12,24,20">
+
+                <!-- 統計カード（アクティブアカウントあり時） -->
+                <Border IsVisible="{Binding IsStatsVisible}"
+                        Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14"
+                        BoxShadow="0 2 10 0 #22000000">
+                    <StackPanel Spacing="12">
+
+                        <!-- アバター + 名前 -->
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Grid Grid.Column="0" Width="44" Height="44">
+                                <Border Width="44" Height="44" CornerRadius="22"
+                                        ClipToBounds="True"
+                                        Background="{DynamicResource OverlayBg}">
+                                    <Image Source="{Binding ActiveIcon}" Stretch="UniformToFill"/>
+                                </Border>
+                                <Ellipse Width="11" Height="11"
+                                         HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                         Fill="{Binding ActiveStatusColor}"
+                                         Stroke="#141414" StrokeThickness="2"
+                                         Margin="0,0,-2,-2"/>
+                            </Grid>
+                            <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="{Binding ActiveDisplayName}"
+                                           FontSize="14" FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                                <TextBlock Text="{Binding ActiveUsername, StringFormat='@{0}'}"
+                                           FontSize="12" Foreground="{DynamicResource FgSub}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- 統計ローディング -->
+                        <TextBlock Text="Loading stats..." IsVisible="{Binding IsStatsLoading}"
+                                   FontSize="11" Foreground="{DynamicResource FgSub}"
+                                   HorizontalAlignment="Center"/>
+
+                        <!-- 統計数値 -->
+                        <Grid ColumnDefinitions="*,*,*"
+                              IsVisible="{Binding IsStatsLoading,
+                                  Converter={x:Static BoolConverters.Not}}">
+                            <StackPanel Grid.Column="0" HorizontalAlignment="Center" Spacing="2">
+                                <TextBlock Text="{Binding ActiveFriendsCount}"
+                                           FontSize="18" FontWeight="Bold" Foreground="#FFFFFF"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="Friends" FontSize="10"
+                                           Foreground="{DynamicResource FgSub}"
+                                           HorizontalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" HorizontalAlignment="Center" Spacing="2">
+                                <TextBlock Text="{Binding ActiveFollowersCount}"
+                                           FontSize="18" FontWeight="Bold" Foreground="#FFFFFF"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="Followers" FontSize="10"
+                                           Foreground="{DynamicResource FgSub}"
+                                           HorizontalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" HorizontalAlignment="Center" Spacing="2">
+                                <TextBlock Text="{Binding ActiveFollowingsCount}"
+                                           FontSize="18" FontWeight="Bold" Foreground="#FFFFFF"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="Following" FontSize="10"
+                                           Foreground="{DynamicResource FgSub}"
+                                           HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+
+                    </StackPanel>
+                </Border>
+
+                <!-- Add Account（ドロップダウン式） -->
+                <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14"
+                        BoxShadow="0 2 10 0 #22000000">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Add Account" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource FgSub}"/>
+
+                        <Button Content="Add New Account"
+                                Command="{Binding ToggleAddMethodDropdownCommand}"
                                 Background="#FFFFFF" Foreground="#080808"
-                                FontWeight="SemiBold"
-                                FontSize="12" Padding="14,8" CornerRadius="8"/>
-                        <Button Content="Import from Chrome"
-                                Command="{Binding ImportFromChromeCommand}"
-                                IsEnabled="{Binding IsImporting, Converter={x:Static BoolConverters.Not}}"
-                                Background="{DynamicResource OverlayBg}" Foreground="#FFFFFF"
-                                FontSize="12" Padding="14,8" CornerRadius="8"/>
-                        <Button Content="Paste Cookie"
-                                Command="{Binding TogglePastePanelCommand}"
-                                Background="{Binding IsPastePanelOpen,
-                                    Converter={StaticResource BoolToColorConverter},
-                                    ConverterParameter='#2A2A2A,transparent'}"
-                                BorderBrush="#2E2E2E" BorderThickness="1"
-                                Foreground="#FFFFFF" FontSize="12" Padding="14,8" CornerRadius="8"/>
-                        <Button Content="Quick Login"
-                                Command="{Binding ToggleQuickLoginPanelCommand}"
-                                Background="{Binding IsQuickLoginOpen,
-                                    Converter={StaticResource BoolToColorConverter},
-                                    ConverterParameter='#2A2A2A,transparent'}"
-                                BorderBrush="#2E2E2E" BorderThickness="1"
-                                Foreground="#FFFFFF" FontSize="12" Padding="14,8" CornerRadius="8"/>
+                                FontWeight="SemiBold" FontSize="12"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Padding="14,9" CornerRadius="8"/>
+
+                        <!-- ドロップダウンメニュー -->
+                        <Border IsVisible="{Binding IsAddMethodDropdownOpen}"
+                                Background="{DynamicResource SurfaceBg}"
+                                CornerRadius="8" Padding="4">
+                            <StackPanel Spacing="2">
+                                <Button Content="Login with Browser"
+                                        Command="{Binding SelectAddMethodCommand}" CommandParameter="Browser"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                        Background="Transparent" Foreground="#FFFFFF"
+                                        FontSize="12" Padding="12,7" CornerRadius="6"/>
+                                <Button Content="Import from Chrome"
+                                        Command="{Binding SelectAddMethodCommand}" CommandParameter="Chrome"
+                                        IsEnabled="{Binding IsImporting, Converter={x:Static BoolConverters.Not}}"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                        Background="Transparent" Foreground="#FFFFFF"
+                                        FontSize="12" Padding="12,7" CornerRadius="6"/>
+                                <Button Content="Paste Cookie"
+                                        Command="{Binding SelectAddMethodCommand}" CommandParameter="Cookie"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                        Background="Transparent" Foreground="#FFFFFF"
+                                        FontSize="12" Padding="12,7" CornerRadius="6"/>
+                                <Button Content="Quick Sign-In"
+                                        Command="{Binding SelectAddMethodCommand}" CommandParameter="QuickSignIn"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                        Background="Transparent" Foreground="#FFFFFF"
+                                        FontSize="12" Padding="12,7" CornerRadius="6"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Cancel -->
                         <Button Content="Cancel"
                                 Command="{Binding CancelImportCommand}"
                                 IsVisible="{Binding IsImporting}"
                                 Background="#1AFF4444" Foreground="{DynamicResource FgDanger}"
                                 FontSize="12" Padding="14,8" CornerRadius="8"/>
+
+                        <TextBlock Text="Please log in to roblox.com in Chrome…"
+                                   FontSize="12" Foreground="{DynamicResource SubtextBrush}"
+                                   IsVisible="{Binding IsWaitingForLogin}"/>
+
+                        <!-- Cookie ペーストパネル -->
+                        <StackPanel Spacing="8" IsVisible="{Binding IsPastePanelOpen}">
+                            <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
+                                       Text="Chrome DevTools → Application → Cookies → roblox.com → .ROBLOSECURITY → Value をコピーして貼り付け"/>
+                            <Grid ColumnDefinitions="*,8,Auto">
+                                <TextBox Grid.Column="0" Text="{Binding ManualCookie}"
+                                         Watermark=".ROBLOSECURITY value..."
+                                         Background="{DynamicResource SurfaceBg}"
+                                         Foreground="#FFFFFF" FontSize="12"
+                                         BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,8"
+                                         FontFamily="Consolas,monospace"/>
+                                <Button Grid.Column="2" Content="Add"
+                                        Command="{Binding ImportManuallyCommand}"
+                                        Background="#FFFFFF" Foreground="#080808"
+                                        FontWeight="SemiBold" FontSize="12"
+                                        Padding="20,8" CornerRadius="8"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Quick Login パネル（PC-to-PC） -->
+                        <StackPanel Spacing="8" IsVisible="{Binding IsQuickLoginOpen}">
+                            <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
+                                       Text="Enter the 6-digit code from another NexStrap instance to switch instantly"/>
+                            <Grid ColumnDefinitions="*,8,Auto">
+                                <TextBox Grid.Column="0" Text="{Binding QuickLoginInput}"
+                                         Watermark="000000" MaxLength="6"
+                                         Background="{DynamicResource SurfaceBg}"
+                                         Foreground="#FFFFFF" FontSize="18"
+                                         BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,8"
+                                         FontFamily="Consolas,monospace"
+                                         TextAlignment="Center" FontWeight="SemiBold"
+                                         LetterSpacing="6"/>
+                                <Button Grid.Column="2" Content="Login"
+                                        Command="{Binding RedeemCodeAsyncCommand}"
+                                        Background="#FFFFFF" Foreground="#080808"
+                                        FontWeight="SemiBold" FontSize="12"
+                                        Padding="20,8" CornerRadius="8"/>
+                            </Grid>
+                        </StackPanel>
+
                     </StackPanel>
+                </Border>
 
-                    <TextBlock Text="Please log in to roblox.com in Chrome…"
-                               FontSize="12" Foreground="{DynamicResource SubtextBrush}"
-                               IsVisible="{Binding IsWaitingForLogin}"/>
+                <!-- 空状態 -->
+                <TextBlock Text="No accounts added"
+                           FontSize="12" Foreground="{DynamicResource FgMuted}"
+                           HorizontalAlignment="Center" Margin="0,16,0,0"
+                           IsVisible="{Binding Accounts.Count,
+                               Converter={StaticResource IntToZeroConverter}}"/>
 
-                    <!-- Paste cookie panel -->
-                    <StackPanel Spacing="8" IsVisible="{Binding IsPastePanelOpen}">
-                        <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
-                                   Text="Chrome DevTools → Application → Cookies → roblox.com → .ROBLOSECURITY → Value をコピーして貼り付け"/>
-                        <Grid ColumnDefinitions="*,8,Auto">
-                            <TextBox Grid.Column="0"
-                                     Text="{Binding ManualCookie}"
-                                     Watermark=".ROBLOSECURITY value..."
-                                     Background="{DynamicResource SurfaceBg}"
-                                     Foreground="#FFFFFF" FontSize="12"
-                                     BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,8"
-                                     FontFamily="Consolas,monospace"/>
-                            <Button Grid.Column="2" Content="Add"
-                                    Command="{Binding ImportManuallyCommand}"
-                                    Background="#FFFFFF" Foreground="#080808"
-                                    FontWeight="SemiBold" FontSize="12"
-                                    Padding="20,8" CornerRadius="8"/>
-                        </Grid>
-                    </StackPanel>
+                <!-- アカウントリスト -->
+                <ItemsControl ItemsSource="{Binding Accounts}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:AccountEntryViewModel">
+                            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="12,10"
+                                    Margin="0,0,0,6" BoxShadow="0 2 8 0 #1A000000">
+                                <StackPanel Spacing="6">
 
-                    <!-- Quick Login panel -->
-                    <StackPanel Spacing="8" IsVisible="{Binding IsQuickLoginOpen}">
-                        <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
-                                   Text="Enter the 6-digit code shown on another account to switch instantly"/>
-                        <Grid ColumnDefinitions="*,8,Auto">
-                            <TextBox Grid.Column="0"
-                                     Text="{Binding QuickLoginInput}"
-                                     Watermark="000000"
-                                     MaxLength="6"
-                                     Background="{DynamicResource SurfaceBg}"
-                                     Foreground="#FFFFFF" FontSize="18"
-                                     BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,8"
-                                     FontFamily="Consolas,monospace"
-                                     TextAlignment="Center" FontWeight="SemiBold"
-                                     LetterSpacing="6"/>
-                            <Button Grid.Column="2" Content="Login"
-                                    Command="{Binding RedeemCodeAsyncCommand}"
-                                    Background="#FFFFFF" Foreground="#080808"
-                                    FontWeight="SemiBold" FontSize="12"
-                                    Padding="20,8" CornerRadius="8"/>
-                        </Grid>
-                    </StackPanel>
-                </StackPanel>
-            </Border>
+                                    <Grid ColumnDefinitions="40,*,Auto,8,Auto">
 
-            <!-- Empty state -->
-            <TextBlock Text="No accounts added"
-                       FontSize="12" Foreground="{DynamicResource FgMuted}"
-                       HorizontalAlignment="Center" Margin="0,16,0,0"
-                       IsVisible="{Binding Accounts.Count,
-                           Converter={StaticResource IntToZeroConverter}}"/>
-
-            <!-- Accounts list -->
-            <ItemsControl ItemsSource="{Binding Accounts}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:AccountEntryViewModel">
-                        <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="12,10"
-                                Margin="0,0,0,6" BoxShadow="0 2 8 0 #1A000000">
-                            <StackPanel Spacing="8">
-
-                                <Grid ColumnDefinitions="36,*,Auto,8,Auto">
-
-                                    <!-- Avatar -->
-                                    <Border Grid.Column="0" Width="36" Height="36"
-                                            CornerRadius="8" ClipToBounds="True"
-                                            Background="{DynamicResource OverlayBg}">
-                                        <Image Source="{Binding Icon}" Stretch="UniformToFill"/>
-                                    </Border>
-
-                                    <!-- Name / username -->
-                                    <StackPanel Grid.Column="1" Spacing="2" Margin="10,0">
-                                        <StackPanel Orientation="Horizontal" Spacing="6">
-                                            <TextBlock Text="{Binding DisplayName}" FontSize="13"
-                                                       FontWeight="SemiBold" Foreground="#FFFFFF"/>
-                                            <Border CornerRadius="8" Padding="6,2"
-                                                    Background="#1A4ADE80"
-                                                    IsVisible="{Binding IsActive}">
-                                                <TextBlock Text="Active" FontSize="10"
-                                                           Foreground="#4ADE80"/>
+                                        <!-- アバター + プレゼンスドット -->
+                                        <Grid Grid.Column="0" Width="36" Height="36">
+                                            <Border Width="36" Height="36" CornerRadius="8"
+                                                    ClipToBounds="True"
+                                                    Background="{DynamicResource OverlayBg}">
+                                                <Image Source="{Binding Icon}" Stretch="UniformToFill"/>
                                             </Border>
-                                        </StackPanel>
-                                        <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
-                                                   Text="{Binding Username, StringFormat='@{0}'}"/>
-                                    </StackPanel>
+                                            <Ellipse Width="9" Height="9"
+                                                     HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                                     Fill="{Binding StatusColor}"
+                                                     Stroke="#141414" StrokeThickness="1.5"
+                                                     Margin="0,0,-2,-2"/>
+                                        </Grid>
 
-                                    <!-- Instance badge -->
-                                    <Border Grid.Column="2" CornerRadius="8" Padding="8,3"
+                                        <!-- 名前 + Last Used -->
+                                        <Grid Grid.Column="1" RowDefinitions="Auto,Auto" Margin="10,0">
+                                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="{Binding DisplayName}" FontSize="13"
+                                                           FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                                                <Border CornerRadius="8" Padding="6,2"
+                                                        Background="#1A4ADE80"
+                                                        IsVisible="{Binding IsActive}">
+                                                    <TextBlock Text="Active" FontSize="10" Foreground="#4ADE80"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Username, StringFormat='@{0}'}"
+                                                           FontSize="11" Foreground="{DynamicResource FgSub}"/>
+                                                <TextBlock Text="{Binding LastUsedText}"
+                                                           FontSize="10"
+                                                           Foreground="{DynamicResource FgMuted}"
+                                                           IsVisible="{Binding LastUsedText,
+                                                               Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- Instance バッジ -->
+                                        <Border Grid.Column="2" CornerRadius="8" Padding="8,3"
+                                                Background="{DynamicResource OverlayBg}"
+                                                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding InstanceLabel}"
+                                                       FontSize="10" Foreground="{DynamicResource FgSub}"/>
+                                        </Border>
+
+                                        <!-- アクションボタン -->
+                                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="5"
+                                                    VerticalAlignment="Center">
+                                            <Button Content="▶ Launch"
+                                                    Command="{Binding LaunchAsCommand}"
+                                                    Background="#FFFFFF" Foreground="#080808"
+                                                    FontWeight="SemiBold" FontSize="11"
+                                                    Padding="10,5" CornerRadius="8"/>
+                                            <Button Content="Switch"
+                                                    Command="{Binding SetActiveCommand}"
+                                                    Background="{DynamicResource OverlayBg}"
+                                                    Foreground="#FFFFFF" FontSize="11"
+                                                    Padding="10,5" CornerRadius="8"/>
+                                            <Button Content="Get Code"
+                                                    Command="{Binding GenerateCodeCommand}"
+                                                    Background="{DynamicResource OverlayBg}"
+                                                    Foreground="#FFFFFF" FontSize="11"
+                                                    Padding="10,5" CornerRadius="8"/>
+                                            <Button Content="Remove"
+                                                    Command="{Binding RemoveCommand}"
+                                                    Background="#1AFF4444"
+                                                    Foreground="{DynamicResource FgDanger}" FontSize="11"
+                                                    Padding="10,5" CornerRadius="8"/>
+                                        </StackPanel>
+
+                                    </Grid>
+
+                                    <!-- InGame の場所表示 -->
+                                    <TextBlock IsVisible="{Binding IsInGame}"
+                                               Text="{Binding LastLocation}"
+                                               FontSize="10" Foreground="{DynamicResource FgSub}"
+                                               Margin="46,0,0,0"
+                                               TextTrimming="CharacterEllipsis"/>
+
+                                    <!-- Get Code 後のコード表示行 -->
+                                    <Border IsVisible="{Binding HasActiveCode}"
                                             Background="{DynamicResource OverlayBg}"
-                                            VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding InstanceLabel}"
-                                                   FontSize="10" Foreground="{DynamicResource FgSub}"/>
+                                            CornerRadius="6" Padding="12,8">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding ActiveCode}"
+                                                       FontSize="22" FontWeight="Bold"
+                                                       FontFamily="Consolas,monospace"
+                                                       Foreground="#FFFFFF"
+                                                       LetterSpacing="6"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding CodeSecondsLeft, StringFormat='⏱ {0}s'}"
+                                                       FontSize="12" Foreground="{DynamicResource FgSub}"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
                                     </Border>
 
-                                    <!-- Actions -->
-                                    <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6"
-                                                VerticalAlignment="Center">
-                                        <Button Content="Switch"
-                                                Command="{Binding SetActiveCommand}"
-                                                Background="{DynamicResource OverlayBg}"
-                                                Foreground="#FFFFFF" FontSize="11"
-                                                Padding="10,5" CornerRadius="8"/>
-                                        <Button Content="Get Code"
-                                                Command="{Binding GenerateCodeCommand}"
-                                                Background="{DynamicResource OverlayBg}"
-                                                Foreground="#FFFFFF" FontSize="11"
-                                                Padding="10,5" CornerRadius="8"/>
-                                        <Button Content="Remove"
-                                                Command="{Binding RemoveCommand}"
-                                                Background="#1AFF4444"
-                                                Foreground="{DynamicResource FgDanger}" FontSize="11"
-                                                Padding="10,5" CornerRadius="8"/>
-                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
-                                </Grid>
+                <!-- ステータスメッセージ -->
+                <TextBlock Text="{Binding StatusMessage}"
+                           Foreground="{DynamicResource FgSub}" FontSize="12"
+                           HorizontalAlignment="Center" Margin="0,4,0,12"
+                           IsVisible="{Binding StatusMessage,
+                               Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
-                                <!-- Code display row -->
-                                <Border IsVisible="{Binding HasActiveCode}"
-                                        Background="{DynamicResource OverlayBg}"
-                                        CornerRadius="6" Padding="12,8">
-                                    <Grid ColumnDefinitions="Auto,*,Auto">
-                                        <TextBlock Grid.Column="0"
-                                                   Text="{Binding ActiveCode}"
-                                                   FontSize="22" FontWeight="Bold"
-                                                   FontFamily="Consolas,monospace"
-                                                   Foreground="#FFFFFF"
-                                                   LetterSpacing="6"
-                                                   VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="2"
-                                                   Text="{Binding CodeSecondsLeft, StringFormat='⏱ {0}s'}"
-                                                   FontSize="12" Foreground="{DynamicResource FgSub}"
-                                                   VerticalAlignment="Center"/>
-                                    </Grid>
-                                </Border>
+            </StackPanel>
+        </ScrollViewer>
 
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+        <!-- Friends タブ（FriendsPage そのまま埋め込み） -->
+        <pages:FriendsPage Grid.Row="1"
+                           DataContext="{Binding FriendsVm}"
+                           IsVisible="{Binding IsFriendsTab}"/>
 
-            <!-- Status message -->
-            <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource FgSub}" FontSize="12"
-                       HorizontalAlignment="Center" Margin="0,4,0,12"
-                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-
-        </StackPanel>
-    </ScrollViewer>
+    </Grid>
 </UserControl>

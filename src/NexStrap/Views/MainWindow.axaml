@@ -108,13 +108,6 @@
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem Content="Friends" Tag="Friends"
-                    IsVisible="{Binding !IsOnSettingsPage}">
-                    <ui:NavigationViewItem.IconSource>
-                        <ui:SymbolIconSource Symbol="People"/>
-                    </ui:NavigationViewItem.IconSource>
-                </ui:NavigationViewItem>
-
                 <!-- Settings サブナビ（Settings ページ時のみ表示） -->
                 <ui:NavigationViewItem Content="Back" Tag="Home"
                     IsVisible="{Binding IsOnSettingsPage}">
@@ -210,9 +203,6 @@
                         </DataTemplate>
                         <DataTemplate DataType="vm:AccountViewModel">
                             <pages:AccountPage/>
-                        </DataTemplate>
-                        <DataTemplate DataType="vm:FriendsViewModel">
-                            <pages:FriendsPage/>
                         </DataTemplate>
                         <DataTemplate DataType="vm:StretchResolutionViewModel">
                             <pages:StretchResolutionPage/>

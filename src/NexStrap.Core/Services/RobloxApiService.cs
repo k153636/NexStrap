@@ -259,4 +259,131 @@ public class RobloxApiService
         }
         catch { return []; }
     }
+
+    // ── 統計カード用（公開 API） ───────────────────────────────────────────────
+
+    public async Task<int> GetFriendsCountAsync(long userId)
+    {
+        try
+        {
+            var json = await Http.GetStringAsync(
+                $"https://friends.roblox.com/v1/users/{userId}/friends/count");
+            return JObject.Parse(json)["count"]?.Value<int>() ?? 0;
+        }
+        catch { return 0; }
+    }
+
+    public async Task<int> GetFollowersCountAsync(long userId)
+    {
+        try
+        {
+            var json = await Http.GetStringAsync(
+                $"https://friends.roblox.com/v1/users/{userId}/followers/count");
+            return JObject.Parse(json)["count"]?.Value<int>() ?? 0;
+        }
+        catch { return 0; }
+    }
+
+    public async Task<int> GetFollowingsCountAsync(long userId)
+    {
+        try
+        {
+            var json = await Http.GetStringAsync(
+                $"https://friends.roblox.com/v1/users/{userId}/followings/count");
+            return JObject.Parse(json)["count"]?.Value<int>() ?? 0;
+        }
+        catch { return 0; }
+    }
+
+    // ── Quick Sign-In（Roblox 公式 API） ─────────────────────────────────────
+
+    public async Task<(string Code, string PrivateKey)?> CreateQuickSignInAsync()
+    {
+        try
+        {
+            var resp = await Http.PostAsync(
+                "https://apis.roblox.com/auth-token-service/v1/login/create",
+                new StringContent("{}", Encoding.UTF8, "application/json"));
+            if (!resp.IsSuccessStatusCode) return null;
+            var obj = JObject.Parse(await resp.Content.ReadAsStringAsync());
+            var code = obj["code"]?.Value<string>();
+            var key  = obj["privateKey"]?.Value<string>();
+            return code != null && key != null ? (code, key) : null;
+        }
+        catch { return null; }
+    }
+
+    public async Task<string> PollQuickSignInStatusAsync(string code, string privateKey, string xsrf)
+    {
+        try
+        {
+            var body = Newtonsoft.Json.JsonConvert.SerializeObject(new { code, privateKey });
+            using var req = new HttpRequestMessage(HttpMethod.Post,
+                "https://apis.roblox.com/auth-token-service/v1/login/status")
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            };
+            req.Headers.TryAddWithoutValidation("x-csrf-token", xsrf);
+            var resp = await Http.SendAsync(req);
+            if (!resp.IsSuccessStatusCode) return "Error";
+            return JObject.Parse(await resp.Content.ReadAsStringAsync())["status"]?.Value<string>() ?? "Error";
+        }
+        catch { return "Error"; }
+    }
+
+    // 1回目は XSRF 取得用に失敗させる。返却値は (xsrfToken, status)
+    public async Task<(string Xsrf, string Status)> PollQuickSignInFirstAsync(string code, string privateKey)
+    {
+        try
+        {
+            var body = Newtonsoft.Json.JsonConvert.SerializeObject(new { code, privateKey });
+            using var req = new HttpRequestMessage(HttpMethod.Post,
+                "https://apis.roblox.com/auth-token-service/v1/login/status")
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            };
+            var resp = await Http.SendAsync(req);
+            var xsrf = resp.Headers.TryGetValues("x-csrf-token", out var vals) ? vals.First() : string.Empty;
+            if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden) return (xsrf, "Created");
+            var status = JObject.Parse(await resp.Content.ReadAsStringAsync())["status"]?.Value<string>() ?? "Error";
+            return (xsrf, status);
+        }
+        catch { return (string.Empty, "Error"); }
+    }
+
+    public async Task<string?> AuthenticateWithQuickSignInAsync(string code, string privateKey)
+    {
+        try
+        {
+            var body = Newtonsoft.Json.JsonConvert.SerializeObject(new
+                { ctype = "AuthToken", cvalue = code, password = privateKey });
+
+            using var client = new HttpClient();
+            client.Timeout = TimeSpan.FromSeconds(15);
+
+            async Task<HttpResponseMessage> Post(string? csrf = null)
+            {
+                var req = new HttpRequestMessage(HttpMethod.Post, "https://auth.roblox.com/v2/login")
+                    { Content = new StringContent(body, Encoding.UTF8, "application/json") };
+                if (csrf != null) req.Headers.TryAddWithoutValidation("x-csrf-token", csrf);
+                return await client.SendAsync(req);
+            }
+
+            var resp = await Post();
+            if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden &&
+                resp.Headers.TryGetValues("x-csrf-token", out var tokens))
+                resp = await Post(tokens.First());
+
+            if (!resp.IsSuccessStatusCode) return null;
+
+            if (resp.Headers.TryGetValues("Set-Cookie", out var cookies))
+                foreach (var c in cookies)
+                {
+                    var m = System.Text.RegularExpressions.Regex.Match(c, @"\.ROBLOSECURITY=([^;]+)");
+                    if (m.Success) return m.Groups[1].Value;
+                }
+            return null;
+        }
+        catch { return null; }
+    }
 }
