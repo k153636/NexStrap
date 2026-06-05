@@ -181,7 +181,6 @@ public class StudioService
             if (IsVersionComplete(versionDir))
             {
                 SaveState(versionGuid, versionDir);
-                SetStatus(RobloxStatus.Idle);
                 return Path.Combine(versionDir, "RobloxStudioBeta.exe");
             }
 
@@ -195,7 +194,6 @@ public class StudioService
             SaveState(versionGuid, versionDir);
             CleanupOldVersionDirectories(versionGuid);
             RobloxService.Log($"Studio installation complete: {versionDir}");
-            SetStatus(RobloxStatus.Idle);
             return Path.Combine(versionDir, "RobloxStudioBeta.exe");
         }
         finally
