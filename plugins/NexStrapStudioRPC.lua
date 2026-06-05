@@ -1,26 +1,32 @@
 --!strict
--- NexStrap Studio RPC Plugin v2.0.0
--- Sends Studio presence data to NexStrap Launcher via HTTP on port 4876.
--- Requires "Allow HTTP Requests" in Experience Settings → Security.
 
--- ── サービス ──────────────────────────────────────────────────────────────
+--[[
+    NexStrap Studio RPC Plugin  v2.1.0
+    Discord Rich Presence integration for Roblox Studio.
 
-local Selection           = game:GetService("Selection")
-local RunService          = game:GetService("RunService")
+    Requires: Experience Settings → Security → Allow HTTP Requests = ON
+    Launcher:  NexStrap (localhost:4876)
+--]]
+
+-- ── Services ──────────────────────────────────────────────────────────────
+
 local HttpService         = game:GetService("HttpService")
 local MarketplaceService  = game:GetService("MarketplaceService")
-local StudioService       = game:GetService("StudioService")
+local RunService          = game:GetService("RunService")
 local ScriptEditorService = game:GetService("ScriptEditorService")
+local Selection           = game:GetService("Selection")
+local StudioService       = game:GetService("StudioService")
 
--- ── 定数 ──────────────────────────────────────────────────────────────────
+-- ── Constants ─────────────────────────────────────────────────────────────
 
-local VERSION         = "2.0.0"
-local PORT            = 4876
-local HTTP_TIMEOUT    = 2
-local UPDATE_INTERVAL = 10   -- 定期送信間隔（秒）
-local COOLDOWN        = 1.5  -- 連続送信の最小間隔（秒）
+local VERSION         : string = "2.1.0"
+local ENDPOINT        : string = "http://localhost:4876/rpc"
+local HTTP_TIMEOUT    : number = 2
+local POLL_INTERVAL   : number = 0.5   -- IsRunning() ポーリング間隔（秒）
+local UPDATE_INTERVAL : number = 10    -- 定期送信間隔（秒）
+local COOLDOWN_TIME   : number = 1.5   -- 連続送信の最小間隔（秒）
 
--- ── 型定義 ────────────────────────────────────────────────────────────────
+-- ── Types ─────────────────────────────────────────────────────────────────
 
 type WorkspaceInfo = {
     name     : string,
@@ -28,231 +34,221 @@ type WorkspaceInfo = {
     isPublic : boolean,
 }
 
-type PresencePayload = {
-    details  : string?,
+type Payload = {
+    details  : string,
     testing  : boolean,
     placeId  : number,
     isPublic : boolean,
     version  : string,
 }
 
--- ── モジュール状態 ────────────────────────────────────────────────────────
+type RpcEnvelope = {
+    command : string,
+    data    : { [string]: unknown },
+}
 
-local enabled         : boolean        = true
-local initialized     : boolean        = false
-local cooldownActive  : boolean        = false
-local lastPayload     : PresencePayload? = nil
-local monitorHandle   : thread?        = nil
-local connections     : { RBXScriptConnection } = {}
-local workspace_cache : WorkspaceInfo  = { name = "Unsaved Project", placeId = 0, isPublic = false }
+-- ── State ─────────────────────────────────────────────────────────────────
 
--- ── ワークスペース情報 ────────────────────────────────────────────────────
+local enabled       : boolean          = true
+local onCooldown    : boolean          = false
+local lastPayload   : Payload?         = nil
+local workspace     : WorkspaceInfo    = { name = "Unsaved Project", placeId = 0, isPublic = false }
+local connections   : { RBXScriptConnection } = {}
 
-local function fetchWorkspaceInfo(): WorkspaceInfo
+-- ── Workspace ─────────────────────────────────────────────────────────────
+
+local function fetchWorkspace(): WorkspaceInfo
     local placeId = game.PlaceId
 
     if placeId > 0 then
-        local ok, info = pcall(function()
+        local ok, result = pcall(function()
             return MarketplaceService:GetProductInfoAsync(placeId)
         end)
-        if ok and info and info.Name then
-            return { name = info.Name, placeId = placeId, isPublic = true }
+        if ok and typeof(result) == "table" then
+            local info = result :: { Name: string? }
+            local name = info.Name
+            if name and #name > 0 then
+                return { name = name, placeId = placeId, isPublic = true }
+            end
         end
     end
 
-    local name = game.Name
-    local displayName = (name ~= "" and name ~= "Place") and name or "Unsaved Project"
-    return { name = displayName, placeId = placeId, isPublic = false }
+    local raw = game.Name
+    local name = (raw ~= "" and raw ~= "Place") and raw or "Unsaved Project"
+    return { name = name, placeId = placeId, isPublic = false }
 end
 
-local function refreshWorkspaceAsync()
+local function refreshWorkspace(): ()
     task.spawn(function()
-        local info = fetchWorkspaceInfo()
-        workspace_cache = info
+        workspace = fetchWorkspace()
     end)
 end
 
--- ── HTTP 送信 ─────────────────────────────────────────────────────────────
+-- ── HTTP ──────────────────────────────────────────────────────────────────
 
-local function post(command: string, data: { [string]: any })
+local function send(command: string, data: { [string]: unknown }): ()
     if not HttpService.HttpEnabled then
-        warn("[NexStrap] HTTP Requests が無効です。Experience Settings → Security で有効にしてください。")
+        warn("[NexStrap] HTTP Requests が無効です（Experience Settings → Security）")
         return
     end
 
-    local body = HttpService:JSONEncode({ command = command, data = data })
+    local envelope: RpcEnvelope = { command = command, data = data }
+    local body = HttpService:JSONEncode(envelope)
 
     task.spawn(function()
-        local ok, err = pcall(function()
+        pcall(function()
             HttpService:RequestAsync({
-                Url     = string.format("http://localhost:%d/rpc", PORT),
+                Url     = ENDPOINT,
                 Method  = "POST",
                 Headers = { ["Content-Type"] = "application/json" },
                 Body    = body,
                 Timeout = HTTP_TIMEOUT,
             })
         end)
-        if not ok then
-            -- 接続失敗はサイレントに無視（ランチャーが起動していない場合）
-        end
     end)
 end
 
--- ── Presence 計算 ─────────────────────────────────────────────────────────
+-- ── Presence ──────────────────────────────────────────────────────────────
 
-local function buildPayload(): PresencePayload
+local function buildPayload(): Payload
     return {
-        details  = workspace_cache.name,
+        details  = workspace.name,
         testing  = RunService:IsRunning(),
-        placeId  = workspace_cache.placeId,
-        isPublic = workspace_cache.isPublic,
+        placeId  = workspace.placeId,
+        isPublic = workspace.isPublic,
         version  = VERSION,
     }
 end
 
-local function payloadsEqual(a: PresencePayload, b: PresencePayload): boolean
+local function payloadsEqual(a: Payload, b: Payload): boolean
     return a.details  == b.details
         and a.testing  == b.testing
         and a.placeId  == b.placeId
         and a.isPublic == b.isPublic
 end
 
--- ── Presence 送信 ────────────────────────────────────────────────────────
-
-local function sendPresence(force: boolean?)
+local function updatePresence(force: boolean?): ()
     if not enabled then return end
-    if cooldownActive and not force then return end
+    if onCooldown and not force then return end
 
     local payload = buildPayload()
 
-    if not force and lastPayload and payloadsEqual(payload, lastPayload) then return end
-
-    lastPayload      = payload
-    cooldownActive   = true
-
-    post("SetRichPresence", payload :: { [string]: any })
-
-    task.delay(COOLDOWN, function()
-        cooldownActive = false
-    end)
-end
-
--- ── 有効/無効 ─────────────────────────────────────────────────────────────
-
-local function startMonitor()
-    if monitorHandle then return end
-    monitorHandle = task.spawn(function()
-        while enabled do
-            task.wait(UPDATE_INTERVAL)
-            if enabled then sendPresence() end
-        end
-        monitorHandle = nil
-    end)
-end
-
-local function stopMonitor()
-    enabled       = false
-    monitorHandle = nil
-end
-
-local function setEnabled(value: boolean)
-    enabled = value
-    post("RPCToggle", {
-        enabled   = value,
-        workspace = workspace_cache.name,
-        isPublic  = workspace_cache.isPublic,
-    })
-    if value then
-        refreshWorkspaceAsync()
-        task.defer(function() sendPresence(true) end)
-        startMonitor()
-    else
-        stopMonitor()
+    if not force then
+        local last = lastPayload
+        if last ~= nil and payloadsEqual(payload, last) then return end
     end
+
+    lastPayload = payload
+    onCooldown  = true
+    task.delay(COOLDOWN_TIME, function() onCooldown = false end)
+
+    send("SetRichPresence", payload :: { [string]: unknown })
 end
 
--- ── イベント購読 ──────────────────────────────────────────────────────────
+-- ── Teardown ──────────────────────────────────────────────────────────────
 
-local function disconnectAll()
+local function disconnect(): ()
     for _, c in connections do
         c:Disconnect()
     end
     table.clear(connections)
 end
 
-local function subscribeEvents()
-    -- スクリプト選択変化 → 即時送信
+local function shutdown(): ()
+    enabled = false
+    send("RPCToggle", {
+        enabled   = false,
+        workspace = workspace.name,
+        isPublic  = workspace.isPublic,
+    })
+    disconnect()
+end
+
+-- ── Event Wiring ──────────────────────────────────────────────────────────
+
+local function wire(): ()
+    -- スクリプト選択 / アクティブスクリプト切り替え
     table.insert(connections, Selection.SelectionChanged:Connect(function()
-        task.defer(sendPresence)
+        task.defer(updatePresence)
     end))
 
-    -- アクティブスクリプト変化 → 即時送信
     table.insert(connections, StudioService:GetPropertyChangedSignal("ActiveScript"):Connect(function()
-        task.defer(sendPresence)
+        task.defer(updatePresence)
     end))
 
-    -- テスト開始/終了 → IsRunning() の変化をポーリングで検知（専用イベントなし）
+    -- テストプレイ開始 / 終了（IsRunning はイベントを持たないのでポーリング）
     task.spawn(function()
         local prev = RunService:IsRunning()
-        while true do
-            task.wait(0.5)
+        while enabled do
+            task.wait(POLL_INTERVAL)
             local cur = RunService:IsRunning()
             if cur ~= prev then
                 prev = cur
-                sendPresence(true)
+                updatePresence(true)
             end
         end
     end)
 
-    -- テレポート・PlaceId 変化 → キャッシュ更新 + 再送
+    -- テレポート（PlaceId の変化）
     table.insert(connections, game:GetPropertyChangedSignal("PlaceId"):Connect(function()
-        refreshWorkspaceAsync()
-        task.delay(1, function() sendPresence(true) end)
+        refreshWorkspace()
+        task.delay(1, function() updatePresence(true) end)
     end))
 
-    -- ゲーム読み込み完了 → キャッシュ確定
-    table.insert(connections, game.Loaded:Connect(function()
-        refreshWorkspaceAsync()
-        task.delay(0.5, function() sendPresence(true) end)
-    end))
+    -- ゲームロード完了
+    if game:IsLoaded() then
+        refreshWorkspace()
+    else
+        table.insert(connections, game.Loaded:Connect(function()
+            refreshWorkspace()
+            task.delay(0.5, function() updatePresence(true) end)
+        end))
+    end
+
+    -- 定期送信（接続が切れた場合のフォールバック）
+    task.spawn(function()
+        while enabled do
+            task.wait(UPDATE_INTERVAL)
+            if enabled then updatePresence() end
+        end
+    end)
 end
 
--- ── 初期化 ────────────────────────────────────────────────────────────────
+-- ── Plugin Entry ──────────────────────────────────────────────────────────
 
-local function initialize()
-    if initialized or not plugin then return end
-    initialized = true
+if not plugin then
+    -- テスト環境（Studio 外）では何もしない
+    return
+end
 
-    -- プラグインアクション（ツールバートグル）
-    local toolbar = plugin:CreateToolbar("NexStrap")
-    local button  = toolbar:CreateButton(
-        "Toggle RPC",
-        "Discord Rich Presence のオン/オフ",
-        "rbxassetid://111400040119373"
-    )
-    button.Click:Connect(function()
-        setEnabled(not enabled)
-        button:SetActive(enabled)
-    end)
+-- ツールバーボタン
+local toolbar = plugin:CreateToolbar("NexStrap")
+local button  = toolbar:CreateButton(
+    "Toggle RPC",
+    "Discord Rich Presence のオン/オフ",
+    "rbxassetid://111400040119373"
+)
+button:SetActive(true)
+
+button.Click:Connect(function()
+    enabled = not enabled
     button:SetActive(enabled)
 
-    -- プラグインアンロード時のクリーンアップ
-    plugin.Unloading:Connect(function()
-        setEnabled(false)
-        disconnectAll()
-    end)
+    send("RPCToggle", {
+        enabled   = enabled,
+        workspace = workspace.name,
+        isPublic  = workspace.isPublic,
+    })
 
-    subscribeEvents()
-
-    -- 起動時はゲームのロード完了を待ってから初回送信
-    if game:IsLoaded() then
-        refreshWorkspaceAsync()
-        task.delay(0.5, function() sendPresence(true) end)
+    if enabled then
+        refreshWorkspace()
+        task.defer(function() updatePresence(true) end)
     end
-    -- game.Loaded イベントでも送信される（subscribeEvents で登録済み）
+end)
 
-    setEnabled(true)
-    startMonitor()
-end
+plugin.Unloading:Connect(shutdown)
 
-initialize()
+-- 初回起動
+refreshWorkspace()
+wire()
+task.defer(function() updatePresence(true) end)
