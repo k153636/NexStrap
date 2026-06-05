@@ -147,13 +147,20 @@ public class StudioService
     public async Task<string?> InstallOrUpdateAsync()
     {
         var guid = await GetLatestVersionGuidCachedAsync();
+        Logger.Instance.Info("Studio", $"最新 GUID: {guid ?? "(取得失敗)"}");
         if (string.IsNullOrWhiteSpace(guid)) return null;
 
         var currentState  = LoadState();
         var installedGuid = currentState?.VersionGuid;
-        if (installedGuid == guid && IsVersionComplete(currentState!.VersionPath))
-            return currentState.VersionPath;
+        Logger.Instance.Info("Studio", $"インストール済み GUID: {installedGuid ?? "(なし)"}");
 
+        if (installedGuid == guid && IsVersionComplete(currentState!.VersionPath))
+        {
+            Logger.Instance.Info("Studio", "最新版インストール済み → スキップ");
+            return currentState.VersionPath;
+        }
+
+        Logger.Instance.Info("Studio", $"アップデート開始: {installedGuid} → {guid}");
         SetStatus(RobloxStatus.Updating);
         return await InstallVersionAsync(guid);
     }

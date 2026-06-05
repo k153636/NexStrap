@@ -539,13 +539,14 @@ public partial class HomeViewModel : ViewModelBase
     {
         if (IsStudioLaunching) return;
         IsStudioLaunching = true;
-        StatusText        = "Launching Studio...";
+        StatusText        = "Checking for updates...";
         _presence.EnqueueInstallingStudioPresence();
 
         // GitHub と比較して未インストールまたは更新がある場合はインストーラー UI を表示
         if (await StudioPluginInstaller.IsUpdateAvailableAsync())
             await InstallStudioPluginAsync();
         await _studioFastFlags.SaveAsync();
+        StatusText = "Launching Studio...";
         var launched = await _studio.LaunchAsync();
         StatusText        = launched ? (IsRobloxRunning ? "Roblox running" : "Ready") : "Studio launch failed";
         IsStudioLaunching = false;
