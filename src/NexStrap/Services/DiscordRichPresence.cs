@@ -640,7 +640,7 @@ public sealed class DiscordRichPresence : IDisposable
 
         var baseState   = FormatState(s);
         var instanceStr = $"Instances {count}";
-        var multiState  = baseState != null ? $"{instanceStr} · {baseState}" : instanceStr;
+        var multiState  = baseState != null ? $"{baseState} · {instanceStr}" : instanceStr;
 
         var multiButtons = s.DiscordShowJoinButton && focused.PlaceId > 0
             ? new Button[] { new() { Label = "Join Game", Url = $"https://www.roblox.com/games/{focused.PlaceId}" } }
