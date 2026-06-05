@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using Microsoft.Win32;
 
 namespace NexStrap.Core.Services;
 
@@ -140,7 +141,6 @@ public class StudioService
                 UseShellExecute  = false,
                 WorkingDirectory = studioDir
             };
-            psi.Environment["QT_QPA_FONTDIR"] = Path.Combine(studioDir, "StudioFonts");
             Process.Start(psi);
             SetStatus(RobloxStatus.Running);
             return true;
@@ -162,8 +162,8 @@ public class StudioService
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
-    private const uint FR_NOT_ENUM     = 0x20;   // フォント一覧に表示しない
-    private const uint WM_FONTCHANGE   = 0x001D;
+    private const uint FR_NOT_ENUM   = 0x20;
+    private const uint WM_FONTCHANGE = 0x001D;
     private static readonly IntPtr HWND_BROADCAST = new IntPtr(0xFFFF);
 
     private static void RegisterStudioFonts(string studioDir)
@@ -171,34 +171,70 @@ public class StudioService
         var fontsDir = Path.Combine(studioDir, "StudioFonts");
         if (!Directory.Exists(fontsDir)) return;
 
-        // FR_PRIVATE を使わず全プロセスに公開して登録し、WM_FONTCHANGE でブロードキャスト
+        // Windows ユーザーフォントフォルダへ永続インストール。
+        // GDI・DirectWrite・Qt すべてが参照するため最も確実な方法。
+        InstallToUserFonts(fontsDir);
+
+        // GDI 登録（現セッション即時反映用）
         var registered = 0;
         try
         {
             foreach (var file in Directory.GetFiles(fontsDir))
             {
                 var ext = Path.GetExtension(file).ToLowerInvariant();
-                if (ext is ".otf" or ".ttf" && AddFontResourceEx(file, FR_NOT_ENUM, IntPtr.Zero) > 0)
+                if (ext is ".otf" or ".ttf" or ".ttc" &&
+                    AddFontResourceEx(file, FR_NOT_ENUM, IntPtr.Zero) > 0)
                     registered++;
             }
         }
         catch { }
 
         if (registered > 0)
+            Logger.Instance.Info("Studio", $"フォント {registered} 個を GDI 登録済み");
+    }
+
+    private static void InstallToUserFonts(string fontsDir)
+    {
+        var userFontsDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Microsoft", "Windows", "Fonts");
+
+        try { Directory.CreateDirectory(userFontsDir); }
+        catch { return; }
+
+        const string regPath = @"Software\Microsoft\Windows NT\CurrentVersion\Fonts";
+        using var regKey = Registry.CurrentUser.OpenSubKey(regPath, writable: true)
+                        ?? Registry.CurrentUser.CreateSubKey(regPath);
+        if (regKey == null) return;
+
+        var installed = 0;
+        foreach (var src in Directory.GetFiles(fontsDir))
         {
-            SendMessage(HWND_BROADCAST, WM_FONTCHANGE, IntPtr.Zero, IntPtr.Zero);
-            Logger.Instance.Info("Studio", $"フォント {registered} 個を全プロセスに登録し WM_FONTCHANGE を通知しました");
+            var ext = Path.GetExtension(src).ToLowerInvariant();
+            if (ext is not (".ttf" or ".otf" or ".ttc")) continue;
+
+            var fileName = Path.GetFileName(src);
+            var dst      = Path.Combine(userFontsDir, fileName);
+            if (File.Exists(dst)) continue;
+
+            try
+            {
+                File.Copy(src, dst);
+                var typeSuffix = ext == ".otf" ? " (OpenType)" : " (TrueType)";
+                regKey.SetValue(Path.GetFileNameWithoutExtension(fileName) + typeSuffix, dst);
+                installed++;
+            }
+            catch { }
         }
 
-        var qtConf = Path.Combine(studioDir, "qt.conf");
-        try
+        if (installed > 0)
         {
-            File.WriteAllText(qtConf, "[Paths]\nFonts=StudioFonts\n");
-            Logger.Instance.Info("Studio", $"qt.conf を作成しました: {qtConf}");
+            SendMessage(HWND_BROADCAST, WM_FONTCHANGE, IntPtr.Zero, IntPtr.Zero);
+            Logger.Instance.Info("Studio", $"フォント {installed} 個をユーザーフォントフォルダにインストールしました: {userFontsDir}");
         }
-        catch (Exception ex)
+        else
         {
-            Logger.Instance.Warning("Studio", $"qt.conf 作成失敗: {ex.Message}");
+            Logger.Instance.Info("Studio", "ユーザーフォント: 全フォントインストール済み");
         }
     }
 
