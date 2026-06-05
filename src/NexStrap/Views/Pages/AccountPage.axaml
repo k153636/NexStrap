@@ -216,11 +216,6 @@
                                             <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6">
                                                 <TextBlock Text="{Binding DisplayName}" FontSize="13"
                                                            FontWeight="SemiBold" Foreground="#FFFFFF"/>
-                                                <Border CornerRadius="8" Padding="6,2"
-                                                        Background="#1A4ADE80"
-                                                        IsVisible="{Binding IsActive}">
-                                                    <TextBlock Text="Active" FontSize="10" Foreground="#4ADE80"/>
-                                                </Border>
                                             </StackPanel>
                                             <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
                                                 <TextBlock Text="{Binding Username, StringFormat='@{0}'}"
