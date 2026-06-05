@@ -32,7 +32,10 @@ public static class StudioPluginInstaller
         if (content == null) return false;
         var newBytes      = new UTF8Encoding(false).GetBytes(content);
         var existingBytes = File.ReadAllBytes(PluginPath);
-        return existingBytes.SequenceEqual(newBytes);
+        var equal         = existingBytes.SequenceEqual(newBytes);
+        NexStrap.Core.Services.Logger.Instance.Info("StudioPlugin",
+            $"更新チェック: インストール済={existingBytes.Length}B 埋め込み={newBytes.Length}B 最新={equal}");
+        return equal;
     }
 
     /// <summary>
