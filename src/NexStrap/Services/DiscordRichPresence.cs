@@ -513,11 +513,14 @@ public sealed class DiscordRichPresence : IDisposable
         if (_phase == Phase.Studio)
         {
             if (_studioTesting)
-                return Build("Testing", null, "nexstrap", "NexStrap Launcher · Created by K",
+                return Build(
+                    string.IsNullOrEmpty(_studioPlaceName) ? null : $"Working on {_studioPlaceName}",
+                    "Testing", "nexstrap", "NexStrap Launcher · Created by K",
                     _avatarUrl, label, timestamps: ts);
 
-            var details = string.IsNullOrEmpty(_studioPlaceName) ? null : _studioPlaceName;
-            return Build(s.DiscordShowLauncherDetails ? details : null, null, "nexstrap",
+            var details = string.IsNullOrEmpty(_studioPlaceName) ? null : $"Working on {_studioPlaceName}";
+            var state   = string.IsNullOrEmpty(_studioPlaceName) ? null : "Editing";
+            return Build(s.DiscordShowLauncherDetails ? details : null, state, "nexstrap",
                 "NexStrap Launcher · Created by K", _avatarUrl, label, timestamps: ts);
         }
 
