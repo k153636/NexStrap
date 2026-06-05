@@ -9,10 +9,9 @@
 
     <Grid RowDefinitions="Auto,*">
 
-        <!-- タイトル + タブ + + ボタン -->
+        <!-- Row 0: タイトル + タブ + + ボタン（固定） -->
         <Grid Grid.Row="0" Margin="24,20,24,0" ColumnDefinitions="*,Auto">
 
-            <!-- 左: タイトル + タブ -->
             <StackPanel Grid.Column="0" Spacing="0"
                         helpers:AnimationHelper.StaggerChildren="True">
                 <TextBlock Text="Account" FontSize="22" FontWeight="Bold"
@@ -26,8 +25,7 @@
                             Foreground="{Binding IsAccountsTab,
                                 Converter={StaticResource BoolToColorConverter},
                                 ConverterParameter='#080808,#FFFFFF'}"
-                            FontWeight="SemiBold"
-                            FontSize="12" Padding="16,6" CornerRadius="8"/>
+                            FontWeight="SemiBold" FontSize="12" Padding="16,6" CornerRadius="8"/>
                     <Button Content="Friends"
                             Command="{Binding SwitchTabCommand}" CommandParameter="Friends"
                             Background="{Binding IsFriendsTab,
@@ -36,71 +34,37 @@
                             Foreground="{Binding IsFriendsTab,
                                 Converter={StaticResource BoolToColorConverter},
                                 ConverterParameter='#080808,#FFFFFF'}"
-                            FontWeight="SemiBold"
-                            FontSize="12" Padding="16,6" CornerRadius="8"/>
+                            FontWeight="SemiBold" FontSize="12" Padding="16,6" CornerRadius="8"/>
                 </StackPanel>
             </StackPanel>
 
-            <!-- 右: + ボタン + ドロップダウン -->
-            <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Spacing="4">
-                <Button Content="+"
-                        Command="{Binding ToggleAddMethodDropdownCommand}"
-                        Background="{Binding IsAddMethodDropdownOpen,
-                            Converter={StaticResource BoolToColorConverter},
-                            ConverterParameter='#2A2A2A,transparent'}"
-                        Foreground="{DynamicResource FgSub}"
-                        FontSize="18" FontWeight="Light"
-                        Width="32" Height="32" Padding="0"
-                        CornerRadius="8"
-                        HorizontalContentAlignment="Center"
-                        VerticalContentAlignment="Center"/>
-
-                <!-- ドロップダウンメニュー -->
-                <Border IsVisible="{Binding IsAddMethodDropdownOpen}"
-                        Background="{DynamicResource CardBg}"
-                        CornerRadius="8" Padding="4"
-                        BoxShadow="0 4 16 0 #44000000"
-                        HorizontalAlignment="Right">
-                    <StackPanel Spacing="2" MinWidth="180">
-                        <Button Content="Login with Browser"
-                                Command="{Binding SelectAddMethodCommand}" CommandParameter="Browser"
-                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Background="Transparent" Foreground="#FFFFFF"
-                                FontSize="12" Padding="12,7" CornerRadius="6"/>
-                        <Button Content="Import from Chrome"
-                                Command="{Binding SelectAddMethodCommand}" CommandParameter="Chrome"
-                                IsEnabled="{Binding IsImporting, Converter={x:Static BoolConverters.Not}}"
-                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Background="Transparent" Foreground="#FFFFFF"
-                                FontSize="12" Padding="12,7" CornerRadius="6"/>
-                        <Button Content="Paste Cookie"
-                                Command="{Binding SelectAddMethodCommand}" CommandParameter="Cookie"
-                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Background="Transparent" Foreground="#FFFFFF"
-                                FontSize="12" Padding="12,7" CornerRadius="6"/>
-                        <Button Content="Quick Sign-In"
-                                Command="{Binding SelectAddMethodCommand}" CommandParameter="QuickSignIn"
-                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Background="Transparent" Foreground="#FFFFFF"
-                                FontSize="12" Padding="12,7" CornerRadius="6"/>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+            <!-- + ボタンのみ（ドロップダウンは Row 1 オーバーレイ） -->
+            <Button Grid.Column="1"
+                    Content="+"
+                    Command="{Binding ToggleAddMethodDropdownCommand}"
+                    Background="{Binding IsAddMethodDropdownOpen,
+                        Converter={StaticResource BoolToColorConverter},
+                        ConverterParameter='#2A2A2A,transparent'}"
+                    Foreground="{DynamicResource FgSub}"
+                    FontSize="18" FontWeight="Light"
+                    Width="32" Height="32" Padding="0"
+                    CornerRadius="8"
+                    VerticalAlignment="Bottom"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"/>
 
         </Grid>
 
-        <!-- Accounts タブ -->
+        <!-- Row 1: Accounts タブ -->
         <ScrollViewer Grid.Row="1" IsVisible="{Binding IsAccountsTab}">
             <StackPanel Spacing="10" Margin="24,12,24,20"
                         helpers:AnimationHelper.TriggerStagger="{Binding IsAccountsTab}">
 
-                <!-- 統計カード（アクティブアカウントあり時） -->
+                <!-- 統計カード -->
                 <Border IsVisible="{Binding IsStatsVisible}"
                         Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14"
                         BoxShadow="0 2 10 0 #22000000">
                     <StackPanel Spacing="12">
-
-                        <!-- アバター + 名前 -->
                         <Grid ColumnDefinitions="Auto,*">
                             <Grid Grid.Column="0" Width="44" Height="44">
                                 <Border Width="44" Height="44" CornerRadius="22"
@@ -122,12 +86,10 @@
                             </StackPanel>
                         </Grid>
 
-                        <!-- 統計ローディング -->
                         <TextBlock Text="Loading stats..." IsVisible="{Binding IsStatsLoading}"
                                    FontSize="11" Foreground="{DynamicResource FgSub}"
                                    HorizontalAlignment="Center"/>
 
-                        <!-- 統計数値 -->
                         <Grid ColumnDefinitions="*,*,*"
                               IsVisible="{Binding IsStatsLoading,
                                   Converter={x:Static BoolConverters.Not}}">
@@ -136,32 +98,27 @@
                                            FontSize="18" FontWeight="Bold" Foreground="#FFFFFF"
                                            HorizontalAlignment="Center"/>
                                 <TextBlock Text="Friends" FontSize="10"
-                                           Foreground="{DynamicResource FgSub}"
-                                           HorizontalAlignment="Center"/>
+                                           Foreground="{DynamicResource FgSub}" HorizontalAlignment="Center"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" HorizontalAlignment="Center" Spacing="2">
                                 <TextBlock Text="{Binding ActiveFollowersCount}"
                                            FontSize="18" FontWeight="Bold" Foreground="#FFFFFF"
                                            HorizontalAlignment="Center"/>
                                 <TextBlock Text="Followers" FontSize="10"
-                                           Foreground="{DynamicResource FgSub}"
-                                           HorizontalAlignment="Center"/>
+                                           Foreground="{DynamicResource FgSub}" HorizontalAlignment="Center"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2" HorizontalAlignment="Center" Spacing="2">
                                 <TextBlock Text="{Binding ActiveFollowingsCount}"
                                            FontSize="18" FontWeight="Bold" Foreground="#FFFFFF"
                                            HorizontalAlignment="Center"/>
                                 <TextBlock Text="Following" FontSize="10"
-                                           Foreground="{DynamicResource FgSub}"
-                                           HorizontalAlignment="Center"/>
+                                           Foreground="{DynamicResource FgSub}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Grid>
-
                     </StackPanel>
                 </Border>
 
-                <!-- サブパネル群（ドロップダウン選択後に展開） -->
-                <!-- Cancel -->
+                <!-- Import 中ステータス -->
                 <StackPanel Orientation="Horizontal" Spacing="8"
                             IsVisible="{Binding IsImporting}">
                     <TextBlock Text="Please log in to roblox.com in Chrome…"
@@ -265,8 +222,7 @@
                                             <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
                                                 <TextBlock Text="{Binding Username, StringFormat='@{0}'}"
                                                            FontSize="11" Foreground="{DynamicResource FgSub}"/>
-                                                <TextBlock Text="{Binding LastUsedText}"
-                                                           FontSize="10"
+                                                <TextBlock Text="{Binding LastUsedText}" FontSize="10"
                                                            Foreground="{DynamicResource FgMuted}"
                                                            IsVisible="{Binding LastUsedText,
                                                                Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -281,7 +237,7 @@
                                                        FontSize="10" Foreground="{DynamicResource FgSub}"/>
                                         </Border>
 
-                                        <!-- アクションボタン -->
+                                        <!-- アクションボタン（Switch 削除・Remove → SVG） -->
                                         <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="5"
                                                     VerticalAlignment="Center">
                                             <Button Content="▶ Launch"
@@ -289,33 +245,34 @@
                                                     Background="#FFFFFF" Foreground="#080808"
                                                     FontWeight="SemiBold" FontSize="11"
                                                     Padding="10,5" CornerRadius="8"/>
-                                            <Button Content="Switch"
-                                                    Command="{Binding SetActiveCommand}"
-                                                    Background="{DynamicResource OverlayBg}"
-                                                    Foreground="#FFFFFF" FontSize="11"
-                                                    Padding="10,5" CornerRadius="8"/>
                                             <Button Content="Get Code"
                                                     Command="{Binding GenerateCodeCommand}"
                                                     Background="{DynamicResource OverlayBg}"
                                                     Foreground="#FFFFFF" FontSize="11"
                                                     Padding="10,5" CornerRadius="8"/>
-                                            <Button Content="Remove"
-                                                    Command="{Binding RemoveCommand}"
+                                            <Button Command="{Binding RemoveCommand}"
                                                     Background="#1AFF4444"
-                                                    Foreground="{DynamicResource FgDanger}" FontSize="11"
-                                                    Padding="10,5" CornerRadius="8"/>
+                                                    Width="28" Height="28" Padding="0"
+                                                    CornerRadius="8"
+                                                    HorizontalContentAlignment="Center"
+                                                    VerticalContentAlignment="Center"
+                                                    ToolTip.Tip="Remove">
+                                                <PathIcon Data="{StaticResource IconTrash}"
+                                                          Foreground="{DynamicResource FgDanger}"
+                                                          Width="13" Height="13"/>
+                                            </Button>
                                         </StackPanel>
 
                                     </Grid>
 
-                                    <!-- InGame の場所表示 -->
+                                    <!-- InGame 場所表示 -->
                                     <TextBlock IsVisible="{Binding IsInGame}"
                                                Text="{Binding LastLocation}"
                                                FontSize="10" Foreground="{DynamicResource FgSub}"
                                                Margin="46,0,0,0"
                                                TextTrimming="CharacterEllipsis"/>
 
-                                    <!-- Get Code 後のコード表示行 -->
+                                    <!-- Get Code 表示行 -->
                                     <Border IsVisible="{Binding HasActiveCode}"
                                             Background="{DynamicResource OverlayBg}"
                                             CornerRadius="6" Padding="12,8">
@@ -350,10 +307,45 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Friends タブ（Border で DataContext スコープを分離） -->
+        <!-- Row 1: Friends タブ -->
         <Border Grid.Row="1" IsVisible="{Binding IsFriendsTab}"
                 helpers:AnimationHelper.TriggerFadeIn="{Binding IsFriendsTab}">
             <pages:FriendsPage DataContext="{Binding FriendsVm}"/>
+        </Border>
+
+        <!-- Row 1 オーバーレイ: ドロップダウン（ZIndex で浮かせる → + ボタン位置に影響しない） -->
+        <Border Grid.Row="1"
+                IsVisible="{Binding IsAddMethodDropdownOpen}"
+                ZIndex="100"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Right"
+                Margin="0,4,24,0"
+                Background="{DynamicResource CardBg}"
+                CornerRadius="8" Padding="4"
+                BoxShadow="0 4 20 0 #55000000">
+            <StackPanel Spacing="2" MinWidth="185">
+                <Button Content="Login with Browser"
+                        Command="{Binding SelectAddMethodCommand}" CommandParameter="Browser"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                        Background="Transparent" Foreground="#FFFFFF"
+                        FontSize="12" Padding="12,8" CornerRadius="6"/>
+                <Button Content="Import from Chrome"
+                        Command="{Binding SelectAddMethodCommand}" CommandParameter="Chrome"
+                        IsEnabled="{Binding IsImporting, Converter={x:Static BoolConverters.Not}}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                        Background="Transparent" Foreground="#FFFFFF"
+                        FontSize="12" Padding="12,8" CornerRadius="6"/>
+                <Button Content="Paste Cookie"
+                        Command="{Binding SelectAddMethodCommand}" CommandParameter="Cookie"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                        Background="Transparent" Foreground="#FFFFFF"
+                        FontSize="12" Padding="12,8" CornerRadius="6"/>
+                <Button Content="Quick Sign-In"
+                        Command="{Binding SelectAddMethodCommand}" CommandParameter="QuickSignIn"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                        Background="Transparent" Foreground="#FFFFFF"
+                        FontSize="12" Padding="12,8" CornerRadius="6"/>
+            </StackPanel>
         </Border>
 
     </Grid>
