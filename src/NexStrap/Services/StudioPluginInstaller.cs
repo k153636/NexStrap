@@ -39,11 +39,13 @@ public static class StudioPluginInstaller
 
             if (File.Exists(PluginPath))
             {
-                var existing = File.ReadAllText(PluginPath, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-                if (existing == content) return true;
+                // 文字列比較ではなくバイト列で比較（BOM の有無も検出できる）
+                var newBytes      = new UTF8Encoding(false).GetBytes(content);
+                var existingBytes = File.ReadAllBytes(PluginPath);
+                if (existingBytes.SequenceEqual(newBytes)) return true;
             }
 
-            File.WriteAllText(PluginPath, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            File.WriteAllText(PluginPath, content, new UTF8Encoding(false));
             return true;
         }
         catch { return false; }
