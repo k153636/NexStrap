@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using DiscordRPC;
 using DiscordRPC.Logging;
@@ -90,6 +91,10 @@ public sealed class DiscordRichPresence : IDisposable
     private readonly SettingsService  _settings;
     private readonly RobloxApiService _robloxApi;
     private readonly FastFlagService  _fastFlags;
+    private readonly RobloxService    _roblox;
+
+    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] private static extern uint   GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
 
     // ══════════════════════════════════════════════════════════════════════
     // イベントチャネル（SingleReader で競合排除）
@@ -147,11 +152,13 @@ public sealed class DiscordRichPresence : IDisposable
     // コンストラクタ
     // ══════════════════════════════════════════════════════════════════════
 
-    public DiscordRichPresence(SettingsService settings, RobloxApiService robloxApi, FastFlagService fastFlags)
+    public DiscordRichPresence(SettingsService settings, RobloxApiService robloxApi,
+        FastFlagService fastFlags, RobloxService roblox)
     {
         _settings  = settings;
         _robloxApi = robloxApi;
         _fastFlags = fastFlags;
+        _roblox    = roblox;
 
         _ = ProcessLoopAsync(_cts.Token);
 
@@ -163,6 +170,34 @@ public sealed class DiscordRichPresence : IDisposable
             var code = await _robloxApi.GetMyCountryAsync();
             if (code != null) Enqueue(new EvCountry(code));
         });
+
+        _ = PollForegroundWindowAsync(_cts.Token);
+    }
+
+    // ── アクティブウィンドウのスロットをポーリング（マルチインスタンス対応） ─────
+    private async Task PollForegroundWindowAsync(CancellationToken ct)
+    {
+        int lastSlot = -2; // 初回必ず更新させるために -1 と異なる値で初期化
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(300, ct);
+
+                var hwnd = GetForegroundWindow();
+                GetWindowThreadProcessId(hwnd, out uint pid);
+
+                int newSlot = _roblox.TryGetSlotForPid((int)pid, out var s) ? s : -1;
+
+                if (newSlot != lastSlot)
+                {
+                    lastSlot = newSlot;
+                    EnqueueFocusChanged(newSlot >= 0 ? newSlot : (int?)null);
+                }
+            }
+            catch (OperationCanceledException) { break; }
+            catch { /* ポーリングは失敗しても継続 */ }
+        }
     }
 
     // ══════════════════════════════════════════════════════════════════════

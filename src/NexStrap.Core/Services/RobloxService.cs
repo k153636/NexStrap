@@ -182,6 +182,10 @@ public class RobloxService
     private CancellationTokenSource? _installCts;
     private Process? _launchedRobloxProcess;
 
+    // マルチインスタンス: プロセスID → スロットインデックス
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, int> _pidToSlot = new();
+    private int _launchSlotCounter = 0;
+
     private string?  _cachedLatestGuid;
     private DateTime _lastVersionCheck = DateTime.MinValue;
     private static readonly TimeSpan VersionCheckInterval = TimeSpan.FromHours(4);
@@ -405,12 +409,17 @@ public class RobloxService
     private bool SetLaunched(Process proc, LaunchOptions opts)
     {
         _launchedRobloxProcess = proc;
+        var slot = _launchSlotCounter++;
+        _pidToSlot[proc.Id] = slot;
         _ = MonitorProcessAsync(proc);
         _ = PostLaunchAsync(proc, opts);
         SetStatus(RobloxStatus.Running);
-        Log("Launch successful");
+        Log($"Launch successful (slot={slot}, pid={proc.Id})");
         return true;
     }
+
+    public bool TryGetSlotForPid(int pid, out int slot) => _pidToSlot.TryGetValue(pid, out slot);
+    public IEnumerable<int> GetTrackedRobloxPids()      => _pidToSlot.Keys;
 
     /// <summary>CPU アフィニティ・メモリ上限・クラッシュハンドラ抑制を起動後に適用する。</summary>
     public async Task PostLaunchAsync(Process proc, LaunchOptions opts)
@@ -1315,6 +1324,7 @@ public class RobloxService
     private async Task MonitorProcessAsync(Process process)
     {
         try { await process.WaitForExitAsync(); } catch { }
+        _pidToSlot.TryRemove(process.Id, out _);
         RestoreResolution(); // Stretch Resolution を使っていた場合に復元
         SetStatus(RobloxStatus.Idle);
     }
