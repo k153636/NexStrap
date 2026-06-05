@@ -49,6 +49,7 @@ public sealed class DiscordRichPresence : IDisposable
     private record EvHeartbeat                                                         : Ev;
     private record EvFocus(int? Slot)                                                  : Ev;
     private record EvRefresh                                                           : Ev;
+    private record EvDisposeClient(DiscordRpcClient? Client)                           : Ev;
 
     // ══════════════════════════════════════════════════════════════════════
     // 処理ループのみが読み書きする状態（外部からは読み取り専用プロパティ経由）
@@ -441,6 +442,14 @@ public sealed class DiscordRichPresence : IDisposable
                 ApplyPresence();
                 break;
 
+            // ── 旧クライアント解放（EvDiscordReady の後に必ず処理される） ─────
+            case EvDisposeClient { Client: var clientToDispose }:
+                // FIFO により ApplyPresence() → SchedulePresence() は既に完了している。
+                // debounce(300ms) の発火を確実に待つ。
+                await Task.Delay(350);
+                clientToDispose?.Dispose();
+                break;
+
             // ── 特殊オーバーレイ（起動中・インストール中・Dev） ───────────────
             case EvOverlay { Kind: var kind }:
                 _overlay = kind;
@@ -768,17 +777,18 @@ public sealed class DiscordRichPresence : IDisposable
             nc.OnReady += (_, _) =>
             {
                 lock (_rpcLock) { _rpcConnected = true; }
-                _ = Task.Run(async () =>
+                Task.Run(() =>
                 {
-                    // 新クライアントの接続を通知（ApplyPresence が走り新プレゼンスをキューに入れる）
+                    // FIFO キューの特性を利用した順序保証：
+                    //   EvDiscordReady → ApplyPresence() → SchedulePresence() → debounce(300ms) → FlushPresence()
+                    //   EvDisposeClient → 350ms 待機 → oldClient.Dispose()
+                    //
+                    // EvDisposeClient は必ず EvDiscordReady の後に処理される（SingleReader FIFO）。
+                    // 350ms > debounce(300ms) なので FlushPresence() は必ず先に完了する。
+                    // スペック・回線速度に依存しない（Discord RPC はローカルパイプ）。
                     Enqueue(new EvDiscordReady());
+                    Enqueue(new EvDisposeClient(oldClient));
                     ConnectionChanged?.Invoke(this, true);
-
-                    // 新プレゼンスが Discord に届いてから旧クライアントを解放する。
-                    // 旧クライアントは Discord 側でまだ presence を保持しているため、
-                    // この遅延の間ユーザーには何かが表示され続ける（ギャップなし）。
-                    await Task.Delay(900);
-                    oldClient?.Dispose();
                 });
             };
             nc.OnClose += (_, _) =>
