@@ -125,11 +125,14 @@ public class StudioService
         SetStatus(RobloxStatus.Launching);
         try
         {
+            var studioDir = Path.GetDirectoryName(exePath)!;
             var psi = new ProcessStartInfo(exePath)
             {
                 UseShellExecute  = false,
-                WorkingDirectory = Path.GetDirectoryName(exePath)!
+                WorkingDirectory = studioDir
             };
+            // Qt がフォントディレクトリを正しく解決するために明示的に指定
+            psi.Environment["QT_QPA_FONTDIR"] = Path.Combine(studioDir, "StudioFonts");
             Process.Start(psi);
             SetStatus(RobloxStatus.Running);
             return true;
