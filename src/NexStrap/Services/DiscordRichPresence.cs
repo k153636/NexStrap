@@ -331,8 +331,14 @@ public sealed class DiscordRichPresence : IDisposable
             _gameDetected    = true;
             RefreshPresence();
         }
+        else if (robloxCount > 0)
+        {
+            // Roblox はまだ起動中（メニュー画面）→ Roblox App ID を維持したまま presence をクリア
+            RefreshPresence();
+        }
         else
         {
+            // Roblox が完全に終了 → NexStrap App ID に戻す
             await InitializeAndWaitReadyAsync(AppConstants.DiscordAppId);
             RefreshPresence();
         }
