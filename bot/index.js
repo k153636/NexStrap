@@ -22,11 +22,8 @@ client.once(Events.ClientReady, (c) => {
 });
 
 client.on(Events.MessageCreate, async (message) => {
-  // 👋・hi チャンネルの入室メッセージに 👋 をリアクション
-  if (
-    message.channel.id === HI_CHANNEL_ID &&
-    message.type === MessageType.GuildMemberJoin
-  ) {
+  // 👋・hi チャンネルの全メッセージに 👋 をリアクション
+  if (message.channel.id === HI_CHANNEL_ID) {
     try { await message.react('👋'); } catch {}
     return;
   }
