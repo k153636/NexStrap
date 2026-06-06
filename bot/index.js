@@ -1,5 +1,11 @@
 const { Client, GatewayIntentBits, Events, MessageType } = require('discord.js');
-require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+const http = require('http');
+if (!process.env.DISCORD_BOT_TOKEN) {
+  require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+}
+
+// Render の無料枠がスリープしないよう HTTP サーバーを立てる
+http.createServer((_, res) => res.end('ok')).listen(process.env.PORT || 3000);
 
 const HI_CHANNEL_ID = '1512877243897085983';
 
