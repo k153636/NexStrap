@@ -34,10 +34,11 @@ public sealed class DiscordRichPresence : IDisposable
     private abstract record Ev;
     private record EvRoblox(bool Running)                                               : Ev;
     private record EvLaunch                                                             : Ev;
+    private record EvActivity(InstanceActivity Activity)                                 : Ev;
     private record EvPlaceJoined(long PlaceId, long UniverseId, int Slot)              : Ev;
     private record EvGameLeft(int Slot, int RobloxCount)                               : Ev;
     private record EvGameInfo(long PlaceId, long Seq, int Slot, string? Name, string? Icon, string? Creator) : Ev;
-    private record EvServerCode(string Code)                                            : Ev;
+    private record EvServerCode(int Slot, string Code)                                  : Ev;
     private record EvUserUpdated(int Slot, string? Url, string? Label)                 : Ev;
     private record EvAvatar(string? Url)                                               : Ev;
     private record EvLabel(string? Label)                                              : Ev;
@@ -57,16 +58,11 @@ public sealed class DiscordRichPresence : IDisposable
 
     private readonly record struct SlotGame(
         string? Name, string? IconUrl, string? Creator,
-        long PlaceId, string? AvatarUrl, string? UserLabel);
+        long PlaceId, long UniverseId, string? AvatarUrl, string? UserLabel,
+        string? ServerCode);
 
     private Phase   _phase            = Phase.NexStrapIdle;
     private string  _appId            = AppConstants.DiscordAppId;
-    private long    _placeId;
-    private long    _universeId;
-    private string? _gameName;
-    private string? _gameIcon;
-    private string? _gameCreator;
-    private string? _serverCode;
     private string  _pageName         = "Home";
     private string? _avatarUrl;
     private string? _userLabel;
@@ -76,9 +72,7 @@ public sealed class DiscordRichPresence : IDisposable
     private bool    _studioTesting;
     private bool    _studioRpcActive;  // プラグインが接続中かどうか
     private int     _activeFocusedSlot = -1;
-    private int     _currentSlot;
     private int     _robloxCount;
-    private int     _fetchRetries;
     private long    _joinSeq;
     private const int MaxFetchRetries = 5;
 
@@ -86,6 +80,11 @@ public sealed class DiscordRichPresence : IDisposable
     private readonly Dictionary<int, (string? Url, string? Label)> _users        = new();
     private readonly Dictionary<int, long>                         _slotJoinSeqs = new();
     private readonly Dictionary<int, Timestamps>                   _slotGameTs   = new();
+    private readonly Dictionary<int, DateTime>                     _slotStartedAt = new();
+    private readonly Dictionary<int, long>                         _slotPlaceIds = new();
+    private readonly Dictionary<int, long>                         _slotUniverseIds = new();
+    private readonly Dictionary<int, int>                          _slotFetchRetries = new();
+    private readonly Dictionary<int, string>                       _slotServerCodes = new();
 
     // ══════════════════════════════════════════════════════════════════════
     // 外部サービス
@@ -131,7 +130,7 @@ public sealed class DiscordRichPresence : IDisposable
 
     public bool    IsConnected       => _rpcConnected;
     public bool    GameDetected      => _phase is Phase.InGame or Phase.FetchingGame;
-    public long    CurrentUniverseId => _universeId;
+    public long    CurrentUniverseId => GetDisplaySlot() is { } slot && _slotUniverseIds.TryGetValue(slot, out var universeId) ? universeId : 0;
     public string  CurrentPageName   => _pageName;
 
     // ══════════════════════════════════════════════════════════════════════
@@ -144,7 +143,7 @@ public sealed class DiscordRichPresence : IDisposable
     public event EventHandler?                     TeleportOccurred;
 
     public sealed record GameInfoFetchedArgs(
-        long PlaceId, long UniverseId, string Name, string IconUrl,
+        int Slot, long PlaceId, long UniverseId, string Name, string IconUrl,
         DateTime PlayedAt, DateTime StartedAt);
 
     // ══════════════════════════════════════════════════════════════════════
@@ -176,9 +175,10 @@ public sealed class DiscordRichPresence : IDisposable
 
     public void EnqueueRobloxChanged(bool running)   => Enqueue(running ? new EvRoblox(true) : new EvRoblox(false));
     public void EnqueueLaunchStarted()               => Enqueue(new EvLaunch());
+    public void EnqueueActivity(InstanceActivity activity) => Enqueue(new EvActivity(activity));
     public void EnqueueGameLeft(int slot, int count) => Enqueue(new EvGameLeft(slot, count));
     public void EnqueueUserUpdated(int slot, string? url, string? label) => Enqueue(new EvUserUpdated(slot, url, label));
-    public void EnqueueServerCode(string? code)      { if (code != null) Enqueue(new EvServerCode(code)); }
+    public void EnqueueServerCode(int slot, string? code) { if (code != null) Enqueue(new EvServerCode(slot, code)); }
     public void EnqueueStudioPlaytestStarted()       => Enqueue(new EvStudio(_studioDetected, _studioPlaceName, true));
     public void EnqueueStudioPlaytestStopped()       => Enqueue(new EvStudio(_studioDetected, _studioPlaceName, false));
     public void EnqueueStudioRpcMessage(NexStrap.Services.StudioRpcData data) => Enqueue(new EvStudioRpc(data));
@@ -244,31 +244,31 @@ public sealed class DiscordRichPresence : IDisposable
             // ── Roblox 起動 / 終了 ──────────────────────────────────────────
             case EvRoblox { Running: true }:
                 log.Info("Discord", "Roblox 起動");
-                _games.Clear(); _slotGameTs.Clear();
+                ClearAllSlots();
                 _phase         = Phase.RobloxMenu;
-                _fetchRetries  = 0;
                 await SwitchAppIdAsync(AppConstants.DiscordRobloxAppId);
                 ApplyPresence();
                 break;
 
             case EvRoblox { Running: false }:
                 log.Info("Discord", "Roblox 終了");
-                _games.Clear(); _slotGameTs.Clear();
+                ClearAllSlots();
                 _phase         = Phase.NexStrapIdle;
-                _universeId    = 0;
-                _fetchRetries  = 0;
                 await SwitchAppIdAsync(AppConstants.DiscordAppId);
                 ApplyPresence();
                 break;
 
             // ── Roblox 起動開始（前セッションをクリア） ─────────────────────
             case EvLaunch:
-                _games.Clear(); _slotGameTs.Clear();
+                ClearAllSlots();
                 _phase         = Phase.RobloxMenu;
-                _fetchRetries  = 0;
                 break;
 
             // ── ゲーム参加 ──────────────────────────────────────────────────
+            case EvActivity { Activity: var activity }:
+                await HandleActivityChangedAsync(activity);
+                break;
+
             case EvPlaceJoined { PlaceId: var pid, UniverseId: var uid, Slot: var slot }:
                 await HandlePlaceJoinedAsync(pid, uid, slot);
                 break;
@@ -290,44 +290,45 @@ public sealed class DiscordRichPresence : IDisposable
                 if (_phase != Phase.FetchingGame && _phase != Phase.InGame) break;
                 // 同一スロットに新しいPlaceJoinedが来ていたら古い結果を捨てる
                 if (!_slotJoinSeqs.TryGetValue(infoSlot, out var slotLatest) || seq != slotLatest) break;
-                if (icon == null)
+                if (name == null)
                 {
-                    if (infoSlot != _currentSlot) break; // バックグラウンドスロットの失敗は無視
-                    _fetchRetries++;
-                    if (_fetchRetries < MaxFetchRetries)
+                    _slotFetchRetries.TryGetValue(infoSlot, out var retries);
+                    retries++;
+                    _slotFetchRetries[infoSlot] = retries;
+                    if (retries < MaxFetchRetries)
                     {
-                        log.Warning("Discord", $"ゲーム情報取得失敗 ({_fetchRetries}/{MaxFetchRetries}) placeId={pid}");
-                        _phase = Phase.FetchingGame;
+                        log.Warning("Discord", $"ゲーム情報取得失敗 ({retries}/{MaxFetchRetries}) placeId={pid}, slot={infoSlot}");
+                        _phase = _games.Count > 0 ? Phase.InGame : Phase.FetchingGame;
                     }
                     else
                     {
-                        log.Warning("Discord", $"ゲーム情報取得を断念 placeId={pid}");
-                        _phase = Phase.RobloxMenu;
+                        log.Warning("Discord", $"ゲーム情報取得を断念 placeId={pid}, slot={infoSlot}");
+                        _phase = _games.Count > 0 ? Phase.InGame : Phase.RobloxMenu;
                     }
                     ApplyPresence();
                     break;
                 }
                 log.Info("Discord", $"ゲーム参加: {name} (placeId={pid}, slot={infoSlot})");
                 _users.TryGetValue(infoSlot, out var su);
-                _games[infoSlot] = new SlotGame(name, icon, creator, pid, su.Url, su.Label);
-                _fetchRetries = 0;
+                _slotUniverseIds.TryGetValue(infoSlot, out var infoUniverse);
+                var serverCode = _games.TryGetValue(infoSlot, out var oldGame) && oldGame.ServerCode != null
+                    ? oldGame.ServerCode
+                    : (_slotServerCodes.TryGetValue(infoSlot, out var pendingCode) ? pendingCode : null);
+                _games[infoSlot] = new SlotGame(name, icon, creator, pid, infoUniverse, su.Url, su.Label, serverCode);
+                _slotFetchRetries[infoSlot] = 0;
                 _phase = Phase.InGame;
                 await SwitchAppIdAsync(AppConstants.DiscordRobloxAppId);
                 ApplyPresence();
-                // ゲーム開始イベント（履歴・時刻記録）はメインスロットのみ
-                if (infoSlot == _currentSlot)
-                {
-                    _gameName    = name;
-                    _gameIcon    = icon;
-                    _gameCreator = creator;
-                    var startedAt = DateTime.UtcNow;
-                    GameInfoFetched?.Invoke(this, new GameInfoFetchedArgs(pid, _universeId, name!, icon!, DateTime.Now, startedAt));
-                }
+                var startedAt = _slotStartedAt.TryGetValue(infoSlot, out var slotStartedAt)
+                    ? slotStartedAt : DateTime.UtcNow;
+                GameInfoFetched?.Invoke(this, new GameInfoFetchedArgs(infoSlot, pid, infoUniverse, name, icon ?? "roblox", DateTime.Now, startedAt));
                 break;
 
             // ── サーバー国コード ─────────────────────────────────────────────
-            case EvServerCode { Code: var code }:
-                _serverCode = code;
+            case EvServerCode { Slot: var serverSlot, Code: var code }:
+                _slotServerCodes[serverSlot] = code;
+                if (_games.TryGetValue(serverSlot, out var serverGame))
+                    _games[serverSlot] = serverGame with { ServerCode = code };
                 if (_phase == Phase.InGame) ApplyPresence();
                 break;
 
@@ -401,8 +402,16 @@ public sealed class DiscordRichPresence : IDisposable
             case EvHeartbeat:
                 if (_phase == Phase.InGame)
                     ApplyPresence(); // タイムスタンプ等の再送
-                else if (_phase == Phase.FetchingGame && _fetchRetries < MaxFetchRetries)
-                    _ = FetchGameInfoAsync(_placeId, _universeId, _joinSeq, _currentSlot); // リトライ
+                else if (_phase == Phase.FetchingGame)
+                {
+                    var retrySlot = GetDisplaySlot();
+                    if (retrySlot != null
+                        && _slotPlaceIds.TryGetValue(retrySlot.Value, out var retryPlace)
+                        && _slotUniverseIds.TryGetValue(retrySlot.Value, out var retryUniverse)
+                        && _slotJoinSeqs.TryGetValue(retrySlot.Value, out var retrySeq)
+                        && (!_slotFetchRetries.TryGetValue(retrySlot.Value, out var retries) || retries < MaxFetchRetries))
+                        _ = FetchGameInfoAsync(retryPlace, retryUniverse, retrySeq, retrySlot.Value); // リトライ
+                }
                 break;
 
             // ── フォーカス ────────────────────────────────────────────────────
@@ -442,15 +451,43 @@ public sealed class DiscordRichPresence : IDisposable
     // ゲーム参加処理（処理ループ内から呼ぶ）
     // ══════════════════════════════════════════════════════════════════════
 
-    private async Task HandlePlaceJoinedAsync(long placeId, long universeIdFromLog, int slot)
+    private async Task HandleActivityChangedAsync(InstanceActivity activity)
+    {
+        if (activity.PlaceId <= 0) return;
+
+        var slot = activity.Slot;
+        var samePlace = _slotPlaceIds.TryGetValue(slot, out var currentPlace)
+            && currentPlace == activity.PlaceId
+            && (!_slotUniverseIds.TryGetValue(slot, out var currentUniverse)
+                || activity.UniverseId == 0
+                || currentUniverse == 0
+                || currentUniverse == activity.UniverseId);
+
+        if (samePlace)
+        {
+            _slotPlaceIds[slot] = activity.PlaceId;
+            if (activity.UniverseId > 0) _slotUniverseIds[slot] = activity.UniverseId;
+            if (!_slotStartedAt.ContainsKey(slot)) _slotStartedAt[slot] = activity.TimeJoined;
+            lock (_rpcLock)
+            {
+                if (!_slotGameTs.ContainsKey(slot))
+                    _slotGameTs[slot] = new Timestamps(activity.TimeJoined);
+            }
+            if (_phase is Phase.FetchingGame or Phase.InGame) ApplyPresence();
+            return;
+        }
+
+        await HandlePlaceJoinedAsync(activity.PlaceId, activity.UniverseId, activity.Slot, activity.TimeJoined);
+    }
+
+    private async Task HandlePlaceJoinedAsync(long placeId, long universeIdFromLog, int slot, DateTime? joinedAt = null)
     {
         var prevPhase    = _phase;
-        var prevUniverse = _universeId;
+        _slotUniverseIds.TryGetValue(slot, out var prevUniverse);
         var seq          = ++_joinSeq;
 
-        _currentSlot      = slot;
         _slotJoinSeqs[slot] = seq; // スロット別に最新シーケンスを記録
-        _phase            = Phase.FetchingGame;
+        _phase            = _games.Count > 0 ? Phase.InGame : Phase.FetchingGame;
 
         long universe = universeIdFromLog;
         if (universe == 0)
@@ -463,10 +500,16 @@ public sealed class DiscordRichPresence : IDisposable
 
         bool isTeleport = prevPhase == Phase.InGame && universe != 0 && universe == prevUniverse;
 
+        _slotPlaceIds[slot] = placeId;
+        _slotUniverseIds[slot] = universe;
+        _slotServerCodes.Remove(slot);
+        var startedAt = joinedAt ?? DateTime.UtcNow;
+        _slotStartedAt[slot] = startedAt;
+
         if (isTeleport)
         {
-            _placeId = placeId;
-            _serverCode = null;
+            if (_games.TryGetValue(slot, out var g))
+                _games[slot] = g with { PlaceId = placeId, UniverseId = universe, ServerCode = null };
             TeleportOccurred?.Invoke(this, EventArgs.Empty);
             _ = FetchGameInfoAsync(placeId, universe, seq, slot);
             return;
@@ -474,12 +517,8 @@ public sealed class DiscordRichPresence : IDisposable
 
         // 新規セッション
         SessionEnded?.Invoke(this, EventArgs.Empty);
-        _universeId   = universe;
-        _placeId      = placeId;
-        _serverCode   = null;
-        _fetchRetries = 0;
-        lock (_rpcLock) { _gameTs = Timestamps.Now; _slotGameTs[slot] = _gameTs; }
-        ClearGameInfo();
+        _slotFetchRetries[slot] = 0;
+        lock (_rpcLock) { _gameTs = new Timestamps(startedAt); _slotGameTs[slot] = _gameTs; }
         ApplyPresence();
 
         _ = FetchGameInfoAsync(placeId, universe, seq, slot);
@@ -509,25 +548,31 @@ public sealed class DiscordRichPresence : IDisposable
         {
             _games.Remove(slot);
             _slotGameTs.Remove(slot);
+            _slotStartedAt.Remove(slot);
             _slotJoinSeqs.Remove(slot);
+            _slotPlaceIds.Remove(slot);
+            _slotUniverseIds.Remove(slot);
+            _slotFetchRetries.Remove(slot);
+            _slotServerCodes.Remove(slot);
             // 実プロセス数との乖離を整理（確実な slot 削除後のみ実行）
             while (_games.Count > count && _games.Count > 0)
             {
                 var key = _games.Keys.Min();
                 _games.Remove(key);
                 _slotGameTs.Remove(key);
+                _slotStartedAt.Remove(key);
                 _slotJoinSeqs.Remove(key);
+                _slotPlaceIds.Remove(key);
+                _slotUniverseIds.Remove(key);
+                _slotFetchRetries.Remove(key);
             }
         }
         else
         {
             NexStrap.Services.Logger.Instance.Warning("Discord", $"GameLeft: slot 不明 (count={count})");
             // slot 不明でも count=0 なら全クリア
-            if (count == 0) { _games.Clear(); _slotGameTs.Clear(); _slotJoinSeqs.Clear(); }
+            if (count == 0) ClearAllSlots();
         }
-        ClearGameInfo();
-        _universeId = 0;
-        _serverCode = null;
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -619,7 +664,7 @@ public sealed class DiscordRichPresence : IDisposable
             var buttons = s.DiscordShowJoinButton && g.PlaceId > 0
                 ? new Button[] { new() { Label = "Join Game", Url = $"https://www.roblox.com/games/{g.PlaceId}" } }
                 : null;
-            return Build(details, FormatState(s), g.IconUrl ?? "roblox",
+            return Build(details, FormatState(s, g), g.IconUrl ?? "roblox",
                 g.Name ?? "Roblox", g.AvatarUrl ?? _avatarUrl,
                 g.AvatarUrl != null || _avatarUrl != null ? (g.UserLabel ?? label ?? "Profile") : null,
                 buttons, gameTs);
@@ -634,7 +679,7 @@ public sealed class DiscordRichPresence : IDisposable
         var multiDetails = s.DiscordShowCreator && focused.Creator != null
             ? $"{focused.Name} · by {focused.Creator}" : focused.Name ?? "Roblox";
 
-        var baseState   = FormatState(s);
+        var baseState   = FormatState(s, focused);
         var instanceStr = $"Instances {count}";
         var multiState  = baseState != null ? $"{baseState} · {instanceStr}" : instanceStr;
 
@@ -649,12 +694,12 @@ public sealed class DiscordRichPresence : IDisposable
             multiButtons, multiGameTs);
     }
 
-    private string? FormatState(Models.AppSettings s)
+    private string? FormatState(Models.AppSettings s, SlotGame game)
     {
         var flagStr = s.DiscordShowFlagCount && _fastFlags.GetAll().Count > 0
             ? $"{_fastFlags.GetAll().Count} Flags" : null;
-        if (!s.DiscordShowServerRegion || _serverCode == null) return flagStr;
-        var serverFlag = ToFlagEmoji(_serverCode);
+        if (!s.DiscordShowServerRegion || game.ServerCode == null) return flagStr;
+        var serverFlag = ToFlagEmoji(game.ServerCode);
         var server = _myCountry != null
             ? $"{ToFlagEmoji(_myCountry)} → {serverFlag} Server"
             : $"{serverFlag} Server";
@@ -867,11 +912,27 @@ public sealed class DiscordRichPresence : IDisposable
 
     private void Enqueue(Ev ev) => _ch.Writer.TryWrite(ev);
 
-    private void ClearGameInfo()
+    private int? GetDisplaySlot()
     {
-        _gameName    = null;
-        _gameIcon    = null;
-        _gameCreator = null;
+        if (_activeFocusedSlot >= 0 && _games.ContainsKey(_activeFocusedSlot))
+            return _activeFocusedSlot;
+        if (_games.Count > 0)
+            return _games.Keys.Max();
+        if (_slotPlaceIds.Count > 0)
+            return _slotPlaceIds.Keys.Max();
+        return null;
+    }
+
+    private void ClearAllSlots()
+    {
+        _games.Clear();
+        _slotGameTs.Clear();
+        _slotStartedAt.Clear();
+        _slotJoinSeqs.Clear();
+        _slotPlaceIds.Clear();
+        _slotUniverseIds.Clear();
+        _slotFetchRetries.Clear();
+        _slotServerCodes.Clear();
     }
 
     private static int CountRobloxProcesses() =>

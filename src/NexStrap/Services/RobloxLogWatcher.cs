@@ -8,6 +8,16 @@ public sealed record PlaceJoinedArgs(uint Pid, int Slot, long PlaceId, long Univ
 public sealed record GameLeftArgs(uint Pid, int Slot);
 public sealed record UserIdDetectedArgs(uint Pid, int Slot, long UserId);
 public sealed record ServerIpDetectedArgs(uint Pid, int Slot, string Ip);
+public sealed record InstanceActivity(
+    uint Pid,
+    int Slot,
+    long PlaceId,
+    long UniverseId,
+    long UserId,
+    string? ServerIp,
+    DateTime TimeJoined,
+    string LogPath);
+public sealed record ActivityChangedArgs(InstanceActivity Activity);
 
 public class RobloxLogWatcher : IDisposable
 {
@@ -22,6 +32,7 @@ public class RobloxLogWatcher : IDisposable
         public string DetectedIp     { get; set; } = "";
         public long   DetectedUserId { get; set; }
         public bool   WasRunning     { get; set; }
+        public InstanceActivity? Activity { get; set; }
     }
 
     private Timer? _pollTimer;
@@ -40,6 +51,7 @@ public class RobloxLogWatcher : IDisposable
     public event EventHandler<GameLeftArgs>?         GameLeft;
     public event EventHandler<UserIdDetectedArgs>?   UserIdDetected;
     public event EventHandler<ServerIpDetectedArgs>? ServerIpDetected;
+    public event EventHandler<ActivityChangedArgs>?  ActivityChanged;
     public event EventHandler?                       StudioPlaySoloStarted;
     public event EventHandler?                       StudioPlaySoloStopped;
 
@@ -59,7 +71,7 @@ public class RobloxLogWatcher : IDisposable
     private static readonly Regex UserIdPattern =
         new(@"\buserid:(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex UniverseIdPattern =
-        new(@"\buniverseid:(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        new(@"\buniverseid\s*[:=]\s*(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex UdmuxPattern =
         new(@"UDMUX Address = (\d+\.\d+\.\d+\.\d+)", RegexOptions.Compiled);
 
@@ -71,7 +83,13 @@ public class RobloxLogWatcher : IDisposable
         "reportGameDisconnect",
         "Game disconnect",
         "leaving game",
+        "leaveUGCGameInternal",
         "returnToLuaApp",
+        "Client:Disconnect",
+        "Sending disconnect",
+        "Disconnected from server",
+        "Disconnection Notification",
+        "Connection lost",
         "connection timeout",
         "Connection closed",
     ];
@@ -79,6 +97,7 @@ public class RobloxLogWatcher : IDisposable
     private static readonly string LogDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Roblox", "logs");
+    private const double MaxProcessLogStartDeltaSeconds = 120;
 
     // ── コンストラクタ ────────────────────────────────────────────────────
 
@@ -98,19 +117,36 @@ public class RobloxLogWatcher : IDisposable
         return false;
     }
 
+    public bool TryGetActivityForSlot(int slot, out InstanceActivity activity)
+    {
+        lock (_lock)
+        {
+            var found = _instances.Values.FirstOrDefault(s => s.Slot == slot)?.Activity;
+            if (found != null) { activity = found; return true; }
+        }
+        activity = null!;
+        return false;
+    }
+
     // ── 起動 ──────────────────────────────────────────────────────────────
 
     public void Start()
     {
-        if (!Directory.Exists(LogDir)) return;
+        if (!Directory.Exists(LogDir))
+        {
+            Logger.Instance.Warning("LogWatcher", $"Roblox log directory not found: {LogDir}");
+            return;
+        }
 
         var procs   = GetAllPlayerProcesses().ToList();
         var matched = MatchProcessesToLogFiles(procs);
+        Logger.Instance.Info("LogWatcher", $"Start: processes={procs.Count}, matched={matched.Count}");
         _nextSlot = matched.Count;
         foreach (var (pid, (logPath, slot)) in matched)
         {
             var state = new InstanceState { LogPath = logPath, Pid = pid, Slot = slot };
             lock (_lock) { _instances[pid] = state; }
+            Logger.Instance.Info("LogWatcher", $"Attach initial: pid={pid}, slot={slot}, log={Path.GetFileName(logPath)}");
             ScanInstanceForInitialState(state);
         }
 
@@ -135,7 +171,7 @@ public class RobloxLogWatcher : IDisposable
         if (background && playing)
         {
             _pollTimer?.Change(3_000, 3_000);
-            _scanTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+            _scanTimer?.Change(3_000, 3_000);
             _processTimer?.Change(20_000, 20_000);
         }
         else if (background)
@@ -168,7 +204,11 @@ public class RobloxLogWatcher : IDisposable
 
     private void PollInstance(InstanceState state)
     {
-        if (!File.Exists(state.LogPath)) return;
+        if (!File.Exists(state.LogPath))
+        {
+            Logger.Instance.Warning("LogWatcher", $"Missing log: pid={state.Pid}, slot={state.Slot}, log={Path.GetFileName(state.LogPath)}");
+            return;
+        }
         using var fs = new FileStream(state.LogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         long pos;
         lock (_lock) { pos = state.Position; }
@@ -188,6 +228,7 @@ public class RobloxLogWatcher : IDisposable
         long   fireUniverseId = 0;
         bool   fireLeave      = false;
         string fireIp         = string.Empty;
+        InstanceActivity? activityChanged = null;
 
         lock (_lock)
         {
@@ -198,6 +239,11 @@ public class RobloxLogWatcher : IDisposable
                 {
                     state.DetectedUserId = uid;
                     fireUserId = uid;
+                    if (state.Activity != null)
+                    {
+                        state.Activity = state.Activity with { UserId = uid };
+                        activityChanged = state.Activity;
+                    }
                 }
             }
 
@@ -206,12 +252,20 @@ public class RobloxLogWatcher : IDisposable
                 var m = pattern.Match(line);
                 if (!m.Success) continue;
                 if (!long.TryParse(m.Groups[1].Value, out var placeId)) continue;
-                if (placeId <= 0 || placeId == state.LastPlaceId) continue;
+                if (placeId <= 0) continue;
+                if (placeId == state.LastPlaceId)
+                {
+                    var duplicateUniverseId = MatchUniverseId(line);
+                    if (duplicateUniverseId > 0 && state.Activity is { UniverseId: 0 } activity)
+                    {
+                        state.Activity = activity with { UniverseId = duplicateUniverseId };
+                        activityChanged = state.Activity;
+                    }
+                    continue;
+                }
                 state.LastPlaceId = placeId;
                 firePlaceId = placeId;
-                var uum = UniverseIdPattern.Match(line);
-                if (uum.Success && long.TryParse(uum.Groups[1].Value, out var uid2) && uid2 > 0)
-                    fireUniverseId = uid2;
+                fireUniverseId = MatchUniverseId(line);
                 break;
             }
 
@@ -226,6 +280,16 @@ public class RobloxLogWatcher : IDisposable
             {
                 state.WasRunning = true;
                 state.DetectedIp = string.Empty;
+                state.Activity = new InstanceActivity(
+                    state.Pid,
+                    state.Slot,
+                    firePlaceId,
+                    fireUniverseId,
+                    state.DetectedUserId,
+                    null,
+                    DateTime.UtcNow,
+                    state.LogPath);
+                activityChanged = state.Activity;
             }
             else if (state.LastPlaceId != 0)
             {
@@ -235,28 +299,44 @@ public class RobloxLogWatcher : IDisposable
                     state.LastPlaceId = 0;
                     state.DetectedIp  = string.Empty;
                     state.WasRunning  = false;
+                    state.Activity    = null;
                     fireLeave = true;
                     break;
                 }
+            }
+
+            if (!string.IsNullOrEmpty(fireIp) && state.Activity != null)
+            {
+                state.Activity = state.Activity with { ServerIp = fireIp };
+                activityChanged = state.Activity;
             }
         }
 
         if (fireUserId > 0)
             UserIdDetected?.Invoke(this, new UserIdDetectedArgs(state.Pid, state.Slot, fireUserId));
+        if (activityChanged != null)
+            ActivityChanged?.Invoke(this, new ActivityChangedArgs(activityChanged));
         if (firePlaceId > 0)
+        {
+            Logger.Instance.Info("LogWatcher", $"Place detected: pid={state.Pid}, slot={state.Slot}, placeId={firePlaceId}, universeId={fireUniverseId}, log={Path.GetFileName(state.LogPath)}");
             PlaceJoined?.Invoke(this, new PlaceJoinedArgs(state.Pid, state.Slot, firePlaceId, fireUniverseId));
+        }
         if (!string.IsNullOrEmpty(fireIp))
+        {
+            Logger.Instance.Info("LogWatcher", $"Server IP detected: pid={state.Pid}, slot={state.Slot}, ip={fireIp}");
             ServerIpDetected?.Invoke(this, new ServerIpDetectedArgs(state.Pid, state.Slot, fireIp));
+        }
         if (fireLeave)
+        {
+            Logger.Instance.Info("LogWatcher", $"Leave detected: pid={state.Pid}, slot={state.Slot}, log={Path.GetFileName(state.LogPath)}");
             GameLeft?.Invoke(this, new GameLeftArgs(state.Pid, state.Slot));
+        }
     }
 
     // ── 新インスタンス検出（スキャンタイマー） ────────────────────────────
 
     private void CheckForNewInstances()
     {
-        if (_isBackgroundMode && _isPlayingMode) return;
-
         var procs = GetAllPlayerProcesses().ToList();
 
         // 既に監視中のログファイルを取得（重複マッチ防止）
@@ -275,7 +355,11 @@ public class RobloxLogWatcher : IDisposable
             if (exists) continue;
 
             var logFile = FindLogFileForProcess(proc, usedLogs);
-            if (logFile == null) continue;
+            if (logFile == null)
+            {
+                Logger.Instance.Warning("LogWatcher", $"No log match yet: pid={pid}, start={SafeStartTime(proc):HH:mm:ss.fff}");
+                continue;
+            }
 
             var slot  = Interlocked.Increment(ref _nextSlot) - 1;
             var state = new InstanceState { LogPath = logFile, Pid = pid, Slot = slot };
@@ -285,6 +369,7 @@ public class RobloxLogWatcher : IDisposable
                 _instances[pid] = state;
                 usedLogs.Add(logFile);
             }
+            Logger.Instance.Info("LogWatcher", $"Attach new: pid={pid}, slot={slot}, log={Path.GetFileName(logFile)}, delta={GetCreationDeltaSeconds(proc, logFile):F1}s");
             ScanInstanceForInitialState(state);
         }
     }
@@ -325,6 +410,7 @@ public class RobloxLogWatcher : IDisposable
         try
         {
             var (placeId, userId, universeId, ip) = ScanForLastPlaceIdAndUser(state.LogPath);
+            InstanceActivity? activityChanged = null;
             if (userId > 0)
             {
                 lock (_lock) { state.DetectedUserId = userId; }
@@ -332,17 +418,36 @@ public class RobloxLogWatcher : IDisposable
             }
             if (placeId > 0)
             {
-                lock (_lock) { state.LastPlaceId = placeId; state.WasRunning = true; }
+                lock (_lock)
+                {
+                    state.LastPlaceId = placeId;
+                    state.WasRunning = true;
+                    state.Activity = new InstanceActivity(
+                        state.Pid,
+                        state.Slot,
+                        placeId,
+                        universeId,
+                        state.DetectedUserId,
+                        string.IsNullOrEmpty(ip) ? null : ip,
+                        DateTime.UtcNow,
+                        state.LogPath);
+                    activityChanged = state.Activity;
+                }
+                Logger.Instance.Info("LogWatcher", $"Initial place detected: pid={state.Pid}, slot={state.Slot}, placeId={placeId}, universeId={universeId}, log={Path.GetFileName(state.LogPath)}");
+                if (activityChanged != null)
+                    ActivityChanged?.Invoke(this, new ActivityChangedArgs(activityChanged));
                 PlaceJoined?.Invoke(this, new PlaceJoinedArgs(state.Pid, state.Slot, placeId, universeId));
             }
             if (!string.IsNullOrEmpty(ip))
             {
                 lock (_lock) { state.DetectedIp = ip; }
+                Logger.Instance.Info("LogWatcher", $"Initial server IP detected: pid={state.Pid}, slot={state.Slot}, ip={ip}");
                 ServerIpDetected?.Invoke(this, new ServerIpDetectedArgs(state.Pid, state.Slot, ip));
             }
             lock (_lock) { state.Position = GetFileLength(state.LogPath); }
+            Logger.Instance.Info("LogWatcher", $"Initial scan complete: pid={state.Pid}, slot={state.Slot}, placeId={placeId}, ip={(string.IsNullOrEmpty(ip) ? "none" : ip)}, position={state.Position}");
         }
-        catch { }
+        catch (Exception ex) { Logger.Instance.Exception("LogWatcher", ex); }
     }
 
     // ── ログファイル全体スキャン（最後のplaceId/userId/ip取得） ───────────
@@ -367,8 +472,19 @@ public class RobloxLogWatcher : IDisposable
                 }
                 if (matchedPlace)
                 {
-                    var um = UniverseIdPattern.Match(line);
-                    foundUniverse = um.Success && long.TryParse(um.Groups[1].Value, out var uid) && uid > 0 ? uid : 0;
+                    foundUniverse = MatchUniverseId(line);
+                    foundIp = string.Empty;
+                }
+                else if (foundPlace != 0)
+                {
+                    foreach (var kw in LeaveKeywords)
+                    {
+                        if (!line.Contains(kw, StringComparison.OrdinalIgnoreCase)) continue;
+                        foundPlace = 0;
+                        foundUniverse = 0;
+                        foundIp = string.Empty;
+                        break;
+                    }
                 }
                 if (foundUser == 0)
                 {
@@ -382,6 +498,12 @@ public class RobloxLogWatcher : IDisposable
         }
         catch { }
         return (foundPlace, foundUser, foundUniverse, foundIp);
+    }
+
+    private static long MatchUniverseId(string line)
+    {
+        var um = UniverseIdPattern.Match(line);
+        return um.Success && long.TryParse(um.Groups[1].Value, out var uid) && uid > 0 ? uid : 0;
     }
 
     // ── プロセス→ログファイル マッチング ─────────────────────────────────
@@ -406,13 +528,16 @@ public class RobloxLogWatcher : IDisposable
             try
             {
                 var startTime = proc.StartTime;
-                var best = logFiles
+                var candidates = logFiles
                     .Where(f => !used.Contains(f))
-                    .MinBy(f => Math.Abs((File.GetCreationTime(f) - startTime).TotalSeconds));
-                if (best != null)
+                    .Select(f => (Path: f, Delta: Math.Abs((File.GetCreationTime(f) - startTime).TotalSeconds)))
+                    .Where(x => x.Delta <= MaxProcessLogStartDeltaSeconds)
+                    .ToList();
+                if (candidates.Count > 0)
                 {
-                    result[(uint)proc.Id] = (best, slot++);
-                    used.Add(best);
+                    var best = candidates.MinBy(x => x.Delta);
+                    result[(uint)proc.Id] = (best.Path, slot++);
+                    used.Add(best.Path);
                 }
             }
             catch { }
@@ -436,9 +561,21 @@ public class RobloxLogWatcher : IDisposable
                 var delta = Math.Abs((File.GetCreationTime(f) - startTime).TotalSeconds);
                 if (delta < bestDelta) { bestDelta = delta; best = f; }
             }
-            return best;
+            return bestDelta <= MaxProcessLogStartDeltaSeconds ? best : null;
         }
         catch { return null; }
+    }
+
+    private static DateTime SafeStartTime(Process proc)
+    {
+        try { return proc.StartTime; }
+        catch { return DateTime.MinValue; }
+    }
+
+    private static double GetCreationDeltaSeconds(Process proc, string logFile)
+    {
+        try { return Math.Abs((File.GetCreationTime(logFile) - proc.StartTime).TotalSeconds); }
+        catch { return double.NaN; }
     }
 
     // ── ユーティリティ ────────────────────────────────────────────────────

@@ -221,7 +221,7 @@ public partial class HomeViewModel : ViewModelBase
                 var code = await _robloxApi.GetServerCountryCodeAsync(e.Ip);
                 for (int i = 0; i < 6; i++)
                 {
-                    if (_presence.GameDetected) { _presence.EnqueueServerCode(code); return; }
+                    if (_presence.GameDetected) { _presence.EnqueueServerCode(e.Slot, code); return; }
                     await Task.Delay(500);
                 }
             }
@@ -229,10 +229,10 @@ public partial class HomeViewModel : ViewModelBase
         };
 
         // ── ゲーム参加 ─────────────────────────────────────────────────────
-        _logWatcher.PlaceJoined += (_, e) =>
+        _logWatcher.ActivityChanged += (_, e) =>
         {
             if (_logWatcher.IsWatchingStudioLog) return;
-            _presence.EnqueuePlaceJoined(e.PlaceId, e.UniverseId, e.Slot);
+            _presence.EnqueueActivity(e.Activity);
         };
 
         // ── DiscordRichPresence → HomeViewModel イベント ──────────────────
