@@ -15,7 +15,7 @@
 
 <p align="center">
   A Roblox launcher built for developers and power users —<br>
-  with full <strong>Roblox Studio support</strong>, play stats, friends tracking, and deep customization.
+  with full <strong>Roblox Studio support</strong>, multi-instance play, deep Discord integration, and extensive customization.
 </p>
 
 > [!CAUTION]
@@ -26,62 +26,51 @@
 
 ---
 
-
-## Why NexStrap?
-
-| Feature | NexStrap | Bloxstrap |
-|---------|----------|-----------|
-| Roblox Studio install & launch | ✅ | ❌ |
-| Studio Discord presence (Home / Editing / Testing) | ✅ | ❌ |
-| Play stats & game history | ✅ | ❌ |
-| Friends list with notifications | ✅ | ❌ |
-| Fast Flags hot reload | ✅ | ❌ |
-| Multi-account manager | ✅ | ✅ |
-| Mods support | ✅ | ✅ |
-| Discord Rich Presence | ✅ | ✅ |
-| Custom themes & backgrounds | ✅ | ✅ |
-
----
-
 ## Features
+
+**🎮 Discord Rich Presence**
+- Game icon, name, creator, server region, and elapsed playtime
+- **Multi-instance support** — tracks each Roblox window independently; displays the focused window's game in real time
+- Automatically switches between NexStrap / Roblox / Studio Discord apps
+- Join Game button with direct game link
+- Graceful fallback for private or friends-only games
+- Studio presence: Home / Editing / Testing states (via Roblox Studio plugin)
 
 **🎭 Roblox Studio**
 - Independent Studio install and launch — no official installer needed
-- Discord presence: `Roblox Studio / Home`, `Editing`, `Testing`
+- Discord presence with Home / Editing / Testing detection
 - Separate Fast Flags profile for Studio
-
-**🎮 Discord Rich Presence**
-- Game icon, server region, and elapsed playtime
-- Studio presence with Home / Editing / Testing states
-- Join Game button and creator name
 
 **⚡ Fast Flags**
 - Edit `ClientAppSettings.json` flags directly
 - Save and load named profiles
 - Preset bundles: Graphics Lite, Render Optimized, Memory/CPU, Network
 - Hot reload — apply flags to a running session without restart
+- Bulk import from text
 
 **👥 Friends**
-- Real-time friends list with online/in-game presence
+- Real-time friends list with online / in-game presence
 - Toast notifications when a friend comes online
-- Avatar thumbnails and last location
+- Avatar thumbnails and last-seen location
 
 **👤 Multi-Account Manager**
 - Manage multiple Roblox accounts
 - Import cookies from Chrome — no password required
 - One-click account switching
+- Quick sign-in dialog
 
 **📊 Play Stats**
-- Total playtime, session count, top games
+- Total playtime, session count, and top games
 - Per-game breakdown with 7-day bar chart
 
-**🎨 Theme**
+**🎨 Theme & UI**
 - Glass UI with semi-transparent sidebar
 - 8 accent colors + custom color picker
-- Custom background image with blur and brightness
+- Custom background image with blur and brightness controls
+- Stretch resolution helper
 
 **🔧 Mods**
-- Import and enable/disable mod folders
+- Import and enable / disable mod folders
 - Apply textures, sounds, and fonts to Roblox's content directory
 
 ---
@@ -98,16 +87,19 @@ You will need [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/en-us/downlo
 
 ## FAQ
 
-**Q: Is this malware?**
+**Q: Is this malware?**  
 A: No. NexStrap is fully open source — the complete source code is available here on GitHub for anyone to verify.
 
-**Q: Will I get banned from Roblox?**
-A: No. NexStrap does not interact with the Roblox client the way exploits do. It only manages launch settings, FastFlags, and Discord Rich Presence.
+**Q: Will I get banned from Roblox?**  
+A: No. NexStrap does not interact with the Roblox client the way exploits do. It only manages launch settings, Fast Flags, and Discord Rich Presence.
 
-**Q: Windows Defender flagged it**
+**Q: Windows Defender flagged it**  
 A: This is a false positive common with unsigned applications. You can review the full source code here to verify it is safe.
 
-**Q: Does it work with Roblox Studio?**
+**Q: Does it work with multiple Roblox instances?**  
+A: Yes. NexStrap tracks each instance independently and shows the focused window's game in your Discord status.
+
+**Q: Does it work with Roblox Studio?**  
 A: Yes. NexStrap can install and launch Studio independently, with full Discord presence support.
 
 ---
@@ -117,7 +109,7 @@ A: Yes. NexStrap can install and launch Studio independently, with full Discord 
 ```
 git clone https://github.com/k153636/NexStrap.git
 cd NexStrap
-dotnet build src/NexStrap/NexStrap.csproj -c Release
+dotnet build NexStrap.sln -c Release
 ```
 
 ---
@@ -125,5 +117,4 @@ dotnet build src/NexStrap/NexStrap.csproj -c Release
 ## Credits
 
 - Built with [Avalonia](https://avaloniaui.net/) and .NET 9
-- Inspired by [Bloxstrap](https://github.com/bloxstraplabs/bloxstrap)
 - Discord RPC via [discord-rpc-csharp](https://github.com/Lachee/discord-rpc-csharp)
