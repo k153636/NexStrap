@@ -39,6 +39,15 @@ public partial class RobloxLoginWindow : Window
             _controller.CoreWebView2.NavigationCompleted += OnNavigationCompleted;
             _controller.CoreWebView2.Navigate("https://www.roblox.com/login");
         }
+        catch (WebView2RuntimeNotFoundException)
+        {
+            NativeMsgBox(
+                "NexStrap requires the Microsoft Edge WebView2 Runtime.\n\n" +
+                "Please download and install it, then restart NexStrap:\n" +
+                "https://developer.microsoft.com/microsoft-edge/webview2/",
+                "WebView2 Runtime Required");
+            Close();
+        }
         catch { Close(); }
     }
 
@@ -69,6 +78,12 @@ public partial class RobloxLoginWindow : Window
         }
         catch { }
     }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
+
+    private static void NativeMsgBox(string text, string caption) =>
+        MessageBox(IntPtr.Zero, text, caption, 0x10); // MB_ICONERROR
 
     private void OnWindowClosed(object? sender, EventArgs e)
     {
