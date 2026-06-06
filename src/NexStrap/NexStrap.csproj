@@ -11,6 +11,7 @@
     <AssemblyName>NexStrap</AssemblyName>
     <Version>1.2.5</Version>
     <ApplicationIcon>Assets\nexstrap.ico</ApplicationIcon>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
