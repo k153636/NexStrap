@@ -36,7 +36,7 @@ public sealed class DiscordRichPresence : IDisposable
     private record EvLaunch                                                             : Ev;
     private record EvPlaceJoined(long PlaceId, long UniverseId, int Slot)              : Ev;
     private record EvGameLeft(int Slot, int RobloxCount)                               : Ev;
-    private record EvGameInfo(long PlaceId, long Seq, string? Name, string? Icon, string? Creator) : Ev;
+    private record EvGameInfo(long PlaceId, long Seq, int Slot, string? Name, string? Icon, string? Creator) : Ev;
     private record EvServerCode(string Code)                                            : Ev;
     private record EvUserUpdated(int Slot, string? Url, string? Label)                 : Ev;
     private record EvAvatar(string? Url)                                               : Ev;
@@ -82,8 +82,9 @@ public sealed class DiscordRichPresence : IDisposable
     private long    _joinSeq;
     private const int MaxFetchRetries = 5;
 
-    private readonly Dictionary<int, SlotGame>                     _games    = new();
-    private readonly Dictionary<int, (string? Url, string? Label)> _users    = new();
+    private readonly Dictionary<int, SlotGame>                     _games        = new();
+    private readonly Dictionary<int, (string? Url, string? Label)> _users        = new();
+    private readonly Dictionary<int, long>                         _slotJoinSeqs = new();
 
     // ══════════════════════════════════════════════════════════════════════
     // 外部サービス
@@ -284,11 +285,13 @@ public sealed class DiscordRichPresence : IDisposable
                 break;
 
             // ── API 取得結果 ─────────────────────────────────────────────────
-            case EvGameInfo { PlaceId: var pid, Seq: var seq, Name: var name, Icon: var icon, Creator: var creator }:
-                if (_phase != Phase.FetchingGame) break;
-                if (seq != _joinSeq) break; // 古いシーケンスは捨てる
+            case EvGameInfo { PlaceId: var pid, Seq: var seq, Slot: var infoSlot, Name: var name, Icon: var icon, Creator: var creator }:
+                if (_phase != Phase.FetchingGame && _phase != Phase.InGame) break;
+                // 同一スロットに新しいPlaceJoinedが来ていたら古い結果を捨てる
+                if (!_slotJoinSeqs.TryGetValue(infoSlot, out var slotLatest) || seq != slotLatest) break;
                 if (icon == null)
                 {
+                    if (infoSlot != _currentSlot) break; // バックグラウンドスロットの失敗は無視
                     _fetchRetries++;
                     if (_fetchRetries < MaxFetchRetries)
                     {
@@ -303,18 +306,22 @@ public sealed class DiscordRichPresence : IDisposable
                     ApplyPresence();
                     break;
                 }
-                log.Info("Discord", $"ゲーム参加: {name} (placeId={pid})");
-                _gameName     = name;
-                _gameIcon     = icon;
-                _gameCreator  = creator;
+                log.Info("Discord", $"ゲーム参加: {name} (placeId={pid}, slot={infoSlot})");
+                _users.TryGetValue(infoSlot, out var su);
+                _games[infoSlot] = new SlotGame(name, icon, creator, pid, su.Url, su.Label);
                 _fetchRetries = 0;
-                _users.TryGetValue(_currentSlot, out var su);
-                _games[_currentSlot] = new SlotGame(name, icon, creator, pid, su.Url, su.Label);
-                _phase = Phase.InGame;
+                _phase = Phase.InGame; // どのスロットでも揃えばInGame
                 await SwitchAppIdAsync(AppConstants.DiscordRobloxAppId);
                 ApplyPresence();
-                var startedAt = DateTime.UtcNow;
-                GameInfoFetched?.Invoke(this, new GameInfoFetchedArgs(pid, _universeId, name!, icon!, DateTime.Now, startedAt));
+                // ゲーム開始イベント（履歴・時刻記録）はメインスロットのみ
+                if (infoSlot == _currentSlot)
+                {
+                    _gameName    = name;
+                    _gameIcon    = icon;
+                    _gameCreator = creator;
+                    var startedAt = DateTime.UtcNow;
+                    GameInfoFetched?.Invoke(this, new GameInfoFetchedArgs(pid, _universeId, name!, icon!, DateTime.Now, startedAt));
+                }
                 break;
 
             // ── サーバー国コード ─────────────────────────────────────────────
@@ -394,7 +401,7 @@ public sealed class DiscordRichPresence : IDisposable
                 if (_phase == Phase.InGame)
                     ApplyPresence(); // タイムスタンプ等の再送
                 else if (_phase == Phase.FetchingGame && _fetchRetries < MaxFetchRetries)
-                    _ = FetchGameInfoAsync(_placeId, _universeId, _joinSeq); // リトライ
+                    _ = FetchGameInfoAsync(_placeId, _universeId, _joinSeq, _currentSlot); // リトライ
                 break;
 
             // ── フォーカス ────────────────────────────────────────────────────
@@ -440,8 +447,9 @@ public sealed class DiscordRichPresence : IDisposable
         var prevUniverse = _universeId;
         var seq          = ++_joinSeq;
 
-        _currentSlot = slot;
-        _phase       = Phase.FetchingGame;
+        _currentSlot      = slot;
+        _slotJoinSeqs[slot] = seq; // スロット別に最新シーケンスを記録
+        _phase            = Phase.FetchingGame;
 
         long universe = universeIdFromLog;
         if (universe == 0)
@@ -449,7 +457,8 @@ public sealed class DiscordRichPresence : IDisposable
             try { universe = (await _robloxApi.GetUniverseIdAsync(placeId)) ?? 0; } catch { }
         }
 
-        if (_joinSeq != seq) return; // 新しいイベントに抜かされた
+        // 同一スロットでより新しいPlaceJoinedが来た場合のみキャンセル（他スロットは影響しない）
+        if (_slotJoinSeqs.TryGetValue(slot, out var latestForSlot) && latestForSlot != seq) return;
 
         bool isTeleport = prevPhase == Phase.InGame && universe != 0 && universe == prevUniverse;
 
@@ -458,7 +467,7 @@ public sealed class DiscordRichPresence : IDisposable
             _placeId = placeId;
             _serverCode = null;
             TeleportOccurred?.Invoke(this, EventArgs.Empty);
-            _ = FetchGameInfoAsync(placeId, universe, seq);
+            _ = FetchGameInfoAsync(placeId, universe, seq, slot);
             return;
         }
 
@@ -472,19 +481,19 @@ public sealed class DiscordRichPresence : IDisposable
         ClearGameInfo();
         ApplyPresence();
 
-        _ = FetchGameInfoAsync(placeId, universe, seq);
+        _ = FetchGameInfoAsync(placeId, universe, seq, slot);
     }
 
-    private async Task FetchGameInfoAsync(long placeId, long universe, long seq)
+    private async Task FetchGameInfoAsync(long placeId, long universe, long seq, int slot)
     {
         try
         {
             var (name, icon, creator) = await _robloxApi.GetGameInfoAsync(placeId, universe);
-            Enqueue(new EvGameInfo(placeId, seq, name, icon, creator));
+            Enqueue(new EvGameInfo(placeId, seq, slot, name, icon, creator));
         }
         catch
         {
-            Enqueue(new EvGameInfo(placeId, seq, null, null, null));
+            Enqueue(new EvGameInfo(placeId, seq, slot, null, null, null));
         }
     }
 
