@@ -45,7 +45,7 @@
                 </Grid>
             </Border>
 
-            <!-- Apply on Launch toggle -->
+            <!-- Auto Apply toggle -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="2">
@@ -84,42 +84,11 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                </StackPanel>
-            </Border>
 
-            <!-- Custom resolution -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="Custom" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{DynamicResource FgSub}"/>
-
-                    <Grid ColumnDefinitions="*,12,*,Auto,Auto" RowDefinitions="Auto">
-                        <StackPanel Grid.Column="0" Spacing="4">
-                            <TextBlock Text="Width" Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                            <NumericUpDown Value="{Binding CustomWidth}"
-                                           Minimum="640" Maximum="3840" Increment="1"
-                                           Background="#080808" Foreground="#FFFFFF"
-                                           BorderBrush="#2A2A2A" FontSize="13"/>
-                        </StackPanel>
-                        <TextBlock Grid.Column="1" Text="×" Foreground="{DynamicResource FgSub}"
-                                   VerticalAlignment="Bottom" HorizontalAlignment="Center"
-                                   Margin="0,0,0,8" FontSize="16"/>
-                        <StackPanel Grid.Column="2" Spacing="4">
-                            <TextBlock Text="Height" Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                            <NumericUpDown Value="{Binding CustomHeight}"
-                                           Minimum="480" Maximum="2160" Increment="1"
-                                           Background="#080808" Foreground="#FFFFFF"
-                                           BorderBrush="#2A2A2A" FontSize="13"/>
-                        </StackPanel>
-                        <Button Grid.Column="3" Content="Save" Command="{Binding SaveCustomCommand}"
-                                Margin="10,0,0,0" VerticalAlignment="Bottom"
-                                Background="{DynamicResource OverlayBg}" Foreground="{DynamicResource FgSub}"
-                                FontSize="12" Padding="14,8" CornerRadius="8"/>
-                        <Button Grid.Column="4" Content="Apply Now" Command="{Binding ApplyNowCommand}"
-                                Margin="8,0,0,0" VerticalAlignment="Bottom"
-                                Background="#FFFFFF" Foreground="#080808"
-                                FontWeight="SemiBold" FontSize="12" Padding="14,8" CornerRadius="8"/>
-                    </Grid>
+                    <Button Content="Apply Now" Command="{Binding ApplyNowCommand}"
+                            HorizontalAlignment="Right"
+                            Background="#FFFFFF" Foreground="#080808"
+                            FontWeight="SemiBold" FontSize="12" Padding="14,8" CornerRadius="8"/>
                 </StackPanel>
             </Border>
 

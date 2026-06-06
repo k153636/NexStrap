@@ -9,7 +9,6 @@ public partial class StretchResolutionViewModel : ViewModelBase
     private readonly SettingsService _settings;
     private readonly RobloxService   _roblox;
 
-    // ── プリセット ──────────────────────────────────────────────────────────
     public IReadOnlyList<ResolutionPreset> Presets { get; } =
     [
         new("1280 × 960",  1280,  960, "Most popular stretch — Valorant / CS2"),
@@ -20,8 +19,6 @@ public partial class StretchResolutionViewModel : ViewModelBase
 
     [ObservableProperty] private bool   _applyOnLaunch;
     [ObservableProperty] private bool   _warningVisible;
-    [ObservableProperty] private int    _customWidth;
-    [ObservableProperty] private int    _customHeight;
     [ObservableProperty] private bool   _isActive;
     [ObservableProperty] private string _statusText = "Inactive";
     [ObservableProperty] private ResolutionPreset? _selectedPreset;
@@ -34,20 +31,18 @@ public partial class StretchResolutionViewModel : ViewModelBase
         var s = settings.Settings;
         _applyOnLaunch  = s.StretchResolutionEnabled;
         _warningVisible = !s.StretchWarningDismissed;
-        _customWidth   = s.StretchResolutionWidth;
-        _customHeight  = s.StretchResolutionHeight;
 
-        // 保存済み解像度に一致するプリセットを選択状態にする
         _selectedPreset = Presets.FirstOrDefault(
-            p => p.Width == _customWidth && p.Height == _customHeight);
+            p => p.Width == s.StretchResolutionWidth && p.Height == s.StretchResolutionHeight)
+            ?? Presets[0];
     }
 
     partial void OnApplyOnLaunchChanged(bool value)
         => _settings.Update(s =>
         {
             s.StretchResolutionEnabled = value;
-            s.StretchResolutionWidth   = CustomWidth;
-            s.StretchResolutionHeight  = CustomHeight;
+            s.StretchResolutionWidth   = SelectedPreset?.Width  ?? Presets[0].Width;
+            s.StretchResolutionHeight  = SelectedPreset?.Height ?? Presets[0].Height;
         });
 
     [RelayCommand]
@@ -60,9 +55,7 @@ public partial class StretchResolutionViewModel : ViewModelBase
     [RelayCommand]
     private void SelectPreset(ResolutionPreset preset)
     {
-        SelectedPreset  = preset;
-        CustomWidth     = preset.Width;
-        CustomHeight    = preset.Height;
+        SelectedPreset = preset;
         _settings.Update(s =>
         {
             s.StretchResolutionWidth  = preset.Width;
@@ -73,9 +66,10 @@ public partial class StretchResolutionViewModel : ViewModelBase
     [RelayCommand]
     private void ApplyNow()
     {
-        var ok = _roblox.ApplyStretchResolution(CustomWidth, CustomHeight);
+        var preset = SelectedPreset ?? Presets[0];
+        var ok = _roblox.ApplyStretchResolution(preset.Width, preset.Height);
         IsActive   = ok;
-        StatusText = ok ? $"Active — {CustomWidth}×{CustomHeight}" : "Failed to apply";
+        StatusText = ok ? $"Active — {preset.Width}×{preset.Height}" : "Failed to apply";
     }
 
     [RelayCommand]
@@ -84,18 +78,6 @@ public partial class StretchResolutionViewModel : ViewModelBase
         _roblox.RestoreResolution();
         IsActive   = false;
         StatusText = "Inactive";
-    }
-
-    [RelayCommand]
-    private void SaveCustom()
-    {
-        SelectedPreset = null;
-        _settings.Update(s =>
-        {
-            s.StretchResolutionWidth  = CustomWidth;
-            s.StretchResolutionHeight = CustomHeight;
-        });
-        StatusText = $"Custom saved: {CustomWidth}×{CustomHeight}";
     }
 }
 
