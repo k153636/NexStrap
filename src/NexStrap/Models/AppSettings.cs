@@ -37,6 +37,9 @@ public class AppSettings
     public double BackgroundVignetteRange { get; set; } = 0.15;
     public string BackgroundVignetteColor { get; set; } = "#000000";
 
+    // Shortcuts
+    public string StretchHotKey { get; set; } = "";  // "" = not set, e.g. "Ctrl+F9"
+
     // Stretched Resolution
     public bool StretchResolutionEnabled { get; set; } = false;
     public bool StretchWarningDismissed  { get; set; } = false;

@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NexStrap.ViewModels"
+             xmlns:helpers="using:NexStrap.Helpers"
+             x:Class="NexStrap.Views.Pages.ShortcutsPage"
+             x:DataType="vm:ShortcutsViewModel"
+             Background="Transparent">
+
+    <ScrollViewer>
+        <StackPanel Spacing="10" Margin="24,20" helpers:AnimationHelper.StaggerChildren="True">
+
+            <TextBlock Text="Shortcuts" FontSize="22" FontWeight="Bold"
+                       Foreground="#FFFFFF" Margin="0,0,0,2"/>
+
+            <!-- Recording overlay -->
+            <Border Background="#1AFFFFFF" CornerRadius="8" Padding="14,12"
+                    IsVisible="{Binding IsRecording}">
+                <TextBlock Text="Press any key combination... (ESC to cancel)"
+                           Foreground="#FFFFFF" FontSize="13" HorizontalAlignment="Center"/>
+            </Border>
+
+            <!-- Stretch Res Toggle -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Text="Stretch Res Toggle" Foreground="#FFFFFF" FontSize="13" FontWeight="SemiBold"/>
+                        <TextBlock Text="Apply or restore stretch resolution globally"
+                                   Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <!-- Current binding display -->
+                        <Border Background="{DynamicResource OverlayBg}" CornerRadius="6"
+                                Padding="10,5"
+                                IsVisible="{Binding IsRecording, Converter={x:Static BoolConverters.Not}}">
+                            <TextBlock Text="{Binding StretchHotKeyDisplay}"
+                                       Foreground="#FFFFFF" FontSize="12"
+                                       FontFamily="Consolas,Courier New,monospace"/>
+                        </Border>
+
+                        <!-- Set button -->
+                        <Button Content="{Binding IsRecording, Converter={StaticResource BoolToStringConverter}, ConverterParameter='Cancel,Set'}"
+                                Command="{Binding StartRecordingCommand}"
+                                Background="{DynamicResource OverlayBg}"
+                                Foreground="{DynamicResource FgSub}"
+                                FontSize="12" Padding="12,6" CornerRadius="8"/>
+
+                        <!-- Clear button -->
+                        <Button Content="✕" Command="{Binding ClearHotKeyCommand}"
+                                Background="Transparent" Foreground="#555555"
+                                FontSize="13" Padding="6,4" CornerRadius="8"
+                                IsVisible="{Binding IsRecording, Converter={x:Static BoolConverters.Not}}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+
+</UserControl>

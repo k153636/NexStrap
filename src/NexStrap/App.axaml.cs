@@ -241,6 +241,7 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
             mainWindow.Show();
             mainWindow.Activate();
+            Services.GetRequiredService<GlobalHotKeyService>().Install();
         });
         RobloxService.Log("Main window shown");
     }
@@ -441,5 +442,7 @@ public partial class App : Application
         services.AddTransient<AccountViewModel>();
         services.AddTransient<FriendsViewModel>();
         services.AddTransient<StretchResolutionViewModel>();
+        services.AddSingleton<GlobalHotKeyService>();
+        services.AddTransient<ShortcutsViewModel>();
     }
 }

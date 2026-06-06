@@ -30,6 +30,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public DevViewModel DevVM { get; }
     public AccountViewModel AccountVM { get; }
     public StretchResolutionViewModel StretchVM { get; }
+    public ShortcutsViewModel ShortcutsVM { get; }
 
     public MainWindowViewModel(
         DiscordRichPresence discord,
@@ -44,7 +45,8 @@ public partial class MainWindowViewModel : ViewModelBase
         StatsViewModel statsVM,
         DevViewModel devVM,
         AccountViewModel accountVM,
-        StretchResolutionViewModel stretchVM)
+        StretchResolutionViewModel stretchVM,
+        ShortcutsViewModel shortcutsVM)
     {
         _discord = discord;
         _settings = settings;
@@ -60,6 +62,7 @@ public partial class MainWindowViewModel : ViewModelBase
         DevVM = devVM;
         AccountVM = accountVM;
         StretchVM = stretchVM;
+        ShortcutsVM = shortcutsVM;
 
         accountVM.LaunchAsRequested += () =>
         {
@@ -133,11 +136,17 @@ public partial class MainWindowViewModel : ViewModelBase
             "Settings" => SettingsVM,
             "Account" => AccountVM,
             "Stretch" => StretchVM,
+            "Shortcuts" => ShortcutsVM,
             _ => HomeVM
         };
         IsOnSettingsPage = page == "Settings";
 
-        HomeVM.CurrentPageName = page == "Stretch" ? "Stretch Res" : page;
+        HomeVM.CurrentPageName = page switch
+        {
+            "Stretch"   => "Stretch Res",
+            "Shortcuts" => "Shortcuts",
+            _ => page
+        };
         HomeVM.RefreshPresence();
     }
 

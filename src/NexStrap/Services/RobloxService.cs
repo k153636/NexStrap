@@ -1201,6 +1201,8 @@ public class RobloxService
     private bool    _stretchActive;
     private bool    _originalFullscreen;
 
+    public bool IsStretchActive => _stretchActive;
+
     // GlobalBasicSettings_13.xml のパス（全 Roblox アカウント共通）
     private static readonly string GlobalBasicSettingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

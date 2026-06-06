@@ -101,6 +101,13 @@
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
+                <ui:NavigationViewItem Content="Shortcuts" Tag="Shortcuts"
+                    IsVisible="{Binding !IsOnSettingsPage}">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="Keyboard"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+
                 <ui:NavigationViewItem Content="Stats" Tag="Stats"
                     IsVisible="{Binding !IsOnSettingsPage}">
                     <ui:NavigationViewItem.IconSource>
@@ -206,6 +213,9 @@
                         </DataTemplate>
                         <DataTemplate DataType="vm:StretchResolutionViewModel">
                             <pages:StretchResolutionPage/>
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:ShortcutsViewModel">
+                            <pages:ShortcutsPage/>
                         </DataTemplate>
                     </TransitioningContentControl.DataTemplates>
                 </TransitioningContentControl>
