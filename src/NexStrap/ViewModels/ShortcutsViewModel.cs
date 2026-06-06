@@ -60,8 +60,7 @@ public partial class ShortcutsViewModel : ViewModelBase
             else
             {
                 var s = _settings.Settings;
-                if (s.StretchResolutionEnabled)
-                    _roblox.ApplyStretchResolution(s.StretchResolutionWidth, s.StretchResolutionHeight);
+                _roblox.ApplyStretchResolution(s.StretchResolutionWidth, s.StretchResolutionHeight);
             }
         });
     }
