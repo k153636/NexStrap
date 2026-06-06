@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Win32;
 
-namespace NexStrap.Core.Services;
+namespace NexStrap.Services;
 
 public enum RobloxStatus { NotInstalled, Idle, Launching, Running, Updating }
 

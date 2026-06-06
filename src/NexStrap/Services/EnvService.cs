@@ -1,4 +1,4 @@
-namespace NexStrap.Core.Services;
+namespace NexStrap.Services;
 
 public class EnvService
 {

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace NexStrap.Core.Models;
+namespace NexStrap.Models;
 
 public enum FastFlagType
 {

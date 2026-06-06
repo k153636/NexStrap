@@ -6,8 +6,8 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Newtonsoft.Json.Linq;
-using NexStrap.Core.Models;
-using NexStrap.Core.Services;
+using NexStrap.Models;
+using NexStrap.Services;
 using NexStrap.Views;
 using System.Collections.ObjectModel;
 

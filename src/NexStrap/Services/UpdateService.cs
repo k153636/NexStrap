@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
 
-namespace NexStrap.Core.Services;
+namespace NexStrap.Services;
 
 public class UpdateService
 {
@@ -29,7 +29,7 @@ public class UpdateService
             if (!Version.TryParse(tag, out var latest)) return null;
 
             // PE ファイルのバージョンリソースから直接読む（最も信頼性が高い）。
-            // Assembly.GetExecutingAssembly() は NexStrap.Core.dll を指すため
+            // Assembly.GetExecutingAssembly() は NexStrap.dll を指すため
             // NexStrap.exe とは別バージョンになる場合があり使用しない。
             Version? current = null;
             var exePath = Environment.ProcessPath;

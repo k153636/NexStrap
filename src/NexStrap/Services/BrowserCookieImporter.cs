@@ -3,7 +3,7 @@ using System.Text;
 using Microsoft.Data.Sqlite;
 using Newtonsoft.Json.Linq;
 
-namespace NexStrap.Core.Services;
+namespace NexStrap.Services;
 
 public enum BrowserType { Chrome, Edge }
 

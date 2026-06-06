@@ -30,7 +30,7 @@ public static class StudioPluginInstaller
     /// </summary>
     public static async Task<bool> IsUpdateAvailableAsync(CancellationToken ct = default)
     {
-        var log = NexStrap.Core.Services.Logger.Instance;
+        var log = NexStrap.Services.Logger.Instance;
         try
         {
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
@@ -64,7 +64,7 @@ public static class StudioPluginInstaller
         IProgress<(string Message, double Percent, bool Indeterminate)>? progress = null,
         CancellationToken ct = default)
     {
-        var log = NexStrap.Core.Services.Logger.Instance;
+        var log = NexStrap.Services.Logger.Instance;
         try
         {
             log.Info("StudioPlugin", $"Downloading from {DownloadUrl}");

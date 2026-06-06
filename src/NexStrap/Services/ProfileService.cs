@@ -1,7 +1,7 @@
 using Newtonsoft.Json;
-using NexStrap.Core.Models;
+using NexStrap.Models;
 
-namespace NexStrap.Core.Services;
+namespace NexStrap.Services;
 
 public class ProfileService
 {

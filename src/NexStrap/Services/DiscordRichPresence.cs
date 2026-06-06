@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using DiscordRPC;
 using DiscordRPC.Logging;
-using NexStrap.Core.Services;
+using NexStrap.Services;
 
 namespace NexStrap.Services;
 
@@ -44,7 +44,7 @@ public sealed class DiscordRichPresence : IDisposable
     private record EvPage(string Name)                                                 : Ev;
     private record EvDiscordReady                                                      : Ev;
     private record EvStudio(bool Detected, string? PlaceName, bool Testing)            : Ev;
-    private record EvStudioRpc(NexStrap.Core.Services.StudioRpcData Data)             : Ev;
+    private record EvStudioRpc(NexStrap.Services.StudioRpcData Data)             : Ev;
     private record EvCountry(string Code)                                              : Ev;
     private record EvHeartbeat                                                         : Ev;
     private record EvFocus(int? Slot)                                                  : Ev;
@@ -182,7 +182,7 @@ public sealed class DiscordRichPresence : IDisposable
     public void EnqueueServerCode(string? code)      { if (code != null) Enqueue(new EvServerCode(code)); }
     public void EnqueueStudioPlaytestStarted()       => Enqueue(new EvStudio(_studioDetected, _studioPlaceName, true));
     public void EnqueueStudioPlaytestStopped()       => Enqueue(new EvStudio(_studioDetected, _studioPlaceName, false));
-    public void EnqueueStudioRpcMessage(NexStrap.Core.Services.StudioRpcData data) => Enqueue(new EvStudioRpc(data));
+    public void EnqueueStudioRpcMessage(NexStrap.Services.StudioRpcData data) => Enqueue(new EvStudioRpc(data));
     public void EnqueueFocusChanged(int? slot)       => Enqueue(new EvFocus(slot));
     public void EnqueueRefresh()                     => Enqueue(new EvRefresh());
     public void SetCurrentPage(string page)          => Enqueue(new EvPage(page));
@@ -239,7 +239,7 @@ public sealed class DiscordRichPresence : IDisposable
 
     private async Task HandleEventAsync(Ev ev)
     {
-        var log = NexStrap.Core.Services.Logger.Instance;
+        var log = NexStrap.Services.Logger.Instance;
         switch (ev)
         {
             // ── Roblox 起動 / 終了 ──────────────────────────────────────────
@@ -579,7 +579,7 @@ public sealed class DiscordRichPresence : IDisposable
         }
     }
 
-    private RichPresence? StudioOrPagePresence(Core.Models.AppSettings s)
+    private RichPresence? StudioOrPagePresence(Models.AppSettings s)
     {
         string? label; lock (_rpcLock) { label = _userLabel; }
         Timestamps? ts; lock (_rpcLock) { ts = _startTs; }
@@ -601,7 +601,7 @@ public sealed class DiscordRichPresence : IDisposable
             _avatarUrl, label);
     }
 
-    private RichPresence? ComputeInGamePresence(Core.Models.AppSettings s)
+    private RichPresence? ComputeInGamePresence(Models.AppSettings s)
     {
         if (_games.Count == 0) return null;
 
@@ -647,7 +647,7 @@ public sealed class DiscordRichPresence : IDisposable
             multiButtons, gameTs);
     }
 
-    private string? FormatState(Core.Models.AppSettings s)
+    private string? FormatState(Models.AppSettings s)
     {
         var flagStr = s.DiscordShowFlagCount && _fastFlags.GetAll().Count > 0
             ? $"{_fastFlags.GetAll().Count} Flags" : null;
@@ -769,7 +769,7 @@ public sealed class DiscordRichPresence : IDisposable
 
         var from = AppIdName(_currentAppId);
         var to   = AppIdName(appId);
-        NexStrap.Core.Services.Logger.Instance.Info("Discord", $"App 切り替え: {from} → {to}");
+        NexStrap.Services.Logger.Instance.Info("Discord", $"App 切り替え: {from} → {to}");
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         void OnReady(object? _, bool c) { if (c) tcs.TrySetResult(true); }
         ConnectionChanged += OnReady;
@@ -777,9 +777,9 @@ public sealed class DiscordRichPresence : IDisposable
         var completed = await Task.WhenAny(tcs.Task, Task.Delay(3000));
         ConnectionChanged -= OnReady;
         if (completed == tcs.Task)
-            NexStrap.Core.Services.Logger.Instance.Info("Discord", $"接続完了: {to}");
+            NexStrap.Services.Logger.Instance.Info("Discord", $"接続完了: {to}");
         else
-            NexStrap.Core.Services.Logger.Instance.Warning("Discord", $"接続タイムアウト: {to}");
+            NexStrap.Services.Logger.Instance.Warning("Discord", $"接続タイムアウト: {to}");
     }
 
     private void RpcInitialize(string appId)
@@ -926,7 +926,7 @@ public sealed class DiscordRichPresence : IDisposable
         _auxClients.Clear();
     }
 
-    private RichPresence? ComputeInGamePresenceForSlot(int slot, Core.Models.AppSettings s)
+    private RichPresence? ComputeInGamePresenceForSlot(int slot, Models.AppSettings s)
     {
         if (!_games.TryGetValue(slot, out var g)) return null;
         string? label; lock (_rpcLock) { label = g.UserLabel ?? _userLabel; }

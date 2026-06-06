@@ -2,8 +2,8 @@ using System.Collections.ObjectModel;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using NexStrap.Core.Models;
-using NexStrap.Core.Services;
+using NexStrap.Models;
+using NexStrap.Services;
 
 namespace NexStrap.ViewModels;
 

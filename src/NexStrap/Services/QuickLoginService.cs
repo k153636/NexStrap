@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace NexStrap.Core.Services;
+namespace NexStrap.Services;
 
 public record QuickLoginData(
     long    UserId,

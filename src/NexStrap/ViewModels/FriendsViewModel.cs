@@ -2,7 +2,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using NexStrap.Core.Services;
+using NexStrap.Services;
 using System.Collections.ObjectModel;
 
 namespace NexStrap.ViewModels;

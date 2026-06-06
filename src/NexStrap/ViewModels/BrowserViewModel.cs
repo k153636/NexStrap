@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
-using NexStrap.Core.Services;
+using NexStrap.Services;
 
 namespace NexStrap.ViewModels;
 

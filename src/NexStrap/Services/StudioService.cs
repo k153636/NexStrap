@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using Microsoft.Win32;
 
-namespace NexStrap.Core.Services;
+namespace NexStrap.Services;
 
 public class StudioService
 {

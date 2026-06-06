@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace NexStrap.Core.Services;
+namespace NexStrap.Services;
 
 public record PerformanceStats(double CpuPercent, long MemoryMb);
 

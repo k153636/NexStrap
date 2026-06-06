@@ -3,8 +3,8 @@ using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
-using NexStrap.Core.Models;
-using NexStrap.Core.Services;
+using NexStrap.Models;
+using NexStrap.Services;
 
 namespace NexStrap.ViewModels;
 

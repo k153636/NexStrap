@@ -5,8 +5,8 @@ using Avalonia;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using NexStrap.Core.Models;
-using NexStrap.Core.Services;
+using NexStrap.Models;
+using NexStrap.Services;
 using NexStrap.Services;
 
 namespace NexStrap.ViewModels;
@@ -28,7 +28,7 @@ public partial class HomeViewModel : ViewModelBase
     private readonly GameHistoryService        _history;
     private readonly FriendNotificationService                  _friendNotifications;
     private readonly AccountService                             _accountService;
-    private readonly NexStrap.Core.Services.StudioRpcServer    _studioRpcServer;
+    private readonly NexStrap.Services.StudioRpcServer    _studioRpcServer;
 
     // ── ゲームセッション履歴 ──────────────────────────────────────────────
     private string?           _userAvatarUrl;
@@ -141,7 +141,7 @@ public partial class HomeViewModel : ViewModelBase
         _accountService      = accountService;
 
         // Studio RPC サーバー起動（プラグインからのデータを受信）
-        _studioRpcServer = new NexStrap.Core.Services.StudioRpcServer();
+        _studioRpcServer = new NexStrap.Services.StudioRpcServer();
         _studioRpcServer.MessageReceived += (_, msg) =>
         {
             if (msg.Command == "SetRichPresence" && msg.Data != null)
@@ -529,7 +529,7 @@ public partial class HomeViewModel : ViewModelBase
         }
 
         var s    = _settings.Settings;
-        var opts = new NexStrap.Core.Services.LaunchOptions(
+        var opts = new NexStrap.Services.LaunchOptions(
             MultiInstance: s.MultiInstanceEnabled, SuppressCrashHandler: s.SuppressCrashHandler,
             CpuCoreLimit: s.CpuAffinityEnabled ? s.CpuCoreLimit : 0,
             MemoryOptimization: s.MemoryOptimizationEnabled, CleanupOldVersions: s.CleanupOldVersions,

@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NexStrap.Core.Services;
+namespace NexStrap.Services;
 
 /// <summary>
 /// NexStrapStudioRPC.lua プラグインからの HTTP POST を受信し、

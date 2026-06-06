@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace NexStrap.Core.Services;
+namespace NexStrap.Services;
 
 public class StudioFastFlagService
 {
@@ -49,7 +49,7 @@ public class StudioFastFlagService
         await SaveAsync();
     }
 
-    public void ApplyPreset(IEnumerable<Core.Models.FastFlag> presets)
+    public void ApplyPreset(IEnumerable<Models.FastFlag> presets)
     {
         foreach (var p in presets.Where(p => p.IsEnabled))
             _currentFlags[p.Name] = p.Value;

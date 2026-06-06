@@ -1,4 +1,4 @@
-namespace NexStrap.Core.Models;
+namespace NexStrap.Models;
 
 public enum ModType
 {

@@ -1,8 +1,8 @@
 using Newtonsoft.Json;
-using NexStrap.Core.Models;
+using NexStrap.Models;
 using System.Xml.Linq;
 
-namespace NexStrap.Core.Services;
+namespace NexStrap.Services;
 
 public class FastFlagService
 {

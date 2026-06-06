@@ -4,7 +4,6 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
-using NexStrap.Core.Services;
 using NexStrap.Services;
 using NexStrap.ViewModels;
 using NexStrap.Views;
@@ -190,7 +189,7 @@ public partial class App : Application
         }
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime life)
-            life.Exit += (_, _) => NexStrap.Core.Services.Logger.Instance.Dispose();
+            life.Exit += (_, _) => NexStrap.Services.Logger.Instance.Dispose();
 
         base.OnFrameworkInitializationCompleted();
     }

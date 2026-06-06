@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
-namespace NexStrap.Core.Services;
+namespace NexStrap.Services;
 
 public class RobloxLogWatcher : IDisposable
 {

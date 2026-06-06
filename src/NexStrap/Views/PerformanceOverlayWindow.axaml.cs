@@ -2,7 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
-using NexStrap.Core.Services;
+using NexStrap.Services;
 
 namespace NexStrap.Views;
 

@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using NexStrap.Core.Services;
+using NexStrap.Services;
 using NexStrap.Services;
 
 namespace NexStrap.ViewModels;

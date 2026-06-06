@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text;
 
-namespace NexStrap.Core.Services;
+namespace NexStrap.Services;
 
 /// <summary>
 /// ファイルベースのロガー。非ブロッキングキューでバックグラウンド書き込みを行う。
