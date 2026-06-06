@@ -7,7 +7,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NexStrap.Models;
 using NexStrap.Services;
-using NexStrap.Services;
 
 namespace NexStrap.ViewModels;
 
@@ -326,9 +325,11 @@ public partial class HomeViewModel : ViewModelBase
             _sessionEntry               = null;
             _gameStartTime              = null;
 
+            var sourcePid = _logWatcher.CurrentEventSourcePid;
+            RefreshSlotPids();
             var robloxCount = RobloxLogWatcher.IsRobloxRunning() || _roblox.IsNexStrapRobloxRunning()
                 ? GetRobloxProcesses().Count() : 0;
-            _presence.EnqueueGameLeft(GetSlotForPid(_logWatcher.CurrentEventSourcePid), robloxCount);
+            _presence.EnqueueGameLeft(GetSlotForPid(sourcePid), robloxCount);
 
             Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -344,21 +345,6 @@ public partial class HomeViewModel : ViewModelBase
             if (connected) _presence.EnqueueRefresh();
         };
 
-        // ── マルチインスタンス PID マッピング ──────────────────────────────
-        _logWatcher.InstanceSlotChanged += (_, slotId) =>
-        {
-            try
-            {
-                var newest = Process.GetProcessesByName("RobloxPlayerBeta")
-                    .Concat(Process.GetProcessesByName("RobloxPlayer"))
-                    .Where(p => !p.HasExited)
-                    .OrderByDescending(p => p.StartTime)
-                    .FirstOrDefault();
-                if (newest != null) _slotPids[slotId] = (uint)newest.Id;
-            }
-            catch { }
-        };
-
         _logWatcher.Start();
 
         // 起動済みの全Robloxインスタンスを起動順にスロット0, 1, ... へマッピング
@@ -368,9 +354,6 @@ public partial class HomeViewModel : ViewModelBase
             lock (_slotPids) { _slotPids.Clear(); for (int i = 0; i < procs.Count; i++) _slotPids[i] = (uint)procs[i].Id; }
         }
         catch { }
-
-        // メインの監視ファイル以外のインスタンスも初期スキャンして_gamesを全スロット分埋める
-        _ = Task.Run(() => _logWatcher.ScanAllPlayerInstances());
 
         // ── フォーカスタイマー ────────────────────────────────────────────
         _focusTimer = new Timer(_ =>

@@ -85,7 +85,6 @@ public sealed class DiscordRichPresence : IDisposable
     private readonly Dictionary<int, SlotGame>                     _games        = new();
     private readonly Dictionary<int, (string? Url, string? Label)> _users        = new();
     private readonly Dictionary<int, long>                         _slotJoinSeqs = new();
-    private readonly Dictionary<int, DiscordRpcClient>             _auxClients   = new();
     private readonly Dictionary<int, Timestamps>                   _slotGameTs   = new();
 
     // ══════════════════════════════════════════════════════════════════════
@@ -245,7 +244,7 @@ public sealed class DiscordRichPresence : IDisposable
             // ── Roblox 起動 / 終了 ──────────────────────────────────────────
             case EvRoblox { Running: true }:
                 log.Info("Discord", "Roblox 起動");
-                _games.Clear(); _slotGameTs.Clear(); ClearAllAuxClients();
+                _games.Clear(); _slotGameTs.Clear();
                 _phase         = Phase.RobloxMenu;
                 _fetchRetries  = 0;
                 await SwitchAppIdAsync(AppConstants.DiscordRobloxAppId);
@@ -254,7 +253,7 @@ public sealed class DiscordRichPresence : IDisposable
 
             case EvRoblox { Running: false }:
                 log.Info("Discord", "Roblox 終了");
-                _games.Clear(); _slotGameTs.Clear(); ClearAllAuxClients();
+                _games.Clear(); _slotGameTs.Clear();
                 _phase         = Phase.NexStrapIdle;
                 _universeId    = 0;
                 _fetchRetries  = 0;
@@ -264,7 +263,7 @@ public sealed class DiscordRichPresence : IDisposable
 
             // ── Roblox 起動開始（前セッションをクリア） ─────────────────────
             case EvLaunch:
-                _games.Clear(); _slotGameTs.Clear(); ClearAllAuxClients();
+                _games.Clear(); _slotGameTs.Clear();
                 _phase         = Phase.RobloxMenu;
                 _fetchRetries  = 0;
                 break;
@@ -312,11 +311,8 @@ public sealed class DiscordRichPresence : IDisposable
                 _users.TryGetValue(infoSlot, out var su);
                 _games[infoSlot] = new SlotGame(name, icon, creator, pid, su.Url, su.Label);
                 _fetchRetries = 0;
-                _phase = Phase.InGame; // どのスロットでも揃えばInGame
+                _phase = Phase.InGame;
                 await SwitchAppIdAsync(AppConstants.DiscordRobloxAppId);
-                // スロット1以上はaux clientを初期化し事前にpresenceを設定（focus切り替えに備える）
-                if (infoSlot > 0)
-                    EnsureAuxClientAndSetPresence(infoSlot);
                 ApplyPresence();
                 // ゲーム開始イベント（履歴・時刻記録）はメインスロットのみ
                 if (infoSlot == _currentSlot)
@@ -517,15 +513,6 @@ public sealed class DiscordRichPresence : IDisposable
             _games.Remove(key);
             _slotGameTs.Remove(key);
         }
-
-        // aux client クリーンアップ
-        if (slot > 0 && _auxClients.TryGetValue(slot, out var ac))
-        {
-            try { ac.ClearPresence(); } catch { }
-            try { ac.Dispose(); } catch { }
-            _auxClients.Remove(slot);
-        }
-
         ClearGameInfo();
         _universeId = 0;
         _serverCode = null;
@@ -700,55 +687,24 @@ public sealed class DiscordRichPresence : IDisposable
     private void FlushPresence()
     {
         RichPresence? presence;
-        DiscordRpcClient? mainClient;
-        lock (_rpcLock)
-        {
-            presence   = _pending;
-            _pending   = null;
-            mainClient = _client;
-        }
+        DiscordRpcClient? client;
+        lock (_rpcLock) { presence = _pending; _pending = null; client = _client; }
 
-        // フォーカス中スロットが aux client → そちらへルーティング（最後に更新したclientをDiscordが表示する）
-        if (_activeFocusedSlot > 0 && _auxClients.TryGetValue(_activeFocusedSlot, out var auxClient))
-        {
-            try
-            {
-                if (presence == null)
-                {
-                    auxClient.ClearPresence();
-                }
-                else
-                {
-                    if (presence.Timestamps == null)
-                    {
-                        Timestamps? ts;
-                        lock (_rpcLock) { _slotGameTs.TryGetValue(_activeFocusedSlot, out ts); ts ??= _startTs; }
-                        presence.Timestamps = ts;
-                    }
-                    auxClient.SetPresence(presence);
-                }
-            }
-            catch { }
-            return;
-        }
-
-        // slot 0 / フォーカスなし → メインclient（既存の動作）
-        if (mainClient == null) return;
+        if (client == null) return;
         try
         {
             if (presence == null)
             {
-                mainClient.ClearPresence();
+                client.ClearPresence();
             }
             else
             {
-                // タイムスタンプの fallback を適用（RichPresence は record でないため直接変更）
                 if (presence.Timestamps == null)
                 {
                     Timestamps? ts; lock (_rpcLock) { ts = _startTs; }
                     presence.Timestamps = ts;
                 }
-                mainClient.SetPresence(presence);
+                client.SetPresence(presence);
             }
         }
         catch { }
@@ -896,58 +852,6 @@ public sealed class DiscordRichPresence : IDisposable
 
     private void Enqueue(Ev ev) => _ch.Writer.TryWrite(ev);
 
-    // ── マルチインスタンス aux client 管理 ───────────────────────────────────
-
-    private void EnsureAuxClientAndSetPresence(int slot)
-    {
-        if (slot <= 0) return;
-        if (!_auxClients.TryGetValue(slot, out var ac))
-        {
-            ac = new DiscordRpcClient(AppConstants.DiscordRobloxAppId) { Logger = new NullLogger() };
-            ac.Initialize();
-            _auxClients[slot] = ac;
-        }
-        var presence = ComputeInGamePresenceForSlot(slot, _settings.Settings);
-        if (presence != null)
-        {
-            _slotGameTs.TryGetValue(slot, out var ts);
-            if (presence.Timestamps == null) presence.Timestamps = ts ?? _startTs;
-            try { ac.SetPresence(presence); } catch { }
-        }
-    }
-
-    private void ClearAllAuxClients()
-    {
-        foreach (var (_, ac) in _auxClients)
-        {
-            try { ac.ClearPresence(); } catch { }
-            try { ac.Dispose(); } catch { }
-        }
-        _auxClients.Clear();
-    }
-
-    private RichPresence? ComputeInGamePresenceForSlot(int slot, Models.AppSettings s)
-    {
-        if (!_games.TryGetValue(slot, out var g)) return null;
-        string? label; lock (_rpcLock) { label = g.UserLabel ?? _userLabel; }
-        int count;
-        try { count = Math.Max(1, CountRobloxProcesses()); } catch { count = 1; }
-        var details = s.DiscordShowCreator && g.Creator != null
-            ? $"{g.Name} · by {g.Creator}" : g.Name ?? "Roblox";
-        var baseState   = FormatState(s);
-        var instanceStr = count > 1 ? $"Instances {count}" : null;
-        var state = baseState != null && instanceStr != null ? $"{baseState} · {instanceStr}"
-                  : baseState ?? instanceStr;
-        var buttons = s.DiscordShowJoinButton && g.PlaceId > 0
-            ? new Button[] { new() { Label = "Join Game", Url = $"https://www.roblox.com/games/{g.PlaceId}" } }
-            : null;
-        _slotGameTs.TryGetValue(slot, out var gameTs);
-        return Build(details, state, g.IconUrl ?? "roblox",
-            g.Name ?? "Roblox", g.AvatarUrl ?? _avatarUrl,
-            g.AvatarUrl != null || _avatarUrl != null ? (label ?? "Profile") : null,
-            buttons, gameTs);
-    }
-
     private void ClearGameInfo()
     {
         _gameName    = null;
@@ -975,7 +879,6 @@ public sealed class DiscordRichPresence : IDisposable
 
     public void Disable()
     {
-        ClearAllAuxClients();
         DiscordRpcClient? client;
         lock (_rpcLock)
         {
@@ -997,7 +900,6 @@ public sealed class DiscordRichPresence : IDisposable
         _ch.Writer.Complete();
         _heartbeatTimer?.Dispose();
         _studioTimer?.Dispose();
-        ClearAllAuxClients();
         DiscordRpcClient? client;
         lock (_rpcLock)
         {
