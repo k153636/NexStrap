@@ -10,5 +10,7 @@ publish/
 docs/
 
 bot/node_modules/
+publish-vm/
+publish-vm2/
 
 Voidstrap/
