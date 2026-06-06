@@ -9,7 +9,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RootNamespace>NexStrap</RootNamespace>
     <AssemblyName>NexStrap</AssemblyName>
-    <Version>1.2.5</Version>
+    <Version>1.5.0</Version>
     <ApplicationIcon>Assets\nexstrap.ico</ApplicationIcon>
   </PropertyGroup>
 
