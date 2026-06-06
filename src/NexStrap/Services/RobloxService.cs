@@ -1917,7 +1917,9 @@ public class RobloxService
 
         var command = $"\"{exe}\" \"%1\"";
         var versionFolder = Path.GetFileName(
-            Directory.GetDirectories(VersionsDir).FirstOrDefault() ?? string.Empty);
+            Directory.Exists(VersionsDir)
+                ? Directory.GetDirectories(VersionsDir).FirstOrDefault() ?? string.Empty
+                : string.Empty);
 
         foreach (var scheme in new[] { "roblox", "roblox-player" })
         {
