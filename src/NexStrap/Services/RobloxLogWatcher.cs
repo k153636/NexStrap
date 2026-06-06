@@ -209,16 +209,36 @@ public class RobloxLogWatcher : IDisposable
             Logger.Instance.Warning("LogWatcher", $"Missing log: pid={state.Pid}, slot={state.Slot}, log={Path.GetFileName(state.LogPath)}");
             return;
         }
-        using var fs = new FileStream(state.LogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         long pos;
         lock (_lock) { pos = state.Position; }
-        if (fs.Length <= pos) return;
-        fs.Seek(pos, SeekOrigin.Begin);
-        using var reader = new StreamReader(fs);
-        string? line;
-        while ((line = reader.ReadLine()) != null)
+
+        byte[] buf;
+        int bytesRead;
+        using (var fs = new FileStream(state.LogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        {
+            if (fs.Length <= pos) return;
+            fs.Seek(pos, SeekOrigin.Begin);
+            var available = (int)(fs.Length - pos);
+            buf = new byte[available];
+            bytesRead = fs.Read(buf, 0, available);
+        }
+        if (bytesRead == 0) return;
+
+        // StreamReader の先読みバッファによる partial line 消失を防ぐため
+        // 生バイトを直接処理し、\n で終わる完全な行のみ処理する
+        var content = System.Text.Encoding.UTF8.GetString(buf, 0, bytesRead);
+        int lineStart = 0;
+        long newPos = pos;
+        for (int i = 0; i < content.Length; i++)
+        {
+            if (content[i] != '\n') continue;
+            var line = content.Substring(lineStart, i - lineStart).TrimEnd('\r');
             ProcessLineForInstance(line, state);
-        lock (_lock) { state.Position = fs.Position; }
+            newPos = pos + System.Text.Encoding.UTF8.GetByteCount(content, 0, i + 1);
+            lineStart = i + 1;
+        }
+        if (newPos > pos)
+            lock (_lock) { state.Position = newPos; }
     }
 
     private void ProcessLineForInstance(string line, InstanceState state)

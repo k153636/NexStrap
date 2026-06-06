@@ -72,6 +72,7 @@ public sealed class DiscordRichPresence : IDisposable
     private bool    _studioTesting;
     private bool    _studioRpcActive;  // プラグインが接続中かどうか
     private int     _activeFocusedSlot = -1;
+    private int     _lastFocusedSlot   = -1;
     private int     _robloxCount;
     private long    _joinSeq;
     private const int MaxFetchRetries = 5;
@@ -424,6 +425,7 @@ public sealed class DiscordRichPresence : IDisposable
             // ── フォーカス ────────────────────────────────────────────────────
             case EvFocus { Slot: var slot }:
                 _activeFocusedSlot = slot ?? -1;
+                if (slot.HasValue) _lastFocusedSlot = slot.Value;
                 NexStrap.Services.Logger.Instance.Info(
                     "Discord",
                     $"Focus slot changed: {(_activeFocusedSlot >= 0 ? _activeFocusedSlot.ToString() : "none")}");
@@ -925,6 +927,8 @@ public sealed class DiscordRichPresence : IDisposable
     {
         if (_activeFocusedSlot >= 0 && _games.ContainsKey(_activeFocusedSlot))
             return _activeFocusedSlot;
+        if (_lastFocusedSlot >= 0 && _games.ContainsKey(_lastFocusedSlot))
+            return _lastFocusedSlot;
         if (_games.Count > 0)
             return _games.Keys.Max();
         if (_slotPlaceIds.Count > 0)
