@@ -84,7 +84,8 @@ public class RobloxLogWatcher : IDisposable
         var latest = GetLatestLogFile();
         if (latest != null)
         {
-            if (_isRobloxRunningFunc())
+            // NexStrap経由でない外部起動のRobloxも検出するため IsRobloxRunning() をフォールバックとして使用
+            if (_isRobloxRunningFunc() || IsRobloxRunning())
             {
                 bool isStudio = Path.GetFileName(latest).Contains("_Studio_", StringComparison.OrdinalIgnoreCase);
                 if (!isStudio)
