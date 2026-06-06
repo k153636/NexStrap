@@ -9,4 +9,6 @@ artifacts/
 publish/
 docs/
 
+bot/node_modules/
+
 Voidstrap/
