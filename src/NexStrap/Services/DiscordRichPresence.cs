@@ -308,6 +308,13 @@ public sealed class DiscordRichPresence : IDisposable
                     ApplyPresence();
                     break;
                 }
+                if (icon == null)
+                {
+                    log.Warning("Discord", $"ゲーム情報取得不可（非公開またはアクセス不可）placeId={pid}, slot={infoSlot}");
+                    _phase = _games.Count > 0 ? Phase.InGame : Phase.RobloxMenu;
+                    ApplyPresence();
+                    break;
+                }
                 log.Info("Discord", $"ゲーム参加: {name} (placeId={pid}, slot={infoSlot})");
                 _users.TryGetValue(infoSlot, out var su);
                 _slotUniverseIds.TryGetValue(infoSlot, out var infoUniverse);
