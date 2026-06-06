@@ -33,6 +33,8 @@ public class RobloxLogWatcher : IDisposable
         public long   DetectedUserId { get; set; }
         public bool   WasRunning     { get; set; }
         public InstanceActivity? Activity { get; set; }
+        public bool PendingLeave          { get; set; }
+        public int  PendingLeaveTicksLeft { get; set; }
     }
 
     private Timer? _pollTimer;
@@ -77,6 +79,7 @@ public class RobloxLogWatcher : IDisposable
 
     private static readonly string[] LeaveKeywords =
     [
+        "Time to disconnect replication data",
         "Disconnect was called",
         "GameDisconnect",
         "game left",
@@ -89,9 +92,9 @@ public class RobloxLogWatcher : IDisposable
         "Sending disconnect",
         "Disconnected from server",
         "Disconnection Notification",
-        "Connection lost",
-        "connection timeout",
-        "Connection closed",
+        // "Connection lost",      // 参加プロセス中にも出現しうる
+        // "connection timeout",   // 参加プロセス中にも出現しうる
+        // "Connection closed",    // 参加プロセス中にも出現しうる
     ];
 
     private static readonly string LogDir = Path.Combine(
@@ -209,6 +212,27 @@ public class RobloxLogWatcher : IDisposable
             Logger.Instance.Warning("LogWatcher", $"Missing log: pid={state.Pid}, slot={state.Slot}, log={Path.GetFileName(state.LogPath)}");
             return;
         }
+
+        bool firePendingLeave = false;
+        lock (_lock)
+        {
+            if (state.PendingLeave && --state.PendingLeaveTicksLeft <= 0)
+            {
+                state.PendingLeave          = false;
+                state.PendingLeaveTicksLeft = 0;
+                state.LastPlaceId           = 0;
+                state.DetectedIp            = string.Empty;
+                state.WasRunning            = false;
+                state.Activity              = null;
+                firePendingLeave            = true;
+            }
+        }
+        if (firePendingLeave)
+        {
+            Logger.Instance.Info("LogWatcher", $"Leave confirmed (timeout): pid={state.Pid}, slot={state.Slot}");
+            GameLeft?.Invoke(this, new GameLeftArgs(state.Pid, state.Slot));
+        }
+
         long pos;
         lock (_lock) { pos = state.Position; }
 
@@ -246,7 +270,6 @@ public class RobloxLogWatcher : IDisposable
         long   fireUserId     = 0;
         long   firePlaceId    = 0;
         long   fireUniverseId = 0;
-        bool   fireLeave      = false;
         string fireIp         = string.Empty;
         InstanceActivity? activityChanged = null;
 
@@ -298,6 +321,11 @@ public class RobloxLogWatcher : IDisposable
 
             if (firePlaceId > 0)
             {
+                if (state.PendingLeave)
+                {
+                    state.PendingLeave          = false;
+                    state.PendingLeaveTicksLeft = 0;
+                }
                 state.WasRunning = true;
                 state.DetectedIp = string.Empty;
                 state.Activity = new InstanceActivity(
@@ -311,16 +339,13 @@ public class RobloxLogWatcher : IDisposable
                     state.LogPath);
                 activityChanged = state.Activity;
             }
-            else if (state.LastPlaceId != 0)
+            else if (state.LastPlaceId != 0 && !state.PendingLeave)
             {
                 foreach (var kw in LeaveKeywords)
                 {
                     if (!line.Contains(kw, StringComparison.OrdinalIgnoreCase)) continue;
-                    state.LastPlaceId = 0;
-                    state.DetectedIp  = string.Empty;
-                    state.WasRunning  = false;
-                    state.Activity    = null;
-                    fireLeave = true;
+                    state.PendingLeave          = true;
+                    state.PendingLeaveTicksLeft = 12;
                     break;
                 }
             }
@@ -345,11 +370,6 @@ public class RobloxLogWatcher : IDisposable
         {
             Logger.Instance.Info("LogWatcher", $"Server IP detected: pid={state.Pid}, slot={state.Slot}, ip={fireIp}");
             ServerIpDetected?.Invoke(this, new ServerIpDetectedArgs(state.Pid, state.Slot, fireIp));
-        }
-        if (fireLeave)
-        {
-            Logger.Instance.Info("LogWatcher", $"Leave detected: pid={state.Pid}, slot={state.Slot}, log={Path.GetFileName(state.LogPath)}");
-            GameLeft?.Invoke(this, new GameLeftArgs(state.Pid, state.Slot));
         }
     }
 
@@ -596,6 +616,20 @@ public class RobloxLogWatcher : IDisposable
     {
         try { return Math.Abs((File.GetCreationTime(logFile) - proc.StartTime).TotalSeconds); }
         catch { return double.NaN; }
+    }
+
+    public void ConfirmGame(int slot)
+    {
+        lock (_lock)
+        {
+            var state = _instances.Values.FirstOrDefault(s => s.Slot == slot);
+            if (state?.PendingLeave == true)
+            {
+                Logger.Instance.Info("LogWatcher", $"Leave cancelled (game confirmed): slot={slot}");
+                state.PendingLeave          = false;
+                state.PendingLeaveTicksLeft = 0;
+            }
+        }
     }
 
     // ── ユーティリティ ────────────────────────────────────────────────────

@@ -257,6 +257,7 @@ public partial class HomeViewModel : ViewModelBase
 
         _presence.GameInfoFetched += async (_, args) =>
         {
+            _logWatcher.ConfirmGame(args.Slot);
             _gameStartTime = args.StartedAt;
 
             var entry = new GameHistoryEntry
