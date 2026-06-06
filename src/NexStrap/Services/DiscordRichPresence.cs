@@ -692,7 +692,7 @@ public sealed class DiscordRichPresence : IDisposable
             ? $"{focused.Name} · by {focused.Creator}" : focused.Name ?? "Roblox";
 
         var baseState   = FormatState(s, focused);
-        var instanceStr = $"Slot {focusedSlot} · Instances {count}";
+        var instanceStr = $"Instances {count}";
         var multiState  = baseState != null ? $"{baseState} · {instanceStr}" : instanceStr;
 
         var multiButtons = s.DiscordShowJoinButton && focused.PlaceId > 0
