@@ -417,6 +417,9 @@ public sealed class DiscordRichPresence : IDisposable
             // ── フォーカス ────────────────────────────────────────────────────
             case EvFocus { Slot: var slot }:
                 _activeFocusedSlot = slot ?? -1;
+                NexStrap.Services.Logger.Instance.Info(
+                    "Discord",
+                    $"Focus slot changed: {(_activeFocusedSlot >= 0 ? _activeFocusedSlot.ToString() : "none")}");
                 if (_phase == Phase.InGame) ApplyPresence();
                 break;
 
@@ -671,8 +674,17 @@ public sealed class DiscordRichPresence : IDisposable
         }
 
         // マルチインスタンス: フォーカス中ウィンドウをシングルと同じ形式で表示
-        var focusedSlot = _activeFocusedSlot >= 0 && _games.ContainsKey(_activeFocusedSlot)
-            ? _activeFocusedSlot : _games.Keys.Max();
+        if (_activeFocusedSlot < 0 || !_games.ContainsKey(_activeFocusedSlot))
+        {
+            Timestamps? idleTs; lock (_rpcLock) { idleTs = _startTs; }
+            return Build("Roblox", $"Instances {count}",
+                "roblox", "Roblox",
+                _avatarUrl,
+                _avatarUrl != null ? (label ?? "Profile") : null,
+                null, idleTs);
+        }
+
+        var focusedSlot = _activeFocusedSlot;
         var focused = _games[focusedSlot];
         Timestamps? multiGameTs; lock (_rpcLock) { _slotGameTs.TryGetValue(focusedSlot, out multiGameTs); }
 
@@ -680,7 +692,7 @@ public sealed class DiscordRichPresence : IDisposable
             ? $"{focused.Name} · by {focused.Creator}" : focused.Name ?? "Roblox";
 
         var baseState   = FormatState(s, focused);
-        var instanceStr = $"Instances {count}";
+        var instanceStr = $"Slot {focusedSlot} · Instances {count}";
         var multiState  = baseState != null ? $"{baseState} · {instanceStr}" : instanceStr;
 
         var multiButtons = s.DiscordShowJoinButton && focused.PlaceId > 0
