@@ -673,18 +673,8 @@ public sealed class DiscordRichPresence : IDisposable
                 buttons, gameTs);
         }
 
-        // マルチインスタンス: フォーカス中ウィンドウをシングルと同じ形式で表示
-        if (_activeFocusedSlot < 0 || !_games.ContainsKey(_activeFocusedSlot))
-        {
-            Timestamps? idleTs; lock (_rpcLock) { idleTs = _startTs; }
-            return Build("Roblox", $"Instances {count}",
-                "roblox", "Roblox",
-                _avatarUrl,
-                _avatarUrl != null ? (label ?? "Profile") : null,
-                null, idleTs);
-        }
-
-        var focusedSlot = _activeFocusedSlot;
+        // マルチインスタンス: フォーカス中（またはスロット最大）のゲームを表示
+        var focusedSlot = GetDisplaySlot() ?? _games.Keys.Max();
         var focused = _games[focusedSlot];
         Timestamps? multiGameTs; lock (_rpcLock) { _slotGameTs.TryGetValue(focusedSlot, out multiGameTs); }
 
