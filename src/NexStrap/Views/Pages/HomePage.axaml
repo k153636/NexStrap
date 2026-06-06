@@ -9,25 +9,6 @@
 
     <Grid RowDefinitions="Auto,*">
 
-        <!-- Multi Instance warning banner -->
-        <Border Grid.Row="0" Margin="24,12,24,0"
-                Background="#111111" CornerRadius="8" Padding="14,10"
-                IsVisible="{Binding IsMultiInstanceWarningVisible}">
-            <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10"
-                            VerticalAlignment="Center">
-                    <TextBlock Text="⚠" FontSize="14" Foreground="#FFFFFF" VerticalAlignment="Center"/>
-                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#888888"
-                               VerticalAlignment="Center"
-                               Text="Multi-instance is enabled. Manual login may be required in Roblox."/>
-                </StackPanel>
-                <Button Grid.Column="1" Content="✕"
-                        Command="{Binding DismissMultiInstanceWarningCommand}"
-                        Background="Transparent" Foreground="#888888"
-                        Padding="6,4" FontSize="13" CornerRadius="8"
-                        VerticalAlignment="Center"/>
-            </Grid>
-        </Border>
 
 
         <!-- Game List -->

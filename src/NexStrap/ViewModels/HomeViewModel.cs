@@ -60,7 +60,6 @@ public partial class HomeViewModel : ViewModelBase
     public   string? UserAvatarUrl  => _userAvatarUrl;
 
     [ObservableProperty] private string?      _userDisplayName;
-    [ObservableProperty] private bool         _isMultiInstanceWarningVisible;
     [ObservableProperty] private bool         _isRobloxRunning;
     [ObservableProperty] private bool         _isLaunching;
     [ObservableProperty] private bool         _isStudioLaunching;
@@ -413,7 +412,6 @@ public partial class HomeViewModel : ViewModelBase
             });
         }
 
-        _isMultiInstanceWarningVisible = _settings.Settings.MultiInstanceEnabled;
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -445,7 +443,6 @@ public partial class HomeViewModel : ViewModelBase
     // コマンド
     // ══════════════════════════════════════════════════════════════════════
 
-    [RelayCommand] private void DismissMultiInstanceWarning() => IsMultiInstanceWarningVisible = false;
 
     [RelayCommand]
     private async Task RestartRobloxAsync()
