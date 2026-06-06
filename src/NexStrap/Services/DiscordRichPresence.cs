@@ -505,13 +505,25 @@ public sealed class DiscordRichPresence : IDisposable
     private void HandleGameLeft(int slot, int count)
     {
         _robloxCount = count;
-        _games.Remove(slot);
-        _slotGameTs.Remove(slot);
-        while (_games.Count > count)
+        if (slot >= 0)
         {
-            var key = _games.Keys.Min();
-            _games.Remove(key);
-            _slotGameTs.Remove(key);
+            _games.Remove(slot);
+            _slotGameTs.Remove(slot);
+            _slotJoinSeqs.Remove(slot);
+            // 実プロセス数との乖離を整理（確実な slot 削除後のみ実行）
+            while (_games.Count > count && _games.Count > 0)
+            {
+                var key = _games.Keys.Min();
+                _games.Remove(key);
+                _slotGameTs.Remove(key);
+                _slotJoinSeqs.Remove(key);
+            }
+        }
+        else
+        {
+            NexStrap.Services.Logger.Instance.Warning("Discord", $"GameLeft: slot 不明 (count={count})");
+            // slot 不明でも count=0 なら全クリア
+            if (count == 0) { _games.Clear(); _slotGameTs.Clear(); _slotJoinSeqs.Clear(); }
         }
         ClearGameInfo();
         _universeId = 0;
@@ -593,14 +605,15 @@ public sealed class DiscordRichPresence : IDisposable
         if (_games.Count == 0) return null;
 
         string? label; lock (_rpcLock) { label = _userLabel; }
-        Timestamps? gameTs; lock (_rpcLock) { gameTs = _gameTs; }
 
         int count;
         try { count = Math.Max(1, CountRobloxProcesses()); } catch { count = 1; }
 
         if (count == 1)
         {
-            var g = _games[_games.Keys.Max()];
+            var displaySlot = _games.Keys.Max();
+            var g = _games[displaySlot];
+            Timestamps? gameTs; lock (_rpcLock) { _slotGameTs.TryGetValue(displaySlot, out gameTs); }
             var details = s.DiscordShowCreator && g.Creator != null
                 ? $"{g.Name} · by {g.Creator}" : g.Name ?? "Roblox";
             var buttons = s.DiscordShowJoinButton && g.PlaceId > 0
@@ -613,8 +626,10 @@ public sealed class DiscordRichPresence : IDisposable
         }
 
         // マルチインスタンス: フォーカス中ウィンドウをシングルと同じ形式で表示
-        var focused = _activeFocusedSlot >= 0 && _games.TryGetValue(_activeFocusedSlot, out var fg)
-            ? fg : _games[_games.Keys.Max()];
+        var focusedSlot = _activeFocusedSlot >= 0 && _games.ContainsKey(_activeFocusedSlot)
+            ? _activeFocusedSlot : _games.Keys.Max();
+        var focused = _games[focusedSlot];
+        Timestamps? multiGameTs; lock (_rpcLock) { _slotGameTs.TryGetValue(focusedSlot, out multiGameTs); }
 
         var multiDetails = s.DiscordShowCreator && focused.Creator != null
             ? $"{focused.Name} · by {focused.Creator}" : focused.Name ?? "Roblox";
@@ -631,7 +646,7 @@ public sealed class DiscordRichPresence : IDisposable
             focused.IconUrl ?? "roblox", focused.Name ?? "Roblox",
             focused.AvatarUrl ?? _avatarUrl,
             focused.AvatarUrl != null || _avatarUrl != null ? (focused.UserLabel ?? label ?? "Profile") : null,
-            multiButtons, gameTs);
+            multiButtons, multiGameTs);
     }
 
     private string? FormatState(Models.AppSettings s)

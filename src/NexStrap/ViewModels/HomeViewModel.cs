@@ -37,8 +37,7 @@ public partial class HomeViewModel : ViewModelBase
     private GameHistoryEntry? _sessionEntry;
 
     // ── フォーカス・Stretch Res ────────────────────────────────────────────
-    private readonly Dictionary<int, uint> _slotPids = new();
-    private bool                           _robloxHasFocus;
+    private bool _robloxHasFocus;
     private Timer?                         _focusTimer;
     private int?                           _lastDiscordFocusedSlot = null;
 
@@ -103,17 +102,6 @@ public partial class HomeViewModel : ViewModelBase
     private static IEnumerable<Process> GetRobloxProcesses() =>
         Process.GetProcessesByName("RobloxPlayerBeta")
                .Concat(Process.GetProcessesByName("RobloxPlayer"));
-
-    private int GetSlotForPid(uint pid)
-    {
-        if (pid == 0) return -1;
-        lock (_slotPids)
-        {
-            foreach (var kv in _slotPids)
-                if (kv.Value == pid) return kv.Key;
-        }
-        return -1;
-    }
 
     // ══════════════════════════════════════════════════════════════════════
     // コンストラクタ
@@ -198,40 +186,39 @@ public partial class HomeViewModel : ViewModelBase
         };
 
         // ── ユーザーID検出 ────────────────────────────────────────────────
-        _logWatcher.UserIdDetected += async (_, userId) =>
+        _logWatcher.UserIdDetected += async (_, e) =>
         {
-            var slot = GetSlotForPid(_logWatcher.CurrentEventSourcePid);
             try
             {
-                _settings.Update(s => s.CachedRobloxUserId = userId);
-                _friendNotifications.Start(userId);
+                _settings.Update(s => s.CachedRobloxUserId = e.UserId);
+                _friendNotifications.Start(e.UserId);
 
-                var avatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(userId);
-                if (slot == 0) { _userAvatarUrl = avatarUrl; _presence.SetUserAvatar(avatarUrl); }
+                var avatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(e.UserId);
+                if (e.Slot == 0) { _userAvatarUrl = avatarUrl; _presence.SetUserAvatar(avatarUrl); }
 
                 string? label = null;
-                var userInfo  = await _robloxApi.GetUserInfoAsync(userId);
+                var userInfo  = await _robloxApi.GetUserInfoAsync(e.UserId);
                 if (userInfo is { } u)
                 {
-                    if (slot == 0)
+                    if (e.Slot == 0)
                         UserDisplayName = string.IsNullOrEmpty(u.displayName) ? u.username : u.displayName;
                     if (_settings.Settings.DiscordShowRobloxUsername)
                         label = _settings.Settings.DiscordUseDisplayNameFormat
                             ? $"{u.displayName} (@{u.username})" : $"@{u.username}";
                 }
 
-                if (slot == 0) _presence.SetUserLabel(label);
-                _presence.EnqueueUserUpdated(slot, avatarUrl, label);
+                if (e.Slot == 0) _presence.SetUserLabel(label);
+                _presence.EnqueueUserUpdated(e.Slot, avatarUrl, label);
             }
             catch { }
         };
 
         // ── サーバーIP検出 ─────────────────────────────────────────────────
-        _logWatcher.ServerIpDetected += async (_, ip) =>
+        _logWatcher.ServerIpDetected += async (_, e) =>
         {
             try
             {
-                var code = await _robloxApi.GetServerCountryCodeAsync(ip);
+                var code = await _robloxApi.GetServerCountryCodeAsync(e.Ip);
                 for (int i = 0; i < 6; i++)
                 {
                     if (_presence.GameDetected) { _presence.EnqueueServerCode(code); return; }
@@ -242,13 +229,10 @@ public partial class HomeViewModel : ViewModelBase
         };
 
         // ── ゲーム参加 ─────────────────────────────────────────────────────
-        _logWatcher.PlaceJoined += (_, args) =>
+        _logWatcher.PlaceJoined += (_, e) =>
         {
-            var (placeId, universeIdFromLog) = args;
             if (_logWatcher.IsWatchingStudioLog) return;
-            var sourcePid = _logWatcher.CurrentEventSourcePid;
-            RefreshSlotPids();
-            _presence.EnqueuePlaceJoined(placeId, universeIdFromLog, GetSlotForPid(sourcePid));
+            _presence.EnqueuePlaceJoined(e.PlaceId, e.UniverseId, e.Slot);
         };
 
         // ── DiscordRichPresence → HomeViewModel イベント ──────────────────
@@ -313,7 +297,7 @@ public partial class HomeViewModel : ViewModelBase
         _logWatcher.StudioPlaySoloStopped += (_, _) => _presence.EnqueueStudioPlaytestStopped();
 
         // ── ゲーム退出 ─────────────────────────────────────────────────────
-        _logWatcher.GameLeft += (_, _) =>
+        _logWatcher.GameLeft += (_, e) =>
         {
             if (_gameStartTime.HasValue && _sessionEntry != null)
             {
@@ -325,11 +309,9 @@ public partial class HomeViewModel : ViewModelBase
             _sessionEntry               = null;
             _gameStartTime              = null;
 
-            var sourcePid = _logWatcher.CurrentEventSourcePid;
-            RefreshSlotPids();
             var robloxCount = RobloxLogWatcher.IsRobloxRunning() || _roblox.IsNexStrapRobloxRunning()
                 ? GetRobloxProcesses().Count() : 0;
-            _presence.EnqueueGameLeft(GetSlotForPid(sourcePid), robloxCount);
+            _presence.EnqueueGameLeft(e.Slot, robloxCount);
 
             Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -347,14 +329,6 @@ public partial class HomeViewModel : ViewModelBase
 
         _logWatcher.Start();
 
-        // 起動済みの全Robloxインスタンスを起動順にスロット0, 1, ... へマッピング
-        try
-        {
-            var procs = GetRobloxProcesses().Where(p => !p.HasExited).OrderBy(p => p.StartTime).ToList();
-            lock (_slotPids) { _slotPids.Clear(); for (int i = 0; i < procs.Count; i++) _slotPids[i] = (uint)procs[i].Id; }
-        }
-        catch { }
-
         // ── フォーカスタイマー ────────────────────────────────────────────
         _focusTimer = new Timer(_ =>
         {
@@ -363,12 +337,8 @@ public partial class HomeViewModel : ViewModelBase
                 GetWindowThreadProcessId(GetForegroundWindow(), out uint focusPid);
                 if (focusPid == 0) return;
 
-                int? matched = null;
-                lock (_slotPids)
-                {
-                    foreach (var kv in _slotPids)
-                        if (kv.Value == focusPid) { matched = kv.Key; break; }
-                }
+                int? matched = _logWatcher.TryGetSlotForPid(focusPid, out int focusSlot)
+                    ? focusSlot : (int?)null;
 
                 bool nowFocused = matched != null;
                 if (nowFocused != _robloxHasFocus && IsRobloxRunning)
@@ -633,15 +603,5 @@ public partial class HomeViewModel : ViewModelBase
         var label = _settings.Settings.DiscordUseDisplayNameFormat
             ? $"{u.displayName} (@{u.username})" : $"@{u.username}";
         _presence.SetUserLabel(label);
-    }
-
-    private void RefreshSlotPids()
-    {
-        try
-        {
-            var procs = GetRobloxProcesses().Where(p => !p.HasExited).OrderBy(p => p.StartTime).ToList();
-            lock (_slotPids) { _slotPids.Clear(); for (int i = 0; i < procs.Count; i++) _slotPids[i] = (uint)procs[i].Id; }
-        }
-        catch { }
     }
 }
