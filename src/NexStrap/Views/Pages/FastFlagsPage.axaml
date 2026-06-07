@@ -5,7 +5,7 @@
              x:DataType="vm:FastFlagsViewModel"
              Background="Transparent">
 
-    <Grid RowDefinitions="Auto,Auto,*">
+    <Grid RowDefinitions="Auto,*">
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="24,20,24,12" Spacing="3">
@@ -18,63 +18,61 @@
                        IsVisible="{Binding SavePath, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
         </StackPanel>
 
-        <!-- Toolbar -->
-        <Grid Grid.Row="1" Margin="24,0,24,10" ColumnDefinitions="*,6,Auto">
-
-            <TextBox Grid.Column="0"
-                     Text="{Binding SearchText}"
-                     Watermark="Search flags..."
-                     Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF"
-                     BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,7" FontSize="12"/>
-
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
-
-                <ComboBox ItemsSource="{Binding Categories}"
-                          SelectedItem="{Binding SelectedCategory}"
-                          Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF"
-                          CornerRadius="8" MinWidth="110" FontSize="12"/>
-
-                <Button Content="Presets"
-                        Command="{Binding OpenPresetWindowCommand}"
-                        Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
-                        FontSize="12" Padding="12,7" CornerRadius="8"/>
-
-                <Button Content="Bulk Import"
-                        Command="{Binding OpenBulkImportWindowCommand}"
-                        Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
-                        FontSize="12" Padding="12,7" CornerRadius="8"/>
-
-                <Button Content="+ Add"
-                        Command="{Binding OpenAddFlagWindowCommand}"
-                        Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
-                        FontSize="12" Padding="12,7" CornerRadius="8"/>
-
-                <Button Content="Profiles"
-                        Command="{Binding OpenProfileManagerCommand}"
-                        Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
-                        FontSize="12" Padding="12,7" CornerRadius="8"/>
-
-                <Button Command="{Binding HotReloadCommand}"
-                        IsEnabled="{Binding !IsSaving}"
-                        Background="#FFFFFF" Foreground="#080808"
-                        Padding="12,7" CornerRadius="8">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <PathIcon Data="{StaticResource IconFlash}" Width="11" Height="11" Foreground="#080808"/>
-                        <TextBlock Text="Save" FontWeight="SemiBold" FontSize="12"/>
-                    </StackPanel>
-                </Button>
-
-            </StackPanel>
-        </Grid>
-
-        <!-- Flags list -->
-        <Border Grid.Row="2" Margin="24,0,24,14"
+        <!-- Flags list — full remaining height -->
+        <Border Grid.Row="1" Margin="24,0,24,14"
                 Background="{DynamicResource SurfaceBg}" CornerRadius="8">
-            <Grid RowDefinitions="Auto,*,Auto">
+            <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+                <!-- Toolbar -->
+                <Border Grid.Row="0"
+                        BorderBrush="{DynamicResource ElevatedBg}" BorderThickness="0,0,0,1"
+                        Padding="12,10">
+                    <Grid ColumnDefinitions="*,6,Auto">
+
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding SearchText}"
+                                 Watermark="Search flags..."
+                                 Background="{DynamicResource ElevatedBg}" Foreground="#FFFFFF"
+                                 BorderBrush="Transparent" CornerRadius="8" Padding="12,7" FontSize="12"/>
+
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+
+                            <Button Content="Presets"
+                                    Command="{Binding OpenPresetWindowCommand}"
+                                    Background="{DynamicResource ElevatedBg}" Foreground="{DynamicResource TextBrush}"
+                                    FontSize="12" Padding="12,7" CornerRadius="8"/>
+
+                            <Button Content="Bulk Import"
+                                    Command="{Binding OpenBulkImportWindowCommand}"
+                                    Background="{DynamicResource ElevatedBg}" Foreground="{DynamicResource TextBrush}"
+                                    FontSize="12" Padding="12,7" CornerRadius="8"/>
+
+                            <Button Content="+ Add"
+                                    Command="{Binding OpenAddFlagWindowCommand}"
+                                    Background="{DynamicResource ElevatedBg}" Foreground="{DynamicResource TextBrush}"
+                                    FontSize="12" Padding="12,7" CornerRadius="8"/>
+
+                            <Button Content="Profiles"
+                                    Command="{Binding OpenProfileManagerCommand}"
+                                    Background="{DynamicResource ElevatedBg}" Foreground="{DynamicResource TextBrush}"
+                                    FontSize="12" Padding="12,7" CornerRadius="8"/>
+
+                            <Button Command="{Binding HotReloadCommand}"
+                                    IsEnabled="{Binding !IsSaving}"
+                                    Background="#FFFFFF" Foreground="#080808"
+                                    Padding="12,7" CornerRadius="8">
+                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                    <PathIcon Data="{StaticResource IconFlash}" Width="11" Height="11" Foreground="#080808"/>
+                                    <TextBlock Text="Save" FontWeight="SemiBold" FontSize="12"/>
+                                </StackPanel>
+                            </Button>
+
+                        </StackPanel>
+                    </Grid>
+                </Border>
 
                 <!-- Column header -->
-                <Border Grid.Row="0" Background="{DynamicResource ElevatedBg}"
-                        CornerRadius="8,8,0,0">
+                <Border Grid.Row="1" Background="{DynamicResource ElevatedBg}">
                     <Grid ColumnDefinitions="*,200,100,40" Margin="16,8">
                         <TextBlock Grid.Column="0" Text="Flag Name" FontSize="11"
                                    FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}"/>
@@ -86,44 +84,46 @@
                 </Border>
 
                 <!-- Flag rows -->
-                <ListBox Grid.Row="1" ItemsSource="{Binding Flags}"
+                <ListBox Grid.Row="2" ItemsSource="{Binding Flags}"
                          SelectedItem="{Binding SelectedFlag}"
                          Background="Transparent" BorderThickness="0">
                     <ListBox.ItemTemplate>
                         <DataTemplate DataType="vm:FlagEntry">
-                            <Grid ColumnDefinitions="*,200,100,40" Margin="0,2">
-                                <StackPanel Grid.Column="0" Spacing="1" Margin="8,0">
-                                    <TextBlock Text="{Binding Name}" FontSize="12"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               FontFamily="Consolas,Courier New,monospace"/>
-                                    <TextBlock Text="{Binding Description}" FontSize="10"
-                                               Foreground="{DynamicResource MutedBrush}"
-                                               IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                </StackPanel>
-                                <TextBox Grid.Column="1" Text="{Binding Value}"
-                                         Background="#080808" Foreground="#FFFFFF"
-                                         BorderBrush="#2E2E2E" Padding="8,5"
-                                         CornerRadius="8" FontFamily="Consolas,Courier New,monospace"
-                                         FontSize="12" Margin="4,2"/>
-                                <Border Grid.Column="2" Background="{DynamicResource ElevatedBg}"
-                                        CornerRadius="8" Padding="8,3" Margin="4,0"
-                                        VerticalAlignment="Center" HorizontalAlignment="Left">
-                                    <TextBlock Text="{Binding Category}" FontSize="11"
-                                               Foreground="{DynamicResource SubtextBrush}"/>
-                                </Border>
-                                <Button Grid.Column="3"
-                                        Command="{Binding DeleteCommand}"
-                                        Padding="4,4" Background="Transparent"
-                                        Foreground="{DynamicResource MutedBrush}" CornerRadius="4">
-                                    <TextBlock Text="✕" FontSize="11"/>
-                                </Button>
-                            </Grid>
+                            <Border BorderBrush="#12FFFFFF" BorderThickness="0,1,0,0" Padding="0,4">
+                                <Grid ColumnDefinitions="*,200,100,40" Margin="0,2">
+                                    <StackPanel Grid.Column="0" Spacing="1" Margin="8,0">
+                                        <TextBlock Text="{Binding Name}" FontSize="12"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   FontFamily="Consolas,Courier New,monospace"/>
+                                        <TextBlock Text="{Binding Description}" FontSize="10"
+                                                   Foreground="{DynamicResource MutedBrush}"
+                                                   IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Text="{Binding Value}"
+                                             Background="{DynamicResource ElevatedBg}" Foreground="#FFFFFF"
+                                             BorderBrush="Transparent" Padding="8,5"
+                                             CornerRadius="8" FontFamily="Consolas,Courier New,monospace"
+                                             FontSize="12" Margin="4,2"/>
+                                    <Border Grid.Column="2" Background="{DynamicResource ElevatedBg}"
+                                            CornerRadius="8" Padding="8,3" Margin="4,0"
+                                            VerticalAlignment="Center" HorizontalAlignment="Left">
+                                        <TextBlock Text="{Binding Category}" FontSize="11"
+                                                   Foreground="{DynamicResource SubtextBrush}"/>
+                                    </Border>
+                                    <Button Grid.Column="3"
+                                            Command="{Binding DeleteCommand}"
+                                            Padding="4,4" Background="Transparent"
+                                            Foreground="{DynamicResource MutedBrush}" CornerRadius="4">
+                                        <TextBlock Text="✕" FontSize="11"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
 
                 <!-- Status bar -->
-                <Border Grid.Row="2" Padding="16,6"
+                <Border Grid.Row="3" Padding="16,6"
                         IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                     <TextBlock Text="{Binding StatusMessage}"
                                Foreground="{Binding IsStatusError,
@@ -131,7 +131,9 @@
                                    ConverterParameter='#FF6B6B,#888888'}"
                                FontSize="11"/>
                 </Border>
+
             </Grid>
         </Border>
+
     </Grid>
 </UserControl>

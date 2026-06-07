@@ -89,14 +89,14 @@ public partial class MainWindow : Window
         };
     }
 
-    // Non-glass gradient triples (top, mid @45%, bottom)
+    // Non-glass solid colors (mid value used as SolidColorBrush)
     private static readonly Dictionary<string, (Color Top, Color Mid, Color Bot)> _solidGradients = new()
     {
-        ["CardBg"]     = (Color.Parse("#1E1E1E"), Color.Parse("#141414"), Color.Parse("#0C0C0C")),
-        ["SurfaceBg"]  = (Color.Parse("#202020"), Color.Parse("#161616"), Color.Parse("#0E0E0E")),
-        ["ElevatedBg"] = (Color.Parse("#2A2A2A"), Color.Parse("#1E1E1E"), Color.Parse("#181818")),
-        ["OverlayBg"]  = (Color.Parse("#222222"), Color.Parse("#181818"), Color.Parse("#121212")),
-        ["InputBg"]    = (Color.Parse("#151515"), Color.Parse("#0F0F0F"), Color.Parse("#080808")),
+        ["CardBg"]     = (Color.Parse("#080808"), Color.Parse("#080808"), Color.Parse("#080808")),
+        ["SurfaceBg"]  = (Color.Parse("#080808"), Color.Parse("#080808"), Color.Parse("#080808")),
+        ["ElevatedBg"] = (Color.Parse("#101010"), Color.Parse("#101010"), Color.Parse("#101010")),
+        ["OverlayBg"]  = (Color.Parse("#0A0A0A"), Color.Parse("#0A0A0A"), Color.Parse("#0A0A0A")),
+        ["InputBg"]    = (Color.Parse("#000000"), Color.Parse("#000000"), Color.Parse("#000000")),
         ["FgSub"]      = (Color.Parse("#555555"), Color.Parse("#555555"), Color.Parse("#555555")),
         ["FgMuted"]    = (Color.Parse("#2E2E2E"), Color.Parse("#2E2E2E"), Color.Parse("#2E2E2E")),
     };
@@ -139,14 +139,15 @@ public partial class MainWindow : Window
         var opacity = Math.Clamp(themeVm?.GlassOpacity ?? 0.75, 0.0, 0.75);
         var t = opacity / 0.75;
 
+        // Accent color parsed once — used for both card brushes and sidebar pane
+        var accentHex = themeVm?.GlassAccentColor ?? "#FFFFFF";
+        Color accent;
+        try { accent = Color.Parse(accentHex); }
+        catch { accent = Colors.White; }
+        byte r = accent.R, g = accent.G, b = accent.B;
+
         if (glass)
         {
-            var accentHex = themeVm?.GlassAccentColor ?? "#FFFFFF";
-            Color accent;
-            try { accent = Color.Parse(accentHex); }
-            catch { accent = Colors.White; }
-            byte r = accent.R, g = accent.G, b = accent.B;
-
             foreach (var (key, (min, max)) in _glassAlphaRange)
             {
                 var alpha  = (byte)Math.Round(min + (max - min) * t);
@@ -165,19 +166,19 @@ public partial class MainWindow : Window
                 res[key] = new SolidColorBrush(mid);
         }
 
-        // Sidebar pane: same gradient direction as cards
+        // Sidebar pane: Glass ON follows accent color; Glass OFF is near-black
         IBrush paneBrush;
         if (glass)
         {
             var topA = (byte)Math.Round(0x88 + (0xE8 - 0x88) * t);
             var botA = (byte)Math.Round(0x78 + (0xD4 - 0x78) * t);
             paneBrush = MakeGradient(
-                Color.FromArgb(topA, 0x14, 0x14, 0x14),
-                Color.FromArgb(botA, 0x08, 0x08, 0x08));
+                Color.FromArgb(topA, r, g, b),
+                Color.FromArgb(botA, r, g, b));
         }
         else
         {
-            paneBrush = MakeGradient(Color.Parse("#1C1C1C"), Color.Parse("#111111"));
+            paneBrush = MakeGradient(Color.Parse("#0D0D0D"), Color.Parse("#000000"));
         }
 
         var splitView = NavView.GetVisualDescendants().OfType<SplitView>().FirstOrDefault();

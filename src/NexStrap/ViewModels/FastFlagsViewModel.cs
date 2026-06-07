@@ -219,7 +219,8 @@ public partial class FastFlagsViewModel : ViewModelBase
         if (!string.IsNullOrWhiteSpace(SearchText))
             filtered = filtered.Where(f =>
                 f.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
-                f.Description.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+                f.Description.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                f.Category.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
         if (SelectedCategory != "All")
             filtered = filtered.Where(f => f.Category == SelectedCategory);

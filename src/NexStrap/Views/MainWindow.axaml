@@ -15,7 +15,7 @@
         ExtendClientAreaTitleBarHeightHint="-1">
 
     <Grid x:Name="RootGrid" RowDefinitions="30,*,52">
-        <Rectangle Grid.RowSpan="2" Fill="#080808"/>
+        <Rectangle Grid.RowSpan="2" Fill="#000000"/>
 
         <Border Grid.RowSpan="2"
                 Background="#50000000"
@@ -165,7 +165,7 @@
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem Content="Discord" Tag="Discord">
+                <ui:NavigationViewItem Content="Discord RPC" Tag="Discord">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="Comment"/>
                     </ui:NavigationViewItem.IconSource>
@@ -181,7 +181,7 @@
             <Border Background="Transparent">
                 <TransitioningContentControl Content="{Binding CurrentPage}">
                     <TransitioningContentControl.PageTransition>
-                        <CrossFade Duration="0:0:0.12"/>
+                        <CrossFade Duration="0:0:0.06"/>
                     </TransitioningContentControl.PageTransition>
                     <TransitioningContentControl.DataTemplates>
                         <DataTemplate DataType="vm:HomeViewModel">
@@ -223,7 +223,7 @@
         </ui:NavigationView>
 
         <!-- Global Bottom Bar -->
-        <Border Grid.Row="2" Background="#0D0D0D" BorderBrush="#1A1A1A" BorderThickness="0,1,0,0"
+        <Border Grid.Row="2" Background="#050505" BorderBrush="#1C1C1C" BorderThickness="0,1,0,0"
                 Padding="16,0">
             <Grid ColumnDefinitions="*,Auto">
 

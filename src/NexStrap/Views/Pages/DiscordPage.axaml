@@ -9,9 +9,9 @@
     <ScrollViewer>
         <StackPanel Spacing="10" Margin="24,20" helpers:AnimationHelper.StaggerChildren="True">
 
-            <TextBlock Text="Discord" FontSize="22" FontWeight="Bold"
+            <TextBlock Text="Discord RPC" FontSize="22" FontWeight="Bold"
                        Foreground="#FFFFFF" Margin="0,0,0,2"/>
-            <TextBlock Text="Show your game status on Discord"
+            <TextBlock Text="Configure your Discord Rich Presence"
                        FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
 
             <!-- Connection -->
@@ -117,17 +117,17 @@
                 </StackPanel>
             </Border>
 
-            <!-- Launcher Status -->
+            <!-- NexStrap -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="Launcher Status" FontSize="12" FontWeight="SemiBold"
+                    <TextBlock Text="NexStrap" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}"/>
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Show launcher presence" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Show presence while using the launcher outside a game"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                            <TextBlock Text="NexStrap Presence" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Show presence while using the launcher outside a game. Turning this off hides NexStrap's RPC entirely."
+                                       Foreground="{DynamicResource FgSub}" FontSize="11" TextWrapping="Wrap"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowLauncherPresence}"
                                       OnContent="ON" OffContent="OFF"/>
@@ -136,8 +136,8 @@
                     <Grid ColumnDefinitions="*,Auto"
                           IsVisible="{Binding ShowLauncherPresence}">
                         <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Show Details text" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Shows &quot;NexStrap / page name&quot; as the details line"
+                            <TextBlock Text="Show current page" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Show the current page name in the details line"
                                        Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowLauncherDetails}"

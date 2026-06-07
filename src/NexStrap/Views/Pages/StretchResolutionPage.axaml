@@ -15,19 +15,18 @@
                        FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
 
             <!-- GPU note -->
-            <Border Background="#111111" CornerRadius="8" Padding="14,10"
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="14,10"
                     IsVisible="{Binding WarningVisible}">
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="4">
                         <TextBlock Text="⚠  GPU scaling must be set to Full-screen for stretch to work"
                                    Foreground="#FFFFFF" FontSize="12" FontWeight="SemiBold"/>
-                        <TextBlock FontSize="11" Foreground="#888888" TextWrapping="Wrap"
+                        <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}" TextWrapping="Wrap"
                                    Text="Additional setup may be required depending on your environment."/>
                     </StackPanel>
                     <Button Grid.Column="1" Content="✕" Command="{Binding DismissWarningCommand}"
-                            Background="Transparent" Foreground="#888888"
-                            Padding="6,4" FontSize="13" CornerRadius="8"
-                            VerticalAlignment="Center"/>
+                            Classes="plain" Foreground="#888888"
+                            FontSize="13" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
 
@@ -69,19 +68,23 @@
                     <ItemsControl ItemsSource="{Binding Presets}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal"/>
+                                <UniformGrid Columns="2"/>
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Button Command="{Binding $parent[ItemsControl].DataContext.SelectPresetCommand}"
                                         CommandParameter="{Binding}"
-                                        Margin="0,0,8,8"
-                                        Padding="0" CornerRadius="8"
-                                        Background="{DynamicResource CardBg}">
-                                    <TextBlock Text="{Binding Label}" Foreground="#FFFFFF"
-                                               FontSize="13" Margin="14,10"
-                                               Width="110" TextAlignment="Center"/>
+                                        Margin="0,0,8,8" Padding="12,10" CornerRadius="8"
+                                        Background="{DynamicResource OverlayBg}"
+                                        HorizontalContentAlignment="Left">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Label}" FontSize="13"
+                                                   FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                                        <TextBlock Text="{Binding Description}" FontSize="10"
+                                                   Foreground="{DynamicResource FgSub}"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
                                 </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

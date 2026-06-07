@@ -49,8 +49,8 @@
 
                         <!-- Clear button -->
                         <Button Content="✕" Command="{Binding ClearHotKeyCommand}"
-                                Background="Transparent" Foreground="#555555"
-                                FontSize="13" Padding="6,4" CornerRadius="8"
+                                Classes="plain" Foreground="#555555"
+                                FontSize="13"
                                 IsVisible="{Binding IsRecording, Converter={x:Static BoolConverters.Not}}"/>
                     </StackPanel>
                 </Grid>

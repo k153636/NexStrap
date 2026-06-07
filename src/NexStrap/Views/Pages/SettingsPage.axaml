@@ -18,7 +18,7 @@
         <!-- Content (full width) with CrossFade transition between tabs -->
         <TransitioningContentControl Grid.Row="1" Content="{Binding CurrentTabContent}">
             <TransitioningContentControl.PageTransition>
-                <CrossFade Duration="0:0:0.12"/>
+                <CrossFade Duration="0:0:0.06"/>
             </TransitioningContentControl.PageTransition>
             <TransitioningContentControl.DataTemplates>
 

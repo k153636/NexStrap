@@ -40,11 +40,11 @@
             <SolidColorBrush x:Key="FgBrush"        Color="#FFFFFF"/>
 
             <!-- Glass-switchable card brushes (updated in code when glass theme toggles) -->
-            <SolidColorBrush x:Key="CardBg"     Color="#141414"/>
-            <SolidColorBrush x:Key="SurfaceBg"  Color="#161616"/>
-            <SolidColorBrush x:Key="ElevatedBg" Color="#1E1E1E"/>
-            <SolidColorBrush x:Key="OverlayBg"  Color="#181818"/>
-            <SolidColorBrush x:Key="InputBg"    Color="#0F0F0F"/>
+            <SolidColorBrush x:Key="CardBg"     Color="#080808"/>
+            <SolidColorBrush x:Key="SurfaceBg"  Color="#080808"/>
+            <SolidColorBrush x:Key="ElevatedBg" Color="#101010"/>
+            <SolidColorBrush x:Key="OverlayBg"  Color="#0A0A0A"/>
+            <SolidColorBrush x:Key="InputBg"    Color="#000000"/>
 
             <!-- Glass-switchable text colors -->
             <SolidColorBrush x:Key="FgSub"   Color="#888888"/>
@@ -84,6 +84,20 @@
         </Style>
 
         <!-- Global button styles -->
+        <Style Selector="Button.plain">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderBrush"     Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="MinWidth"        Value="0"/>
+            <Setter Property="Padding"         Value="4,0"/>
+        </Style>
+        <Style Selector="Button.plain:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.plain:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
         <Style Selector="Button">
             <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
             <Setter Property="Cursor" Value="Hand"/>
