@@ -11,6 +11,8 @@
 
             <TextBlock Text="Shortcuts" FontSize="22" FontWeight="Bold"
                        Foreground="#FFFFFF" Margin="0,0,0,2"/>
+            <TextBlock Text="Configure global keyboard shortcuts"
+                       FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
 
             <!-- Recording overlay -->
             <Border Background="#1AFFFFFF" CornerRadius="8" Padding="14,12"

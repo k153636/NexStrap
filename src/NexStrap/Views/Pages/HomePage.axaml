@@ -9,7 +9,12 @@
 
     <Grid RowDefinitions="Auto,*">
 
-
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="24,20,24,0" Spacing="3">
+            <TextBlock Text="Home" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
+            <TextBlock Text="Your recent games and favorites"
+                       FontSize="11" Foreground="{DynamicResource FgSub}"/>
+        </StackPanel>
 
         <!-- Game List -->
         <ScrollViewer Grid.Row="1" Margin="0,12,0,0">
@@ -28,7 +33,8 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="local:GameEntryViewModel">
                                 <Border Background="{DynamicResource CardBg}" CornerRadius="8"
-                                        Padding="14,12" Margin="0,0,0,6" Classes="card">
+                                        Padding="14,12" Margin="0,0,0,6" Classes="card"
+                                        BoxShadow="0 2 8 0 #1A000000">
                                     <Grid ColumnDefinitions="52,*,Auto,6,Auto">
                                                         <Border Grid.Column="0" Width="52" Height="52"
                                                 CornerRadius="8" ClipToBounds="True"
@@ -125,7 +131,8 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="local:GameEntryViewModel">
                             <Border Background="{DynamicResource CardBg}" CornerRadius="8"
-                                    Padding="12,10" Margin="0,0,0,6" Classes="card">
+                                    Padding="12,10" Margin="0,0,0,6" Classes="card"
+                                    BoxShadow="0 2 8 0 #1A000000">
                                 <Grid ColumnDefinitions="44,*,Auto,6,Auto">
                                     <Border Grid.Column="0" Width="44" Height="44"
                                             CornerRadius="8" ClipToBounds="True"

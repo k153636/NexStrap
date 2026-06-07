@@ -6,42 +6,7 @@
              x:DataType="vm:SettingsViewModel"
              Background="Transparent">
 
-    <UserControl.Styles>
-        <Style Selector="Button.tab-btn">
-            <Setter Property="Background" Value="{DynamicResource OverlayBg}"/>
-            <Setter Property="Foreground" Value="#888888"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Padding" Value="12,10"/>
-            <Setter Property="MinHeight" Value="38"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="0"/>
-        </Style>
-        <Style Selector="Button.tab-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#181818"/>
-        </Style>
-        <Style Selector="Button.tab-btn:pointerover">
-            <Setter Property="Foreground" Value="#BBBBBB"/>
-        </Style>
-        <Style Selector="Button.tab-btn:pressed /template/ ContentPresenter">
-            <Setter Property="Background" Value="#2A2A2A"/>
-        </Style>
-        <Style Selector="Button.tab-btn.active /template/ ContentPresenter">
-            <Setter Property="Background" Value="#222222"/>
-        </Style>
-        <Style Selector="Button.tab-btn.active">
-            <Setter Property="Foreground" Value="#FFFFFF"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
-        <Style Selector="Button.tab-btn.active:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#282828"/>
-        </Style>
-    </UserControl.Styles>
-
-    <Grid RowDefinitions="Auto,*" Margin="24,20,20,0">
+    <Grid RowDefinitions="Auto,*" Margin="24,20,24,0">
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Spacing="3" Margin="0,0,0,16">

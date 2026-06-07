@@ -19,8 +19,7 @@
         </StackPanel>
 
         <!-- Toolbar -->
-        <Grid Grid.Row="1" Margin="24,0,24,10"
-              ColumnDefinitions="*,8,Auto,8,Auto,8,Auto,8,Auto,8,Auto,8,Auto">
+        <Grid Grid.Row="1" Margin="24,0,24,10" ColumnDefinitions="*,6,Auto">
 
             <TextBox Grid.Column="0"
                      Text="{Binding SearchText}"
@@ -28,41 +27,44 @@
                      Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF"
                      BorderBrush="#2E2E2E" CornerRadius="8" Padding="12,7" FontSize="12"/>
 
-            <ComboBox Grid.Column="2"
-                      ItemsSource="{Binding Categories}"
-                      SelectedItem="{Binding SelectedCategory}"
-                      Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF"
-                      CornerRadius="8" MinWidth="110" FontSize="12"/>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
 
-            <Button Grid.Column="4" Content="Presets"
-                    Command="{Binding OpenPresetWindowCommand}"
-                    Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
-                    FontSize="12" Padding="12,7" CornerRadius="8"/>
+                <ComboBox ItemsSource="{Binding Categories}"
+                          SelectedItem="{Binding SelectedCategory}"
+                          Background="{DynamicResource SurfaceBg}" Foreground="#FFFFFF"
+                          CornerRadius="8" MinWidth="110" FontSize="12"/>
 
-            <Button Grid.Column="6" Content="Bulk Import"
-                    Command="{Binding OpenBulkImportWindowCommand}"
-                    Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
-                    FontSize="12" Padding="12,7" CornerRadius="8"/>
+                <Button Content="Presets"
+                        Command="{Binding OpenPresetWindowCommand}"
+                        Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
+                        FontSize="12" Padding="12,7" CornerRadius="8"/>
 
-            <Button Grid.Column="8" Content="+ Add"
-                    Command="{Binding OpenAddFlagWindowCommand}"
-                    Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
-                    FontSize="12" Padding="12,7" CornerRadius="8"/>
+                <Button Content="Bulk Import"
+                        Command="{Binding OpenBulkImportWindowCommand}"
+                        Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
+                        FontSize="12" Padding="12,7" CornerRadius="8"/>
 
-            <Button Grid.Column="10" Content="Profiles"
-                    Command="{Binding OpenProfileManagerCommand}"
-                    Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
-                    FontSize="12" Padding="12,7" CornerRadius="8"/>
+                <Button Content="+ Add"
+                        Command="{Binding OpenAddFlagWindowCommand}"
+                        Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
+                        FontSize="12" Padding="12,7" CornerRadius="8"/>
 
-            <Button Grid.Column="12" Command="{Binding HotReloadCommand}"
-                    IsEnabled="{Binding !IsSaving}"
-                    Background="#FFFFFF" Foreground="#080808"
-                    Padding="12,7" CornerRadius="8">
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <PathIcon Data="{StaticResource IconFlash}" Width="11" Height="11" Foreground="#080808"/>
-                    <TextBlock Text="Save" FontWeight="SemiBold" FontSize="12"/>
-                </StackPanel>
-            </Button>
+                <Button Content="Profiles"
+                        Command="{Binding OpenProfileManagerCommand}"
+                        Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource TextBrush}"
+                        FontSize="12" Padding="12,7" CornerRadius="8"/>
+
+                <Button Command="{Binding HotReloadCommand}"
+                        IsEnabled="{Binding !IsSaving}"
+                        Background="#FFFFFF" Foreground="#080808"
+                        Padding="12,7" CornerRadius="8">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <PathIcon Data="{StaticResource IconFlash}" Width="11" Height="11" Foreground="#080808"/>
+                        <TextBlock Text="Save" FontWeight="SemiBold" FontSize="12"/>
+                    </StackPanel>
+                </Button>
+
+            </StackPanel>
         </Grid>
 
         <!-- Flags list -->
