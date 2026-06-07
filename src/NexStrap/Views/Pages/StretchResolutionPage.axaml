@@ -29,6 +29,8 @@
                             FontSize="13" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
+            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="4,-2,4,-2"
+                    IsVisible="{Binding WarningVisible}"/>
 
             <!-- Status bar -->
             <Border CornerRadius="8" Padding="14,10" Background="{DynamicResource CardBg}">
@@ -45,6 +47,7 @@
                             FontSize="11" Padding="12,4" CornerRadius="8"/>
                 </Grid>
             </Border>
+            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="4,-2,4,-2"/>
 
             <!-- Auto Apply toggle -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
@@ -58,6 +61,7 @@
                                   OnContent="ON" OffContent="OFF"/>
                 </Grid>
             </Border>
+            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="4,-2,4,-2"/>
 
             <!-- Presets -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14">

@@ -6,7 +6,7 @@
         Title="Add Flag — Fast Flags"
         Width="440" Height="210"
         CanResize="False"
-        Background="#080808"
+        Background="#000000"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="PreferSystemChrome"
         ExtendClientAreaTitleBarHeightHint="-1"

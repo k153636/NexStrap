@@ -4,7 +4,7 @@
         Title="Log in to Roblox — NexStrap"
         Width="480" Height="680"
         MinWidth="400" MinHeight="500"
-        Background="#080808"
+        Background="#000000"
         CanResize="True"
         WindowStartupLocation="CenterOwner">
 </Window>

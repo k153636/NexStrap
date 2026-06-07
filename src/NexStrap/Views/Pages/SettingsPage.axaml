@@ -166,7 +166,7 @@
                                         <NumericUpDown Grid.Column="1" Value="{Binding VM.CpuCoreLimit}"
                                                        Minimum="0" Maximum="64" Increment="1"
                                                        Width="90" FontSize="12"
-                                                       Background="#080808" Foreground="#FFFFFF"
+                                                       Background="#000000" Foreground="#FFFFFF"
                                                        BorderBrush="#2A2A2A"/>
                                     </Grid>
                                     <Grid ColumnDefinitions="*,Auto">

@@ -7,7 +7,7 @@
         Width="420" Height="280"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
-        Background="#111111"
+        Background="#000000"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="PreferSystemChrome"
         ExtendClientAreaTitleBarHeightHint="-1">

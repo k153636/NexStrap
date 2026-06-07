@@ -256,7 +256,7 @@
                             <Grid Width="440" Height="240">
 
                                 <!-- Base dark bg -->
-                                <Rectangle Fill="#080808"/>
+                                <Rectangle Fill="#000000"/>
 
                                 <!-- Custom loading screen image -->
                                 <Image Source="{Binding BootstrapperImagePath,
@@ -266,7 +266,7 @@
                                        IsVisible="{Binding HasBootstrapperImage}"/>
 
                                 <!-- Dark scrim over image -->
-                                <Rectangle Fill="#AA080808"
+                                <Rectangle Fill="#AA000000"
                                            IsVisible="{Binding HasBootstrapperImage}"/>
 
                                 <!-- Fake title bar -->

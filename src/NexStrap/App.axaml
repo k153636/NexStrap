@@ -30,18 +30,19 @@
             <local:StringToImageConverter x:Key="StringToImageConverter"/>
 
             <!-- Black/White palette -->
-            <SolidColorBrush x:Key="BgBrush"        Color="#080808"/>
+            <SolidColorBrush x:Key="BgBrush"        Color="#000000"/>
             <SolidColorBrush x:Key="SurfaceBrush"   Color="#141414"/>
             <SolidColorBrush x:Key="ElevatedBrush"  Color="#202020"/>
             <SolidColorBrush x:Key="BorderBrush"    Color="#2E2E2E"/>
+            <SolidColorBrush x:Key="DividerBrush"   Color="#10FFFFFF"/>
             <SolidColorBrush x:Key="MutedBrush"     Color="#505050"/>
             <SolidColorBrush x:Key="SubtextBrush"   Color="#888888"/>
             <SolidColorBrush x:Key="TextBrush"      Color="#CCCCCC"/>
             <SolidColorBrush x:Key="FgBrush"        Color="#FFFFFF"/>
 
             <!-- Glass-switchable card brushes (updated in code when glass theme toggles) -->
-            <SolidColorBrush x:Key="CardBg"     Color="#080808"/>
-            <SolidColorBrush x:Key="SurfaceBg"  Color="#080808"/>
+            <SolidColorBrush x:Key="CardBg"     Color="#000000"/>
+            <SolidColorBrush x:Key="SurfaceBg"  Color="#000000"/>
             <SolidColorBrush x:Key="ElevatedBg" Color="#101010"/>
             <SolidColorBrush x:Key="OverlayBg"  Color="#0A0A0A"/>
             <SolidColorBrush x:Key="InputBg"    Color="#000000"/>

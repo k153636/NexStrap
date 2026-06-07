@@ -92,8 +92,8 @@ public partial class MainWindow : Window
     // Non-glass solid colors (mid value used as SolidColorBrush)
     private static readonly Dictionary<string, (Color Top, Color Mid, Color Bot)> _solidGradients = new()
     {
-        ["CardBg"]     = (Color.Parse("#080808"), Color.Parse("#080808"), Color.Parse("#080808")),
-        ["SurfaceBg"]  = (Color.Parse("#080808"), Color.Parse("#080808"), Color.Parse("#080808")),
+        ["CardBg"]     = (Color.Parse("#000000"), Color.Parse("#000000"), Color.Parse("#000000")),
+        ["SurfaceBg"]  = (Color.Parse("#000000"), Color.Parse("#000000"), Color.Parse("#000000")),
         ["ElevatedBg"] = (Color.Parse("#101010"), Color.Parse("#101010"), Color.Parse("#101010")),
         ["OverlayBg"]  = (Color.Parse("#0A0A0A"), Color.Parse("#0A0A0A"), Color.Parse("#0A0A0A")),
         ["InputBg"]    = (Color.Parse("#000000"), Color.Parse("#000000"), Color.Parse("#000000")),
@@ -159,11 +159,15 @@ public partial class MainWindow : Window
             }
             foreach (var (key, color) in _glassTextColors)
                 res[key] = new SolidColorBrush(color);
+
+            res["DividerBrush"] = new SolidColorBrush(Colors.Transparent);
         }
         else
         {
             foreach (var (key, (top, mid, bot)) in _solidGradients)
                 res[key] = new SolidColorBrush(mid);
+
+            res["DividerBrush"] = new SolidColorBrush(Color.Parse("#10FFFFFF"));
         }
 
         // Sidebar pane: Glass ON follows accent color; Glass OFF is near-black

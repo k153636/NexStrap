@@ -114,6 +114,8 @@
                         </Grid>
                     </StackPanel>
                 </Border>
+                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="4,-2,4,-2"
+                        IsVisible="{Binding IsStatsVisible}"/>
 
                 <!-- Import 中ステータス -->
                 <StackPanel Orientation="Horizontal" Spacing="8"
@@ -149,6 +151,8 @@
                         </Grid>
                     </StackPanel>
                 </Border>
+                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="4,-2,4,-2"
+                        IsVisible="{Binding IsPastePanelOpen}"/>
 
                 <!-- Quick Login パネル（PC-to-PC） -->
                 <Border IsVisible="{Binding IsQuickLoginOpen}"
@@ -173,6 +177,8 @@
                         </Grid>
                     </StackPanel>
                 </Border>
+                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="4,-2,4,-2"
+                        IsVisible="{Binding IsQuickLoginOpen}"/>
 
                 <!-- 空状態 -->
                 <TextBlock Text="No accounts added"
@@ -185,9 +191,10 @@
                 <ItemsControl ItemsSource="{Binding Accounts}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:AccountEntryViewModel">
-                            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="12,10"
-                                    Margin="0,0,0,6" BoxShadow="0 2 8 0 #1A000000">
-                                <StackPanel Spacing="6">
+                            <StackPanel>
+                                <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="12,10"
+                                        Margin="0,0,0,6" BoxShadow="0 2 8 0 #1A000000">
+                                    <StackPanel Spacing="6">
 
                                     <Grid ColumnDefinitions="*,Auto">
 
@@ -280,8 +287,10 @@
                                         </Grid>
                                     </Border>
 
-                                </StackPanel>
-                            </Border>
+                                    </StackPanel>
+                                </Border>
+                                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="4,-2,4,4"/>
+                            </StackPanel>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>

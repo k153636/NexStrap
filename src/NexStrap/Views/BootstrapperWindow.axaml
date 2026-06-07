@@ -18,7 +18,7 @@
     <Grid>
 
         <!-- Base dark bg -->
-        <Rectangle Fill="#080808"/>
+        <Rectangle Fill="#000000"/>
 
         <!-- Loading screen image — no blur, opacity 0.85 -->
         <Image Source="{Binding BackgroundImagePath, Converter={StaticResource StringToImageConverter}}"
@@ -27,7 +27,7 @@
                IsVisible="{Binding HasBackgroundImage}"/>
 
         <!-- Dark scrim over image -->
-        <Rectangle Fill="#AA080808" IsVisible="{Binding HasBackgroundImage}"/>
+        <Rectangle Fill="#AA000000" IsVisible="{Binding HasBackgroundImage}"/>
 
         <!-- Fake title bar -->
         <StackPanel Orientation="Horizontal" VerticalAlignment="Top"

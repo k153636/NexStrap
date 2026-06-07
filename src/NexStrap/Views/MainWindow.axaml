@@ -178,7 +178,9 @@
                 </ui:NavigationViewItem>
             </ui:NavigationView.FooterMenuItems>
 
-            <Border Background="Transparent">
+            <Border Background="{Binding ThemeVM.GlassThemeEnabled,
+                Converter={StaticResource BoolToColorConverter},
+                ConverterParameter='#00000000,#000000'}">
                 <TransitioningContentControl Content="{Binding CurrentPage}">
                     <TransitioningContentControl.PageTransition>
                         <CrossFade Duration="0:0:0.06"/>

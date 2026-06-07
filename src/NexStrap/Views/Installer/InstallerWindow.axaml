@@ -7,7 +7,7 @@
         Width="580" Height="400"
         CanResize="False"
         WindowStartupLocation="CenterScreen"
-        Background="#080808"
+        Background="#000000"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="PreferSystemChrome"
         ExtendClientAreaTitleBarHeightHint="-1">
@@ -93,7 +93,7 @@
                                    Foreground="#888888"/>
                         <Grid ColumnDefinitions="*,8,Auto,6,Auto">
                             <TextBox Grid.Column="0" Text="{Binding InstallPath}"
-                                     Background="#111111" Foreground="#FFFFFF"
+                                     Background="#000000" Foreground="#FFFFFF"
                                      BorderBrush="{Binding PathError,
                                          Converter={StaticResource BoolToColorConverter},
                                          ConverterParameter='#FF4444,#2A2A2A'}"
