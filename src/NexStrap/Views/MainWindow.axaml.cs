@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Notifications;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
@@ -16,8 +15,6 @@ public partial class MainWindow : Window
 {
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
-
-    private WindowNotificationManager? _notificationManager;
 
     public MainWindow()
     {
@@ -39,13 +36,6 @@ public partial class MainWindow : Window
         {
             if (DataContext is MainWindowViewModel vm)
                 ApplyGlassTheme(vm.ThemeVM.GlassThemeEnabled);
-
-            _notificationManager = new WindowNotificationManager(this)
-            {
-                Position = NotificationPosition.BottomRight,
-                MaxItems = 3
-            };
-            WireUpdateNotification();
         };
 
         Activated += (_, _) =>
@@ -84,21 +74,6 @@ public partial class MainWindow : Window
             if (dialog.Authenticated && DataContext is MainWindowViewModel vm)
                 vm.NavigateToCommand.Execute("Dev");
         }
-    }
-
-    private void WireUpdateNotification()
-    {
-        if (DataContext is not MainWindowViewModel vm) return;
-        vm.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(MainWindowViewModel.UpdateAvailable) && vm.UpdateAvailable)
-                _notificationManager?.Show(new Notification(
-                    "Update Available",
-                    $"{vm.UpdateVersion} is ready. Restart NexStrap to update.",
-                    NotificationType.Information,
-                    TimeSpan.FromSeconds(15),
-                    () => vm.RestartToUpdateCommand.Execute(null)));
-        };
     }
 
     private void WireGlassTheme()

@@ -9,7 +9,7 @@ artifacts/
 publish/
 docs/
 
-bot/node_modules/
+bot/
 publish-vm/
 publish-vm2/
 

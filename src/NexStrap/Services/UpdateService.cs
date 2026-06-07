@@ -6,7 +6,7 @@ namespace NexStrap.Services;
 
 public class UpdateService
 {
-    private const string GithubApiUrl = "https://api.github.com/repos/k153636/NexStrap/releases?per_page=1";
+    private const string GithubApiUrl = "https://api.github.com/repos/k153636/NexStrap/releases/latest";
     private const string AssetName    = "NexStrap.exe";
 
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(10) };
@@ -23,7 +23,7 @@ public class UpdateService
         {
             var json = await Http.GetStringAsync(GithubApiUrl);
             using var doc  = JsonDocument.Parse(json);
-            var root       = doc.RootElement[0]; // 最新リリース（pre-release 含む）
+            var root       = doc.RootElement;
 
             var tag        = root.GetProperty("tag_name").GetString()?.TrimStart('v') ?? "";
             if (!Version.TryParse(tag, out var latest)) return null;
@@ -56,14 +56,12 @@ public class UpdateService
             RobloxService.Log($"UpdateCheck: current={current} latest={latest}");
             if (current != null && latest <= current) return null;
 
-            // アセットがあれば直接 URL を返す、なければリリースページを fallback にして通知だけ出す
             foreach (var asset in root.GetProperty("assets").EnumerateArray())
             {
                 if (asset.GetProperty("name").GetString() != AssetName) continue;
                 var url = asset.GetProperty("browser_download_url").GetString();
                 if (url != null) return (tag, url);
             }
-            return (tag, "https://github.com/k153636/NexStrap/releases/latest");
         }
         catch { }
         return null;

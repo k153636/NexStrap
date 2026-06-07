@@ -213,7 +213,7 @@ public partial class App : Application
         }
 
         // Step 2: check for NexStrap self-update
-        var updateService = Services.GetRequiredService<UpdateService>();
+        var updateService = new UpdateService();
         var update        = await updateService.CheckForUpdateAsync();
         if (update != null)
         {

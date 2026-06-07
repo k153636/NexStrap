@@ -179,42 +179,6 @@
             </ui:NavigationView.FooterMenuItems>
 
             <Border Background="Transparent">
-                <DockPanel>
-
-                    <!-- Update notification banner -->
-                    <Border DockPanel.Dock="Top"
-                            Background="#0F1F0F"
-                            BorderBrush="#2A4A2A" BorderThickness="0,0,0,1"
-                            Padding="16,7"
-                            IsVisible="{Binding UpdateAvailable}">
-                        <Grid ColumnDefinitions="*,Auto,Auto">
-                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6"
-                                        VerticalAlignment="Center">
-                                <TextBlock Text="Update available:" FontSize="11"
-                                           Foreground="#888888" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding UpdateVersion}" FontSize="11"
-                                           FontWeight="SemiBold" Foreground="#4ADE80"
-                                           VerticalAlignment="Center"/>
-                                <TextBlock Text="is ready to download" FontSize="11"
-                                           Foreground="#888888" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <Button Grid.Column="1"
-                                    Content="Restart to Update"
-                                    Command="{Binding RestartToUpdateCommand}"
-                                    Background="#1A3A1A" Foreground="#4ADE80"
-                                    FontSize="11" FontWeight="SemiBold"
-                                    Padding="10,4" CornerRadius="6"
-                                    Margin="0,0,6,0"/>
-                            <Button Grid.Column="2"
-                                    Content="✕"
-                                    Command="{Binding DismissUpdateCommand}"
-                                    Classes="plain"
-                                    Foreground="#505050"
-                                    FontSize="11"
-                                    Padding="6,4"/>
-                        </Grid>
-                    </Border>
-
                 <TransitioningContentControl Content="{Binding CurrentPage}">
                     <TransitioningContentControl.PageTransition>
                         <CrossFade Duration="0:0:0.06"/>
@@ -255,7 +219,6 @@
                         </DataTemplate>
                     </TransitioningContentControl.DataTemplates>
                 </TransitioningContentControl>
-                </DockPanel>
             </Border>
         </ui:NavigationView>
 
