@@ -276,9 +276,10 @@ public partial class MainWindow : Window
         fadeTimer.Tick += (_, _) =>
         {
             var t = Math.Min(1.0, (Environment.TickCount64 - fadeStart) / (double)FadeOutDurationMs);
-            var s = 1.0 + 0.55 * t;           // scale 1.0 → 1.55
+            var s = 1.0 + 1.0 * t;            // scale 1.0 → 2.0
             scale.ScaleX              = s;
             scale.ScaleY              = s;
+            rotate.Angle              = 25.0 * t; // 0° → +25° (reverse)
             SplashIcon.Opacity        = 1.0 - t;
             SplashTextGroup.Opacity   = 1.0 - t;
             SplashOverlay.Opacity     = 1.0 - t;
