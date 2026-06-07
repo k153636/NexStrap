@@ -36,7 +36,7 @@
             <Border Classes="area-panel">
                 <ItemsControl ItemsSource="{Binding Friends}">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:FriendEntryViewModel">
+                        <DataTemplate >
                             <StackPanel>
                             <Border Classes="area-row-compact">
                                 <Grid ColumnDefinitions="36,*,Auto">
@@ -51,7 +51,7 @@
                                     <!-- Info -->
                                     <StackPanel Grid.Column="1" Spacing="2" Margin="10,0">
                                         <TextBlock Text="{Binding DisplayName}" FontSize="13"
-                                                   FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                                                   FontWeight="SemiBold" Foreground="White"/>
                                         <TextBlock Text="{Binding StatusText}" FontSize="11"
                                                    Foreground="{Binding StatusColor}"/>
                                         <TextBlock Text="{Binding LastLocation}" FontSize="11"
