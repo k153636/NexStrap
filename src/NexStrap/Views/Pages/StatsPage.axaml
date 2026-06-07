@@ -80,7 +80,7 @@
                                                 CornerRadius="2,2,0,0"
                                                 Background="{Binding IsToday,
                                                     Converter={StaticResource BoolToColorConverter},
-                                                    ConverterParameter='#FFFFFF,#383838'}"/>
+                                                    ConverterParameter='#FFFFFF,#4DFFFFFF'}"/>
                                     </Grid>
                                     <TextBlock Text="{Binding TimeText}" FontSize="9"
                                                Foreground="{DynamicResource FgSub}" HorizontalAlignment="Center"/>
