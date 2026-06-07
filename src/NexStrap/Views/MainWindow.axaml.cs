@@ -196,11 +196,8 @@ public partial class MainWindow : Window
 
     private async Task PlaySplashAsync()
     {
-        const int RotateDurationMs  = 1200;
-        const int SlideDurationMs   = 900;
-        const int FadeOutDurationMs = 600;
+        const double StartY = 220.0;
 
-        // TransformGroup: rotate used for entry, scale used for exit
         var rotate = new RotateTransform(-180);
         var scale  = new ScaleTransform(1, 1);
         var tg     = new TransformGroup();
@@ -211,86 +208,69 @@ public partial class MainWindow : Window
         SplashIcon.RenderTransformOrigin = RelativePoint.Center;
         SplashIcon.Opacity               = 0;
         SplashTextGroup.Opacity          = 0;
-        SplashContentPanel.Margin        = new Thickness(0, 220, 0, 0);
+        SplashContentPanel.Margin        = new Thickness(0, StartY, 0, 0);
+        SplashContentPanel.Transitions   = null;
+        SplashIcon.Transitions           = null;
 
-        // Y slide
-        SplashContentPanel.Transitions = new Transitions
+        await Task.Delay(50);
+
+        // Single timer — one continuous timeline, zero stops
+        //
+        // ms:   0     480   700   900  1000          1700
+        //       |------|-----|-----|----|--------------| done
+        // slide+rot  [=========]
+        // icon fade  [=====]
+        // text fade        [====]
+        // exit (scale+rot+fade)   [====================]
+
+        var start = Environment.TickCount64;
+        var tcs   = new TaskCompletionSource();
+        var timer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+
+        timer.Tick += (_, _) =>
         {
-            new ThicknessTransition
+            var ms = (double)(Environment.TickCount64 - start);
+
+            // Slide: CubicEaseOut, 0–900ms
+            SplashContentPanel.Margin =
+                new Thickness(0, StartY * (1.0 - SplashEaseOut3(Math.Clamp(ms / 900.0, 0, 1))), 0, 0);
+
+            // Rotation: QuarticEaseOut, -180°→0°, 0–900ms
+            rotate.Angle = -180.0 * (1.0 - SplashEaseOut4(Math.Clamp(ms / 900.0, 0, 1)));
+
+            // Icon fade-in: 0–480ms
+            SplashIcon.Opacity = Math.Clamp(ms / 480.0, 0, 1);
+
+            // Text fade-in: 700–1000ms
+            SplashTextGroup.Opacity = Math.Clamp((ms - 700) / 300.0, 0, 1);
+
+            // Exit: 1000–1700ms — overrides entry values
+            if (ms >= 1000)
             {
-                Property = MarginProperty,
-                Duration = TimeSpan.FromMilliseconds(SlideDurationMs),
-                Easing   = new CubicEaseOut()
+                var exitT = Math.Clamp((ms - 1000) / 700.0, 0, 1);
+                var alpha = 1.0 - exitT;
+                var s     = 1.0 + exitT; // 1.0 → 2.0
+
+                rotate.Angle            = 25.0 * exitT;
+                scale.ScaleX            = s;
+                scale.ScaleY            = s;
+                SplashIcon.Opacity      = alpha;
+                SplashTextGroup.Opacity = alpha;
+                SplashOverlay.Opacity   = alpha;
             }
+
+            if (ms >= 1700) { timer.Stop(); tcs.TrySetResult(); }
         };
 
-        // Icon fade-in
-        SplashIcon.Transitions = new Transitions
-        {
-            new DoubleTransition
-            {
-                Property = OpacityProperty,
-                Duration = TimeSpan.FromMilliseconds(480),
-                Easing   = new CubicEaseOut()
-            }
-        };
-
-        await Task.Delay(80);
-
-        SplashContentPanel.Margin = new Thickness(0);
-        SplashIcon.Opacity        = 1;
-
-        // Rotation: QuarticEaseOut, -180° → 0°
-        var rotTcs   = new TaskCompletionSource();
-        var rotStart = Environment.TickCount64;
-        var rotTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
-        rotTimer.Tick += (_, _) =>
-        {
-            var t     = Math.Min(1.0, (Environment.TickCount64 - rotStart) / (double)RotateDurationMs);
-            var eased = 1.0 - Math.Pow(1.0 - t, 4); // QuarticEaseOut
-            rotate.Angle = -180.0 * (1.0 - eased);
-            if (t >= 1.0) { rotate.Angle = 0; rotTimer.Stop(); rotTcs.TrySetResult(); }
-        };
-        rotTimer.Start();
-
-        // Text appears as rotation is nearly stopped
-        await Task.Delay(800);
-        SplashTextGroup.Transitions = new Transitions
-        {
-            new DoubleTransition
-            {
-                Property = OpacityProperty,
-                Duration = TimeSpan.FromMilliseconds(380),
-                Easing   = new CubicEaseOut()
-            }
-        };
-        SplashTextGroup.Opacity = 1;
-
-        // Wait for rotation, then exit: logo scales up + everything fades out
-        await rotTcs.Task;
-        SplashIcon.Transitions = null; // remove opacity transition so timer controls it
-
-        var fadeStart = Environment.TickCount64;
-        var fadeTcs   = new TaskCompletionSource();
-        var fadeTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
-        fadeTimer.Tick += (_, _) =>
-        {
-            var t = Math.Min(1.0, (Environment.TickCount64 - fadeStart) / (double)FadeOutDurationMs);
-            var s = 1.0 + 1.0 * t;            // scale 1.0 → 2.0
-            scale.ScaleX              = s;
-            scale.ScaleY              = s;
-            rotate.Angle              = 25.0 * t; // 0° → +25° (reverse)
-            SplashIcon.Opacity        = 1.0 - t;
-            SplashTextGroup.Opacity   = 1.0 - t;
-            SplashOverlay.Opacity     = 1.0 - t;
-            if (t >= 1.0) { fadeTimer.Stop(); fadeTcs.TrySetResult(); }
-        };
-        fadeTimer.Start();
-        await fadeTcs.Task;
+        timer.Start();
+        await tcs.Task;
 
         SplashOverlay.IsVisible        = false;
         SplashOverlay.IsHitTestVisible = false;
     }
+
+    private static double SplashEaseOut3(double t) => 1.0 - Math.Pow(1.0 - t, 3);
+    private static double SplashEaseOut4(double t) => 1.0 - Math.Pow(1.0 - t, 4);
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
