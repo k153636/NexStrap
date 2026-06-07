@@ -198,13 +198,8 @@ public partial class MainWindow : Window
     {
         const double StartY = 220.0;
 
-        var rotate = new RotateTransform(-180);
-        var scale  = new ScaleTransform(1, 1);
-        var tg     = new TransformGroup();
-        tg.Children.Add(rotate);
-        tg.Children.Add(scale);
-
-        SplashIcon.RenderTransform       = tg;
+        var scale = new ScaleTransform(1, 1);
+        SplashIcon.RenderTransform       = scale;
         SplashIcon.RenderTransformOrigin = RelativePoint.Center;
         SplashIcon.Opacity               = 0;
         SplashTextGroup.Opacity          = 0;
@@ -218,10 +213,10 @@ public partial class MainWindow : Window
         //
         // ms:   0     480   700   900  1000          1700
         //       |------|-----|-----|----|--------------| done
-        // slide+rot  [=========]
+        // slide      [=========]
         // icon fade  [=====]
         // text fade        [====]
-        // exit (scale+rot+fade)   [====================]
+        // exit (scale+fade)       [====================]
 
         var start = Environment.TickCount64;
         var tcs   = new TaskCompletionSource();
@@ -234,9 +229,6 @@ public partial class MainWindow : Window
             // Slide: CubicEaseOut, 0–900ms
             SplashContentPanel.Margin =
                 new Thickness(0, StartY * (1.0 - SplashEaseOut3(Math.Clamp(ms / 900.0, 0, 1))), 0, 0);
-
-            // Rotation: QuarticEaseOut, -180°→0°, 0–900ms
-            rotate.Angle = -180.0 * (1.0 - SplashEaseOut4(Math.Clamp(ms / 900.0, 0, 1)));
 
             // Icon fade-in: 0–480ms
             SplashIcon.Opacity = Math.Clamp(ms / 480.0, 0, 1);
@@ -251,7 +243,6 @@ public partial class MainWindow : Window
                 var alpha = 1.0 - exitT;
                 var s     = 1.0 + exitT; // 1.0 → 2.0
 
-                rotate.Angle            = 25.0 * exitT;
                 scale.ScaleX            = s;
                 scale.ScaleY            = s;
                 SplashIcon.Opacity      = alpha;
@@ -270,7 +261,6 @@ public partial class MainWindow : Window
     }
 
     private static double SplashEaseOut3(double t) => 1.0 - Math.Pow(1.0 - t, 3);
-    private static double SplashEaseOut4(double t) => 1.0 - Math.Pow(1.0 - t, 4);
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
