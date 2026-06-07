@@ -7,7 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Styling;
+using Avalonia.Media.Transformation;
 using Avalonia.VisualTree;
 using FluentAvalonia.UI.Controls;
 using NexStrap.ViewModels;
@@ -196,80 +196,97 @@ public partial class MainWindow : Window
 
     private async Task PlaySplashAsync()
     {
-        // Set up transforms: icon starts 220px below center, rotated -360°
-        var translate = new TranslateTransform(0, 220);
-        var rotate    = new RotateTransform(-360);
-        var tg        = new TransformGroup();
-        tg.Children.Add(translate);
-        tg.Children.Add(rotate);
+        const int AnimDurationMs = 900;
 
-        SplashIcon.RenderTransform       = tg;
+        // Initial state
+        var rotate = new RotateTransform(-360);
+        SplashIcon.RenderTransform       = rotate;
         SplashIcon.RenderTransformOrigin = RelativePoint.Center;
         SplashIcon.Opacity               = 0;
         SplashTextGroup.Opacity          = 0;
 
+        // Y translation via Margin on the content panel (220px below its centered position)
+        SplashContentPanel.Margin = new Thickness(0, 220, 0, 0);
+        SplashContentPanel.Transitions = new Transitions
+        {
+            new ThicknessTransition
+            {
+                Property = MarginProperty,
+                Duration = TimeSpan.FromMilliseconds(AnimDurationMs),
+                Easing   = new CubicEaseOut()
+            }
+        };
+
+        // Opacity transition on icon
+        SplashIcon.Transitions = new Transitions
+        {
+            new DoubleTransition
+            {
+                Property = OpacityProperty,
+                Duration = TimeSpan.FromMilliseconds(500),
+                Easing   = new CubicEaseOut()
+            }
+        };
+
         await Task.Delay(80);
 
-        var dur    = TimeSpan.FromMilliseconds(900);
-        var easing = new CubicEaseOut();
+        // Trigger Y slide and opacity
+        SplashContentPanel.Margin = new Thickness(0);
+        SplashIcon.Opacity        = 1;
 
-        // Icon: slide up + rotate + fade in — all simultaneous
-        await Task.WhenAll(
-            new Animation
-            {
-                Duration = dur, Easing = easing, FillMode = FillMode.Forward,
-                Children =
-                {
-                    new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(TranslateTransform.YProperty, 220d) } },
-                    new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(TranslateTransform.YProperty, 0d)   } }
-                }
-            }.RunAsync(translate),
-            new Animation
-            {
-                Duration = dur, Easing = easing, FillMode = FillMode.Forward,
-                Children =
-                {
-                    new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(RotateTransform.AngleProperty, -360d) } },
-                    new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(RotateTransform.AngleProperty, 0d)    } }
-                }
-            }.RunAsync(rotate),
-            new Animation
-            {
-                Duration = TimeSpan.FromMilliseconds(500), Easing = easing, FillMode = FillMode.Forward,
-                Children =
-                {
-                    new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(Visual.OpacityProperty, 0d) } },
-                    new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(Visual.OpacityProperty, 1d) } }
-                }
-            }.RunAsync(SplashIcon)
-        );
-        SplashIcon.Opacity = 1;
+        // Manually drive rotation via DispatcherTimer (~60 fps)
+        var tcs       = new TaskCompletionSource();
+        var startTick = Environment.TickCount64;
 
-        // Text: fade in
-        await new Animation
+        var timer = new Avalonia.Threading.DispatcherTimer
         {
-            Duration = TimeSpan.FromMilliseconds(350), Easing = easing, FillMode = FillMode.Forward,
-            Children =
+            Interval = TimeSpan.FromMilliseconds(16)
+        };
+        timer.Tick += (_, _) =>
+        {
+            var elapsed = Environment.TickCount64 - startTick;
+            var t       = Math.Min(1.0, elapsed / (double)AnimDurationMs);
+            var eased   = 1.0 - Math.Pow(1.0 - t, 3); // CubicEaseOut
+
+            rotate.Angle = -360.0 * (1.0 - eased);
+
+            if (t >= 1.0)
             {
-                new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(Visual.OpacityProperty, 0d) } },
-                new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(Visual.OpacityProperty, 1d) } }
+                rotate.Angle = 0;
+                timer.Stop();
+                tcs.TrySetResult();
             }
-        }.RunAsync(SplashTextGroup);
+        };
+        timer.Start();
+        await tcs.Task;
+
+        // Text fade in
+        SplashTextGroup.Transitions = new Transitions
+        {
+            new DoubleTransition
+            {
+                Property = OpacityProperty,
+                Duration = TimeSpan.FromMilliseconds(350),
+                Easing   = new CubicEaseOut()
+            }
+        };
         SplashTextGroup.Opacity = 1;
+        await Task.Delay(400);
 
         // Hold
         await Task.Delay(700);
 
-        // Fade out entire overlay
-        await new Animation
+        // Fade out overlay
+        SplashOverlay.Transitions = new Transitions
         {
-            Duration = TimeSpan.FromMilliseconds(520), FillMode = FillMode.Forward,
-            Children =
+            new DoubleTransition
             {
-                new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(Visual.OpacityProperty, 1d) } },
-                new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(Visual.OpacityProperty, 0d) } }
+                Property = OpacityProperty,
+                Duration = TimeSpan.FromMilliseconds(520)
             }
-        }.RunAsync(SplashOverlay);
+        };
+        SplashOverlay.Opacity = 0;
+        await Task.Delay(560);
 
         SplashOverlay.IsVisible        = false;
         SplashOverlay.IsHitTestVisible = false;

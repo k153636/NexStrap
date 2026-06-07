@@ -296,7 +296,8 @@
                 </Rectangle.Fill>
             </Rectangle>
 
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="18">
+            <StackPanel x:Name="SplashContentPanel"
+                        VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="18">
 
                 <Image x:Name="SplashIcon"
                        Source="avares://NexStrap/Assets/nexstrap.png"
