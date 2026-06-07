@@ -35,6 +35,7 @@ public partial class FastFlagsViewModel : ViewModelBase
     private List<FlagEntry> _allFlags = new();
     private CancellationTokenSource? _statusCts;
     private bool _suppressProfileLoad;
+    private Profile? _loadedProfile;
 
     [ObservableProperty] private ObservableCollection<FlagEntry> _flags = new();
     [ObservableProperty] private string _searchText = string.Empty;
@@ -80,6 +81,15 @@ public partial class FastFlagsViewModel : ViewModelBase
         LoadFlags();
         SavePath = service.GetSavePath();
         RefreshProfiles();
+
+        _suppressProfileLoad = true;
+        SelectedProfile = Profiles.FirstOrDefault();
+        _suppressProfileLoad = false;
+        if (SelectedProfile != null)
+        {
+            RenameProfileName = SelectedProfile.Name;
+            _loadedProfile = SelectedProfile;
+        }
     }
 
     private void RefreshProfiles()
@@ -92,7 +102,29 @@ public partial class FastFlagsViewModel : ViewModelBase
         if (value == null) return;
         RenameProfileName = value.Name;
         if (_suppressProfileLoad) return;
-        _ = LoadProfileAsync(value);
+        _ = SwitchProfileAsync(value);
+    }
+
+    private async Task SwitchProfileAsync(Profile newProfile)
+    {
+        if (_loadedProfile != null && _loadedProfile.Id != newProfile.Id)
+            SaveCurrentFlagsToProfile(_loadedProfile);
+
+        await LoadProfileAsync(newProfile);
+        _loadedProfile = newProfile;
+    }
+
+    private void SaveCurrentFlagsToProfile(Profile profile)
+    {
+        profile.FastFlags = _allFlags.Select(f => new FastFlag
+        {
+            Name        = f.Name,
+            Value       = f.Value,
+            Category    = f.Category,
+            Description = f.Description,
+            IsEnabled   = true
+        }).ToList();
+        _profileService.UpdateProfile(profile);
     }
 
     private async Task LoadProfileAsync(Profile value)
@@ -129,6 +161,7 @@ public partial class FastFlagsViewModel : ViewModelBase
         RefreshProfiles();
         SelectedProfile = Profiles.FirstOrDefault(p => p.Id == profile.Id);
         _suppressProfileLoad = false;
+        _loadedProfile = SelectedProfile;
 
         NewProfileName = string.Empty;
         await ShowStatusAsync($"Saved profile \"{name}\"");
