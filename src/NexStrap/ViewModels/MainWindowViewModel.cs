@@ -143,6 +143,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         HomeVM.CurrentPageName = page switch
         {
+            "Discord"   => "Discord RPC",
             "Stretch"   => "Stretch Res",
             "Shortcuts" => "Shortcuts",
             _ => page
