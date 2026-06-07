@@ -65,7 +65,7 @@
 
                 <!-- 統計カード -->
                 <Border IsVisible="{Binding IsStatsVisible}"
-                        Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14"
+                        Classes="area-panel area-row-single" Padding="16,14"
                         BoxShadow="0 2 10 0 #22000000">
                     <StackPanel Spacing="12">
                         <Grid ColumnDefinitions="Auto,*">
@@ -114,7 +114,7 @@
                         </Grid>
                     </StackPanel>
                 </Border>
-                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="4,-2,4,-2"
+                <Border Classes="area-divider"
                         IsVisible="{Binding IsStatsVisible}"/>
 
                 <!-- Import 中ステータス -->
@@ -132,7 +132,7 @@
 
                 <!-- Cookie ペーストパネル -->
                 <Border IsVisible="{Binding IsPastePanelOpen}"
-                        Background="{DynamicResource CardBg}" CornerRadius="8" Padding="14,12">
+                        Classes="area-panel area-row-single" Padding="14,12">
                     <StackPanel Spacing="8">
                         <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
                                    Text="Chrome DevTools → Application → Cookies → roblox.com → .ROBLOSECURITY → Value"/>
@@ -151,12 +151,12 @@
                         </Grid>
                     </StackPanel>
                 </Border>
-                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="4,-2,4,-2"
+                <Border Classes="area-divider"
                         IsVisible="{Binding IsPastePanelOpen}"/>
 
                 <!-- Quick Login パネル（PC-to-PC） -->
                 <Border IsVisible="{Binding IsQuickLoginOpen}"
-                        Background="{DynamicResource CardBg}" CornerRadius="8" Padding="14,12">
+                        Classes="area-panel area-row-single" Padding="14,12">
                     <StackPanel Spacing="8">
                         <TextBlock FontSize="11" Foreground="{DynamicResource FgSub}"
                                    Text="Enter the 6-digit code from another NexStrap instance"/>
@@ -177,7 +177,7 @@
                         </Grid>
                     </StackPanel>
                 </Border>
-                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="4,-2,4,-2"
+                <Border Classes="area-divider"
                         IsVisible="{Binding IsQuickLoginOpen}"/>
 
                 <!-- 空状態 -->
@@ -188,12 +188,12 @@
                                Converter={StaticResource IntToZeroConverter}}"/>
 
                 <!-- アカウントリスト -->
-                <ItemsControl ItemsSource="{Binding Accounts}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:AccountEntryViewModel">
-                            <StackPanel>
-                                <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="12,10"
-                                        Margin="0,0,0,6" BoxShadow="0 2 8 0 #1A000000">
+                <Border Classes="area-panel">
+                    <ItemsControl ItemsSource="{Binding Accounts}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AccountEntryViewModel">
+                                <StackPanel>
+                                <Border Classes="area-row-compact">
                                     <StackPanel Spacing="6">
 
                                     <Grid ColumnDefinitions="*,Auto">
@@ -289,11 +289,12 @@
 
                                     </StackPanel>
                                 </Border>
-                                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="4,-2,4,4"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                                <Border Classes="area-divider"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
 
                 <!-- ステータスメッセージ -->
                 <TextBlock Text="{Binding StatusMessage}"

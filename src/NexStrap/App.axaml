@@ -131,6 +131,36 @@
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
 
+        <Style Selector="Border.area-panel">
+            <Setter Property="Background" Value="{DynamicResource CardBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="ClipToBounds" Value="True"/>
+        </Style>
+        <Style Selector="Border.area-row">
+            <Setter Property="Background" Value="{DynamicResource CardBg}"/>
+            <Setter Property="Padding" Value="16,12"/>
+        </Style>
+        <Style Selector="Border.area-row-compact">
+            <Setter Property="Background" Value="{DynamicResource CardBg}"/>
+            <Setter Property="Padding" Value="12,10"/>
+        </Style>
+        <Style Selector="Border.area-row-first">
+            <Setter Property="CornerRadius" Value="8,8,0,0"/>
+        </Style>
+        <Style Selector="Border.area-row-last">
+            <Setter Property="CornerRadius" Value="0,0,8,8"/>
+        </Style>
+        <Style Selector="Border.area-row-single">
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+        <Style Selector="Border.area-divider">
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource DividerBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+
         <!-- ToggleSwitch cursor -->
         <Style Selector="ToggleSwitch">
             <Setter Property="Cursor" Value="Hand"/>

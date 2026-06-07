@@ -33,47 +33,51 @@
                        IsVisible="{Binding StatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
             <!-- Friends list -->
-            <ItemsControl ItemsSource="{Binding Friends}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:FriendEntryViewModel">
-                        <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="12,10"
-                                Margin="0,0,0,6" BoxShadow="0 2 8 0 #1A000000">
-                            <Grid ColumnDefinitions="36,*,Auto">
+            <Border Classes="area-panel">
+                <ItemsControl ItemsSource="{Binding Friends}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FriendEntryViewModel">
+                            <StackPanel>
+                            <Border Classes="area-row-compact">
+                                <Grid ColumnDefinitions="36,*,Auto">
 
-                                <!-- Avatar -->
-                                <Border Grid.Column="0" Width="36" Height="36"
-                                        CornerRadius="8" ClipToBounds="True"
-                                        Background="{DynamicResource OverlayBg}">
-                                    <Image Source="{Binding Icon}" Stretch="UniformToFill"/>
-                                </Border>
+                                    <!-- Avatar -->
+                                    <Border Grid.Column="0" Width="36" Height="36"
+                                            CornerRadius="8" ClipToBounds="True"
+                                            Background="{DynamicResource OverlayBg}">
+                                        <Image Source="{Binding Icon}" Stretch="UniformToFill"/>
+                                    </Border>
 
-                                <!-- Info -->
-                                <StackPanel Grid.Column="1" Spacing="2" Margin="10,0">
-                                    <TextBlock Text="{Binding DisplayName}" FontSize="13"
-                                               FontWeight="SemiBold" Foreground="#FFFFFF"/>
-                                    <TextBlock Text="{Binding StatusText}" FontSize="11"
-                                               Foreground="{Binding StatusColor}"/>
-                                    <TextBlock Text="{Binding LastLocation}" FontSize="11"
-                                               Foreground="{DynamicResource FgSub}"
-                                               IsVisible="{Binding IsInGame}"
-                                               TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
+                                    <!-- Info -->
+                                    <StackPanel Grid.Column="1" Spacing="2" Margin="10,0">
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="13"
+                                                   FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                                        <TextBlock Text="{Binding StatusText}" FontSize="11"
+                                                   Foreground="{Binding StatusColor}"/>
+                                        <TextBlock Text="{Binding LastLocation}" FontSize="11"
+                                                   Foreground="{DynamicResource FgSub}"
+                                                   IsVisible="{Binding IsInGame}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
 
-                                <!-- Join button -->
-                                <Button Grid.Column="2" Content="Join"
-                                        IsVisible="{Binding IsInGame}"
-                                        Background="{DynamicResource OverlayBg}"
-                                        Foreground="#4ADE80" FontSize="11"
-                                        Padding="12,5" CornerRadius="8"
-                                        VerticalAlignment="Center"
-                                        Tag="{Binding PlaceId}"
-                                        Click="JoinButton_Click"/>
+                                    <!-- Join button -->
+                                    <Button Grid.Column="2" Content="Join"
+                                            IsVisible="{Binding IsInGame}"
+                                            Background="{DynamicResource OverlayBg}"
+                                            Foreground="#4ADE80" FontSize="11"
+                                            Padding="12,5" CornerRadius="8"
+                                            VerticalAlignment="Center"
+                                            Tag="{Binding PlaceId}"
+                                            Click="JoinButton_Click"/>
 
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                                </Grid>
+                            </Border>
+                            <Border Classes="area-divider"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
 
         </StackPanel>
     </ScrollViewer>

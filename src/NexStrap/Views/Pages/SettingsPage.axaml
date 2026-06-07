@@ -26,7 +26,7 @@
                 <DataTemplate x:DataType="vm:SettingsGeneralTab">
                     <ScrollViewer Padding="0,0,4,20">
                         <StackPanel Spacing="10">
-                            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
+                            <Border Classes="area-panel" Padding="16,12">
                                 <StackPanel Spacing="12">
                                     <TextBlock Text="App" FontSize="12" FontWeight="SemiBold"
                                                Foreground="{DynamicResource FgSub}"/>
@@ -39,6 +39,7 @@
                                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding VM.StartWithWindows}"
                                                       OnContent="ON" OffContent="OFF"/>
                                     </Grid>
+                                    <Border Classes="area-divider"/>
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0" Spacing="2">
                                             <TextBlock Text="Minimize to Tray" Foreground="#FFFFFF" FontSize="13"/>
@@ -58,7 +59,7 @@
                 <DataTemplate x:DataType="vm:SettingsPerformanceTab">
                     <ScrollViewer Padding="0,0,4,20">
                         <StackPanel Spacing="10">
-                            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
+                            <Border Classes="area-panel" Padding="16,12">
                                 <StackPanel Spacing="12">
                                     <TextBlock Text="Performance" FontSize="12" FontWeight="SemiBold"
                                                Foreground="{DynamicResource FgSub}"/>
@@ -71,6 +72,7 @@
                                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding VM.FpsUnlockEnabled}"
                                                       OnContent="ON" OffContent="OFF"/>
                                     </Grid>
+                                    <Border Classes="area-divider"/>
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0" Spacing="2">
                                             <TextBlock Text="Multi-threading" Foreground="#FFFFFF" FontSize="13"/>
@@ -80,6 +82,7 @@
                                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding VM.MultiThreadingEnabled}"
                                                       OnContent="ON" OffContent="OFF"/>
                                     </Grid>
+                                    <Border Classes="area-divider"/>
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0" Spacing="2">
                                             <TextBlock Text="Performance Overlay" Foreground="#FFFFFF" FontSize="13"/>
@@ -89,6 +92,7 @@
                                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding VM.ShowPerformanceOverlay}"
                                                       OnContent="ON" OffContent="OFF"/>
                                     </Grid>
+                                    <Border Classes="area-divider"/>
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0" Spacing="2">
                                             <TextBlock Text="Fast Flags Hot Reload" Foreground="#FFFFFF" FontSize="13"/>
@@ -108,7 +112,7 @@
                 <DataTemplate x:DataType="vm:SettingsRobloxTab">
                     <ScrollViewer Padding="0,0,4,20">
                         <StackPanel Spacing="10">
-                            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
+                            <Border Classes="area-panel" Padding="16,12">
                                 <StackPanel Spacing="12">
                                     <TextBlock Text="Roblox" FontSize="12" FontWeight="SemiBold"
                                                Foreground="{DynamicResource FgSub}"/>
@@ -121,6 +125,7 @@
                                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding VM.AutoUpdateRoblox}"
                                                       OnContent="ON" OffContent="OFF"/>
                                     </Grid>
+                                    <Border Classes="area-divider"/>
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0" Spacing="2">
                                             <TextBlock Text="Multi-instance" Foreground="#FFFFFF" FontSize="13"/>
@@ -130,6 +135,7 @@
                                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding VM.MultiInstanceEnabled}"
                                                       OnContent="ON" OffContent="OFF"/>
                                     </Grid>
+                                    <Border Classes="area-divider"/>
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0" Spacing="2">
                                             <TextBlock Text="Hide Crash Dialog" Foreground="#FFFFFF" FontSize="13"/>
@@ -139,6 +145,7 @@
                                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding VM.SuppressCrashHandler}"
                                                       OnContent="ON" OffContent="OFF"/>
                                     </Grid>
+                                    <Border Classes="area-divider"/>
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0" Spacing="2">
                                             <TextBlock Text="Memory Optimization" Foreground="#FFFFFF" FontSize="13"/>
@@ -148,6 +155,7 @@
                                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding VM.MemoryOptimizationEnabled}"
                                                       OnContent="ON" OffContent="OFF"/>
                                     </Grid>
+                                    <Border Classes="area-divider"/>
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0" Spacing="2">
                                             <TextBlock Text="CPU Affinity" Foreground="#FFFFFF" FontSize="13"/>
@@ -169,6 +177,7 @@
                                                        Background="#000000" Foreground="#FFFFFF"
                                                        BorderBrush="#2A2A2A"/>
                                     </Grid>
+                                    <Border Classes="area-divider" IsVisible="{Binding VM.CpuAffinityEnabled}"/>
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0" Spacing="2">
                                             <TextBlock Text="Cleanup Old Versions" Foreground="#FFFFFF" FontSize="13"/>
@@ -188,7 +197,7 @@
                 <DataTemplate x:DataType="vm:SettingsDataTab">
                     <ScrollViewer Padding="0,0,4,20">
                         <StackPanel Spacing="10">
-                            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
+                            <Border Classes="area-panel" Padding="16,12">
                                 <StackPanel Spacing="12">
                                     <TextBlock Text="Data" FontSize="12" FontWeight="SemiBold"
                                                Foreground="{DynamicResource FgSub}"/>
@@ -209,6 +218,7 @@
                                                     FontSize="12" Padding="14,6" CornerRadius="8"/>
                                         </StackPanel>
                                     </Grid>
+                                    <Border Classes="area-divider"/>
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0" Spacing="2">
                                             <TextBlock Text="Game History" Foreground="#FFFFFF" FontSize="13"/>
@@ -264,6 +274,7 @@
                                                 Background="#3A1A1A" Foreground="{DynamicResource FgDanger}"
                                                 FontSize="12" Padding="14,6" CornerRadius="8"/>
                                     </Grid>
+                                    <Border Classes="area-divider"/>
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0" Spacing="2">
                                             <TextBlock Text="Stock Roblox" Foreground="#FFFFFF" FontSize="13"/>

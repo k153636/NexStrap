@@ -6,6 +6,14 @@
              x:DataType="vm:StatsViewModel"
              Background="Transparent">
 
+    <UserControl.Styles>
+        <Style Selector="Border.stats-vertical-divider">
+            <Setter Property="Width" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource DividerBrush}"/>
+            <Setter Property="Margin" Value="0,8"/>
+        </Style>
+    </UserControl.Styles>
+
     <ScrollViewer>
         <StackPanel Spacing="10" Margin="24,20" helpers:AnimationHelper.StaggerChildren="True">
 
@@ -25,6 +33,8 @@
                     </StackPanel>
                 </Border>
 
+                <Border Grid.Column="1" Classes="stats-vertical-divider"/>
+
                 <Border Grid.Column="2" Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14" BoxShadow="0 2 10 0 #22000000">
                     <StackPanel Spacing="4">
                         <TextBlock Text="Sessions" FontSize="11" Foreground="{DynamicResource FgSub}"/>
@@ -32,6 +42,8 @@
                                    FontWeight="Bold" Foreground="#FFFFFF"/>
                     </StackPanel>
                 </Border>
+
+                <Border Grid.Column="3" Classes="stats-vertical-divider"/>
 
                 <Border Grid.Column="4" Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14" BoxShadow="0 2 10 0 #22000000">
                     <StackPanel Spacing="4">
@@ -45,6 +57,8 @@
                 </Border>
 
             </Grid>
+
+            <Border Classes="area-divider"/>
 
             <!-- Weekly bar chart -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14" Margin="0,0,0,0" BoxShadow="0 2 10 0 #22000000">
@@ -83,7 +97,7 @@
             </Border>
 
             <!-- Divider + section label + sort button -->
-            <Border Height="1" Background="{DynamicResource SurfaceBg}" Margin="0,4,0,0"/>
+            <Border Classes="area-divider"/>
             <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,0">
                 <TextBlock Grid.Column="0" Text="By Game" FontSize="11" FontWeight="SemiBold"
                            Foreground="{DynamicResource FgSub}" VerticalAlignment="Center"/>
@@ -127,11 +141,12 @@
                            Converter={StaticResource IntToZeroConverter}}"/>
 
             <!-- Per-game list -->
-            <ItemsControl ItemsSource="{Binding GameStats}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="vm:GameStat">
-                        <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="12,10"
-                                Margin="0,0,0,6" BoxShadow="0 2 8 0 #1A000000">
+            <Border Classes="area-panel">
+                <ItemsControl ItemsSource="{Binding GameStats}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:GameStat">
+                            <StackPanel>
+                        <Border Classes="area-row-compact">
                             <Grid ColumnDefinitions="36,*,Auto">
                                 <!-- Icon -->
                                 <Border Grid.Column="0" Width="36" Height="36"
@@ -157,9 +172,12 @@
                                            Foreground="{DynamicResource SubtextBrush}" VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                        <Border Classes="area-divider"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
 
         </StackPanel>
     </ScrollViewer>

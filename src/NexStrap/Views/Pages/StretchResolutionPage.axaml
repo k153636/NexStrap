@@ -14,8 +14,10 @@
             <TextBlock Text="Stretch your display resolution for Roblox"
                        FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
 
+            <Border Classes="area-panel">
+                <StackPanel Spacing="0">
             <!-- GPU note -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="14,10"
+            <Border Classes="area-row area-row-first"
                     IsVisible="{Binding WarningVisible}">
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="4">
@@ -29,11 +31,11 @@
                             FontSize="13" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
-            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="4,-2,4,-2"
+            <Border Classes="area-divider"
                     IsVisible="{Binding WarningVisible}"/>
 
             <!-- Status bar -->
-            <Border CornerRadius="8" Padding="14,10" Background="{DynamicResource CardBg}">
+            <Border Classes="area-row">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <Ellipse Grid.Column="0" Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,10,0"
                              Fill="#4ADE80" IsVisible="{Binding IsActive}"/>
@@ -47,10 +49,10 @@
                             FontSize="11" Padding="12,4" CornerRadius="8"/>
                 </Grid>
             </Border>
-            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="4,-2,4,-2"/>
+            <Border Classes="area-divider"/>
 
             <!-- Auto Apply toggle -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
+            <Border Classes="area-row">
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="2">
                         <TextBlock Text="Auto Apply" Foreground="#FFFFFF" FontSize="13"/>
@@ -61,10 +63,10 @@
                                   OnContent="ON" OffContent="OFF"/>
                 </Grid>
             </Border>
-            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="4,-2,4,-2"/>
+            <Border Classes="area-divider"/>
 
             <!-- Presets -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,14">
+            <Border Classes="area-row area-row-last">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Presets" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}"/>
@@ -93,6 +95,8 @@
                             HorizontalAlignment="Right"
                             Background="#FFFFFF" Foreground="#080808"
                             FontWeight="SemiBold" FontSize="12" Padding="14,8" CornerRadius="8"/>
+                </StackPanel>
+            </Border>
                 </StackPanel>
             </Border>
 

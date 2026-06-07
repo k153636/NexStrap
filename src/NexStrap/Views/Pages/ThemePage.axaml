@@ -15,8 +15,10 @@
             <TextBlock Text="Change colors, backgrounds, and visual style"
                        FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
 
+            <Border Classes="area-panel">
+                <StackPanel Spacing="0">
             <!-- Appearance -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
+            <Border Classes="area-row area-row-first">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Appearance" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}"/>
@@ -145,8 +147,10 @@
                 </StackPanel>
             </Border>
 
+            <Border Classes="area-divider"/>
+
             <!-- Background Image -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
+            <Border Classes="area-row">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Background Image" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}"/>
@@ -241,8 +245,10 @@
                 </StackPanel>
             </Border>
 
+            <Border Classes="area-divider"/>
+
             <!-- Loading Screen -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="16,12">
+            <Border Classes="area-row area-row-last">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Loading Screen" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}"/>
@@ -334,6 +340,8 @@
                                 FontSize="12" Padding="14,8" CornerRadius="8"/>
                     </StackPanel>
 
+                </StackPanel>
+            </Border>
                 </StackPanel>
             </Border>
 
