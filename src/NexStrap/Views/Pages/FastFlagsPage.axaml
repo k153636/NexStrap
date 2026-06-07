@@ -116,7 +116,7 @@
                     <ListBox.ItemTemplate>
                         <DataTemplate DataType="vm:FlagEntry">
                             <Border BorderBrush="#08FFFFFF" BorderThickness="0,0,0,1"
-                                    Padding="16,9,12,9">
+                                    Padding="16,14,12,14">
                                 <Grid ColumnDefinitions="*,175,135,40">
 
                                     <!-- Flag Name + Description -->
