@@ -287,14 +287,7 @@
         <!-- ── Splash overlay (covers full window on startup) ── -->
         <Grid x:Name="SplashOverlay" Grid.RowSpan="3" IsHitTestVisible="True">
 
-            <Rectangle IsHitTestVisible="False">
-                <Rectangle.Fill>
-                    <RadialGradientBrush>
-                        <GradientStop Color="#181818" Offset="0"/>
-                        <GradientStop Color="#000000" Offset="1"/>
-                    </RadialGradientBrush>
-                </Rectangle.Fill>
-            </Rectangle>
+            <Rectangle Fill="#CC000000" IsHitTestVisible="False"/>
 
             <StackPanel x:Name="SplashContentPanel"
                         VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="18">
