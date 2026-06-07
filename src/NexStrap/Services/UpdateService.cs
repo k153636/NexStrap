@@ -56,12 +56,14 @@ public class UpdateService
             RobloxService.Log($"UpdateCheck: current={current} latest={latest}");
             if (current != null && latest <= current) return null;
 
+            // アセットがあれば直接 URL を返す、なければリリースページを fallback にして通知だけ出す
             foreach (var asset in root.GetProperty("assets").EnumerateArray())
             {
                 if (asset.GetProperty("name").GetString() != AssetName) continue;
                 var url = asset.GetProperty("browser_download_url").GetString();
                 if (url != null) return (tag, url);
             }
+            return (tag, "https://github.com/k153636/NexStrap/releases/latest");
         }
         catch { }
         return null;
