@@ -65,7 +65,7 @@
                     <TextBlock Text="Presets" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource FgSub}"/>
 
-                    <ItemsControl ItemsSource="{Binding Presets}">
+                    <ItemsControl ItemsSource="{Binding Presets}" Margin="0,0,-8,0">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <UniformGrid Columns="2"/>
@@ -77,14 +77,9 @@
                                         CommandParameter="{Binding}"
                                         Margin="0,0,8,8" Padding="12,10" CornerRadius="8"
                                         Background="{DynamicResource OverlayBg}"
-                                        HorizontalContentAlignment="Left">
-                                    <StackPanel Spacing="2">
-                                        <TextBlock Text="{Binding Label}" FontSize="13"
-                                                   FontWeight="SemiBold" Foreground="#FFFFFF"/>
-                                        <TextBlock Text="{Binding Description}" FontSize="10"
-                                                   Foreground="{DynamicResource FgSub}"
-                                                   TextWrapping="Wrap"/>
-                                    </StackPanel>
+                                        HorizontalAlignment="Stretch">
+                                    <TextBlock Text="{Binding Label}" FontSize="13"
+                                               FontWeight="SemiBold" Foreground="#FFFFFF"/>
                                 </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
