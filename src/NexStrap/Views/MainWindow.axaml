@@ -290,24 +290,31 @@
             <Rectangle Fill="#CC000000" IsHitTestVisible="False"/>
 
             <StackPanel x:Name="SplashContentPanel"
-                        VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="18">
+                        VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="24">
 
                 <Image x:Name="SplashIcon"
                        Source="avares://NexStrap/Assets/nexstrap.png"
-                       Width="62" Height="62"
+                       Width="70" Height="70"
                        HorizontalAlignment="Center"
                        RenderOptions.BitmapInterpolationMode="HighQuality">
                     <Image.Effect>
-                        <DropShadowEffect BlurRadius="28" Color="#88FFFFFF" OffsetX="0" OffsetY="0"/>
+                        <DropShadowEffect BlurRadius="38" Color="#40FFFFFF" OffsetX="0" OffsetY="0"/>
                     </Image.Effect>
                 </Image>
 
-                <StackPanel x:Name="SplashTextGroup" HorizontalAlignment="Center" Spacing="5">
-                    <TextBlock Text="NexStrap" FontSize="24" FontWeight="Bold"
-                               Foreground="#FFFFFF" HorizontalAlignment="Center"
-                               LetterSpacing="1.5"/>
-                    <TextBlock Text="Roblox Utility" FontSize="10"
-                               Foreground="#3A3A3A" HorizontalAlignment="Center"/>
+                <StackPanel x:Name="SplashTextGroup" HorizontalAlignment="Center" Spacing="6">
+
+                    <!-- Thin accent line — luxury signature -->
+                    <Border Height="1" Width="32" HorizontalAlignment="Center"
+                            Background="#28FFFFFF" Margin="0,0,0,5"/>
+
+                    <TextBlock Text="NexStrap" FontSize="20" FontWeight="SemiBold"
+                               Foreground="#F0F0F0" HorizontalAlignment="Center"
+                               LetterSpacing="4"/>
+                    <TextBlock Text="Roblox Utility" FontSize="9"
+                               Foreground="#4A4A4A" HorizontalAlignment="Center"
+                               LetterSpacing="2"/>
+
                 </StackPanel>
 
             </StackPanel>
