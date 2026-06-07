@@ -198,14 +198,18 @@ public partial class MainWindow : Window
     {
         const double StartY = 220.0;
 
+        // TranslateTransform on the panel — no layout pass per frame
+        var slide = new TranslateTransform(0, StartY);
         var scale = new ScaleTransform(1, 1);
-        SplashIcon.RenderTransform       = scale;
-        SplashIcon.RenderTransformOrigin = RelativePoint.Center;
-        SplashIcon.Opacity               = 0;
-        SplashTextGroup.Opacity          = 0;
-        SplashContentPanel.Margin        = new Thickness(0, StartY, 0, 0);
-        SplashContentPanel.Transitions   = null;
-        SplashIcon.Transitions           = null;
+
+        SplashContentPanel.RenderTransform       = slide;
+        SplashContentPanel.RenderTransformOrigin = RelativePoint.Center;
+        SplashIcon.RenderTransform               = scale;
+        SplashIcon.RenderTransformOrigin         = RelativePoint.Center;
+        SplashIcon.Opacity                       = 0;
+        SplashTextGroup.Opacity                  = 0;
+        SplashContentPanel.Transitions           = null;
+        SplashIcon.Transitions                   = null;
 
         await Task.Delay(50);
 
@@ -226,9 +230,8 @@ public partial class MainWindow : Window
         {
             var ms = (double)(Environment.TickCount64 - start);
 
-            // Slide: CubicEaseOut, 0–900ms
-            SplashContentPanel.Margin =
-                new Thickness(0, StartY * (1.0 - SplashEaseOut3(Math.Clamp(ms / 900.0, 0, 1))), 0, 0);
+            // Slide: CubicEaseOut, 0–900ms (render-only, no layout cost)
+            slide.Y = StartY * (1.0 - SplashEaseOut3(Math.Clamp(ms / 900.0, 0, 1)));
 
             // Icon fade-in: 0–480ms
             SplashIcon.Opacity = Math.Clamp(ms / 480.0, 0, 1);
