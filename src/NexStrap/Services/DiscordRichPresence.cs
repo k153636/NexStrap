@@ -652,7 +652,7 @@ public sealed class DiscordRichPresence : IDisposable
                 timestamps: ts);
         }
 
-        var pageDetails = s.DiscordShowLauncherDetails ? $"NexStrap / {_pageName}" : null;
+        var pageDetails = s.DiscordShowLauncherDetails ? _pageName : null;
         return Build(pageDetails, null, "nexstrap", "NexStrap Launcher · Created by K",
             _avatarUrl, label);
     }
