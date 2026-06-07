@@ -199,8 +199,8 @@
                                            Foreground="#888888" VerticalAlignment="Center"/>
                             </StackPanel>
                             <Button Grid.Column="1"
-                                    Content="Download"
-                                    Command="{Binding OpenDownloadPageCommand}"
+                                    Content="Restart to Update"
+                                    Command="{Binding RestartToUpdateCommand}"
                                     Background="#1A3A1A" Foreground="#4ADE80"
                                     FontSize="11" FontWeight="SemiBold"
                                     Padding="10,4" CornerRadius="6"

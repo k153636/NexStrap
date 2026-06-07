@@ -212,7 +212,25 @@ public partial class App : Application
             await Dispatcher.UIThread.InvokeAsync(() => win?.Close());
         }
 
-        // Step 2: all done — create and show main window, restore normal shutdown mode
+        // Step 2: check for NexStrap self-update
+        var updateService = Services.GetRequiredService<UpdateService>();
+        var update        = await updateService.CheckForUpdateAsync();
+        if (update != null)
+        {
+            BootstrapperWindow? win = null;
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                var vm = new BootstrapperViewModel(roblox, settings);
+                win = new BootstrapperWindow(vm);
+                win.Show();
+            });
+            await updateService.DownloadAndApplyAsync(
+                update.Value.DownloadUrl,
+                p => roblox.BroadcastProgress(p));
+            return; // Environment.Exit(0) called inside DownloadAndApplyAsync
+        }
+
+        // Step 3: all done — create and show main window, restore normal shutdown mode
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
             var mainWindow = new MainWindow

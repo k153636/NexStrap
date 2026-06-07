@@ -98,21 +98,36 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task CheckForUpdateAsync(UpdateService updateService)
     {
-        var result = await updateService.CheckForUpdateAsync();
-        if (result == null) return;
-        _updateDownloadUrl = result.Value.DownloadUrl;
-        await Dispatcher.UIThread.InvokeAsync(() =>
+        // 起動直後は自動更新が済んでいるので少し待ってから再チェック（使用中に新バージョンが出た場合の検知）
+        await Task.Delay(TimeSpan.FromMinutes(30));
+        while (true)
         {
-            UpdateVersion   = $"v{result.Value.Version}";
-            UpdateAvailable = true;
-        });
+            var result = await updateService.CheckForUpdateAsync();
+            if (result != null && !UpdateAvailable)
+            {
+                _updateDownloadUrl = result.Value.DownloadUrl;
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    UpdateVersion   = $"v{result.Value.Version}";
+                    UpdateAvailable = true;
+                });
+                return; // 検知したら終了（バナーで通知済み）
+            }
+            await Task.Delay(TimeSpan.FromHours(1));
+        }
     }
 
     [RelayCommand]
-    private void OpenDownloadPage()
+    private void RestartToUpdate()
     {
-        var url = _updateDownloadUrl ?? "https://github.com/k153636/NexStrap/releases/latest";
-        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        var exe = Environment.ProcessPath;
+        if (!string.IsNullOrEmpty(exe))
+            Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
+        if (Avalonia.Application.Current?.ApplicationLifetime is
+            Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            desktop.Shutdown();
+        else
+            Environment.Exit(0);
     }
 
     [RelayCommand]
