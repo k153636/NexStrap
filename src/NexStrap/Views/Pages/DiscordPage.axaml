@@ -117,11 +117,11 @@
 
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Show place name in English" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Force en_us locale for game names instead of your system language"
+                            <TextBlock Text="Show place name in local language" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Use your system language for game names instead of English (en_us)"
                                        Foreground="{DynamicResource FgSub}" FontSize="11"/>
                         </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding PlaceNameEnglish}"
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding PlaceNameLocalized}"
                                       OnContent="ON" OffContent="OFF"/>
                     </Grid>
                 </StackPanel>
