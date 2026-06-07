@@ -215,12 +215,13 @@ public partial class MainWindow : Window
 
         // Single timer — one continuous timeline, zero stops
         //
-        // ms:   0     480   700   900  1000          1700
-        //       |------|-----|-----|----|--------------| done
+        // ms:   0     480   700   1000  1400          2100
+        //       |------|-----|-----|-----|-------------| done
         // slide      [=========]
         // icon fade  [=====]
         // text fade        [====]
-        // exit (scale+fade)       [====================]
+        //                        [hold]
+        // exit (scale+fade)            [==============]
 
         var start = Environment.TickCount64;
         var tcs   = new TaskCompletionSource();
@@ -239,10 +240,10 @@ public partial class MainWindow : Window
             // Text fade-in: 700–1000ms
             SplashTextGroup.Opacity = Math.Clamp((ms - 700) / 300.0, 0, 1);
 
-            // Exit: 1000–1700ms — overrides entry values
-            if (ms >= 1000)
+            // Exit: 1400–2100ms — overrides entry values
+            if (ms >= 1400)
             {
-                var exitT = Math.Clamp((ms - 1000) / 700.0, 0, 1);
+                var exitT = Math.Clamp((ms - 1400) / 700.0, 0, 1);
                 var alpha = 1.0 - exitT;
                 var s     = 1.0 + exitT; // 1.0 → 2.0
 
@@ -253,7 +254,7 @@ public partial class MainWindow : Window
                 SplashOverlay.Opacity   = alpha;
             }
 
-            if (ms >= 1700) { timer.Stop(); tcs.TrySetResult(); }
+            if (ms >= 2100) { timer.Stop(); tcs.TrySetResult(); }
         };
 
         timer.Start();
