@@ -119,13 +119,29 @@ public class RobloxApiService
             var url  = $"https://friends.roblox.com/v1/users/{userId}/friends?userSort=0&limit=100";
             var json = await Http.GetStringAsync(url);
             var data = JObject.Parse(json)["data"] as JArray ?? [];
-            return [..data.Select(f =>
+            var ids  = data.Select(f => f["id"]!.Value<long>()).ToList();
+            if (ids.Count == 0) return [];
+
+            // friends endpoint returns empty name/displayName without auth — batch-fetch via users API
+            var bodyJson = Newtonsoft.Json.JsonConvert.SerializeObject(
+                new { userIds = ids, excludeBannedUsers = false });
+            using var req = new HttpRequestMessage(HttpMethod.Post, "https://users.roblox.com/v1/users")
             {
-                var dn = f["displayName"]?.Value<string>();
-                if (string.IsNullOrEmpty(dn)) dn = f["name"]?.Value<string>();
-                if (string.IsNullOrEmpty(dn)) dn = "Unknown";
-                return new FriendInfo(f["id"]!.Value<long>(), dn);
-            })];
+                Content = new StringContent(bodyJson, System.Text.Encoding.UTF8, "application/json")
+            };
+            var resp      = await Http.SendAsync(req);
+            var usersData = JObject.Parse(await resp.Content.ReadAsStringAsync())["data"] as JArray ?? [];
+
+            var nameMap = usersData.ToDictionary(
+                u => u["id"]!.Value<long>(),
+                u =>
+                {
+                    var dn = u["displayName"]?.Value<string>();
+                    if (string.IsNullOrEmpty(dn)) dn = u["name"]?.Value<string>();
+                    return string.IsNullOrEmpty(dn) ? "Unknown" : dn;
+                });
+
+            return ids.Select(id => new FriendInfo(id, nameMap.GetValueOrDefault(id, "Unknown"))).ToList();
         }
         catch { return []; }
     }
