@@ -99,9 +99,9 @@ public partial class MainWindowViewModel : ViewModelBase
     private async Task CheckForUpdateAsync(UpdateService updateService)
     {
         // 起動直後は自動更新が済んでいるので少し待ってから再チェック（使用中に新バージョンが出た場合の検知）
-        await Task.Delay(TimeSpan.FromMinutes(30));
         while (true)
         {
+            await Task.Delay(TimeSpan.FromMinutes(5));
             var result = await updateService.CheckForUpdateAsync();
             if (result != null && !UpdateAvailable)
             {
@@ -111,9 +111,8 @@ public partial class MainWindowViewModel : ViewModelBase
                     UpdateVersion   = $"v{result.Value.Version}";
                     UpdateAvailable = true;
                 });
-                return; // 検知したら終了（バナーで通知済み）
+                return;
             }
-            await Task.Delay(TimeSpan.FromHours(1));
         }
     }
 
