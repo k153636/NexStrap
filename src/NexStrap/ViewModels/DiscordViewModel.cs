@@ -84,7 +84,6 @@ public partial class DiscordViewModel : ViewModelBase
     {
         _settingsService.Update(s => s.DiscordPlaceNameLocalized = value);
         _robloxApi.ClearGameCache();
-        _discord.EnqueueRefresh();
     }
 
     private async Task ApplyUserLabelAsync()
