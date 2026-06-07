@@ -196,12 +196,18 @@ public partial class MainWindow : Window
 
     private async Task PlaySplashAsync()
     {
-        const int RotateDurationMs = 1200; // long so deceleration is visible
-        const int SlideDurationMs  = 900;
+        const int RotateDurationMs  = 1200;
+        const int SlideDurationMs   = 900;
+        const int FadeOutDurationMs = 600;
 
-        // Initial state
-        var rotate = new RotateTransform(-360);
-        SplashIcon.RenderTransform       = rotate;
+        // TransformGroup: rotate used for entry, scale used for exit
+        var rotate = new RotateTransform(-180);
+        var scale  = new ScaleTransform(1, 1);
+        var tg     = new TransformGroup();
+        tg.Children.Add(rotate);
+        tg.Children.Add(scale);
+
+        SplashIcon.RenderTransform       = tg;
         SplashIcon.RenderTransformOrigin = RelativePoint.Center;
         SplashIcon.Opacity               = 0;
         SplashTextGroup.Opacity          = 0;
@@ -218,7 +224,7 @@ public partial class MainWindow : Window
             }
         };
 
-        // Icon opacity
+        // Icon fade-in
         SplashIcon.Transitions = new Transitions
         {
             new DoubleTransition
@@ -231,25 +237,23 @@ public partial class MainWindow : Window
 
         await Task.Delay(80);
 
-        // Trigger slide + fade-in
         SplashContentPanel.Margin = new Thickness(0);
         SplashIcon.Opacity        = 1;
 
-        // Rotation: QuarticEaseOut — very fast start, nearly stopped by 70% of duration
-        // At 840ms (70%): 99.2% done → angle ≈ -3°, visually stopped
-        var tcs       = new TaskCompletionSource();
-        var startTick = Environment.TickCount64;
-        var timer     = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
-        timer.Tick += (_, _) =>
+        // Rotation: QuarticEaseOut, -180° → 0°
+        var rotTcs   = new TaskCompletionSource();
+        var rotStart = Environment.TickCount64;
+        var rotTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        rotTimer.Tick += (_, _) =>
         {
-            var t     = Math.Min(1.0, (Environment.TickCount64 - startTick) / (double)RotateDurationMs);
+            var t     = Math.Min(1.0, (Environment.TickCount64 - rotStart) / (double)RotateDurationMs);
             var eased = 1.0 - Math.Pow(1.0 - t, 4); // QuarticEaseOut
-            rotate.Angle = -360.0 * (1.0 - eased);
-            if (t >= 1.0) { rotate.Angle = 0; timer.Stop(); tcs.TrySetResult(); }
+            rotate.Angle = -180.0 * (1.0 - eased);
+            if (t >= 1.0) { rotate.Angle = 0; rotTimer.Stop(); rotTcs.TrySetResult(); }
         };
-        timer.Start();
+        rotTimer.Start();
 
-        // Text appears as rotation is nearly stopped (~800ms)
+        // Text appears as rotation is nearly stopped
         await Task.Delay(800);
         SplashTextGroup.Transitions = new Transitions
         {
@@ -262,19 +266,26 @@ public partial class MainWindow : Window
         };
         SplashTextGroup.Opacity = 1;
 
-        // Wait for rotation to fully stop, then fade out immediately (no hold)
-        await tcs.Task;
+        // Wait for rotation, then exit: logo scales up + everything fades out
+        await rotTcs.Task;
+        SplashIcon.Transitions = null; // remove opacity transition so timer controls it
 
-        SplashOverlay.Transitions = new Transitions
+        var fadeStart = Environment.TickCount64;
+        var fadeTcs   = new TaskCompletionSource();
+        var fadeTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        fadeTimer.Tick += (_, _) =>
         {
-            new DoubleTransition
-            {
-                Property = OpacityProperty,
-                Duration = TimeSpan.FromMilliseconds(550)
-            }
+            var t = Math.Min(1.0, (Environment.TickCount64 - fadeStart) / (double)FadeOutDurationMs);
+            var s = 1.0 + 0.55 * t;           // scale 1.0 → 1.55
+            scale.ScaleX              = s;
+            scale.ScaleY              = s;
+            SplashIcon.Opacity        = 1.0 - t;
+            SplashTextGroup.Opacity   = 1.0 - t;
+            SplashOverlay.Opacity     = 1.0 - t;
+            if (t >= 1.0) { fadeTimer.Stop(); fadeTcs.TrySetResult(); }
         };
-        SplashOverlay.Opacity = 0;
-        await Task.Delay(600);
+        fadeTimer.Start();
+        await fadeTcs.Task;
 
         SplashOverlay.IsVisible        = false;
         SplashOverlay.IsHitTestVisible = false;
