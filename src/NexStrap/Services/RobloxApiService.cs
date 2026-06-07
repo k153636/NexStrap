@@ -41,6 +41,8 @@ public class RobloxApiService
         }
     }
 
+    public void ClearGameCache() => _gameCache.Clear();
+
     public async Task<long?> GetUniverseIdAsync(long placeId)
     {
         if (_universeIdCache.TryGetValue(placeId, out var cached)) return cached;
