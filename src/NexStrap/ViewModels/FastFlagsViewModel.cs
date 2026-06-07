@@ -39,7 +39,6 @@ public partial class FastFlagsViewModel : ViewModelBase
 
     [ObservableProperty] private ObservableCollection<FlagEntry> _flags = new();
     [ObservableProperty] private string _searchText = string.Empty;
-    [ObservableProperty] private string _selectedCategory = "All";
     [ObservableProperty] private FlagEntry? _selectedFlag;
     [ObservableProperty] private string _newFlagName = string.Empty;
     [ObservableProperty] private string _newFlagValue = string.Empty;
@@ -67,11 +66,6 @@ public partial class FastFlagsViewModel : ViewModelBase
     public event Action? OpenProfileManagerWindowRequested;
 
     public IReadOnlyList<PresetGroup> PresetGroups => FastFlagBundles.Groups;
-
-    public List<string> Categories { get; } = new()
-    {
-        "All", "Performance", "Graphics", "Network", "UI", "Avatar", "Custom"
-    };
 
     public FastFlagsViewModel(FastFlagService service, ProfileService profileService)
     {
@@ -122,7 +116,7 @@ public partial class FastFlagsViewModel : ViewModelBase
             Value       = f.Value,
             Category    = f.Category,
             Description = f.Description,
-            IsEnabled   = true
+            IsEnabled   = f.IsEnabled
         }).ToList();
         _profileService.UpdateProfile(profile);
     }
@@ -201,6 +195,7 @@ public partial class FastFlagsViewModel : ViewModelBase
         RefreshProfiles();
         SelectedProfile = Profiles.FirstOrDefault(p => p.Id == id);
         _suppressProfileLoad = false;
+        _loadedProfile = SelectedProfile;
 
         await ShowStatusAsync($"Renamed to \"{name}\"");
     }
@@ -230,7 +225,6 @@ public partial class FastFlagsViewModel : ViewModelBase
     }
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
-    partial void OnSelectedCategoryChanged(string value) => ApplyFilter();
 
     private FlagEntry MakeFlagEntry(string name, string value)
     {
@@ -286,9 +280,6 @@ public partial class FastFlagsViewModel : ViewModelBase
                 f.Description.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
                 f.Category.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
-        if (SelectedCategory != "All")
-            filtered = filtered.Where(f => f.Category == SelectedCategory);
-
         var result = new ObservableCollection<FlagEntry>(filtered);
         if (Dispatcher.UIThread.CheckAccess())
             Flags = result;
@@ -337,12 +328,7 @@ public partial class FastFlagsViewModel : ViewModelBase
             await ShowStatusAsync("Roblox not found", isError: true);
             return;
         }
-        var (desc, cat) = FlagDescriptions.Lookup(NewFlagName.Trim());
-        var entry = new FlagEntry(NewFlagName.Trim(), NewFlagValue.Trim())
-        {
-            Description = desc,
-            Category    = cat
-        };
+        var entry = MakeFlagEntry(NewFlagName.Trim(), NewFlagValue.Trim());
         _allFlags.Add(entry);
         _service.Set(entry.Name, entry.Value);
         NewFlagName = string.Empty;
@@ -433,6 +419,7 @@ public partial class FastFlagsViewModel : ViewModelBase
         await _service.SaveAsync();
         BulkImportText = string.Empty;
         IsBulkImportPanelOpen = false;
+        if (_loadedProfile != null) SaveCurrentFlagsToProfile(_loadedProfile);
         BulkImportCompleted?.Invoke();
         await ShowStatusAsync($"Imported {parsed.Count} flag{(parsed.Count == 1 ? "" : "s")}");
     }
@@ -491,17 +478,10 @@ public partial class FastFlagsViewModel : ViewModelBase
         await _service.SaveAsync();
         IsPresetActive = !IsPresetActive;
         LoadFlags();
+        if (_loadedProfile != null) SaveCurrentFlagsToProfile(_loadedProfile);
         await ShowStatusAsync(IsPresetActive
             ? $"Optimization preset applied ({FastFlagBundles.AllFlags.Count} flags)"
             : "Optimization preset removed");
-    }
-
-    [RelayCommand]
-    private async Task ApplyPresetsAsync()
-    {
-        _service.ApplyPreset(FastFlagPresets.All);
-        LoadFlags();
-        await ShowStatusAsync("Preset applied");
     }
 
     [RelayCommand]
@@ -512,9 +492,9 @@ public partial class FastFlagsViewModel : ViewModelBase
         if (entry != null)
             entry.Value = FpsTarget.ToString();
         else
-            _allFlags.Add(new FlagEntry("DFIntTaskSchedulerTargetFps", FpsTarget.ToString())
-                { Category = "Performance", Description = "FPS limit" });
+            _allFlags.Add(MakeFlagEntry("DFIntTaskSchedulerTargetFps", FpsTarget.ToString()));
         ApplyFilter();
         await _service.SaveAsync();
+        if (_loadedProfile != null) SaveCurrentFlagsToProfile(_loadedProfile);
     }
 }

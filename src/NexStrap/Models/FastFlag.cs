@@ -19,9 +19,6 @@ public class FastFlag
     public string Category { get; set; } = "Custom";
     public bool IsPreset { get; set; }
     public bool IsEnabled { get; set; } = true;
-
-    [JsonIgnore]
-    public bool IsModified { get; set; }
 }
 
 public static class FastFlagPresets
@@ -77,7 +74,7 @@ public static class FastFlagBundles
                 new FastFlag { Name = "FFlagDisableBloom",            Value = "true",  Type = FastFlagType.Boolean, Category = "Graphics" },
                 new FastFlag { Name = "FFlagDisableDepthOfField",     Value = "true",  Type = FastFlagType.Boolean, Category = "Graphics" },
                 new FastFlag { Name = "FFlagDisableGlobalShadows",    Value = "true",  Type = FastFlagType.Boolean, Category = "Graphics" },
-                new FastFlag { Name = "DFIntTaskSchedulerTargetFps",  Value = "240",   Type = FastFlagType.Integer, Category = "Performance" },
+                new FastFlag { Name = "DFIntTaskSchedulerTargetFps",  Value = "144",   Type = FastFlagType.Integer, Category = "Performance" },
             ]
         },
         new PresetGroup
@@ -109,9 +106,9 @@ public static class FastFlagBundles
             IconPath = "M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z",
             Flags =
             [
-                new FastFlag { Name = "DFIntConnectionMTUSize",              Value = "1380", Type = FastFlagType.Integer, Category = "Network" },
+                new FastFlag { Name = "DFIntConnectionMTUSize",              Value = "1400", Type = FastFlagType.Integer, Category = "Network" },
                 new FastFlag { Name = "DFIntRakNetResendTimeoutMS",          Value = "200",  Type = FastFlagType.Integer, Category = "Network" },
-                new FastFlag { Name = "DFIntRakNetResendBufferArrayLength",  Value = "64",   Type = FastFlagType.Integer, Category = "Network" },
+                new FastFlag { Name = "DFIntRakNetResendBufferArrayLength",  Value = "128",  Type = FastFlagType.Integer, Category = "Network" },
                 new FastFlag { Name = "DFIntNetworkPrediction",              Value = "0",    Type = FastFlagType.Integer, Category = "Network" },
                 new FastFlag { Name = "DFIntNetworkLatencyTolerance",        Value = "0",    Type = FastFlagType.Integer, Category = "Network" },
             ]

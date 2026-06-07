@@ -39,18 +39,38 @@
                     <ItemsControl ItemsSource="{Binding PresetGroups}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="models:PresetGroup">
-                                <Grid ColumnDefinitions="18,*,Auto" Margin="0,0,0,10">
-                                    <PathIcon Grid.Column="0" Data="{Binding IconPath}"
-                                              Width="13" Height="13"
-                                              Foreground="#444444" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding Name}"
-                                               FontSize="12" Foreground="#AAAAAA"
-                                               Margin="10,0" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="2"
-                                               Text="{Binding Flags.Count, StringFormat='{}{0} flags'}"
-                                               FontSize="11" Foreground="#333333"
-                                               VerticalAlignment="Center"/>
-                                </Grid>
+                                <StackPanel Margin="0,0,0,14">
+                                    <!-- Group header -->
+                                    <Grid ColumnDefinitions="18,*,Auto" Margin="0,0,0,6">
+                                        <PathIcon Grid.Column="0" Data="{Binding IconPath}"
+                                                  Width="13" Height="13"
+                                                  Foreground="#555555" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}"
+                                                   FontSize="12" FontWeight="SemiBold" Foreground="#AAAAAA"
+                                                   Margin="10,0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding Flags.Count, StringFormat='{}{0} flags'}"
+                                                   FontSize="10" Foreground="#404040"
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <!-- Flag list -->
+                                    <ItemsControl ItemsSource="{Binding Flags}" Margin="28,0,0,0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="models:FastFlag">
+                                                <Grid ColumnDefinitions="*,Auto" Margin="0,1">
+                                                    <TextBlock Grid.Column="0" Text="{Binding Name}"
+                                                               FontSize="10" Foreground="#505050"
+                                                               FontFamily="Consolas,Courier New,monospace"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Value}"
+                                                               FontSize="10" Foreground="#383838"
+                                                               FontFamily="Consolas,Courier New,monospace"
+                                                               Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -73,7 +93,7 @@
                         HorizontalContentAlignment="Center">
                     <TextBlock Text="{Binding IsPresetActive,
                                    Converter={StaticResource BoolToStringConverter},
-                                   ConverterParameter='Remove,Apply'}"/>
+                                   ConverterParameter='Remove preset flags,Apply'}"/>
                 </Button>
                 <Button Grid.Column="2"
                         Content="Close"

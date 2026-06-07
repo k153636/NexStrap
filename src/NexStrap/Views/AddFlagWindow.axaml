@@ -23,7 +23,7 @@
 
             <TextBox Grid.Row="0" Margin="0,0,0,10"
                      Text="{Binding NewFlagName}"
-                     Watermark="Flag name  (e.g. FFlagXxx)"
+                     Watermark="e.g. FFlagXxx, DFIntXxx, FStringXxx"
                      Background="#0D0D0D" Foreground="#FFFFFF"
                      BorderBrush="#2A2A2A" CornerRadius="8"
                      Padding="14,10" FontSize="12"
@@ -31,7 +31,7 @@
 
             <TextBox Grid.Row="1" Margin="0,0,0,10"
                      Text="{Binding NewFlagValue}"
-                     Watermark="Value"
+                     Watermark="e.g. true / false / 60 / mystring"
                      Background="#0D0D0D" Foreground="#FFFFFF"
                      BorderBrush="#2A2A2A" CornerRadius="8"
                      Padding="14,10" FontSize="12"

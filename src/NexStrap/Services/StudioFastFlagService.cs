@@ -8,6 +8,7 @@ public class StudioFastFlagService
     private Dictionary<string, string> _currentFlags = new();
 
     public event EventHandler? FlagsChanged;
+    public event EventHandler<Dictionary<string, string>>? FlagsHotReloaded;
 
     public StudioFastFlagService(StudioService studio)
     {
@@ -47,6 +48,7 @@ public class StudioFastFlagService
     {
         _currentFlags = new(newFlags);
         await SaveAsync();
+        FlagsHotReloaded?.Invoke(this, _currentFlags);
     }
 
     public void ApplyPreset(IEnumerable<Models.FastFlag> presets)
