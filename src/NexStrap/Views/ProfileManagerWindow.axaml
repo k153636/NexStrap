@@ -4,7 +4,7 @@
         x:Class="NexStrap.Views.ProfileManagerWindow"
         x:DataType="vm:FastFlagsViewModel"
         Title="Profiles — Fast Flags"
-        Width="420" Height="240"
+        Width="420" Height="260"
         CanResize="False"
         Background="#080808"
         ExtendClientAreaToDecorationsHint="True"
@@ -19,53 +19,62 @@
                        Foreground="#666666" VerticalAlignment="Center" Margin="14,0"/>
         </Grid>
 
-        <Grid Grid.Row="1" RowDefinitions="Auto,Auto,Auto,Auto" Margin="20,4,20,20">
+        <Grid Grid.Row="1" RowDefinitions="Auto,4,Auto,12,Auto,4,Auto,12,Auto" Margin="20,6,20,20">
 
-            <!-- Active profile selector -->
-            <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,0,0,10">
-                <TextBlock Grid.Column="0" Text="Active profile"
-                           FontSize="12" Foreground="#555555"
-                           VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding Profiles}"
-                          SelectedItem="{Binding SelectedProfile}"
-                          DisplayMemberBinding="{Binding Name}"
-                          Background="#0D0D0D" Foreground="#FFFFFF"
-                          CornerRadius="8" FontSize="12"
-                          HorizontalAlignment="Stretch"/>
+            <!-- Rename label -->
+            <TextBlock Grid.Row="0" Text="RENAME CURRENT" FontSize="9" FontWeight="SemiBold"
+                       Foreground="#404040" LetterSpacing="1"/>
+
+            <!-- Rename row -->
+            <Grid Grid.Row="2" ColumnDefinitions="*,8,Auto">
+                <TextBox Grid.Column="0"
+                         Text="{Binding RenameProfileName}"
+                         Watermark="Profile name..."
+                         Background="#0D0D0D" Foreground="#FFFFFF"
+                         BorderBrush="#2A2A2A" CornerRadius="8"
+                         Padding="14,9" FontSize="12"/>
+                <Button Grid.Column="2"
+                        Content="Rename"
+                        Command="{Binding RenameProfileCommand}"
+                        Background="#1A1A1A" Foreground="#888888"
+                        FontSize="12" Padding="18,9" CornerRadius="8"/>
             </Grid>
 
-            <!-- New profile name -->
-            <TextBox Grid.Row="1" Margin="0,0,0,10"
-                     Text="{Binding NewProfileName}"
-                     Watermark="New profile name..."
-                     Background="#0D0D0D" Foreground="#FFFFFF"
-                     BorderBrush="#2A2A2A" CornerRadius="8"
-                     Padding="14,10" FontSize="12"/>
+            <!-- Save as new label -->
+            <TextBlock Grid.Row="4" Text="SAVE AS NEW PROFILE" FontSize="9" FontWeight="SemiBold"
+                       Foreground="#404040" LetterSpacing="1"/>
 
-            <!-- Save / Delete -->
-            <Grid Grid.Row="2" ColumnDefinitions="*,8,Auto" Margin="0,0,0,10">
-                <Button Grid.Column="0"
-                        Content="Save as Profile"
+            <!-- New profile name -->
+            <Grid Grid.Row="6" ColumnDefinitions="*,8,Auto">
+                <TextBox Grid.Column="0"
+                         Text="{Binding NewProfileName}"
+                         Watermark="New profile name..."
+                         Background="#0D0D0D" Foreground="#FFFFFF"
+                         BorderBrush="#2A2A2A" CornerRadius="8"
+                         Padding="14,9" FontSize="12"/>
+                <Button Grid.Column="2"
+                        Content="Save as"
                         Command="{Binding SaveAsProfileCommand}"
                         Background="#FFFFFF" Foreground="#080808"
-                        FontSize="13" FontWeight="SemiBold"
-                        Padding="0,10" CornerRadius="8"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Center"/>
-                <Button Grid.Column="2"
+                        FontSize="12" FontWeight="SemiBold"
+                        Padding="18,9" CornerRadius="8"/>
+            </Grid>
+
+            <!-- Delete + Close -->
+            <Grid Grid.Row="8" ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0"
                         Content="Delete"
                         Command="{Binding DeleteProfileCommand}"
                         Background="#1A1A1A" Foreground="#666666"
-                        FontSize="13" Padding="20,10" CornerRadius="8"/>
+                        FontSize="12" Padding="20,8" CornerRadius="8"/>
+                <Button Grid.Column="2"
+                        Content="Close"
+                        Background="Transparent" Foreground="#444444"
+                        FontSize="12" Padding="0,6"
+                        HorizontalAlignment="Right"
+                        Click="Close_Click"/>
             </Grid>
 
-            <!-- Close -->
-            <Button Grid.Row="3"
-                    Content="Close"
-                    Background="Transparent" Foreground="#444444"
-                    FontSize="12" Padding="0,6"
-                    HorizontalAlignment="Left"
-                    Click="Close_Click"/>
         </Grid>
     </Grid>
 </Window>

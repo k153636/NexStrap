@@ -56,6 +56,7 @@ public partial class FastFlagsViewModel : ViewModelBase
     [ObservableProperty] private bool _isPresetActive;
     [ObservableProperty] private bool _isBulkImportPanelOpen;
     [ObservableProperty] private string _bulkImportText = string.Empty;
+    [ObservableProperty] private string _renameProfileName = string.Empty;
 
     public event Action? OpenBulkImportWindowRequested;
     public event Action? BulkImportCompleted;
@@ -88,7 +89,9 @@ public partial class FastFlagsViewModel : ViewModelBase
 
     partial void OnSelectedProfileChanged(Profile? value)
     {
-        if (value == null || _suppressProfileLoad) return;
+        if (value == null) return;
+        RenameProfileName = value.Name;
+        if (_suppressProfileLoad) return;
         _ = LoadProfileAsync(value);
     }
 
@@ -147,6 +150,28 @@ public partial class FastFlagsViewModel : ViewModelBase
         await ShowStatusAsync($"Deleted profile \"{name}\"");
     }
 
+    [RelayCommand]
+    private async Task RenameProfileAsync()
+    {
+        if (SelectedProfile == null) return;
+        var name = RenameProfileName.Trim();
+        if (string.IsNullOrEmpty(name))
+        {
+            await ShowStatusAsync("Enter a name", isError: true);
+            return;
+        }
+        var id = SelectedProfile.Id;
+        SelectedProfile.Name = name;
+        _profileService.UpdateProfile(SelectedProfile);
+
+        _suppressProfileLoad = true;
+        RefreshProfiles();
+        SelectedProfile = Profiles.FirstOrDefault(p => p.Id == id);
+        _suppressProfileLoad = false;
+
+        await ShowStatusAsync($"Renamed to \"{name}\"");
+    }
+
     private async Task ShowStatusAsync(string message, bool isError = false, int durationMs = 3000)
     {
         _statusCts?.Cancel();
@@ -177,12 +202,18 @@ public partial class FastFlagsViewModel : ViewModelBase
     private FlagEntry MakeFlagEntry(string name, string value)
     {
         var (desc, cat) = FlagDescriptions.Lookup(name);
-        return new FlagEntry(name, value)
+        var entry = new FlagEntry(name, value)
         {
             Description  = desc,
             Category     = cat,
             DeleteAction = RemoveFlagAsync
         };
+        entry.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(FlagEntry.Value) && s is FlagEntry f)
+                _service.Set(f.Name, f.Value);
+        };
+        return entry;
     }
 
     private void LoadFlags()

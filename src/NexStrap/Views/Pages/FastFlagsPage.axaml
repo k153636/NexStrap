@@ -21,10 +21,33 @@
         <!-- Flags list — full remaining height -->
         <Border Grid.Row="1" Margin="24,0,24,14"
                 Background="{DynamicResource SurfaceBg}" CornerRadius="8">
-            <Grid RowDefinitions="Auto,Auto,*,Auto">
+            <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+
+                <!-- Profile strip -->
+                <Border Grid.Row="0" Padding="12,9"
+                        BorderBrush="{DynamicResource ElevatedBg}" BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="Auto,10,Auto,*,Auto">
+                        <TextBlock Grid.Column="0" Text="Profile"
+                                   FontSize="11" Foreground="{DynamicResource FgSub}"
+                                   VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="2"
+                                  ItemsSource="{Binding Profiles}"
+                                  SelectedItem="{Binding SelectedProfile}"
+                                  DisplayMemberBinding="{Binding Name}"
+                                  Background="{DynamicResource ElevatedBg}"
+                                  Foreground="{DynamicResource TextBrush}"
+                                  FontSize="12" Padding="10,4" CornerRadius="6"
+                                  MinWidth="150"/>
+                        <Button Grid.Column="4" Content="Manage"
+                                Command="{Binding OpenProfileManagerCommand}"
+                                Background="Transparent"
+                                Foreground="{DynamicResource FgSub}"
+                                FontSize="11" Padding="8,5" CornerRadius="6"/>
+                    </Grid>
+                </Border>
 
                 <!-- Toolbar -->
-                <Border Grid.Row="0"
+                <Border Grid.Row="1"
                         BorderBrush="{DynamicResource ElevatedBg}" BorderThickness="0,0,0,1"
                         Padding="12,10">
                     <Grid ColumnDefinitions="*,6,Auto">
@@ -52,27 +75,12 @@
                                     Background="{DynamicResource ElevatedBg}" Foreground="{DynamicResource TextBrush}"
                                     FontSize="12" Padding="12,7" CornerRadius="8"/>
 
-                            <Button Content="Profiles"
-                                    Command="{Binding OpenProfileManagerCommand}"
-                                    Background="{DynamicResource ElevatedBg}" Foreground="{DynamicResource TextBrush}"
-                                    FontSize="12" Padding="12,7" CornerRadius="8"/>
-
-                            <Button Command="{Binding HotReloadCommand}"
-                                    IsEnabled="{Binding !IsSaving}"
-                                    Background="#FFFFFF" Foreground="#080808"
-                                    Padding="12,7" CornerRadius="8">
-                                <StackPanel Orientation="Horizontal" Spacing="5">
-                                    <PathIcon Data="{StaticResource IconFlash}" Width="11" Height="11" Foreground="#080808"/>
-                                    <TextBlock Text="Save" FontWeight="SemiBold" FontSize="12"/>
-                                </StackPanel>
-                            </Button>
-
                         </StackPanel>
                     </Grid>
                 </Border>
 
                 <!-- Column header -->
-                <Border Grid.Row="1" Background="{DynamicResource ElevatedBg}" Padding="16,7">
+                <Border Grid.Row="2" Background="{DynamicResource ElevatedBg}" Padding="16,7">
                     <Grid ColumnDefinitions="*,175,135,40">
                         <TextBlock Grid.Column="0" Text="FLAG NAME" FontSize="10"
                                    FontWeight="SemiBold" Foreground="#38FFFFFF" LetterSpacing="1"/>
@@ -84,7 +92,7 @@
                 </Border>
 
                 <!-- Flag rows -->
-                <ListBox Grid.Row="2" ItemsSource="{Binding Flags}"
+                <ListBox Grid.Row="3" ItemsSource="{Binding Flags}"
                          SelectedItem="{Binding SelectedFlag}"
                          Background="Transparent" BorderThickness="0"
                          Padding="0">
@@ -171,7 +179,7 @@
                 </ListBox>
 
                 <!-- Status bar -->
-                <Border Grid.Row="3" Padding="16,6"
+                <Border Grid.Row="4" Padding="16,6"
                         IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                     <TextBlock Text="{Binding StatusMessage}"
                                Foreground="{Binding IsStatusError,
