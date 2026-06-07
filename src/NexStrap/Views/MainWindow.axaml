@@ -296,11 +296,7 @@
                        Source="avares://NexStrap/Assets/nexstrap.png"
                        Width="70" Height="70"
                        HorizontalAlignment="Center"
-                       RenderOptions.BitmapInterpolationMode="HighQuality">
-                    <Image.Effect>
-                        <DropShadowEffect BlurRadius="38" Color="#40FFFFFF" OffsetX="0" OffsetY="0"/>
-                    </Image.Effect>
-                </Image>
+                       RenderOptions.BitmapInterpolationMode="HighQuality"/>
 
                 <StackPanel x:Name="SplashTextGroup" HorizontalAlignment="Center" Spacing="6">
 

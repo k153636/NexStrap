@@ -211,7 +211,7 @@ public partial class MainWindow : Window
         SplashContentPanel.Transitions           = null;
         SplashIcon.Transitions                   = null;
 
-        await Task.Delay(50);
+        await Task.Delay(200);
 
         // Single timer — one continuous timeline, zero stops
         //
