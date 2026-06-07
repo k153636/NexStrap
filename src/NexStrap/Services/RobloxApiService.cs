@@ -119,9 +119,13 @@ public class RobloxApiService
             var url  = $"https://friends.roblox.com/v1/users/{userId}/friends?userSort=0&limit=100";
             var json = await Http.GetStringAsync(url);
             var data = JObject.Parse(json)["data"] as JArray ?? [];
-            return [..data.Select(f => new FriendInfo(
-                f["id"]!.Value<long>(),
-                f["displayName"]?.Value<string>() ?? f["name"]?.Value<string>() ?? "Unknown"))];
+            return [..data.Select(f =>
+            {
+                var dn = f["displayName"]?.Value<string>();
+                if (string.IsNullOrEmpty(dn)) dn = f["name"]?.Value<string>();
+                if (string.IsNullOrEmpty(dn)) dn = "Unknown";
+                return new FriendInfo(f["id"]!.Value<long>(), dn);
+            })];
         }
         catch { return []; }
     }

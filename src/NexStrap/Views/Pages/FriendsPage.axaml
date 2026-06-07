@@ -51,7 +51,7 @@
                                     <!-- Info -->
                                     <StackPanel Grid.Column="1" Spacing="2" Margin="10,0">
                                         <TextBlock Text="{Binding DisplayName}" FontSize="13"
-                                                   FontWeight="SemiBold" Foreground="White"/>
+                                                   FontWeight="SemiBold" Foreground="#FFFFFF"/>
                                         <TextBlock Text="{Binding StatusText}" FontSize="11"
                                                    Foreground="{Binding StatusColor}"/>
                                         <TextBlock Text="{Binding LastLocation}" FontSize="11"
