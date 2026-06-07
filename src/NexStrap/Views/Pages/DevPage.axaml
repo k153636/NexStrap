@@ -116,6 +116,11 @@
                         Command="{Binding RefreshCommand}"
                         Background="{DynamicResource SurfaceBg}" Foreground="{DynamicResource SubtextBrush}"
                         FontSize="12" Padding="14,8" CornerRadius="8"/>
+                <Button Content="▶  Preview Splash"
+                        Click="PreviewSplash_Click"
+                        Background="#0D1A0D" Foreground="#4ADE80"
+                        BorderBrush="#1A3A1A" BorderThickness="1"
+                        FontSize="12" Padding="14,8" CornerRadius="8"/>
             </StackPanel>
 
         </StackPanel>

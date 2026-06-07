@@ -1,0 +1,70 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="NexStrap.Views.SplashWindow"
+        Width="380" Height="260"
+        Background="#000000"
+        SystemDecorations="None"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        CanResize="False"
+        ShowInTaskbar="False">
+
+    <Grid>
+
+        <!-- Subtle radial gradient depth -->
+        <Rectangle IsHitTestVisible="False">
+            <Rectangle.Fill>
+                <RadialGradientBrush>
+                    <GradientStop Color="#181818" Offset="0"/>
+                    <GradientStop Color="#000000" Offset="1"/>
+                </RadialGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+
+        <!-- Main content: logo + name -->
+        <StackPanel x:Name="SplashContent"
+                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Spacing="16">
+
+            <Image Source="avares://NexStrap/Assets/nexstrap.png"
+                   Width="60" Height="60"
+                   HorizontalAlignment="Center"
+                   RenderOptions.BitmapInterpolationMode="HighQuality">
+                <Image.Effect>
+                    <DropShadowEffect BlurRadius="24" Color="#80FFFFFF" OffsetX="0" OffsetY="0"/>
+                </Image.Effect>
+            </Image>
+
+            <StackPanel HorizontalAlignment="Center" Spacing="5">
+                <TextBlock Text="NexStrap"
+                           FontSize="24" FontWeight="Bold"
+                           Foreground="#FFFFFF"
+                           HorizontalAlignment="Center"
+                           LetterSpacing="1.5"/>
+                <TextBlock Text="Roblox Utility"
+                           FontSize="10"
+                           Foreground="#444444"
+                           HorizontalAlignment="Center"/>
+            </StackPanel>
+
+        </StackPanel>
+
+        <!-- Test-mode controls (shown only when IsTestMode = true) -->
+        <StackPanel x:Name="TestControls"
+                    VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                    Orientation="Horizontal" Spacing="8" Margin="0,0,0,18"
+                    IsVisible="False">
+            <Button x:Name="ReplayButton" Content="⟳  Replay"
+                    Background="#1A1A1A" Foreground="#666666"
+                    BorderBrush="#2A2A2A" BorderThickness="1"
+                    FontSize="11" Padding="14,6" CornerRadius="6"
+                    Click="ReplayButton_Click"/>
+            <Button x:Name="CloseTestButton" Content="✕  Close"
+                    Background="#1A1A1A" Foreground="#666666"
+                    BorderBrush="#2A2A2A" BorderThickness="1"
+                    FontSize="11" Padding="14,6" CornerRadius="6"
+                    Click="CloseTestButton_Click"/>
+        </StackPanel>
+
+    </Grid>
+</Window>
