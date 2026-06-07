@@ -6,8 +6,8 @@
 
 <div align="center">
 
-[![Downloads](https://img.shields.io/github/downloads/k153636/NexStrap/total?color=981bfe&label=downloads)](https://github.com/k153636/NexStrap/releases/latest)
-[![Version](https://img.shields.io/github/v/release/k153636/NexStrap?color=7a39fb)](https://github.com/k153636/NexStrap/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/k153636/NexStrap/total?color=981bfe&label=downloads&cacheSeconds=3600)](https://github.com/k153636/NexStrap/releases/latest)
+[![Version](https://img.shields.io/github/v/release/k153636/NexStrap?color=7a39fb&cacheSeconds=3600)](https://github.com/k153636/NexStrap/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Discord](https://img.shields.io/discord/1511974633056895076?logo=discord&logoColor=white&label=discord&color=5865F2&cacheSeconds=60)](https://discord.gg/PPrKt97jRn)
 [![X](https://img.shields.io/badge/X-@NexStrapRoblox-black?logo=x&logoColor=white)](https://x.com/NexStrapRoblox)
