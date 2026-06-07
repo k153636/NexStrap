@@ -1,10 +1,13 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Avalonia;
+using Avalonia.Animation;
+using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.VisualTree;
 using FluentAvalonia.UI.Controls;
 using NexStrap.ViewModels;
@@ -36,6 +39,7 @@ public partial class MainWindow : Window
         {
             if (DataContext is MainWindowViewModel vm)
                 ApplyGlassTheme(vm.ThemeVM.GlassThemeEnabled);
+            _ = PlaySplashAsync();
         };
 
         Activated += (_, _) =>
@@ -188,6 +192,87 @@ public partial class MainWindow : Window
         var splitView = NavView.GetVisualDescendants().OfType<SplitView>().FirstOrDefault();
         if (splitView != null)
             splitView.PaneBackground = paneBrush;
+    }
+
+    private async Task PlaySplashAsync()
+    {
+        // Set up transforms: icon starts 220px below center, rotated -360°
+        var translate = new TranslateTransform(0, 220);
+        var rotate    = new RotateTransform(-360);
+        var tg        = new TransformGroup();
+        tg.Children.Add(translate);
+        tg.Children.Add(rotate);
+
+        SplashIcon.RenderTransform       = tg;
+        SplashIcon.RenderTransformOrigin = RelativePoint.Center;
+        SplashIcon.Opacity               = 0;
+        SplashTextGroup.Opacity          = 0;
+
+        await Task.Delay(80);
+
+        var dur    = TimeSpan.FromMilliseconds(900);
+        var easing = new CubicEaseOut();
+
+        // Icon: slide up + rotate + fade in — all simultaneous
+        await Task.WhenAll(
+            new Animation
+            {
+                Duration = dur, Easing = easing, FillMode = FillMode.Forward,
+                Children =
+                {
+                    new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(TranslateTransform.YProperty, 220d) } },
+                    new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(TranslateTransform.YProperty, 0d)   } }
+                }
+            }.RunAsync(translate),
+            new Animation
+            {
+                Duration = dur, Easing = easing, FillMode = FillMode.Forward,
+                Children =
+                {
+                    new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(RotateTransform.AngleProperty, -360d) } },
+                    new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(RotateTransform.AngleProperty, 0d)    } }
+                }
+            }.RunAsync(rotate),
+            new Animation
+            {
+                Duration = TimeSpan.FromMilliseconds(500), Easing = easing, FillMode = FillMode.Forward,
+                Children =
+                {
+                    new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(Visual.OpacityProperty, 0d) } },
+                    new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(Visual.OpacityProperty, 1d) } }
+                }
+            }.RunAsync(SplashIcon)
+        );
+        SplashIcon.Opacity = 1;
+
+        // Text: fade in
+        await new Animation
+        {
+            Duration = TimeSpan.FromMilliseconds(350), Easing = easing, FillMode = FillMode.Forward,
+            Children =
+            {
+                new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(Visual.OpacityProperty, 0d) } },
+                new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(Visual.OpacityProperty, 1d) } }
+            }
+        }.RunAsync(SplashTextGroup);
+        SplashTextGroup.Opacity = 1;
+
+        // Hold
+        await Task.Delay(700);
+
+        // Fade out entire overlay
+        await new Animation
+        {
+            Duration = TimeSpan.FromMilliseconds(520), FillMode = FillMode.Forward,
+            Children =
+            {
+                new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(Visual.OpacityProperty, 1d) } },
+                new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(Visual.OpacityProperty, 0d) } }
+            }
+        }.RunAsync(SplashOverlay);
+
+        SplashOverlay.IsVisible        = false;
+        SplashOverlay.IsHitTestVisible = false;
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
