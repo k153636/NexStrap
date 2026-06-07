@@ -233,7 +233,7 @@
                             IsVisible="{Binding HomeVM.IsRobloxRunning}">
                     <Ellipse Width="6" Height="6" Fill="#4ADE80" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding HomeVM.StatusText}"
-                               FontSize="11" Foreground="{DynamicResource FgSub}"
+                               FontSize="11" Foreground="#888888"
                                VerticalAlignment="Center"/>
                 </StackPanel>
 
@@ -246,8 +246,7 @@
                             Command="{Binding HomeVM.LaunchStudioCommand}"
                             IsEnabled="{Binding HomeVM.IsStudioLaunching,
                                 Converter={x:Static BoolConverters.Not}}"
-                            Background="{DynamicResource OverlayBg}"
-                            Foreground="{DynamicResource FgSub}"
+                            Background="#181818" Foreground="#888888"
                             FontSize="12" Padding="14,8" CornerRadius="8"/>
 
                     <!-- Save and Launch -->
@@ -262,22 +261,19 @@
                     <!-- Restart (NexStrap 再起動) -->
                     <Button Content="Restart"
                             Command="{Binding RestartAppCommand}"
-                            Background="{DynamicResource OverlayBg}"
-                            Foreground="{DynamicResource FgSub}"
+                            Background="#181818" Foreground="#888888"
                             FontSize="12" Padding="14,8" CornerRadius="8"/>
 
                     <!-- Save (FastFlags 適用) -->
                     <Button Content="Save"
                             Command="{Binding HomeVM.HotReloadFlagsCommand}"
-                            Background="{DynamicResource OverlayBg}"
-                            Foreground="{DynamicResource FgSub}"
+                            Background="#181818" Foreground="#888888"
                             FontSize="12" Padding="14,8" CornerRadius="8"/>
 
                     <!-- Close -->
                     <Button Content="Close"
                             Command="{Binding ShutdownCommand}"
-                            Background="{DynamicResource OverlayBg}"
-                            Foreground="{DynamicResource FgSub}"
+                            Background="#181818" Foreground="#888888"
                             FontSize="12" Padding="14,8" CornerRadius="8"/>
                 </StackPanel>
             </Grid>
