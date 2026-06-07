@@ -11,13 +11,14 @@ public class RobloxApiService
         Timeout = TimeSpan.FromSeconds(10)
     };
 
-    private readonly Dictionary<long, (string name, string? iconUrl, string? creator)> _gameCache = new();
+    private readonly Dictionary<(long placeId, bool english), (string name, string? iconUrl, string? creator)> _gameCache = new();
     private readonly Dictionary<long, string?> _avatarCache = new();
     private readonly Dictionary<long, long>    _universeIdCache = new();
 
-    public async Task<(string name, string? iconUrl, string? creator)> GetGameInfoAsync(long placeId, long universeId = 0)
+    public async Task<(string name, string? iconUrl, string? creator)> GetGameInfoAsync(long placeId, long universeId = 0, bool english = false)
     {
-        if (_gameCache.TryGetValue(placeId, out var cached)) return cached;
+        var cacheKey = (placeId, english);
+        if (_gameCache.TryGetValue(cacheKey, out var cached)) return cached;
 
         try
         {
@@ -25,13 +26,13 @@ public class RobloxApiService
             long? resolvedUniverseId = universeId > 0 ? universeId : await GetUniverseIdAsync(placeId);
             if (resolvedUniverseId == null) return ("Roblox", null, null);
 
-            var (name, creator) = await GetGameNameAndCreatorAsync(resolvedUniverseId.Value);
+            var (name, creator) = await GetGameNameAndCreatorAsync(resolvedUniverseId.Value, english);
             var iconUrl         = await GetGameIconUrlAsync(resolvedUniverseId.Value);
 
             var result = (name ?? "Roblox", iconUrl, creator);
             // 失敗結果（name="Roblox" かつ iconUrl=null）はキャッシュしない
             if (result.Item1 != "Roblox" || iconUrl != null)
-                _gameCache[placeId] = result;
+                _gameCache[cacheKey] = result;
             return result;
         }
         catch
@@ -54,11 +55,22 @@ public class RobloxApiService
         catch { return null; }
     }
 
-    private static async Task<(string? name, string? creator)> GetGameNameAndCreatorAsync(long universeId)
+    private static async Task<(string? name, string? creator)> GetGameNameAndCreatorAsync(long universeId, bool english = false)
     {
-        var url      = $"https://games.roblox.com/v1/games?universeIds={universeId}";
-        var json     = await Http.GetStringAsync(url);
-        var data     = JObject.Parse(json)["data"]?[0];
+        var url = $"https://games.roblox.com/v1/games?universeIds={universeId}";
+        string json;
+        if (english)
+        {
+            using var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
+            req.Headers.Add("Accept-Language", "en-US,en;q=0.9");
+            using var resp = await Http.SendAsync(req);
+            json = await resp.Content.ReadAsStringAsync();
+        }
+        else
+        {
+            json = await Http.GetStringAsync(url);
+        }
+        var data           = JObject.Parse(json)["data"]?[0];
         var creatorName    = data?["creator"]?["name"]?.Value<string>();
         var hasVerified    = data?["creator"]?["hasVerifiedBadge"]?.Value<bool>() ?? false;
         var creatorDisplay = creatorName != null && hasVerified ? $"{creatorName} ☑️" : creatorName;

@@ -114,6 +114,16 @@
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowFlagCount}"
                                       OnContent="ON" OffContent="OFF"/>
                     </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="Show place name in English" Foreground="#FFFFFF" FontSize="13"/>
+                            <TextBlock Text="Force en_us locale for game names instead of your system language"
+                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding PlaceNameEnglish}"
+                                      OnContent="ON" OffContent="OFF"/>
+                    </Grid>
                 </StackPanel>
             </Border>
 

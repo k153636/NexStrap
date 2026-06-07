@@ -540,7 +540,8 @@ public sealed class DiscordRichPresence : IDisposable
     {
         try
         {
-            var (name, icon, creator) = await _robloxApi.GetGameInfoAsync(placeId, universe);
+            var english = _settings.Settings.DiscordPlaceNameEnglish;
+            var (name, icon, creator) = await _robloxApi.GetGameInfoAsync(placeId, universe, english);
             Enqueue(new EvGameInfo(placeId, seq, slot, name, icon, creator));
         }
         catch

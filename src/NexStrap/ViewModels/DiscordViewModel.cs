@@ -21,6 +21,7 @@ public partial class DiscordViewModel : ViewModelBase
     [ObservableProperty] private bool _showLauncherDetails;
     [ObservableProperty] private bool _showServerRegion;
     [ObservableProperty] private bool _showFlagCount;
+    [ObservableProperty] private bool _placeNameEnglish;
 
     public DiscordViewModel(SettingsService settingsService, DiscordRichPresence discord, RobloxApiService robloxApi, AccountService accountService)
     {
@@ -40,6 +41,7 @@ public partial class DiscordViewModel : ViewModelBase
         _showLauncherDetails    = s.DiscordShowLauncherDetails;
         _showServerRegion       = s.DiscordShowServerRegion;
         _showFlagCount          = s.DiscordShowFlagCount;
+        _placeNameEnglish       = s.DiscordPlaceNameEnglish;
     }
 
     partial void OnDiscordRpcEnabledChanged(bool value)
@@ -77,6 +79,9 @@ public partial class DiscordViewModel : ViewModelBase
 
     partial void OnShowFlagCountChanged(bool value)
         => _settingsService.Update(s => s.DiscordShowFlagCount = value);
+
+    partial void OnPlaceNameEnglishChanged(bool value)
+        => _settingsService.Update(s => s.DiscordPlaceNameEnglish = value);
 
     private async Task ApplyUserLabelAsync()
     {
