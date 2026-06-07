@@ -1,8 +1,7 @@
-using Avalonia.Controls.ApplicationLifetimes;
+using System.Diagnostics;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using NexStrap.Services;
 using NexStrap.Services;
 using NexStrap.Views;
 
@@ -14,11 +13,14 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly SettingsService _settings;
     private readonly PerformanceMonitorService _perfMonitor;
     private PerformanceOverlayWindow? _overlayWindow;
+    private string? _updateDownloadUrl;
 
     [ObservableProperty] private ViewModelBase _currentPage;
     [ObservableProperty] private bool _isDiscordConnected;
     [ObservableProperty] private bool _isDiscordAppIdMissing;
     [ObservableProperty] private bool _isOnSettingsPage;
+    [ObservableProperty] private bool _updateAvailable;
+    [ObservableProperty] private string _updateVersion = string.Empty;
 
     public HomeViewModel HomeVM { get; }
     public FastFlagsViewModel FastFlagsVM { get; }
@@ -36,6 +38,7 @@ public partial class MainWindowViewModel : ViewModelBase
         DiscordRichPresence discord,
         SettingsService settings,
         PerformanceMonitorService perfMonitor,
+        UpdateService updateService,
         HomeViewModel homeVM,
         FastFlagsViewModel fastFlagsVM,
         ModsViewModel modsVM,
@@ -89,7 +92,31 @@ public partial class MainWindowViewModel : ViewModelBase
             if (e.PropertyName == nameof(HomeViewModel.IsRobloxRunning))
                 UpdateOverlayVisibility(settings.Settings.ShowPerformanceOverlay && homeVM.IsRobloxRunning);
         };
+
+        _ = CheckForUpdateAsync(updateService);
     }
+
+    private async Task CheckForUpdateAsync(UpdateService updateService)
+    {
+        var result = await updateService.CheckForUpdateAsync();
+        if (result == null) return;
+        _updateDownloadUrl = result.Value.DownloadUrl;
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            UpdateVersion   = $"v{result.Value.Version}";
+            UpdateAvailable = true;
+        });
+    }
+
+    [RelayCommand]
+    private void OpenDownloadPage()
+    {
+        var url = _updateDownloadUrl ?? "https://github.com/k153636/NexStrap/releases/latest";
+        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+    }
+
+    [RelayCommand]
+    private void DismissUpdate() => UpdateAvailable = false;
 
     private void UpdateOverlayVisibility(bool show)
     {
