@@ -108,7 +108,7 @@
                         <Style Selector="Button.flag-delete:pointerover /template/ ContentPresenter">
                             <Setter Property="Background" Value="#18FF4444"/>
                         </Style>
-                        <Style Selector="Button.flag-delete:pointerover TextBlock">
+                        <Style Selector="Button.flag-delete:pointerover">
                             <Setter Property="Foreground" Value="#FF6B6B"/>
                         </Style>
                     </ListBox.Styles>
@@ -158,7 +158,8 @@
                                             Command="{Binding DeleteCommand}"
                                             Padding="7,7" CornerRadius="6"
                                             VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="✕" FontSize="10"/>
+                                        <PathIcon Width="8" Height="8"
+                                                  Data="M8,1.41 L6.59,0 L4,2.59 L1.41,0 L0,1.41 L2.59,4 L0,6.59 L1.41,8 L4,5.41 L6.59,8 L8,6.59 L5.41,4 Z"/>
                                     </Button>
 
                                 </Grid>
