@@ -19,9 +19,9 @@ public partial class AccountViewModel : ViewModelBase
     private readonly ChromeImportCoordinator _chromeImport;
     private readonly RobloxApiService  _robloxApi;
     private readonly CookieAccountImportService _cookieImport;
-    private readonly QuickLoginService _quickLogin;
     private readonly QuickLoginCoordinator _quickLoginCoordinator;
     private readonly QuickSignInViewModelFactory _quickSignInFactory;
+    private readonly AccountEntryViewModelFactory _accountEntryFactory;
     private CancellationTokenSource?   _pollCts;
     private CancellationTokenSource    _presenceCts = new();
 
@@ -98,21 +98,22 @@ public partial class AccountViewModel : ViewModelBase
     [ObservableProperty] private string _quickLoginInput    = string.Empty;
 
     public AccountViewModel(AccountService accounts, RobloxApiService robloxApi,
-        QuickLoginService quickLogin, FriendsViewModel friendsVm,
+        FriendsViewModel friendsVm,
         QuickSignInViewModelFactory quickSignInFactory,
         QuickLoginCoordinator quickLoginCoordinator,
         CookieAccountImportService cookieImport,
         AccountActivityRefreshService activityRefresh,
-        ChromeImportCoordinator chromeImport)
+        ChromeImportCoordinator chromeImport,
+        AccountEntryViewModelFactory accountEntryFactory)
     {
         _accounts              = accounts;
         _activityRefresh       = activityRefresh;
         _chromeImport          = chromeImport;
         _robloxApi             = robloxApi;
         _cookieImport          = cookieImport;
-        _quickLogin            = quickLogin;
         _quickSignInFactory    = quickSignInFactory;
         _quickLoginCoordinator = quickLoginCoordinator;
+        _accountEntryFactory   = accountEntryFactory;
         FriendsVm              = friendsVm;
         Reload();
     }
@@ -127,10 +128,9 @@ public partial class AccountViewModel : ViewModelBase
         var list = _accounts.Accounts;
         for (int i = 0; i < list.Count; i++)
         {
-            var entry = new AccountEntryViewModel(list[i], i,
+            var entry = _accountEntryFactory.Create(list[i], i,
                 e => { _accounts.SetActive(e.Id); Reload(); },
                 e => { _accounts.Remove(e.Id);   Reload(); StatusMessage = "Removed"; },
-                _quickLogin,
                 LaunchAs);
             entry.PropertyChanged += OnEntryPropertyChanged;
             Accounts.Add(entry);

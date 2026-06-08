@@ -18,6 +18,7 @@ public static class AccountsFriendsModule
 
         services.AddTransient<AccountViewModel>();
         services.AddTransient<FriendsViewModel>();
+        services.AddSingleton<AccountEntryViewModelFactory>();
         services.AddSingleton<QuickSignInViewModelFactory>();
 
         return services;
