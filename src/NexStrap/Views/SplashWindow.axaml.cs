@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.Threading;
 
 namespace NexStrap.Views;
 
@@ -86,37 +87,56 @@ public partial class SplashWindow : Window
 
     private async Task SpinLoopAsync(CancellationToken ct)
     {
-        // Matches HTML preview: 1100ms spin (cubic-bezier 0.2,0.8,0.4,1) + 400ms hold
-        const int tSpin = 1100;
-        const int tHold = 400;
+        // DispatcherTimer-driven: directly sets _rotate.Angle each frame.
+        // Avalonia's Animation.RunAsync on Transform targets doesn't reliably
+        // propagate animated values back to the visual, so we drive manually.
+        const double tSpin = 1100.0;
+        const int    tHold = 400;
 
         while (!ct.IsCancellationRequested)
         {
-            double start = _rotate.Angle;
-            double end   = start + 360;
+            var tcs = new TaskCompletionSource<bool>();
+            var sw  = System.Diagnostics.Stopwatch.StartNew();
 
-            var spin = new Animation
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+            timer.Tick += (_, _) =>
             {
-                Duration = TimeSpan.FromMilliseconds(tSpin),
-                Easing   = new SplineEasing(0.2, 0.8, 0.4, 1.0),
-                FillMode = FillMode.Forward,
-                Children =
-                {
-                    new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(RotateTransform.AngleProperty, start) }},
-                    new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(RotateTransform.AngleProperty, end)   }},
-                }
+                if (ct.IsCancellationRequested) { timer.Stop(); tcs.TrySetResult(true);  return; }
+                double elapsed = sw.ElapsedMilliseconds;
+                if (elapsed >= tSpin)           { timer.Stop(); tcs.TrySetResult(false); return; }
+                double t     = elapsed / tSpin;
+                double eased = SplineEase(t, 0.2, 0.8, 0.4, 1.0);
+                _rotate.Angle = eased * 360.0;
             };
+            timer.Start();
 
-            try { await spin.RunAsync(_rotate, ct); }
-            catch (OperationCanceledException) { break; }
-            if (ct.IsCancellationRequested) break;
-
+            if (await tcs.Task) break; // cancelled
             _rotate.Angle = 0; // normalize — 360° == 0° visually
 
             try { await Task.Delay(tHold, ct); }
             catch (OperationCanceledException) { break; }
         }
     }
+
+    private static double SplineEase(double t, double x1, double y1, double x2, double y2)
+    {
+        if (t <= 0) return 0;
+        if (t >= 1) return 1;
+        double s = t;
+        for (int i = 0; i < 8; i++)
+        {
+            double dx = Bz(s, x1, x2) - t;
+            if (Math.Abs(dx) < 1e-6) break;
+            double d = BzD(s, x1, x2);
+            if (Math.Abs(d)  < 1e-6) break;
+            s -= dx / d;
+        }
+        return Bz(s, y1, y2);
+    }
+    private static double Bz (double t, double c1, double c2)
+        => 3*c1*t*(1-t)*(1-t) + 3*c2*t*t*(1-t) + t*t*t;
+    private static double BzD(double t, double c1, double c2)
+        => 3*c1*(1-t)*(1-2*t) + 3*c2*t*(2-3*t) + 3*t*t;
 
     private static Animation OpacityAnim(
         Animatable _, double from, double to, int ms, Easing easing) => new()
@@ -130,30 +150,6 @@ public partial class SplashWindow : Window
             new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(OpacityProperty, to)   } },
         }
     };
-
-    // CSS cubic-bezier(x1,y1,x2,y2) equivalent — Newton-Raphson solver
-    private sealed class SplineEasing(double x1, double y1, double x2, double y2) : Easing
-    {
-        public override double Ease(double p)
-        {
-            if (p <= 0) return 0;
-            if (p >= 1) return 1;
-            double t = p;
-            for (int i = 0; i < 8; i++)
-            {
-                double dx = B(t, x1, x2) - p;
-                if (Math.Abs(dx) < 1e-6) break;
-                double d = Bd(t, x1, x2);
-                if (Math.Abs(d) < 1e-6) break;
-                t -= dx / d;
-            }
-            return B(t, y1, y2);
-        }
-        private static double B(double t, double c1, double c2)
-            => t * t * t + 3 * c2 * t * t * (1 - t) + 3 * c1 * t * (1 - t) * (1 - t);
-        private static double Bd(double t, double c1, double c2)
-            => 3 * t * t + 3 * c2 * (2 * t - 3 * t * t) + 3 * c1 * (1 - 4 * t + 3 * t * t);
-    }
 
     private void ReplayButton_Click(object? sender, RoutedEventArgs e)
     {
