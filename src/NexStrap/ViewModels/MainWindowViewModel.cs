@@ -65,9 +65,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         IsDiscordAppIdMissing = false;
 
-        if (settings.Settings.DiscordRpcEnabled)
-            discord.SetDiscordEnabled(true);
-
         discord.ConnectionChanged += (_, connected) =>
             Dispatcher.UIThread.InvokeAsync(() => IsDiscordConnected = connected);
 
@@ -82,6 +79,9 @@ public partial class MainWindowViewModel : ViewModelBase
             if (e.PropertyName == nameof(HomeViewModel.IsRobloxRunning))
                 UpdateOverlayVisibility(settings.Settings.ShowPerformanceOverlay && homeVM.IsRobloxRunning);
         };
+
+        if (settings.Settings.DiscordRpcEnabled)
+            discord.SetDiscordEnabled(true);
     }
 
     private void ResetLazyPages()
