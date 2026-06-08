@@ -68,9 +68,14 @@ public partial class MainWindowViewModel : ViewModelBase
         discord.ConnectionChanged += (_, connected) =>
             Dispatcher.UIThread.InvokeAsync(() => IsDiscordConnected = connected);
 
+        var lastDiscordEnabled = settings.Settings.DiscordRpcEnabled;
         settings.SettingsChanged += (_, s) =>
         {
-            discord.SetDiscordEnabled(s.DiscordRpcEnabled);
+            if (s.DiscordRpcEnabled != lastDiscordEnabled)
+            {
+                lastDiscordEnabled = s.DiscordRpcEnabled;
+                discord.SetDiscordEnabled(s.DiscordRpcEnabled);
+            }
             UpdateOverlayVisibility(s.ShowPerformanceOverlay);
         };
 
