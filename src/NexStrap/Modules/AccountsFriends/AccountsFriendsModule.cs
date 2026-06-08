@@ -10,6 +10,7 @@ public static class AccountsFriendsModule
     {
         services.AddSingleton<AccountService>();
         services.AddSingleton<QuickLoginService>();
+        services.AddSingleton<QuickLoginCoordinator>();
         services.AddSingleton<FriendNotificationService>();
 
         services.AddTransient<AccountViewModel>();

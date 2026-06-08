@@ -122,6 +122,7 @@ public partial class AccountViewModel : ViewModelBase
     private readonly AccountService    _accounts;
     private readonly RobloxApiService  _robloxApi;
     private readonly QuickLoginService _quickLogin;
+    private readonly QuickLoginCoordinator _quickLoginCoordinator;
     private readonly QuickSignInViewModelFactory _quickSignInFactory;
     private CancellationTokenSource?   _pollCts;
     private CancellationTokenSource    _presenceCts = new();
@@ -200,13 +201,15 @@ public partial class AccountViewModel : ViewModelBase
 
     public AccountViewModel(AccountService accounts, RobloxApiService robloxApi,
         QuickLoginService quickLogin, FriendsViewModel friendsVm,
-        QuickSignInViewModelFactory quickSignInFactory)
+        QuickSignInViewModelFactory quickSignInFactory,
+        QuickLoginCoordinator quickLoginCoordinator)
     {
-        _accounts           = accounts;
-        _robloxApi          = robloxApi;
-        _quickLogin         = quickLogin;
-        _quickSignInFactory = quickSignInFactory;
-        FriendsVm           = friendsVm;
+        _accounts              = accounts;
+        _robloxApi             = robloxApi;
+        _quickLogin            = quickLogin;
+        _quickSignInFactory    = quickSignInFactory;
+        _quickLoginCoordinator = quickLoginCoordinator;
+        FriendsVm              = friendsVm;
         Reload();
     }
 
@@ -336,10 +339,10 @@ public partial class AccountViewModel : ViewModelBase
         if (input.Length != 6 || !input.All(char.IsDigit))
         { StatusMessage = "Enter a valid 6-digit code"; return; }
 
-        var data = _quickLogin.Redeem(input);
+        var data = _quickLoginCoordinator.Redeem(input);
         if (data == null) { StatusMessage = "Code is invalid or expired"; return; }
 
-        var existing = _accounts.Accounts.FirstOrDefault(a => a.UserId == data.UserId);
+        var existing = _quickLoginCoordinator.FindExistingAccount(_accounts.Accounts, data.UserId);
         if (existing != null)
         {
             _accounts.SetActive(existing.Id);
@@ -351,14 +354,7 @@ public partial class AccountViewModel : ViewModelBase
         }
 
         StatusMessage = "Fetching account info...";
-        var avatarUrl = data.AvatarUrl ?? await _robloxApi.GetUserAvatarHeadshotAsync(data.UserId);
-        var account   = new RobloxAccount
-        {
-            UserId      = data.UserId,
-            Username    = data.Username,
-            DisplayName = data.DisplayName,
-            AvatarUrl   = avatarUrl,
-        };
+        var account = await _quickLoginCoordinator.CreateAccountAsync(data);
         _accounts.Add(account, data.PlaintextCookie);
         _accounts.SetActive(account.Id);
         Reload();
