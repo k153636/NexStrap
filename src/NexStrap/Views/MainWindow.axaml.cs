@@ -8,7 +8,6 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Media.Transformation;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -199,37 +198,16 @@ public partial class MainWindow : Window
 
     // ── Splash overlay ──────────────────────────────────────────────────────
 
-    private MatrixTransform _splashMatrix = null!;
+    private RotateTransform _splashRotate = null!;
 
     private static readonly Logger Log = Logger.Instance;
     private const string Cat = "Splash";
 
     private void StartSplashOverlay()
     {
-        _splashMatrix = new MatrixTransform(Matrix.Identity);
-        SplashLogoWrapper.RenderTransform = _splashMatrix;
-
-        // Diagnostic: confirm RenderTransform is the same instance we created,
-        // and log scaling + bounds for coordinate-space investigation.
-        var scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
-        bool sameRef = ReferenceEquals(SplashLogoWrapper.RenderTransform, _splashMatrix);
-        Log.Info(Cat, $"StartSplashOverlay — Bounds={SplashLogoWrapper.Bounds} " +
-                      $"RenderScaling={scaling} SameRef={sameRef}");
+        _splashRotate = new RotateTransform(0);
+        SplashLogoImage.RenderTransform = _splashRotate;
         _ = PlaySplashAsync();
-    }
-
-    // Rotation-around-(cx,cy) matrix in Avalonia row-vector convention:
-    //   x' = x*cos - y*sin + cx(1-cos) + cy*sin
-    //   y' = x*sin + y*cos + cy(1-cos) - cx*sin
-    private static Matrix RotationMatrix(double angleDeg, double cx, double cy)
-    {
-        double rad = angleDeg * Math.PI / 180.0;
-        double cos = Math.Cos(rad), sin = Math.Sin(rad);
-        return new Matrix(
-            cos,  sin,
-            -sin, cos,
-            cx * (1 - cos) + cy * sin,
-            cy * (1 - cos) - cx * sin);
     }
 
     private async Task PlaySplashAsync()
@@ -237,28 +215,21 @@ public partial class MainWindow : Window
         try
         {
             SplashContent.Opacity = 0;
+            _splashRotate.Angle = 0;
 
-            // Opened fires during Show(), before Loaded — already past by here.
-            // Post at Render priority so the black overlay reaches the screen
-            // before the fade-in begins.
-            Log.Info(Cat, "Waiting for render frame");
             var frameTcs = new TaskCompletionSource();
             Dispatcher.UIThread.Post(() => frameTcs.TrySetResult(), DispatcherPriority.Render);
             await frameTcs.Task;
-            Log.Info(Cat, "Render frame ready — starting fade-in");
 
             await RunOpacityAsync(SplashContent, 0d, 1d, 280, new CubicEaseOut());
             SplashContent.Opacity = 1;
-            Log.Info(Cat, "Fade-in complete — starting spin (1500ms)");
 
             using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1500));
             await SplashSpinLoopAsync(cts.Token);
-            Log.Info(Cat, "Spin complete — starting fade-out");
 
             await RunOpacityAsync(SplashOverlay, 1d, 0d, 260, new CubicEaseIn());
             SplashOverlay.IsVisible        = false;
             SplashOverlay.IsHitTestVisible = false;
-            Log.Info(Cat, "Splash done — overlay hidden");
         }
         catch (Exception ex)
         {
@@ -278,28 +249,18 @@ public partial class MainWindow : Window
             var tcs = new TaskCompletionSource<bool>();
             var sw  = System.Diagnostics.Stopwatch.StartNew();
 
-            bool firstTick = true;
             var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
             timer.Tick += (_, _) =>
             {
                 if (ct.IsCancellationRequested) { timer.Stop(); tcs.TrySetResult(true);  return; }
                 double elapsed = sw.ElapsedMilliseconds;
                 if (elapsed >= tSpin)           { timer.Stop(); tcs.TrySetResult(false); return; }
-                double angle = SplashSpline(elapsed / tSpin) * 360.0;
-                var m = RotationMatrix(angle, 29, 29);
-                _splashMatrix.Matrix = m;
-                if (firstTick)
-                {
-                    firstTick = false;
-                    bool sameRef = ReferenceEquals(SplashLogoWrapper.RenderTransform, _splashMatrix);
-                    Log.Info(Cat, $"FirstTick angle={angle:F1} SameRef={sameRef} " +
-                                  $"AppliedM={SplashLogoWrapper.RenderTransform?.Value}");
-                }
+                _splashRotate.Angle = SplashSpline(elapsed / tSpin) * 360.0;
             };
             timer.Start();
 
             if (await tcs.Task) break;
-            _splashMatrix.Matrix = Matrix.Identity;
+            _splashRotate.Angle = 0;
 
             try { await Task.Delay(tHold, ct); }
             catch (OperationCanceledException) { break; }
