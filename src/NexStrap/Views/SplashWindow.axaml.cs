@@ -14,6 +14,8 @@ public partial class SplashWindow : Window
 
     private bool _playing;
     private ScaleTransform _scale = null!;
+    private RotateTransform _rotate = null!;
+    private CancellationTokenSource _cts = new();
 
     public SplashWindow()
     {
@@ -23,32 +25,36 @@ public partial class SplashWindow : Window
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-
-        // Attach ScaleTransform here so the AXAML source-generator field is available
         _scale = new ScaleTransform(0.85, 0.85);
         SplashContent.RenderTransform = _scale;
-
+        _rotate = new RotateTransform(0);
+        LogoImage.RenderTransform = _rotate;
         if (IsTestMode) TestControls.IsVisible = true;
         _ = PlayAsync();
     }
+
+    // Call from App when initialization is complete
+    public void Complete() => _cts.Cancel();
 
     public async Task PlayAsync()
     {
         if (_playing) return;
         _playing = true;
+        _cts = new CancellationTokenSource();
 
         // Reset
         SplashContent.Opacity = 0;
         _scale.ScaleX = _scale.ScaleY = 0.85;
-        GlowEllipse.Opacity = 0;
+        _rotate.Angle = 0;
+        Opacity = 1;
 
         await Task.Delay(40);
 
-        // --- Phase 1: Scale up + fade in — parallel, 380 ms, ease-out ---
-        var fadeIn = OpacityAnim(SplashContent, 0d, 1d, 380, new CubicEaseOut());
+        // Phase 1: appear — scale up + fade in (280ms)
+        var fadeIn  = OpacityAnim(SplashContent, 0d, 1d, 280, new CubicEaseOut());
         var scaleUp = new Animation
         {
-            Duration = TimeSpan.FromMilliseconds(380),
+            Duration = TimeSpan.FromMilliseconds(280),
             Easing   = new CubicEaseOut(),
             FillMode = FillMode.Forward,
             Children =
@@ -67,24 +73,49 @@ public partial class SplashWindow : Window
         SplashContent.Opacity = 1;
         _scale.ScaleX = _scale.ScaleY = 1.0;
 
-        // Hold so the logo settles before the glow fires
-        await Task.Delay(150);
-
-        // --- Phase 2: Glow pulse — one-shot ---
-        await OpacityAnim(GlowEllipse, 0d, 0.48d, 150, new LinearEasing()).RunAsync(GlowEllipse);
-        GlowEllipse.Opacity = 0.48;
-        await OpacityAnim(GlowEllipse, 0.48d, 0d, 280, new CubicEaseOut()).RunAsync(GlowEllipse);
-        GlowEllipse.Opacity = 0;
+        // Phase 2: spin until Complete() is called
+        await SpinLoopAsync(_cts.Token);
 
         _playing = false;
         if (IsTestMode) return;
 
-        // Hold before exit
-        await Task.Delay(150);
-
-        // --- Phase 3: Fade window to black, then close ---
+        // Phase 3: fade out
         await OpacityAnim(this, 1d, 0d, 260, new CubicEaseIn()).RunAsync(this);
         Close();
+    }
+
+    private async Task SpinLoopAsync(CancellationToken ct)
+    {
+        // Matches HTML preview: 1100ms spin (cubic-bezier 0.2,0.8,0.4,1) + 400ms hold
+        const int tSpin = 1100;
+        const int tHold = 400;
+
+        while (!ct.IsCancellationRequested)
+        {
+            double start = _rotate.Angle;
+            double end   = start + 360;
+
+            var spin = new Animation
+            {
+                Duration = TimeSpan.FromMilliseconds(tSpin),
+                Easing   = new SplineEasing(0.2, 0.8, 0.4, 1.0),
+                FillMode = FillMode.Forward,
+                Children =
+                {
+                    new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(RotateTransform.AngleProperty, start) }},
+                    new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(RotateTransform.AngleProperty, end)   }},
+                }
+            };
+
+            try { await spin.RunAsync(_rotate, ct); }
+            catch (OperationCanceledException) { break; }
+            if (ct.IsCancellationRequested) break;
+
+            _rotate.Angle = 0; // normalize — 360° == 0° visually
+
+            try { await Task.Delay(tHold, ct); }
+            catch (OperationCanceledException) { break; }
+        }
     }
 
     private static Animation OpacityAnim(
@@ -100,8 +131,36 @@ public partial class SplashWindow : Window
         }
     };
 
+    // CSS cubic-bezier(x1,y1,x2,y2) equivalent — Newton-Raphson solver
+    private sealed class SplineEasing(double x1, double y1, double x2, double y2) : Easing
+    {
+        public override double Ease(double p)
+        {
+            if (p <= 0) return 0;
+            if (p >= 1) return 1;
+            double t = p;
+            for (int i = 0; i < 8; i++)
+            {
+                double dx = B(t, x1, x2) - p;
+                if (Math.Abs(dx) < 1e-6) break;
+                double d = Bd(t, x1, x2);
+                if (Math.Abs(d) < 1e-6) break;
+                t -= dx / d;
+            }
+            return B(t, y1, y2);
+        }
+        private static double B(double t, double c1, double c2)
+            => t * t * t + 3 * c2 * t * t * (1 - t) + 3 * c1 * t * (1 - t) * (1 - t);
+        private static double Bd(double t, double c1, double c2)
+            => 3 * t * t + 3 * c2 * (2 * t - 3 * t * t) + 3 * c1 * (1 - 4 * t + 3 * t * t);
+    }
+
     private void ReplayButton_Click(object? sender, RoutedEventArgs e)
-        => _ = PlayAsync();
+    {
+        _cts.Cancel();
+        _playing = false;
+        _ = PlayAsync();
+    }
 
     private void CloseTestButton_Click(object? sender, RoutedEventArgs e)
         => Close();
