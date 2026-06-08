@@ -8,6 +8,8 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Transformation;
+using Avalonia.Styling;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAvalonia.UI.Controls;
 using NexStrap.ViewModels;
@@ -39,6 +41,7 @@ public partial class MainWindow : Window
         {
             if (DataContext is MainWindowViewModel vm)
                 ApplyGlassTheme(vm.ThemeVM.GlassThemeEnabled);
+            StartSplashOverlay();
         };
 
         Activated += (_, _) =>
@@ -192,6 +195,116 @@ public partial class MainWindow : Window
         if (splitView != null)
             splitView.PaneBackground = paneBrush;
     }
+
+    // ── Splash overlay ──────────────────────────────────────────────────────
+
+    private RotateTransform _splashRotate = null!;
+    private CancellationTokenSource _splashCts = new();
+
+    // Called by App after MainWindow.Show() — stops the spin and fades out.
+    public void CompleteSplash() => _splashCts.Cancel();
+
+    private void StartSplashOverlay()
+    {
+        _splashRotate = new RotateTransform(0);
+        SplashLogo.RenderTransform = _splashRotate;
+        _ = PlaySplashAsync();
+    }
+
+    private async Task PlaySplashAsync()
+    {
+        _splashCts = new CancellationTokenSource();
+        SplashContent.Opacity = 0;
+
+        // Wait until the window is fully presented on screen before starting.
+        // OnOpened fires after the OS has composited the first frame, so even on
+        // slow machines the animation always starts from a visible state.
+        var openedTcs = new TaskCompletionSource();
+        void OnOpened(object? s, EventArgs _) { Opened -= OnOpened; openedTcs.TrySetResult(); }
+        Opened += OnOpened;
+        await openedTcs.Task;
+
+        // Extra render pass so the black overlay is painted before fade starts.
+        var frameTcs = new TaskCompletionSource();
+        Dispatcher.UIThread.Post(() => frameTcs.TrySetResult(), DispatcherPriority.Render);
+        await frameTcs.Task;
+
+        // Fade in (280ms)
+        await RunOpacityAsync(SplashContent, 0d, 1d, 280, new CubicEaseOut());
+        SplashContent.Opacity = 1;
+
+        // Spin until CompleteSplash() is called
+        await SplashSpinLoopAsync(_splashCts.Token);
+
+        // Fade out overlay
+        await RunOpacityAsync(SplashOverlay, 1d, 0d, 260, new CubicEaseIn());
+        SplashOverlay.IsVisible        = false;
+        SplashOverlay.IsHitTestVisible = false;
+    }
+
+    private async Task SplashSpinLoopAsync(CancellationToken ct)
+    {
+        const double tSpin = 1100.0;
+        const int    tHold = 400;
+
+        while (!ct.IsCancellationRequested)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            var sw  = System.Diagnostics.Stopwatch.StartNew();
+
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+            timer.Tick += (_, _) =>
+            {
+                if (ct.IsCancellationRequested) { timer.Stop(); tcs.TrySetResult(true);  return; }
+                double elapsed = sw.ElapsedMilliseconds;
+                if (elapsed >= tSpin)           { timer.Stop(); tcs.TrySetResult(false); return; }
+                _splashRotate.Angle = SplashSpline(elapsed / tSpin) * 360.0;
+            };
+            timer.Start();
+
+            if (await tcs.Task) break;
+            _splashRotate.Angle = 0;
+
+            try { await Task.Delay(tHold, ct); }
+            catch (OperationCanceledException) { break; }
+        }
+    }
+
+    private static double SplashSpline(double t)
+    {
+        if (t <= 0) return 0;
+        if (t >= 1) return 1;
+        double s = t;
+        for (int i = 0; i < 8; i++)
+        {
+            double dx = Bz(s, 0.2, 0.4) - t;
+            if (Math.Abs(dx) < 1e-6) break;
+            double d = BzD(s, 0.2, 0.4);
+            if (Math.Abs(d)  < 1e-6) break;
+            s -= dx / d;
+        }
+        return Bz(s, 0.8, 1.0);
+    }
+    private static double Bz (double t, double c1, double c2) => 3*c1*t*(1-t)*(1-t) + 3*c2*t*t*(1-t) + t*t*t;
+    private static double BzD(double t, double c1, double c2) => 3*c1*(1-t)*(1-2*t) + 3*c2*t*(2-3*t) + 3*t*t;
+
+    private static Task RunOpacityAsync(Animatable target, double from, double to, int ms, Easing easing)
+    {
+        var anim = new Animation
+        {
+            Duration = TimeSpan.FromMilliseconds(ms),
+            Easing   = easing,
+            FillMode = FillMode.Forward,
+            Children =
+            {
+                new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(OpacityProperty, from) } },
+                new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(OpacityProperty, to)   } },
+            }
+        };
+        return anim.RunAsync(target);
+    }
+
+    // ── End splash ──────────────────────────────────────────────────────────
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
