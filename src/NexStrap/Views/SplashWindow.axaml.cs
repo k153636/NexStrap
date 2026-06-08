@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
@@ -21,9 +22,21 @@ public partial class SplashWindow : Window
         InitializeComponent();
     }
 
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
+
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
+
+        // Disable Windows DWM slide-in animation for this window.
+        var hwnd = TryGetPlatformHandle()?.Handle;
+        if (hwnd.HasValue)
+        {
+            int disabled = 1;
+            DwmSetWindowAttribute(hwnd.Value, 3 /* DWMWA_TRANSITIONS_FORCEDISABLED */, ref disabled, 4);
+        }
+
         _rotate = new RotateTransform(0);
         LogoImage.RenderTransform = _rotate;
         if (IsTestMode) TestControls.IsVisible = true;
