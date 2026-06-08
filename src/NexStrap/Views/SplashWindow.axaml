@@ -11,39 +11,57 @@
 
     <Grid>
 
-        <!-- Subtle radial gradient depth -->
+        <!-- Deep radial vignette: subtle centre lift, pitch-black edge -->
         <Rectangle IsHitTestVisible="False">
             <Rectangle.Fill>
-                <RadialGradientBrush>
-                    <GradientStop Color="#181818" Offset="0"/>
-                    <GradientStop Color="#000000" Offset="1"/>
+                <RadialGradientBrush Center="0.5,0.46" GradientOrigin="0.5,0.46"
+                                     RadiusX="0.55" RadiusY="0.55">
+                    <GradientStop Color="#131313" Offset="0"/>
+                    <GradientStop Color="#000000" Offset="0.8"/>
                 </RadialGradientBrush>
             </Rectangle.Fill>
         </Rectangle>
 
-        <!-- Main content: logo + name -->
+        <!-- Splash content: scales + fades in as a unit -->
         <StackPanel x:Name="SplashContent"
                     VerticalAlignment="Center" HorizontalAlignment="Center"
-                    Spacing="16">
+                    Spacing="14"
+                    Opacity="0"
+                    RenderTransformOrigin="0.5,0.5">
 
-            <Image Source="avares://NexStrap/Assets/nexstrap.png"
-                   Width="60" Height="60"
-                   HorizontalAlignment="Center"
-                   RenderOptions.BitmapInterpolationMode="HighQuality">
-                <Image.Effect>
-                    <DropShadowEffect BlurRadius="24" Color="#80FFFFFF" OffsetX="0" OffsetY="0"/>
-                </Image.Effect>
-            </Image>
+            <!-- Logo + glow halo layered in a fixed cell -->
+            <Grid Width="100" Height="100" HorizontalAlignment="Center">
 
+                <!-- Glow ellipse — behind logo, pulsed once after appear -->
+                <Ellipse x:Name="GlowEllipse"
+                         Width="96" Height="96"
+                         Opacity="0"
+                         IsHitTestVisible="False">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush>
+                            <GradientStop Color="#3CFFFFFF" Offset="0"/>
+                            <GradientStop Color="#00FFFFFF" Offset="1"/>
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+
+                <!-- Logo — no DropShadowEffect (causes frame drops) -->
+                <Image Source="avares://NexStrap/Assets/nexstrap.png"
+                       Width="58" Height="58"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       RenderOptions.BitmapInterpolationMode="HighQuality"/>
+            </Grid>
+
+            <!-- Wordmark -->
             <StackPanel HorizontalAlignment="Center" Spacing="5">
                 <TextBlock Text="NexStrap"
-                           FontSize="24" FontWeight="Bold"
+                           FontSize="22" FontWeight="Bold"
                            Foreground="#FFFFFF"
                            HorizontalAlignment="Center"
                            LetterSpacing="1.5"/>
                 <TextBlock Text="Roblox Utility"
                            FontSize="10"
-                           Foreground="#444444"
+                           Foreground="#363636"
                            HorizontalAlignment="Center"/>
             </StackPanel>
 
