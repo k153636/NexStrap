@@ -26,12 +26,16 @@
                     Spacing="16" Opacity="0"
                     RenderTransformOrigin="0.5,0.5">
 
-            <Image x:Name="LogoImage"
-                   Source="avares://NexStrap/Assets/nexstrap.png"
-                   Width="58" Height="58"
-                   HorizontalAlignment="Center"
-                   RenderTransformOrigin="0.5,0.5"
-                   RenderOptions.BitmapInterpolationMode="HighQuality"/>
+            <Border x:Name="LogoWrapper"
+                    Width="58" Height="58"
+                    HorizontalAlignment="Center"
+                    Background="Transparent"
+                    RenderTransformOrigin="50%,50%">
+                <Image x:Name="LogoImage"
+                       Source="avares://NexStrap/Assets/nexstrap.png"
+                       Width="58" Height="58"
+                       RenderOptions.BitmapInterpolationMode="HighQuality"/>
+            </Border>
 
             <TextBlock Text="NexStrap"
                        FontSize="22" FontWeight="Bold"

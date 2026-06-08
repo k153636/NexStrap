@@ -289,24 +289,46 @@
             <Rectangle Fill="#000000" IsHitTestVisible="False"/>
             <StackPanel x:Name="SplashContent"
                         VerticalAlignment="Center" HorizontalAlignment="Center"
-                        Spacing="16" Opacity="0">
-                <Border Width="58" Height="58" HorizontalAlignment="Center"
-                        Background="Transparent">
-                    <Image x:Name="SplashLogoImage"
-                           Source="avares://NexStrap/Assets/nexstrap.png"
-                           Width="58" Height="58"
-                           RenderTransformOrigin="0.5,0.5"
-                           RenderOptions.BitmapInterpolationMode="HighQuality">
-                        <Image.RenderTransform>
-                            <RotateTransform Angle="0"/>
-                        </Image.RenderTransform>
-                    </Image>
-                </Border>
-                <TextBlock Text="NexStrap"
-                           FontSize="22" FontWeight="Bold"
-                           Foreground="#FFFFFF"
+                        Spacing="18" Opacity="0">
+                <Canvas Width="220" Height="58">
+                    <Border x:Name="SplashLogoMotion"
+                            Canvas.Left="81" Canvas.Top="0"
+                            Width="58" Height="58"
+                            Background="Transparent">
+                        <Border.RenderTransform>
+                            <TranslateTransform X="0"/>
+                        </Border.RenderTransform>
+                        <Border x:Name="SplashLogoWrapper"
+                                Width="58" Height="58"
+                                Background="Transparent"
+                                RenderTransformOrigin="50%,50%">
+                            <Border.RenderTransform>
+                                <RotateTransform Angle="0"/>
+                            </Border.RenderTransform>
+                            <Image x:Name="SplashLogoImage"
+                                   Source="avares://NexStrap/Assets/nexstrap.png"
+                                   Width="58" Height="58"
+                                   RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                        </Border>
+                    </Border>
+                    <TextBlock x:Name="SplashTitleText"
+                               Text="NexStrap"
+                               Canvas.Left="116" Canvas.Top="14"
+                               FontSize="22" FontWeight="Bold"
+                               Foreground="#FFFFFF"
+                               LetterSpacing="1.5"
+                               Opacity="0">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="18"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                </Canvas>
+                <TextBlock x:Name="SplashStatusText"
+                           Text="{Binding StartupStatusText}"
+                           FontSize="11"
+                           Foreground="White"
                            HorizontalAlignment="Center"
-                           LetterSpacing="1.5"/>
+                           Opacity="0"/>
             </StackPanel>
         </Grid>
 

@@ -156,7 +156,7 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            // Keep the app alive during the startup sequence; main window is shown at the end
+            // Keep the app alive until the main window is created.
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             _ = RunStartupSequenceAsync(robloxService, settingsService, desktop)
                 .ContinueWith(t =>
@@ -198,24 +198,8 @@ public partial class App : Application
         RobloxService roblox, SettingsService settings,
         IClassicDesktopStyleApplicationLifetime desktop)
     {
-
-        // Step 1: first-time environment setup (VC++ etc.)
-        if (roblox.NeedsSetup())
-        {
-            BootstrapperWindow? win = null;
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                var vm = new BootstrapperViewModel(roblox, settings);
-                win = new BootstrapperWindow(vm);
-                win.Show();
-            });
-            await roblox.RunSetupAsync();
-            await Dispatcher.UIThread.InvokeAsync(() => win?.Close());
-        }
-
-        // Step 2: check for NexStrap self-update
-        var updateService = new UpdateService();
-        var update        = await updateService.CheckForUpdateAsync();
+        var updateService = Services.GetRequiredService<UpdateService>();
+        var update = await updateService.CheckForUpdateAsync();
         if (update != null)
         {
             BootstrapperWindow? win = null;
@@ -228,15 +212,20 @@ public partial class App : Application
             await updateService.DownloadAndApplyAsync(
                 update.Value.DownloadUrl,
                 p => roblox.BroadcastProgress(p));
-            return; // Environment.Exit(0) called inside DownloadAndApplyAsync
+            return;
         }
 
+        // Step 1: first-time environment setup (VC++ etc.)
+        MainWindowViewModel? vm = null;
+
+        // Step 2: check for NexStrap self-update
         // Step 3: all done — show main window; splash overlay inside it stops spinning
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
+            vm = Services.GetRequiredService<MainWindowViewModel>();
             var mainWindow = new MainWindow
             {
-                DataContext = Services.GetRequiredService<MainWindowViewModel>()
+                DataContext = vm
             };
             desktop.MainWindow   = mainWindow;
             desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
@@ -245,6 +234,35 @@ public partial class App : Application
             Services.GetRequiredService<GlobalHotKeyService>().Install();
         });
         RobloxService.Log("Main window shown");
+
+        if (vm != null)
+            _ = vm.BeginDeferredStartupAsync();
+
+        _ = RunDeferredStartupChecksAsync(roblox, settings);
+    }
+
+    private static async Task RunDeferredStartupChecksAsync(RobloxService roblox, SettingsService settings)
+    {
+        try
+        {
+            if (roblox.NeedsSetup())
+            {
+                BootstrapperWindow? win = null;
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    var vm = new BootstrapperViewModel(roblox, settings);
+                    win = new BootstrapperWindow(vm);
+                    win.Show();
+                });
+                await roblox.RunSetupAsync();
+                await Dispatcher.UIThread.InvokeAsync(() => win?.Close());
+            }
+
+        }
+        catch (Exception ex)
+        {
+            RobloxService.Log($"Deferred startup checks failed: {ex.Message}");
+        }
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]

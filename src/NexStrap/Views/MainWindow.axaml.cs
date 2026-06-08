@@ -203,15 +203,19 @@ public partial class MainWindow : Window
     //  Timeline: fade-in(280ms) → spin-once(1100ms) → hold(400ms) → fade-out(260ms)
     //  Logo spins one full revolution with cubic-bezier(0.2, 0.8, 0.4, 1.0) easing,
     //  driven by DispatcherTimer so the angle is set every ~16ms on the UI thread.
-    //  RenderTransformOrigin="0.5,0.5" on the Image element keeps the pivot centered.
+    //  The 58x58 logo wrapper is rotated so the pivot matches splash-preview.html.
 
     private RotateTransform _splashRotate = null!;
+    private TranslateTransform _splashLogoShift = null!;
+    private TranslateTransform _splashTitleShift = null!;
 
     private static readonly Logger Log = Logger.Instance;
 
     private void StartSplashOverlay()
     {
-        _splashRotate = (RotateTransform)SplashLogoImage.RenderTransform!;
+        _splashRotate = (RotateTransform)SplashLogoWrapper.RenderTransform!;
+        _splashLogoShift = (TranslateTransform)SplashLogoMotion.RenderTransform!;
+        _splashTitleShift = (TranslateTransform)SplashTitleText.RenderTransform!;
         _splashRotate.Angle = 0;
         Log.Info("Splash", $"StartSplashOverlay — ImageBounds={SplashLogoImage.Bounds}");
         _ = PlaySplashAsync();
@@ -223,6 +227,10 @@ public partial class MainWindow : Window
         {
             SplashContent.Opacity = 0;
             _splashRotate.Angle   = 0;
+            _splashLogoShift.X = 0;
+            _splashTitleShift.X = 18;
+            SplashTitleText.Opacity = 0;
+            SplashStatusText.Opacity = 0;
 
             // Wait for the first rendered frame so the black overlay is on screen
             // before the fade-in begins.
@@ -232,12 +240,19 @@ public partial class MainWindow : Window
 
             // Phase 1: fade in
             await SplashFadeAsync(SplashContent, from: 0, to: 1, ms: 280, new CubicEaseOut());
+            await SplashFadeAsync(SplashStatusText, from: 0, to: 0.72, ms: 160, new CubicEaseOut());
 
-            // Phase 2: spin one full revolution
-            await SplashSpinAsync();
+            // Phase 2: spin while startup work is being warmed, capped at 3 cycles.
+            for (var cycle = 0; cycle < 3; cycle++)
+            {
+                await SplashSpinAsync();
+                if (DataContext is not MainWindowViewModel { IsStartupLoading: true })
+                    break;
+                await Task.Delay(400);
+            }
 
-            // Phase 3: hold (logo at rest)
-            await Task.Delay(400);
+            // Phase 3: reveal the wordmark before leaving.
+            await SplashRevealBrandAsync();
 
             // Phase 4: fade out
             await SplashFadeAsync(SplashOverlay, from: 1, to: 0, ms: 260, new CubicEaseIn());
@@ -300,6 +315,42 @@ public partial class MainWindow : Window
 
     private static double CbBezD(double t, double c1, double c2) =>
         3 * c1 * (1 - t) * (1 - 2 * t) + 3 * c2 * t * (2 - 3 * t) + 3 * t * t;
+
+    private async Task SplashRevealBrandAsync()
+    {
+        var logoEase = new CubicEaseInOut();
+        var titleEase = new CubicEaseOut();
+
+        var logo = SplashValueAsync(0, -54, 1000, logoEase, v => _splashLogoShift.X = v);
+        await Task.Delay(420);
+
+        var titleShift = SplashValueAsync(18, 0, 720, titleEase, v => _splashTitleShift.X = v);
+        var titleOpacity = SplashValueAsync(0, 1, 520, titleEase, v => SplashTitleText.Opacity = v);
+
+        await Task.WhenAll(logo, titleShift, titleOpacity);
+        await Task.Delay(180);
+    }
+
+    private static Task SplashValueAsync(double from, double to, int ms, Easing easing, Action<double> set)
+    {
+        var tcs = new TaskCompletionSource();
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+
+        timer.Tick += (_, _) =>
+        {
+            var t = Math.Min(sw.ElapsedMilliseconds / (double)ms, 1.0);
+            var eased = easing.Ease(t);
+            set(from + (to - from) * eased);
+            if (t < 1.0) return;
+            timer.Stop();
+            tcs.TrySetResult();
+        };
+
+        set(from);
+        timer.Start();
+        return tcs.Task;
+    }
 
     private static Task SplashFadeAsync(Animatable target, double from, double to, int ms, Easing easing)
     {

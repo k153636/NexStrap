@@ -38,7 +38,7 @@ public partial class SplashWindow : Window
         }
 
         _rotate = new RotateTransform(0);
-        LogoImage.RenderTransform = _rotate;
+        LogoWrapper.RenderTransform = _rotate;
         if (IsTestMode) TestControls.IsVisible = true;
         _ = PlayAsync();
     }
