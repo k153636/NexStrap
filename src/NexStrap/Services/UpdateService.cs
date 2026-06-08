@@ -111,7 +111,7 @@ public class UpdateService
         await File.WriteAllTextAsync(scriptPath,
             $"""
             @echo off
-            timeout /t 2 /nobreak >nul
+            ping 127.0.0.1 -n 3 > nul
             move /y "{tempExe}" "{currentExe}"
             start "" "{currentExe}"
             del "%~f0"
