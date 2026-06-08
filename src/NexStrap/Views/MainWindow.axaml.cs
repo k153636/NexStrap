@@ -209,8 +209,8 @@ public partial class MainWindow : Window
 
     private void StartSplashOverlay()
     {
-        _splashRotate = new RotateTransform(0);
-        SplashLogoImage.RenderTransform = _splashRotate;
+        _splashRotate = (RotateTransform)SplashLogoImage.RenderTransform!;
+        _splashRotate.Angle = 0;
         _ = PlaySplashAsync();
     }
 
