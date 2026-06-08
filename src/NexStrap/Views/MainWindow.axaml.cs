@@ -199,26 +199,34 @@ public partial class MainWindow : Window
 
     // ── Splash overlay ──────────────────────────────────────────────────────
 
-    private RotateTransform _splashRotate = null!;
+    private MatrixTransform _splashMatrix = null!;
 
     private static readonly Logger Log = Logger.Instance;
     private const string Cat = "Splash";
 
     private void StartSplashOverlay()
     {
-        Log.Info(Cat, "StartSplashOverlay called");
-        // Manual rotation around center (29,29):
-        //   TransformGroup = T(-29,-29) * RotateTransform * T(29,29)
-        // This bypasses RenderTransformOrigin/CenterX-CenterY interactions
-        // entirely — the math is explicit and self-contained.
-        _splashRotate = new RotateTransform(0);
-        var group = new TransformGroup();
-        group.Children.Add(new TranslateTransform(-29, -29));
-        group.Children.Add(_splashRotate);
-        group.Children.Add(new TranslateTransform( 29,  29));
-        SplashLogoWrapper.RenderTransform = group;
-        Log.Info(Cat, $"TransformGroup set — wrapper Bounds: {SplashLogoWrapper.Bounds}");
+        // MatrixTransform: set the exact rotation-around-center matrix each tick.
+        // No RenderTransformOrigin, no CenterX/Y, no TransformGroup child-change
+        // propagation — the matrix is written directly, nothing is cached.
+        _splashMatrix = new MatrixTransform(Matrix.Identity);
+        SplashLogoWrapper.RenderTransform = _splashMatrix;
+        Log.Info(Cat, $"StartSplashOverlay — wrapper Bounds: {SplashLogoWrapper.Bounds}");
         _ = PlaySplashAsync();
+    }
+
+    // Rotation-around-(cx,cy) matrix in Avalonia row-vector convention:
+    //   x' = x*cos - y*sin + cx(1-cos) + cy*sin
+    //   y' = x*sin + y*cos + cy(1-cos) - cx*sin
+    private static Matrix RotationMatrix(double angleDeg, double cx, double cy)
+    {
+        double rad = angleDeg * Math.PI / 180.0;
+        double cos = Math.Cos(rad), sin = Math.Sin(rad);
+        return new Matrix(
+            cos,  sin,
+            -sin, cos,
+            cx * (1 - cos) + cy * sin,
+            cy * (1 - cos) - cx * sin);
     }
 
     private async Task PlaySplashAsync()
@@ -273,12 +281,13 @@ public partial class MainWindow : Window
                 if (ct.IsCancellationRequested) { timer.Stop(); tcs.TrySetResult(true);  return; }
                 double elapsed = sw.ElapsedMilliseconds;
                 if (elapsed >= tSpin)           { timer.Stop(); tcs.TrySetResult(false); return; }
-                _splashRotate.Angle = SplashSpline(elapsed / tSpin) * 360.0;
+                double angle = SplashSpline(elapsed / tSpin) * 360.0;
+                _splashMatrix.Matrix = RotationMatrix(angle, 29, 29);
             };
             timer.Start();
 
             if (await tcs.Task) break;
-            _splashRotate.Angle = 0;
+            _splashMatrix.Matrix = Matrix.Identity;
 
             try { await Task.Delay(tHold, ct); }
             catch (OperationCanceledException) { break; }
