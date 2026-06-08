@@ -13,6 +13,7 @@ public static class AccountsFriendsModule
         services.AddSingleton<AccountDialogCoordinator>();
         services.AddSingleton<ChromeImportCoordinator>();
         services.AddSingleton<CookieAccountImportService>();
+        services.AddSingleton<CookieInputNormalizer>();
         services.AddSingleton<QuickLoginService>();
         services.AddSingleton<QuickLoginCoordinator>();
         services.AddSingleton<FriendNotificationService>();

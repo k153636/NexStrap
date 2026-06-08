@@ -18,6 +18,7 @@ public partial class AccountViewModel : ViewModelBase
     private readonly ChromeImportCoordinator _chromeImport;
     private readonly RobloxApiService  _robloxApi;
     private readonly CookieAccountImportService _cookieImport;
+    private readonly CookieInputNormalizer _cookieInputNormalizer;
     private readonly QuickLoginCoordinator _quickLoginCoordinator;
     private readonly AccountEntryViewModelFactory _accountEntryFactory;
     private CancellationTokenSource?   _pollCts;
@@ -102,7 +103,8 @@ public partial class AccountViewModel : ViewModelBase
         AccountActivityRefreshService activityRefresh,
         ChromeImportCoordinator chromeImport,
         AccountEntryViewModelFactory accountEntryFactory,
-        AccountDialogCoordinator dialogCoordinator)
+        AccountDialogCoordinator dialogCoordinator,
+        CookieInputNormalizer cookieInputNormalizer)
     {
         _accounts              = accounts;
         _activityRefresh       = activityRefresh;
@@ -110,6 +112,7 @@ public partial class AccountViewModel : ViewModelBase
         _chromeImport          = chromeImport;
         _robloxApi             = robloxApi;
         _cookieImport          = cookieImport;
+        _cookieInputNormalizer = cookieInputNormalizer;
         _quickLoginCoordinator = quickLoginCoordinator;
         _accountEntryFactory   = accountEntryFactory;
         FriendsVm              = friendsVm;
@@ -338,9 +341,7 @@ public partial class AccountViewModel : ViewModelBase
     {
         var raw = ManualCookie.Trim();
         if (string.IsNullOrEmpty(raw)) { StatusMessage = "Paste your .ROBLOSECURITY cookie first"; return; }
-        const string prefix = ".ROBLOSECURITY=";
-        if (raw.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            raw = raw[prefix.Length..].Trim();
+        raw = _cookieInputNormalizer.StripRobloSecurityPrefix(raw);
         await ImportCookieAsync(raw);
         ManualCookie     = string.Empty;
         IsPastePanelOpen = false;
