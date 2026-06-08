@@ -16,6 +16,7 @@ public partial class AccountViewModel : ViewModelBase
 {
     private readonly AccountService    _accounts;
     private readonly AccountActivityRefreshService _activityRefresh;
+    private readonly ChromeImportCoordinator _chromeImport;
     private readonly RobloxApiService  _robloxApi;
     private readonly CookieAccountImportService _cookieImport;
     private readonly QuickLoginService _quickLogin;
@@ -101,10 +102,12 @@ public partial class AccountViewModel : ViewModelBase
         QuickSignInViewModelFactory quickSignInFactory,
         QuickLoginCoordinator quickLoginCoordinator,
         CookieAccountImportService cookieImport,
-        AccountActivityRefreshService activityRefresh)
+        AccountActivityRefreshService activityRefresh,
+        ChromeImportCoordinator chromeImport)
     {
         _accounts              = accounts;
         _activityRefresh       = activityRefresh;
+        _chromeImport          = chromeImport;
         _robloxApi             = robloxApi;
         _cookieImport          = cookieImport;
         _quickLogin            = quickLogin;
@@ -275,28 +278,18 @@ public partial class AccountViewModel : ViewModelBase
             if (!File.Exists(localState)) { StatusMessage = "Chrome not found"; return; }
 
             StatusMessage = "Importing...";
-            string? cookie = null;
-            long?   userId = null;
-
-            for (int attempt = 0; attempt < 3 && userId == null; attempt++)
-            {
-                if (attempt > 0) await Task.Delay(1200);
-                cookie = await BrowserCookieImporter.TryImportAsync(BrowserType.Chrome);
-                if (cookie != null) userId = await _cookieImport.GetAuthenticatedUserIdAsync(cookie);
-            }
+            var importResult = await _chromeImport.TryImportAuthenticatedCookieAsync();
+            var cookie       = importResult.Cookie;
+            var userId       = importResult.UserId;
 
             if (userId == null)
             {
                 IsWaitingForLogin = true;
                 StatusMessage     = "Please log in to roblox.com in Chrome";
-                while (!_pollCts.Token.IsCancellationRequested)
-                {
-                    try { await Task.Delay(3000, _pollCts.Token); }
-                    catch (OperationCanceledException) { return; }
-                    cookie = await BrowserCookieImporter.TryImportAsync(BrowserType.Chrome);
-                    if (cookie != null) userId = await _cookieImport.GetAuthenticatedUserIdAsync(cookie);
-                    if (userId != null) break;
-                }
+                importResult = await _chromeImport.WaitForAuthenticatedCookieAsync(_pollCts.Token);
+                if (importResult == null) return;
+                cookie = importResult.Cookie;
+                userId = importResult.UserId;
                 if (userId == null) return;
             }
 

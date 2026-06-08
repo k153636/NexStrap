@@ -10,6 +10,7 @@ public static class AccountsFriendsModule
     {
         services.AddSingleton<AccountService>();
         services.AddSingleton<AccountActivityRefreshService>();
+        services.AddSingleton<ChromeImportCoordinator>();
         services.AddSingleton<CookieAccountImportService>();
         services.AddSingleton<QuickLoginService>();
         services.AddSingleton<QuickLoginCoordinator>();
