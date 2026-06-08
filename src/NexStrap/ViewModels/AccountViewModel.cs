@@ -1,13 +1,11 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NexStrap.Models;
 using NexStrap.Services;
-using NexStrap.Views;
 using System.Collections.ObjectModel;
 
 namespace NexStrap.ViewModels;
@@ -16,11 +14,11 @@ public partial class AccountViewModel : ViewModelBase
 {
     private readonly AccountService    _accounts;
     private readonly AccountActivityRefreshService _activityRefresh;
+    private readonly AccountDialogCoordinator _dialogCoordinator;
     private readonly ChromeImportCoordinator _chromeImport;
     private readonly RobloxApiService  _robloxApi;
     private readonly CookieAccountImportService _cookieImport;
     private readonly QuickLoginCoordinator _quickLoginCoordinator;
-    private readonly QuickSignInViewModelFactory _quickSignInFactory;
     private readonly AccountEntryViewModelFactory _accountEntryFactory;
     private CancellationTokenSource?   _pollCts;
     private CancellationTokenSource    _presenceCts = new();
@@ -99,19 +97,19 @@ public partial class AccountViewModel : ViewModelBase
 
     public AccountViewModel(AccountService accounts, RobloxApiService robloxApi,
         FriendsViewModel friendsVm,
-        QuickSignInViewModelFactory quickSignInFactory,
         QuickLoginCoordinator quickLoginCoordinator,
         CookieAccountImportService cookieImport,
         AccountActivityRefreshService activityRefresh,
         ChromeImportCoordinator chromeImport,
-        AccountEntryViewModelFactory accountEntryFactory)
+        AccountEntryViewModelFactory accountEntryFactory,
+        AccountDialogCoordinator dialogCoordinator)
     {
         _accounts              = accounts;
         _activityRefresh       = activityRefresh;
+        _dialogCoordinator     = dialogCoordinator;
         _chromeImport          = chromeImport;
         _robloxApi             = robloxApi;
         _cookieImport          = cookieImport;
-        _quickSignInFactory    = quickSignInFactory;
         _quickLoginCoordinator = quickLoginCoordinator;
         _accountEntryFactory   = accountEntryFactory;
         FriendsVm              = friendsVm;
@@ -208,22 +206,10 @@ public partial class AccountViewModel : ViewModelBase
         var result = await _robloxApi.CreateQuickSignInAsync();
         if (result == null) { StatusMessage = "Failed to create Quick Sign-In session"; return; }
 
-        var vm     = _quickSignInFactory.Create(result.Value.Code, result.Value.PrivateKey);
-        var dialog = new QuickSignInDialog { DataContext = vm };
-        vm.Completed += async (_, _) =>
-        {
-            if (vm.ResultCookie != null)
-                await Dispatcher.UIThread.InvokeAsync(async () =>
-                {
-                    await ImportCookieAsync(vm.ResultCookie);
-                    dialog.Close();
-                });
-        };
-
-        var mainWin = (Application.Current?.ApplicationLifetime
-            as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
-        if (mainWin != null) await dialog.ShowDialog(mainWin);
-        else dialog.Show();
+        await _dialogCoordinator.ShowQuickSignInAsync(
+            result.Value.Code,
+            result.Value.PrivateKey,
+            ImportCookieAsync);
     }
 
     [RelayCommand]
@@ -323,12 +309,7 @@ public partial class AccountViewModel : ViewModelBase
     {
         try
         {
-            var mainWindow = (Application.Current?.ApplicationLifetime
-                as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
-            var loginWindow = new RobloxLoginWindow();
-            if (mainWindow != null) await loginWindow.ShowDialog(mainWindow);
-            else loginWindow.Show();
-            var cookie = loginWindow.CapturedCookie;
+            var cookie = await _dialogCoordinator.ShowBrowserLoginAsync();
             if (!string.IsNullOrEmpty(cookie)) await ImportCookieAsync(cookie);
         }
         catch { StatusMessage = "WebView2 not available"; }
