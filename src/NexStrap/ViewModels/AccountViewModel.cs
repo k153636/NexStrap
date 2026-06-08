@@ -122,6 +122,7 @@ public partial class AccountViewModel : ViewModelBase
     private readonly AccountService    _accounts;
     private readonly RobloxApiService  _robloxApi;
     private readonly QuickLoginService _quickLogin;
+    private readonly QuickSignInViewModelFactory _quickSignInFactory;
     private CancellationTokenSource?   _pollCts;
     private CancellationTokenSource    _presenceCts = new();
 
@@ -198,12 +199,14 @@ public partial class AccountViewModel : ViewModelBase
     [ObservableProperty] private string _quickLoginInput    = string.Empty;
 
     public AccountViewModel(AccountService accounts, RobloxApiService robloxApi,
-        QuickLoginService quickLogin, FriendsViewModel friendsVm)
+        QuickLoginService quickLogin, FriendsViewModel friendsVm,
+        QuickSignInViewModelFactory quickSignInFactory)
     {
-        _accounts   = accounts;
-        _robloxApi  = robloxApi;
-        _quickLogin = quickLogin;
-        FriendsVm   = friendsVm;
+        _accounts           = accounts;
+        _robloxApi          = robloxApi;
+        _quickLogin         = quickLogin;
+        _quickSignInFactory = quickSignInFactory;
+        FriendsVm           = friendsVm;
         Reload();
     }
 
@@ -301,7 +304,7 @@ public partial class AccountViewModel : ViewModelBase
         var result = await _robloxApi.CreateQuickSignInAsync();
         if (result == null) { StatusMessage = "Failed to create Quick Sign-In session"; return; }
 
-        var vm     = new QuickSignInViewModel(result.Value.Code, result.Value.PrivateKey, _robloxApi);
+        var vm     = _quickSignInFactory.Create(result.Value.Code, result.Value.PrivateKey);
         var dialog = new QuickSignInDialog { DataContext = vm };
         vm.Completed += async (_, _) =>
         {
