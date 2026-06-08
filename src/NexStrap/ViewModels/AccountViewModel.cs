@@ -15,6 +15,7 @@ namespace NexStrap.ViewModels;
 public partial class AccountViewModel : ViewModelBase
 {
     private readonly AccountService    _accounts;
+    private readonly AccountActivityRefreshService _activityRefresh;
     private readonly RobloxApiService  _robloxApi;
     private readonly CookieAccountImportService _cookieImport;
     private readonly QuickLoginService _quickLogin;
@@ -99,9 +100,11 @@ public partial class AccountViewModel : ViewModelBase
         QuickLoginService quickLogin, FriendsViewModel friendsVm,
         QuickSignInViewModelFactory quickSignInFactory,
         QuickLoginCoordinator quickLoginCoordinator,
-        CookieAccountImportService cookieImport)
+        CookieAccountImportService cookieImport,
+        AccountActivityRefreshService activityRefresh)
     {
         _accounts              = accounts;
+        _activityRefresh       = activityRefresh;
         _robloxApi             = robloxApi;
         _cookieImport          = cookieImport;
         _quickLogin            = quickLogin;
@@ -167,9 +170,8 @@ public partial class AccountViewModel : ViewModelBase
         try
         {
             var userIds  = Accounts.Select(a => a.UserId).ToList();
-            var presence = await _robloxApi.GetFriendPresenceDetailsAsync(userIds);
+            var map = await _activityRefresh.GetPresenceByUserIdAsync(userIds, ct);
             if (ct.IsCancellationRequested) return;
-            var map = presence.ToDictionary(p => p.UserId);
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 foreach (var e in Accounts)
@@ -187,14 +189,12 @@ public partial class AccountViewModel : ViewModelBase
         IsStatsLoading = true;
         try
         {
-            var t1 = _robloxApi.GetFriendsCountAsync(active.UserId);
-            var t2 = _robloxApi.GetFollowersCountAsync(active.UserId);
-            var t3 = _robloxApi.GetFollowingsCountAsync(active.UserId);
-            await Task.WhenAll(t1, t2, t3);
+            var stats = await _activityRefresh.GetActiveStatsAsync(active, ct);
             if (ct.IsCancellationRequested) return;
-            ActiveFriendsCount    = t1.Result;
-            ActiveFollowersCount  = t2.Result;
-            ActiveFollowingsCount = t3.Result;
+            if (stats == null) return;
+            ActiveFriendsCount    = stats.Friends;
+            ActiveFollowersCount  = stats.Followers;
+            ActiveFollowingsCount = stats.Followings;
         }
         catch { }
         finally { IsStatsLoading = false; }
