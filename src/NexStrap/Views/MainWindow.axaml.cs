@@ -217,14 +217,11 @@ public partial class MainWindow : Window
         try
         {
             SplashContent.Opacity = 0;
-            Log.Info(Cat, "Waiting for Window.Opened");
 
-            var openedTcs = new TaskCompletionSource();
-            void OnOpened(object? s, EventArgs _) { Opened -= OnOpened; openedTcs.TrySetResult(); }
-            Opened += OnOpened;
-            await openedTcs.Task;
-            Log.Info(Cat, "Window.Opened received — waiting for render frame");
-
+            // Opened fires during Show(), before Loaded — already past by here.
+            // Post at Render priority so the black overlay reaches the screen
+            // before the fade-in begins.
+            Log.Info(Cat, "Waiting for render frame");
             var frameTcs = new TaskCompletionSource();
             Dispatcher.UIThread.Post(() => frameTcs.TrySetResult(), DispatcherPriority.Render);
             await frameTcs.Task;
