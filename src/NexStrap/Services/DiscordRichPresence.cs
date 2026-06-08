@@ -261,8 +261,12 @@ public sealed class DiscordRichPresence : IDisposable
 
             // ── Roblox 起動開始（前セッションをクリア） ─────────────────────
             case EvLaunch:
-                ClearAllSlots();
-                _phase         = Phase.RobloxMenu;
+                // 実行中のスロットがある場合（マルチインスタンス）はクリアしない
+                if (_games.Count == 0 && _slotPlaceIds.Count == 0)
+                {
+                    ClearAllSlots();
+                    _phase = Phase.RobloxMenu;
+                }
                 break;
 
             // ── ゲーム参加 ──────────────────────────────────────────────────
