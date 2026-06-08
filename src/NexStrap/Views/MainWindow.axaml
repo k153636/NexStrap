@@ -292,8 +292,7 @@
                         Spacing="16" Opacity="0">
                 <Border x:Name="SplashLogoWrapper"
                         Width="58" Height="58"
-                        HorizontalAlignment="Center"
-                        RenderTransformOrigin="0.5,0.5">
+                        HorizontalAlignment="Center">
                     <Image Source="avares://NexStrap/Assets/nexstrap.png"
                            Width="58" Height="58"
                            RenderOptions.BitmapInterpolationMode="HighQuality"/>

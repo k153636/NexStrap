@@ -207,11 +207,17 @@ public partial class MainWindow : Window
     private void StartSplashOverlay()
     {
         Log.Info(Cat, "StartSplashOverlay called");
-        // Rotate the wrapper Border (not the Image directly).
-        // RenderTransformOrigin="0.5,0.5" is set in XAML on SplashLogoWrapper
-        // and is never touched from code, so Avalonia applies T(29,29)*R*T(-29,-29).
+        // Manual rotation around center (29,29):
+        //   TransformGroup = T(-29,-29) * RotateTransform * T(29,29)
+        // This bypasses RenderTransformOrigin/CenterX-CenterY interactions
+        // entirely — the math is explicit and self-contained.
         _splashRotate = new RotateTransform(0);
-        SplashLogoWrapper.RenderTransform = _splashRotate;
+        var group = new TransformGroup();
+        group.Children.Add(new TranslateTransform(-29, -29));
+        group.Children.Add(_splashRotate);
+        group.Children.Add(new TranslateTransform( 29,  29));
+        SplashLogoWrapper.RenderTransform = group;
+        Log.Info(Cat, $"TransformGroup set — wrapper Bounds: {SplashLogoWrapper.Bounds}");
         _ = PlaySplashAsync();
     }
 
