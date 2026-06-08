@@ -284,38 +284,5 @@
             </Grid>
         </Border>
 
-        <!-- ── Splash overlay (covers full window on startup) ── -->
-        <Grid x:Name="SplashOverlay" Grid.RowSpan="3" IsHitTestVisible="True">
-
-            <Rectangle Fill="#CC000000" IsHitTestVisible="False"/>
-
-            <StackPanel x:Name="SplashContentPanel"
-                        VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="24">
-
-                <Image x:Name="SplashIcon"
-                       Source="avares://NexStrap/Assets/nexstrap.png"
-                       Width="70" Height="70"
-                       HorizontalAlignment="Center"
-                       RenderOptions.BitmapInterpolationMode="HighQuality"/>
-
-                <StackPanel x:Name="SplashTextGroup" HorizontalAlignment="Center" Spacing="6">
-
-                    <!-- Thin accent line — luxury signature -->
-                    <Border Height="1" Width="32" HorizontalAlignment="Center"
-                            Background="#28FFFFFF" Margin="0,0,0,5"/>
-
-                    <TextBlock Text="NexStrap" FontSize="20" FontWeight="SemiBold"
-                               Foreground="#F0F0F0" HorizontalAlignment="Center"
-                               LetterSpacing="4"/>
-                    <TextBlock Text="Roblox Utility" FontSize="9"
-                               Foreground="#4A4A4A" HorizontalAlignment="Center"
-                               LetterSpacing="2"/>
-
-                </StackPanel>
-
-            </StackPanel>
-
-        </Grid>
-
     </Grid>
 </Window>

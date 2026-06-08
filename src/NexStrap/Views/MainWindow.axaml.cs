@@ -39,7 +39,6 @@ public partial class MainWindow : Window
         {
             if (DataContext is MainWindowViewModel vm)
                 ApplyGlassTheme(vm.ThemeVM.GlassThemeEnabled);
-            _ = PlaySplashAsync();
         };
 
         Activated += (_, _) =>
@@ -193,78 +192,6 @@ public partial class MainWindow : Window
         if (splitView != null)
             splitView.PaneBackground = paneBrush;
     }
-
-    private async Task PlaySplashAsync()
-    {
-        const double StartY = 220.0;
-
-        // TranslateTransform on the panel — no layout pass per frame
-        var slide = new TranslateTransform(0, StartY);
-        var scale = new ScaleTransform(1, 1);
-
-        SplashContentPanel.RenderTransform       = slide;
-        SplashContentPanel.RenderTransformOrigin = RelativePoint.Center;
-        SplashIcon.RenderTransform               = scale;
-        SplashIcon.RenderTransformOrigin         = RelativePoint.Center;
-        SplashIcon.Opacity                       = 0;
-        SplashTextGroup.Opacity                  = 0;
-        SplashContentPanel.Transitions           = null;
-        SplashIcon.Transitions                   = null;
-
-        await Task.Delay(200);
-
-        // Single timer — one continuous timeline, zero stops
-        //
-        // ms:   0     480   700   1000  1400          2100
-        //       |------|-----|-----|-----|-------------| done
-        // slide      [=========]
-        // icon fade  [=====]
-        // text fade        [====]
-        //                        [hold]
-        // exit (scale+fade)            [==============]
-
-        var start = Environment.TickCount64;
-        var tcs   = new TaskCompletionSource();
-        var timer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
-
-        timer.Tick += (_, _) =>
-        {
-            var ms = (double)(Environment.TickCount64 - start);
-
-            // Slide: CubicEaseOut, 0–900ms (render-only, no layout cost)
-            slide.Y = StartY * (1.0 - SplashEaseOut3(Math.Clamp(ms / 900.0, 0, 1)));
-
-            // Icon fade-in: 0–480ms
-            SplashIcon.Opacity = Math.Clamp(ms / 480.0, 0, 1);
-
-            // Text fade-in: 700–1000ms
-            SplashTextGroup.Opacity = Math.Clamp((ms - 700) / 300.0, 0, 1);
-
-            // Exit: 1400–2100ms — overrides entry values
-            if (ms >= 1400)
-            {
-                var exitT = Math.Clamp((ms - 1400) / 700.0, 0, 1);
-                var alpha = 1.0 - exitT;
-                var s     = 1.0 + exitT; // 1.0 → 2.0
-
-                scale.ScaleX            = s;
-                scale.ScaleY            = s;
-                SplashIcon.Opacity      = alpha;
-                SplashTextGroup.Opacity = alpha;
-                SplashOverlay.Opacity   = alpha;
-            }
-
-            if (ms >= 2100) { timer.Stop(); tcs.TrySetResult(); }
-        };
-
-        timer.Start();
-        await tcs.Task;
-
-        SplashOverlay.IsVisible        = false;
-        SplashOverlay.IsHitTestVisible = false;
-    }
-
-    private static double SplashEaseOut3(double t) => 1.0 - Math.Pow(1.0 - t, 3);
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
