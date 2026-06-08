@@ -207,10 +207,13 @@ public partial class MainWindow : Window
 
     private RotateTransform _splashRotate = null!;
 
+    private static readonly Logger Log = Logger.Instance;
+
     private void StartSplashOverlay()
     {
         _splashRotate = (RotateTransform)SplashLogoImage.RenderTransform!;
         _splashRotate.Angle = 0;
+        Log.Info("Splash", $"StartSplashOverlay — ImageBounds={SplashLogoImage.Bounds}");
         _ = PlaySplashAsync();
     }
 
