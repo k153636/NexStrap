@@ -198,10 +198,14 @@ public partial class MainWindow : Window
 
     // ── Splash overlay ──────────────────────────────────────────────────────
 
-    private RotateTransform _splashRotate = null!;
+    // ── Splash overlay ──────────────────────────────────────────────────────
+    //
+    //  Timeline: fade-in(280ms) → spin-once(1100ms) → hold(400ms) → fade-out(260ms)
+    //  Logo spins one full revolution with cubic-bezier(0.2, 0.8, 0.4, 1.0) easing,
+    //  driven by DispatcherTimer so the angle is set every ~16ms on the UI thread.
+    //  RenderTransformOrigin="0.5,0.5" on the Image element keeps the pivot centered.
 
-    private static readonly Logger Log = Logger.Instance;
-    private const string Cat = "Splash";
+    private RotateTransform _splashRotate = null!;
 
     private void StartSplashOverlay()
     {
@@ -215,77 +219,86 @@ public partial class MainWindow : Window
         try
         {
             SplashContent.Opacity = 0;
-            _splashRotate.Angle = 0;
+            _splashRotate.Angle   = 0;
 
-            var frameTcs = new TaskCompletionSource();
-            Dispatcher.UIThread.Post(() => frameTcs.TrySetResult(), DispatcherPriority.Render);
-            await frameTcs.Task;
+            // Wait for the first rendered frame so the black overlay is on screen
+            // before the fade-in begins.
+            var ready = new TaskCompletionSource();
+            Dispatcher.UIThread.Post(() => ready.TrySetResult(), DispatcherPriority.Render);
+            await ready.Task;
 
-            await RunOpacityAsync(SplashContent, 0d, 1d, 280, new CubicEaseOut());
-            SplashContent.Opacity = 1;
+            // Phase 1: fade in
+            await SplashFadeAsync(SplashContent, from: 0, to: 1, ms: 280, new CubicEaseOut());
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1500));
-            await SplashSpinLoopAsync(cts.Token);
+            // Phase 2: spin one full revolution
+            await SplashSpinAsync();
 
-            await RunOpacityAsync(SplashOverlay, 1d, 0d, 260, new CubicEaseIn());
+            // Phase 3: hold (logo at rest)
+            await Task.Delay(400);
+
+            // Phase 4: fade out
+            await SplashFadeAsync(SplashOverlay, from: 1, to: 0, ms: 260, new CubicEaseIn());
             SplashOverlay.IsVisible        = false;
             SplashOverlay.IsHitTestVisible = false;
         }
         catch (Exception ex)
         {
-            Log.Exception(Cat, ex);
+            Logger.Instance.Exception("Splash", ex);
             SplashOverlay.IsVisible        = false;
             SplashOverlay.IsHitTestVisible = false;
         }
     }
 
-    private async Task SplashSpinLoopAsync(CancellationToken ct)
+    // Drives one 360° rotation over 1100 ms using a DispatcherTimer.
+    private Task SplashSpinAsync()
     {
-        const double tSpin = 1100.0;
-        const int    tHold = 400;
+        const double DurationMs = 1100.0;
 
-        while (!ct.IsCancellationRequested)
+        var tcs   = new TaskCompletionSource();
+        var sw    = System.Diagnostics.Stopwatch.StartNew();
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+
+        timer.Tick += (_, _) =>
         {
-            var tcs = new TaskCompletionSource<bool>();
-            var sw  = System.Diagnostics.Stopwatch.StartNew();
-
-            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
-            timer.Tick += (_, _) =>
+            double t = sw.ElapsedMilliseconds / DurationMs;
+            if (t >= 1.0)
             {
-                if (ct.IsCancellationRequested) { timer.Stop(); tcs.TrySetResult(true);  return; }
-                double elapsed = sw.ElapsedMilliseconds;
-                if (elapsed >= tSpin)           { timer.Stop(); tcs.TrySetResult(false); return; }
-                _splashRotate.Angle = SplashSpline(elapsed / tSpin) * 360.0;
-            };
-            timer.Start();
+                _splashRotate.Angle = 0; // normalize — 360° == 0° visually
+                timer.Stop();
+                tcs.TrySetResult();
+                return;
+            }
+            _splashRotate.Angle = SplashEase(t) * 360.0;
+        };
 
-            if (await tcs.Task) break;
-            _splashRotate.Angle = 0;
-
-            try { await Task.Delay(tHold, ct); }
-            catch (OperationCanceledException) { break; }
-        }
+        timer.Start();
+        return tcs.Task;
     }
 
-    private static double SplashSpline(double t)
+    // cubic-bezier(0.2, 0.8, 0.4, 1.0) — solved via Newton-Raphson on the x axis.
+    private static double SplashEase(double t)
     {
         if (t <= 0) return 0;
         if (t >= 1) return 1;
         double s = t;
         for (int i = 0; i < 8; i++)
         {
-            double dx = Bz(s, 0.2, 0.4) - t;
-            if (Math.Abs(dx) < 1e-6) break;
-            double d = BzD(s, 0.2, 0.4);
-            if (Math.Abs(d)  < 1e-6) break;
-            s -= dx / d;
+            double err = CbBez(s, 0.2, 0.4) - t;
+            if (Math.Abs(err) < 1e-6) break;
+            double d = CbBezD(s, 0.2, 0.4);
+            if (Math.Abs(d)   < 1e-6) break;
+            s -= err / d;
         }
-        return Bz(s, 0.8, 1.0);
+        return CbBez(s, 0.8, 1.0);
     }
-    private static double Bz (double t, double c1, double c2) => 3*c1*t*(1-t)*(1-t) + 3*c2*t*t*(1-t) + t*t*t;
-    private static double BzD(double t, double c1, double c2) => 3*c1*(1-t)*(1-2*t) + 3*c2*t*(2-3*t) + 3*t*t;
 
-    private static Task RunOpacityAsync(Animatable target, double from, double to, int ms, Easing easing)
+    private static double CbBez (double t, double c1, double c2) =>
+        3 * c1 * t * (1 - t) * (1 - t) + 3 * c2 * t * t * (1 - t) + t * t * t;
+
+    private static double CbBezD(double t, double c1, double c2) =>
+        3 * c1 * (1 - t) * (1 - 2 * t) + 3 * c2 * t * (2 - 3 * t) + 3 * t * t;
+
+    private static Task SplashFadeAsync(Animatable target, double from, double to, int ms, Easing easing)
     {
         var anim = new Animation
         {
@@ -294,8 +307,8 @@ public partial class MainWindow : Window
             FillMode = FillMode.Forward,
             Children =
             {
-                new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(OpacityProperty, from) } },
-                new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(OpacityProperty, to)   } },
+                new KeyFrame { Cue = new Cue(0), Setters = { new Setter(OpacityProperty, from) } },
+                new KeyFrame { Cue = new Cue(1), Setters = { new Setter(OpacityProperty, to)   } },
             }
         };
         return anim.RunAsync(target);
