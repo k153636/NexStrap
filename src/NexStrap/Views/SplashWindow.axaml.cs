@@ -1,4 +1,3 @@
-using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
@@ -14,7 +13,6 @@ public partial class SplashWindow : Window
     public bool IsTestMode { get; set; }
 
     private bool _playing;
-    private ScaleTransform _scale = null!;
     private RotateTransform _rotate = null!;
     private CancellationTokenSource _cts = new();
 
@@ -26,8 +24,6 @@ public partial class SplashWindow : Window
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        _scale = new ScaleTransform(0.85, 0.85);
-        SplashContent.RenderTransform = _scale;
         _rotate = new RotateTransform(0);
         LogoImage.RenderTransform = _rotate;
         if (IsTestMode) TestControls.IsVisible = true;
@@ -45,34 +41,14 @@ public partial class SplashWindow : Window
 
         // Reset
         SplashContent.Opacity = 0;
-        _scale.ScaleX = _scale.ScaleY = 0.85;
         _rotate.Angle = 0;
         Opacity = 1;
 
         await Task.Delay(40);
 
-        // Phase 1: appear — scale up + fade in (280ms)
-        var fadeIn  = OpacityAnim(SplashContent, 0d, 1d, 280, new CubicEaseOut());
-        var scaleUp = new Animation
-        {
-            Duration = TimeSpan.FromMilliseconds(280),
-            Easing   = new CubicEaseOut(),
-            FillMode = FillMode.Forward,
-            Children =
-            {
-                new KeyFrame { Cue = new Cue(0d), Setters = {
-                    new Setter(ScaleTransform.ScaleXProperty, 0.85d),
-                    new Setter(ScaleTransform.ScaleYProperty, 0.85d),
-                }},
-                new KeyFrame { Cue = new Cue(1d), Setters = {
-                    new Setter(ScaleTransform.ScaleXProperty, 1.0d),
-                    new Setter(ScaleTransform.ScaleYProperty, 1.0d),
-                }},
-            }
-        };
-        await Task.WhenAll(fadeIn.RunAsync(SplashContent), scaleUp.RunAsync(_scale));
+        // Phase 1: fade in (280ms)
+        await OpacityAnim(SplashContent, 0d, 1d, 280, new CubicEaseOut()).RunAsync(SplashContent);
         SplashContent.Opacity = 1;
-        _scale.ScaleX = _scale.ScaleY = 1.0;
 
         // Phase 2: spin until Complete() is called
         await SpinLoopAsync(_cts.Token);
