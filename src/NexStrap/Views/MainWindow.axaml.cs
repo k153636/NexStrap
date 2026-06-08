@@ -207,7 +207,10 @@ public partial class MainWindow : Window
     private void StartSplashOverlay()
     {
         Log.Info(Cat, "StartSplashOverlay called");
-        _splashRotate = new RotateTransform(0);
+        // CenterX/CenterY must match the image size (58x58) so rotation is
+        // around the pixel center. RenderTransformOrigin in XAML is unreliable
+        // when RenderTransform is overwritten from code.
+        _splashRotate = new RotateTransform(0) { CenterX = 29, CenterY = 29 };
         SplashLogo.RenderTransform = _splashRotate;
         _ = PlaySplashAsync();
     }

@@ -294,7 +294,6 @@
                        Source="avares://NexStrap/Assets/nexstrap.png"
                        Width="58" Height="58"
                        HorizontalAlignment="Center"
-                       RenderTransformOrigin="0.5,0.5"
                        RenderOptions.BitmapInterpolationMode="HighQuality"/>
                 <TextBlock Text="NexStrap"
                            FontSize="22" FontWeight="Bold"
