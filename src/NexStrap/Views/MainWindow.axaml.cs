@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using NexStrap.Services;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
@@ -200,8 +201,12 @@ public partial class MainWindow : Window
 
     private RotateTransform _splashRotate = null!;
 
+    private static readonly Logger Log = Logger.Instance;
+    private const string Cat = "Splash";
+
     private void StartSplashOverlay()
     {
+        Log.Info(Cat, "StartSplashOverlay called");
         _splashRotate = new RotateTransform(0);
         SplashLogo.RenderTransform = _splashRotate;
         _ = PlaySplashAsync();
@@ -209,32 +214,41 @@ public partial class MainWindow : Window
 
     private async Task PlaySplashAsync()
     {
-        SplashContent.Opacity = 0;
+        try
+        {
+            SplashContent.Opacity = 0;
+            Log.Info(Cat, "Waiting for Window.Opened");
 
-        // Wait for Window.Opened so the overlay is painted before animation starts.
-        // This ensures the splash is always visible from frame 1 on any machine.
-        var openedTcs = new TaskCompletionSource();
-        void OnOpened(object? s, EventArgs _) { Opened -= OnOpened; openedTcs.TrySetResult(); }
-        Opened += OnOpened;
-        await openedTcs.Task;
+            var openedTcs = new TaskCompletionSource();
+            void OnOpened(object? s, EventArgs _) { Opened -= OnOpened; openedTcs.TrySetResult(); }
+            Opened += OnOpened;
+            await openedTcs.Task;
+            Log.Info(Cat, "Window.Opened received — waiting for render frame");
 
-        // One extra render pass so the black background is flushed to screen.
-        var frameTcs = new TaskCompletionSource();
-        Dispatcher.UIThread.Post(() => frameTcs.TrySetResult(), DispatcherPriority.Render);
-        await frameTcs.Task;
+            var frameTcs = new TaskCompletionSource();
+            Dispatcher.UIThread.Post(() => frameTcs.TrySetResult(), DispatcherPriority.Render);
+            await frameTcs.Task;
+            Log.Info(Cat, "Render frame ready — starting fade-in");
 
-        // Fade in (280ms)
-        await RunOpacityAsync(SplashContent, 0d, 1d, 280, new CubicEaseOut());
-        SplashContent.Opacity = 1;
+            await RunOpacityAsync(SplashContent, 0d, 1d, 280, new CubicEaseOut());
+            SplashContent.Opacity = 1;
+            Log.Info(Cat, "Fade-in complete — starting spin (1500ms)");
 
-        // Spin exactly one full cycle (1100ms spin + 400ms hold = 1500ms)
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1500));
-        await SplashSpinLoopAsync(cts.Token);
+            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1500));
+            await SplashSpinLoopAsync(cts.Token);
+            Log.Info(Cat, "Spin complete — starting fade-out");
 
-        // Fade out overlay
-        await RunOpacityAsync(SplashOverlay, 1d, 0d, 260, new CubicEaseIn());
-        SplashOverlay.IsVisible        = false;
-        SplashOverlay.IsHitTestVisible = false;
+            await RunOpacityAsync(SplashOverlay, 1d, 0d, 260, new CubicEaseIn());
+            SplashOverlay.IsVisible        = false;
+            SplashOverlay.IsHitTestVisible = false;
+            Log.Info(Cat, "Splash done — overlay hidden");
+        }
+        catch (Exception ex)
+        {
+            Log.Exception(Cat, ex);
+            SplashOverlay.IsVisible        = false;
+            SplashOverlay.IsHitTestVisible = false;
+        }
     }
 
     private async Task SplashSpinLoopAsync(CancellationToken ct)
