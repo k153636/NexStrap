@@ -198,6 +198,14 @@ public partial class App : Application
         RobloxService roblox, SettingsService settings,
         IClassicDesktopStyleApplicationLifetime desktop)
     {
+        // Show splash immediately
+        SplashWindow? splash = null;
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            splash = new SplashWindow();
+            splash.Show();
+        });
+
         // Step 1: first-time environment setup (VC++ etc.)
         if (roblox.NeedsSetup())
         {
@@ -230,7 +238,7 @@ public partial class App : Application
             return; // Environment.Exit(0) called inside DownloadAndApplyAsync
         }
 
-        // Step 3: all done — create and show main window, restore normal shutdown mode
+        // Step 3: all done — show main window, then stop splash (it fades out on its own)
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
             var mainWindow = new MainWindow
@@ -242,6 +250,7 @@ public partial class App : Application
             mainWindow.Show();
             mainWindow.Activate();
             Services.GetRequiredService<GlobalHotKeyService>().Install();
+            splash?.Complete();
         });
         RobloxService.Log("Main window shown");
     }
