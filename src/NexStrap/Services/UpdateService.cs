@@ -113,7 +113,7 @@ public class UpdateService
             @echo off
             ping 127.0.0.1 -n 2 > nul
             move /y "{tempExe}" "{currentExe}"
-            start "" "{currentExe}"
+            start "" "{currentExe}" --updated
             del "%~f0"
             """);
 

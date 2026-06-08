@@ -199,7 +199,8 @@ public partial class App : Application
         IClassicDesktopStyleApplicationLifetime desktop)
     {
         var updateService = Services.GetRequiredService<UpdateService>();
-        var update = await updateService.CheckForUpdateAsync();
+        var justUpdated = Environment.GetCommandLineArgs().Contains("--updated");
+        var update = justUpdated ? null : await updateService.CheckForUpdateAsync();
         if (update != null)
         {
             BootstrapperWindow? win = null;
