@@ -77,13 +77,6 @@
     <Application.Styles>
         <fa:FluentAvaloniaTheme CustomAccentColor="#FFFFFF"/>
 
-        <!-- Global text shadow — ensures readability on any custom background -->
-        <Style Selector="TextBlock">
-            <Setter Property="Effect">
-                <DropShadowEffect BlurRadius="4" Color="#CC000000" OffsetX="0" OffsetY="0"/>
-            </Setter>
-        </Style>
-
         <!-- Global button styles -->
         <Style Selector="Button.plain">
             <Setter Property="Background"      Value="Transparent"/>
