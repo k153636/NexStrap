@@ -75,7 +75,7 @@ public class UpdateService
         var currentExe = Environment.ProcessPath;
         if (currentExe == null) return;
 
-        var tempExe = Path.Combine(Path.GetTempPath(), "NexStrap_update.exe");
+        var tempExe = Path.Combine(Path.GetDirectoryName(currentExe)!, "NexStrap_update.exe");
 
         try
         {
@@ -111,7 +111,7 @@ public class UpdateService
         await File.WriteAllTextAsync(scriptPath,
             $"""
             @echo off
-            ping 127.0.0.1 -n 3 > nul
+            ping 127.0.0.1 -n 2 > nul
             move /y "{tempExe}" "{currentExe}"
             start "" "{currentExe}"
             del "%~f0"
