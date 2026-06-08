@@ -207,11 +207,11 @@ public partial class MainWindow : Window
     private void StartSplashOverlay()
     {
         Log.Info(Cat, "StartSplashOverlay called");
-        // CenterX/CenterY must match the image size (58x58) so rotation is
-        // around the pixel center. RenderTransformOrigin in XAML is unreliable
-        // when RenderTransform is overwritten from code.
-        _splashRotate = new RotateTransform(0) { CenterX = 29, CenterY = 29 };
-        SplashLogo.RenderTransform = _splashRotate;
+        // Rotate the wrapper Border (not the Image directly).
+        // RenderTransformOrigin="0.5,0.5" is set in XAML on SplashLogoWrapper
+        // and is never touched from code, so Avalonia applies T(29,29)*R*T(-29,-29).
+        _splashRotate = new RotateTransform(0);
+        SplashLogoWrapper.RenderTransform = _splashRotate;
         _ = PlaySplashAsync();
     }
 

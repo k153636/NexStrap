@@ -290,11 +290,14 @@
             <StackPanel x:Name="SplashContent"
                         VerticalAlignment="Center" HorizontalAlignment="Center"
                         Spacing="16" Opacity="0">
-                <Image x:Name="SplashLogo"
-                       Source="avares://NexStrap/Assets/nexstrap.png"
-                       Width="58" Height="58"
-                       HorizontalAlignment="Center"
-                       RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                <Border x:Name="SplashLogoWrapper"
+                        Width="58" Height="58"
+                        HorizontalAlignment="Center"
+                        RenderTransformOrigin="0.5,0.5">
+                    <Image Source="avares://NexStrap/Assets/nexstrap.png"
+                           Width="58" Height="58"
+                           RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                </Border>
                 <TextBlock Text="NexStrap"
                            FontSize="22" FontWeight="Bold"
                            Foreground="#FFFFFF"
