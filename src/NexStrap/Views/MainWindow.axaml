@@ -287,19 +287,39 @@
         <!-- Splash overlay -->
         <Grid x:Name="SplashOverlay" Grid.RowSpan="3" IsHitTestVisible="True" Opacity="1">
             <Rectangle Fill="#000000" IsHitTestVisible="False"/>
-            <StackPanel x:Name="SplashContent"
-                        VerticalAlignment="Center" HorizontalAlignment="Center"
-                        Spacing="18" Opacity="0">
-                <Canvas Width="220" Height="58">
+            <Rectangle IsHitTestVisible="False">
+                <Rectangle.Fill>
+                    <RadialGradientBrush Center="0.08,0.86"
+                                         GradientOrigin="0.08,0.86"
+                                         RadiusX="105%"
+                                         RadiusY="105%">
+                        <GradientStop Color="#1CFFFFFF" Offset="0"/>
+                        <GradientStop Color="#08080808" Offset="0.38"/>
+                        <GradientStop Color="#000000" Offset="1"/>
+                    </RadialGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Border Height="1"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Bottom"
+                    Margin="32,0,32,38"
+                    Background="#12FFFFFF"
+                    IsHitTestVisible="False"/>
+            <Grid x:Name="SplashContent"
+                  HorizontalAlignment="Left"
+                  VerticalAlignment="Bottom"
+                  Margin="34,0,0,58"
+                  Width="280" Height="72" Opacity="0">
+                <Canvas Width="280" Height="72">
                     <Border x:Name="SplashLogoMotion"
-                            Canvas.Left="81" Canvas.Top="0"
-                            Width="58" Height="58"
+                            Canvas.Left="0" Canvas.Top="0"
+                            Width="72" Height="72"
                             Background="Transparent">
                         <Border.RenderTransform>
                             <TranslateTransform X="0"/>
                         </Border.RenderTransform>
                         <Border x:Name="SplashLogoWrapper"
-                                Width="58" Height="58"
+                                Width="72" Height="72"
                                 Background="Transparent"
                                 RenderTransformOrigin="50%,50%">
                             <Border.RenderTransform>
@@ -307,29 +327,49 @@
                             </Border.RenderTransform>
                             <Image x:Name="SplashLogoImage"
                                    Source="avares://NexStrap/Assets/nexstrap.png"
-                                   Width="58" Height="58"
+                                   Width="72" Height="72"
                                    RenderOptions.BitmapInterpolationMode="HighQuality"/>
                         </Border>
                     </Border>
                     <TextBlock x:Name="SplashTitleText"
                                Text="NexStrap"
-                               Canvas.Left="116" Canvas.Top="14"
-                               FontSize="22" FontWeight="Bold"
+                               Canvas.Left="86" Canvas.Top="15"
+                               FontSize="30" FontWeight="Bold"
                                Foreground="#FFFFFF"
-                               LetterSpacing="1.5"
-                               Opacity="0">
+                               LetterSpacing="1"
+                               Opacity="1">
                         <TextBlock.RenderTransform>
-                            <TranslateTransform X="18"/>
+                            <TranslateTransform X="0"/>
                         </TextBlock.RenderTransform>
                     </TextBlock>
                 </Canvas>
-                <TextBlock x:Name="SplashStatusText"
-                           Text="{Binding StartupStatusText}"
-                           FontSize="11"
-                           Foreground="White"
-                           HorizontalAlignment="Center"
-                           Opacity="0"/>
-            </StackPanel>
+
+            </Grid>
+            <TextBlock x:Name="SplashStatusText"
+                       Text="{Binding StartupStatusText}"
+                       FontSize="12"
+                       Foreground="White"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Bottom"
+                       Margin="34,0,0,28"
+                       Opacity="0"/>
+            <Grid x:Name="SplashProgressArea"
+                  Height="2"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Bottom"
+                  Margin="32,0,32,16"
+                  Opacity="0">
+                <Border x:Name="SplashProgressTrack"
+                        Height="2"
+                        Background="#26FFFFFF"
+                        CornerRadius="1"/>
+                <Border x:Name="SplashProgressFill"
+                        Width="0"
+                        Height="2"
+                        HorizontalAlignment="Left"
+                        Background="#FFFFFFFF"
+                        CornerRadius="1"/>
+            </Grid>
         </Grid>
 
     </Grid>

@@ -208,6 +208,7 @@ public partial class MainWindow : Window
     private RotateTransform _splashRotate = null!;
     private TranslateTransform _splashLogoShift = null!;
     private TranslateTransform _splashTitleShift = null!;
+    private double _splashProgress;
 
     private static readonly Logger Log = Logger.Instance;
 
@@ -223,14 +224,19 @@ public partial class MainWindow : Window
 
     private async Task PlaySplashAsync()
     {
+        CancellationTokenSource? spinCts = null;
+        Task? spinTask = null;
+
         try
         {
             SplashContent.Opacity = 0;
             _splashRotate.Angle   = 0;
             _splashLogoShift.X = 0;
-            _splashTitleShift.X = 18;
-            SplashTitleText.Opacity = 0;
+            _splashTitleShift.X = 0;
+            SplashTitleText.Opacity = 1;
             SplashStatusText.Opacity = 0;
+            SplashProgressArea.Opacity = 0;
+            SetSplashProgress(0);
 
             // Wait for the first rendered frame so the black overlay is on screen
             // before the fade-in begins.
@@ -240,49 +246,97 @@ public partial class MainWindow : Window
 
             // Phase 1: fade in
             await SplashFadeAsync(SplashContent, from: 0, to: 1, ms: 280, new CubicEaseOut());
-            await SplashFadeAsync(SplashStatusText, from: 0, to: 0.72, ms: 160, new CubicEaseOut());
+            await Task.WhenAll(
+                SplashFadeAsync(SplashStatusText, from: 0, to: 0.58, ms: 180, new CubicEaseOut()),
+                SplashFadeAsync(SplashProgressArea, from: 0, to: 0.82, ms: 220, new CubicEaseOut()),
+                SplashProgressToAsync(0.08, 420, new CubicEaseOut()));
 
-            // Phase 2: spin while startup work is being warmed, capped at 3 cycles.
-            for (var cycle = 0; cycle < 3; cycle++)
-            {
-                await SplashSpinAsync();
-                if (DataContext is not MainWindowViewModel { IsStartupLoading: true })
-                    break;
-                await Task.Delay(400);
-            }
+            // Phase 2: keep the logo rotating independently while startup work warms.
+            spinCts = new CancellationTokenSource();
+            spinTask = SplashSpinLoopAsync(spinCts.Token);
 
-            // Phase 3: reveal the wordmark before leaving.
-            await SplashRevealBrandAsync();
+            await SplashProgressToAsync(0.82, 1000, new CubicEaseOut());
+
+            // Phase 3: hold near completion until the startup status reaches Ready.
+            await Task.WhenAll(
+                SplashSettleBrandAsync(),
+                SplashProgressToAsync(0.95, 900, new CubicEaseInOut()));
+            await WaitForStartupReadyAsync(DataContext as MainWindowViewModel);
+            await SplashProgressToAsync(1.0, 360, new CubicEaseOut());
 
             // Phase 4: fade out
             await SplashFadeAsync(SplashOverlay, from: 1, to: 0, ms: 260, new CubicEaseIn());
+            spinCts.Cancel();
+            await spinTask;
             SplashOverlay.IsVisible        = false;
             SplashOverlay.IsHitTestVisible = false;
         }
         catch (Exception ex)
         {
             Logger.Instance.Exception("Splash", ex);
+            if (spinCts is not null && spinTask is not null)
+            {
+                spinCts.Cancel();
+                await spinTask;
+            }
             SplashOverlay.IsVisible        = false;
             SplashOverlay.IsHitTestVisible = false;
+        }
+        finally
+        {
+            spinCts?.Dispose();
         }
     }
 
     // Drives one 360° rotation over 1100 ms using a DispatcherTimer.
-    private Task SplashSpinAsync()
+    private async Task SplashSpinLoopAsync(CancellationToken cancellationToken)
     {
-        const double DurationMs = 1100.0;
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+                await SplashSpinAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Splash is hidden, so the final angle does not need to be normalized.
+        }
+    }
+
+    private Task SplashSpinAsync(CancellationToken cancellationToken)
+    {
+        const double DurationMs = 1500.0;
 
         var tcs   = new TaskCompletionSource();
         var sw    = System.Diagnostics.Stopwatch.StartNew();
         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        CancellationTokenRegistration registration = default;
+
+        registration = cancellationToken.Register(() =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                timer.Stop();
+                registration.Dispose();
+                tcs.TrySetCanceled(cancellationToken);
+            });
+        });
 
         timer.Tick += (_, _) =>
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                timer.Stop();
+                registration.Dispose();
+                tcs.TrySetCanceled(cancellationToken);
+                return;
+            }
+
             double t = sw.ElapsedMilliseconds / DurationMs;
             if (t >= 1.0)
             {
                 _splashRotate.Angle = 0; // normalize — 360° == 0° visually
                 timer.Stop();
+                registration.Dispose();
                 tcs.TrySetResult();
                 return;
             }
@@ -316,19 +370,30 @@ public partial class MainWindow : Window
     private static double CbBezD(double t, double c1, double c2) =>
         3 * c1 * (1 - t) * (1 - 2 * t) + 3 * c2 * t * (2 - 3 * t) + 3 * t * t;
 
-    private async Task SplashRevealBrandAsync()
+    private async Task SplashSettleBrandAsync()
     {
-        var logoEase = new CubicEaseInOut();
-        var titleEase = new CubicEaseOut();
-
-        var logo = SplashValueAsync(0, -54, 1000, logoEase, v => _splashLogoShift.X = v);
-        await Task.Delay(420);
-
-        var titleShift = SplashValueAsync(18, 0, 720, titleEase, v => _splashTitleShift.X = v);
-        var titleOpacity = SplashValueAsync(0, 1, 520, titleEase, v => SplashTitleText.Opacity = v);
-
-        await Task.WhenAll(logo, titleShift, titleOpacity);
+        _splashTitleShift.X = 0;
+        SplashTitleText.Opacity = 1;
         await Task.Delay(180);
+    }
+
+    private static async Task WaitForStartupReadyAsync(MainWindowViewModel? vm)
+    {
+        while (vm?.IsStartupLoading == true)
+            await Task.Delay(80);
+    }
+
+    private Task SplashProgressToAsync(double to, int ms, Easing easing)
+    {
+        var from = _splashProgress;
+        return SplashValueAsync(from, Math.Clamp(to, 0, 1), ms, easing, SetSplashProgress);
+    }
+
+    private void SetSplashProgress(double progress)
+    {
+        _splashProgress = Math.Clamp(progress, 0, 1);
+        var trackWidth = SplashProgressTrack.Bounds.Width;
+        SplashProgressFill.Width = Math.Max(0, trackWidth * _splashProgress);
     }
 
     private static Task SplashValueAsync(double from, double to, int ms, Easing easing, Action<double> set)
