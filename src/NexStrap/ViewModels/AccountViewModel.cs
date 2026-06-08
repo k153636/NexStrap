@@ -5,7 +5,6 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Newtonsoft.Json.Linq;
 using NexStrap.Models;
 using NexStrap.Services;
 using NexStrap.Views;
@@ -121,6 +120,7 @@ public partial class AccountViewModel : ViewModelBase
 {
     private readonly AccountService    _accounts;
     private readonly RobloxApiService  _robloxApi;
+    private readonly CookieAccountImportService _cookieImport;
     private readonly QuickLoginService _quickLogin;
     private readonly QuickLoginCoordinator _quickLoginCoordinator;
     private readonly QuickSignInViewModelFactory _quickSignInFactory;
@@ -202,10 +202,12 @@ public partial class AccountViewModel : ViewModelBase
     public AccountViewModel(AccountService accounts, RobloxApiService robloxApi,
         QuickLoginService quickLogin, FriendsViewModel friendsVm,
         QuickSignInViewModelFactory quickSignInFactory,
-        QuickLoginCoordinator quickLoginCoordinator)
+        QuickLoginCoordinator quickLoginCoordinator,
+        CookieAccountImportService cookieImport)
     {
         _accounts              = accounts;
         _robloxApi             = robloxApi;
+        _cookieImport          = cookieImport;
         _quickLogin            = quickLogin;
         _quickSignInFactory    = quickSignInFactory;
         _quickLoginCoordinator = quickLoginCoordinator;
@@ -384,7 +386,7 @@ public partial class AccountViewModel : ViewModelBase
             {
                 if (attempt > 0) await Task.Delay(1200);
                 cookie = await BrowserCookieImporter.TryImportAsync(BrowserType.Chrome);
-                if (cookie != null) userId = await GetAuthenticatedUserIdAsync(cookie);
+                if (cookie != null) userId = await _cookieImport.GetAuthenticatedUserIdAsync(cookie);
             }
 
             if (userId == null)
@@ -396,7 +398,7 @@ public partial class AccountViewModel : ViewModelBase
                     try { await Task.Delay(3000, _pollCts.Token); }
                     catch (OperationCanceledException) { return; }
                     cookie = await BrowserCookieImporter.TryImportAsync(BrowserType.Chrome);
-                    if (cookie != null) userId = await GetAuthenticatedUserIdAsync(cookie);
+                    if (cookie != null) userId = await _cookieImport.GetAuthenticatedUserIdAsync(cookie);
                     if (userId != null) break;
                 }
                 if (userId == null) return;
@@ -406,15 +408,7 @@ public partial class AccountViewModel : ViewModelBase
             { StatusMessage = "Account already added"; return; }
 
             StatusMessage = "Fetching account info...";
-            var info      = await _robloxApi.GetUserInfoAsync(userId.Value);
-            var avatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(userId.Value);
-            var account   = new RobloxAccount
-            {
-                UserId      = userId.Value,
-                Username    = info?.username    ?? userId.Value.ToString(),
-                DisplayName = info?.displayName ?? userId.Value.ToString(),
-                AvatarUrl   = avatarUrl,
-            };
+            var account = await _cookieImport.CreateAccountAsync(userId.Value);
             _accounts.Add(account, cookie!);
             Reload();
             StatusMessage = $"Added {account.DisplayName}";
@@ -454,21 +448,13 @@ public partial class AccountViewModel : ViewModelBase
     internal async Task ImportCookieAsync(string cookie)
     {
         StatusMessage = "Validating...";
-        var userId = await GetAuthenticatedUserIdAsync(cookie);
+        var userId = await _cookieImport.GetAuthenticatedUserIdAsync(cookie);
         if (userId == null) { StatusMessage = "Invalid or expired cookie"; return; }
         if (_accounts.Accounts.Any(a => a.UserId == userId))
         { StatusMessage = "Account already added"; return; }
 
         StatusMessage = "Fetching account info...";
-        var info      = await _robloxApi.GetUserInfoAsync(userId.Value);
-        var avatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(userId.Value);
-        var account   = new RobloxAccount
-        {
-            UserId      = userId.Value,
-            Username    = info?.username    ?? userId.Value.ToString(),
-            DisplayName = info?.displayName ?? userId.Value.ToString(),
-            AvatarUrl   = avatarUrl,
-        };
+        var account = await _cookieImport.CreateAccountAsync(userId.Value);
         _accounts.Add(account, cookie);
         Reload();
         StatusMessage = $"Added {account.DisplayName}";
@@ -490,19 +476,4 @@ public partial class AccountViewModel : ViewModelBase
         IsPastePanelOpen = false;
     }
 
-    private static async Task<long?> GetAuthenticatedUserIdAsync(string cookie)
-    {
-        try
-        {
-            using var client = new HttpClient();
-            using var req    = new HttpRequestMessage(HttpMethod.Get,
-                "https://users.roblox.com/v1/users/authenticated");
-            req.Headers.TryAddWithoutValidation("Cookie", $".ROBLOSECURITY={cookie}");
-            var resp = await client.SendAsync(req);
-            if (!resp.IsSuccessStatusCode) return null;
-            var obj = JObject.Parse(await resp.Content.ReadAsStringAsync());
-            return obj["id"]?.Value<long>();
-        }
-        catch { return null; }
-    }
 }
