@@ -302,7 +302,7 @@
             <Border Height="1"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Bottom"
-                    Margin="32,0,32,38"
+                    Margin="32,0,32,23"
                     Background="#12FFFFFF"
                     IsHitTestVisible="False"/>
             <Grid x:Name="SplashContent"
