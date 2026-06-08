@@ -206,12 +206,15 @@ public partial class MainWindow : Window
 
     private void StartSplashOverlay()
     {
-        // MatrixTransform: set the exact rotation-around-center matrix each tick.
-        // No RenderTransformOrigin, no CenterX/Y, no TransformGroup child-change
-        // propagation — the matrix is written directly, nothing is cached.
         _splashMatrix = new MatrixTransform(Matrix.Identity);
         SplashLogoWrapper.RenderTransform = _splashMatrix;
-        Log.Info(Cat, $"StartSplashOverlay — wrapper Bounds: {SplashLogoWrapper.Bounds}");
+
+        // Diagnostic: confirm RenderTransform is the same instance we created,
+        // and log scaling + bounds for coordinate-space investigation.
+        var scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
+        bool sameRef = ReferenceEquals(SplashLogoWrapper.RenderTransform, _splashMatrix);
+        Log.Info(Cat, $"StartSplashOverlay — Bounds={SplashLogoWrapper.Bounds} " +
+                      $"RenderScaling={scaling} SameRef={sameRef}");
         _ = PlaySplashAsync();
     }
 
@@ -275,6 +278,7 @@ public partial class MainWindow : Window
             var tcs = new TaskCompletionSource<bool>();
             var sw  = System.Diagnostics.Stopwatch.StartNew();
 
+            bool firstTick = true;
             var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
             timer.Tick += (_, _) =>
             {
@@ -282,7 +286,15 @@ public partial class MainWindow : Window
                 double elapsed = sw.ElapsedMilliseconds;
                 if (elapsed >= tSpin)           { timer.Stop(); tcs.TrySetResult(false); return; }
                 double angle = SplashSpline(elapsed / tSpin) * 360.0;
-                _splashMatrix.Matrix = RotationMatrix(angle, 29, 29);
+                var m = RotationMatrix(angle, 29, 29);
+                _splashMatrix.Matrix = m;
+                if (firstTick)
+                {
+                    firstTick = false;
+                    bool sameRef = ReferenceEquals(SplashLogoWrapper.RenderTransform, _splashMatrix);
+                    Log.Info(Cat, $"FirstTick angle={angle:F1} SameRef={sameRef} " +
+                                  $"AppliedM={SplashLogoWrapper.RenderTransform?.Value}");
+                }
             };
             timer.Start();
 
