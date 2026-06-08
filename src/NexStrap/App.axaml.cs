@@ -243,7 +243,6 @@ public partial class App : Application
             mainWindow.Show();
             mainWindow.Activate();
             Services.GetRequiredService<GlobalHotKeyService>().Install();
-            mainWindow.CompleteSplash();
         });
         RobloxService.Log("Main window shown");
     }

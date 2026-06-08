@@ -199,10 +199,6 @@ public partial class MainWindow : Window
     // ── Splash overlay ──────────────────────────────────────────────────────
 
     private RotateTransform _splashRotate = null!;
-    private CancellationTokenSource _splashCts = new();
-
-    // Called by App after MainWindow.Show() — stops the spin and fades out.
-    public void CompleteSplash() => _splashCts.Cancel();
 
     private void StartSplashOverlay()
     {
@@ -213,18 +209,16 @@ public partial class MainWindow : Window
 
     private async Task PlaySplashAsync()
     {
-        _splashCts = new CancellationTokenSource();
         SplashContent.Opacity = 0;
 
-        // Wait until the window is fully presented on screen before starting.
-        // OnOpened fires after the OS has composited the first frame, so even on
-        // slow machines the animation always starts from a visible state.
+        // Wait for Window.Opened so the overlay is painted before animation starts.
+        // This ensures the splash is always visible from frame 1 on any machine.
         var openedTcs = new TaskCompletionSource();
         void OnOpened(object? s, EventArgs _) { Opened -= OnOpened; openedTcs.TrySetResult(); }
         Opened += OnOpened;
         await openedTcs.Task;
 
-        // Extra render pass so the black overlay is painted before fade starts.
+        // One extra render pass so the black background is flushed to screen.
         var frameTcs = new TaskCompletionSource();
         Dispatcher.UIThread.Post(() => frameTcs.TrySetResult(), DispatcherPriority.Render);
         await frameTcs.Task;
@@ -233,8 +227,9 @@ public partial class MainWindow : Window
         await RunOpacityAsync(SplashContent, 0d, 1d, 280, new CubicEaseOut());
         SplashContent.Opacity = 1;
 
-        // Spin until CompleteSplash() is called
-        await SplashSpinLoopAsync(_splashCts.Token);
+        // Spin exactly one full cycle (1100ms spin + 400ms hold = 1500ms)
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1500));
+        await SplashSpinLoopAsync(cts.Token);
 
         // Fade out overlay
         await RunOpacityAsync(SplashOverlay, 1d, 0d, 260, new CubicEaseIn());
