@@ -10,6 +10,7 @@ public class StudioService
 {
     private readonly StudioAppSettingsService _appSettings;
     private readonly StudioVersionCleanupService _versionCleanup;
+    private readonly StudioVersionManifestService _versionManifest;
 
     private static readonly HttpClient Http         = new() { Timeout = TimeSpan.FromMinutes(10) };
     private static readonly HttpClient ManifestHttp = new() { Timeout = TimeSpan.FromSeconds(30) };
@@ -55,9 +56,6 @@ public class StudioService
     private const long MinSegmentBytes    = 2 * 1024 * 1024;
 
     private string  _cdnBaseUrl = "https://setup.rbxcdn.com";
-    private string? _cachedLatestGuid;
-    private DateTime _lastVersionCheck = DateTime.MinValue;
-    private static readonly TimeSpan VersionCheckInterval = TimeSpan.FromHours(4);
 
     private long   _totalDownloadedBytes;
     private long   _totalPackedBytes;
@@ -76,10 +74,12 @@ public class StudioService
 
     public StudioService(
         StudioAppSettingsService appSettings,
-        StudioVersionCleanupService versionCleanup)
+        StudioVersionCleanupService versionCleanup,
+        StudioVersionManifestService versionManifest)
     {
-        _appSettings    = appSettings;
-        _versionCleanup = versionCleanup;
+        _appSettings     = appSettings;
+        _versionCleanup  = versionCleanup;
+        _versionManifest = versionManifest;
     }
 
     // -------------------------------------------------------------------------
@@ -716,43 +716,7 @@ public class StudioService
     // -------------------------------------------------------------------------
     private async Task<string?> GetLatestVersionGuidCachedAsync()
     {
-        if (_cachedLatestGuid != null && DateTime.UtcNow - _lastVersionCheck < VersionCheckInterval)
-            return _cachedLatestGuid;
-
-        var guid = await GetLatestStudioVersionGuidAsync();
-        if (guid != null)
-        {
-            _cachedLatestGuid = guid;
-            _lastVersionCheck = DateTime.UtcNow;
-        }
-        return guid;
-    }
-
-    private static async Task<string?> GetLatestStudioVersionGuidAsync()
-    {
-        foreach (var url in new[]
-        {
-            "https://clientsettingscdn.roblox.com/v2/client-version/WindowsStudio64",
-            "https://clientsettings.roblox.com/v2/client-version/WindowsStudio64",
-        })
-        {
-            try
-            {
-                var json = await Http.GetStringAsync(url);
-                using var doc = JsonDocument.Parse(json);
-                if (doc.RootElement.TryGetProperty("clientVersionUpload", out var v))
-                {
-                    var version = v.GetString();
-                    if (version == null) continue;
-                    if (version.StartsWith("version-", StringComparison.OrdinalIgnoreCase))
-                        version = version[8..];
-                    RobloxService.Log($"Studio version GUID: {version}");
-                    return version;
-                }
-            }
-            catch (Exception ex) { RobloxService.Log($"Studio version fetch failed from {url}: {ex.Message}"); }
-        }
-        return null;
+        return await _versionManifest.GetLatestVersionGuidCachedAsync();
     }
 
     // -------------------------------------------------------------------------
