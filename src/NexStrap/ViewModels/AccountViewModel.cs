@@ -15,6 +15,7 @@ public partial class AccountViewModel : ViewModelBase
     private readonly AccountService    _accounts;
     private readonly AccountActivityRefreshService _activityRefresh;
     private readonly AccountDialogCoordinator _dialogCoordinator;
+    private readonly AccountImportStatusCoordinator _importStatus;
     private readonly AccountOperationCoordinator _accountOperations;
     private readonly ChromeImportCoordinator _chromeImport;
     private readonly RobloxApiService  _robloxApi;
@@ -105,12 +106,14 @@ public partial class AccountViewModel : ViewModelBase
         ChromeImportCoordinator chromeImport,
         AccountEntryViewModelFactory accountEntryFactory,
         AccountDialogCoordinator dialogCoordinator,
+        AccountImportStatusCoordinator importStatus,
         AccountOperationCoordinator accountOperations,
         CookieInputNormalizer cookieInputNormalizer)
     {
         _accounts              = accounts;
         _activityRefresh       = activityRefresh;
         _dialogCoordinator     = dialogCoordinator;
+        _importStatus          = importStatus;
         _accountOperations     = accountOperations;
         _chromeImport          = chromeImport;
         _robloxApi             = robloxApi;
@@ -259,25 +262,23 @@ public partial class AccountViewModel : ViewModelBase
     [RelayCommand]
     private async Task ImportFromChromeAsync()
     {
-        if (IsImporting) return;
-        IsImporting = true;
+        if (!_importStatus.TryBeginImport(this)) return;
         _pollCts?.Cancel();
         _pollCts = new CancellationTokenSource();
         try
         {
             var localApp   = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             var localState = Path.Combine(localApp, "Google", "Chrome", "User Data", "Local State");
-            if (!File.Exists(localState)) { StatusMessage = "Chrome not found"; return; }
+            if (!File.Exists(localState)) { _importStatus.ShowChromeNotFound(this); return; }
 
-            StatusMessage = "Importing...";
+            _importStatus.ShowImporting(this);
             var importResult = await _chromeImport.TryImportAuthenticatedCookieAsync();
             var cookie       = importResult.Cookie;
             var userId       = importResult.UserId;
 
             if (userId == null)
             {
-                IsWaitingForLogin = true;
-                StatusMessage     = "Please log in to roblox.com in Chrome";
+                _importStatus.ShowWaitingForChromeLogin(this);
                 importResult = await _chromeImport.WaitForAuthenticatedCookieAsync(_pollCts.Token);
                 if (importResult == null) return;
                 cookie = importResult.Cookie;
@@ -286,18 +287,17 @@ public partial class AccountViewModel : ViewModelBase
             }
 
             if (_accounts.Accounts.Any(a => a.UserId == userId))
-            { StatusMessage = "Account already added"; return; }
+            { _importStatus.ShowAccountAlreadyAdded(this); return; }
 
-            StatusMessage = "Fetching account info...";
+            _importStatus.ShowFetchingAccountInfo(this);
             var account = await _cookieImport.CreateAccountAsync(userId.Value);
             _accounts.Add(account, cookie!);
             Reload();
-            StatusMessage = $"Added {account.DisplayName}";
+            _importStatus.ShowAdded(this, account.DisplayName);
         }
         finally
         {
-            IsImporting       = false;
-            IsWaitingForLogin = false;
+            _importStatus.EndImport(this);
             _pollCts?.Dispose();
             _pollCts = null;
         }
@@ -307,7 +307,7 @@ public partial class AccountViewModel : ViewModelBase
     private void CancelImport()
     {
         _pollCts?.Cancel();
-        StatusMessage = "";
+        _importStatus.ClearStatus(this);
     }
 
     [RelayCommand]
@@ -318,22 +318,22 @@ public partial class AccountViewModel : ViewModelBase
             var cookie = await _dialogCoordinator.ShowBrowserLoginAsync();
             if (!string.IsNullOrEmpty(cookie)) await ImportCookieAsync(cookie);
         }
-        catch { StatusMessage = "WebView2 not available"; }
+        catch { _importStatus.ShowBrowserUnavailable(this); }
     }
 
     internal async Task ImportCookieAsync(string cookie)
     {
-        StatusMessage = "Validating...";
+        _importStatus.ShowValidating(this);
         var userId = await _cookieImport.GetAuthenticatedUserIdAsync(cookie);
-        if (userId == null) { StatusMessage = "Invalid or expired cookie"; return; }
+        if (userId == null) { _importStatus.ShowInvalidCookie(this); return; }
         if (_accounts.Accounts.Any(a => a.UserId == userId))
-        { StatusMessage = "Account already added"; return; }
+        { _importStatus.ShowAccountAlreadyAdded(this); return; }
 
-        StatusMessage = "Fetching account info...";
+        _importStatus.ShowFetchingAccountInfo(this);
         var account = await _cookieImport.CreateAccountAsync(userId.Value);
         _accounts.Add(account, cookie);
         Reload();
-        StatusMessage = $"Added {account.DisplayName}";
+        _importStatus.ShowAdded(this, account.DisplayName);
     }
 
     [RelayCommand]
@@ -343,7 +343,7 @@ public partial class AccountViewModel : ViewModelBase
     private async Task ImportManuallyAsync()
     {
         var raw = ManualCookie.Trim();
-        if (string.IsNullOrEmpty(raw)) { StatusMessage = "Paste your .ROBLOSECURITY cookie first"; return; }
+        if (string.IsNullOrEmpty(raw)) { _importStatus.ShowMissingManualCookie(this); return; }
         raw = _cookieInputNormalizer.StripRobloSecurityPrefix(raw);
         await ImportCookieAsync(raw);
         ManualCookie     = string.Empty;

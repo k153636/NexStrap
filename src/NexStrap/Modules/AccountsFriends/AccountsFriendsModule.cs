@@ -11,6 +11,7 @@ public static class AccountsFriendsModule
         services.AddSingleton<AccountService>();
         services.AddSingleton<AccountActivityRefreshService>();
         services.AddSingleton<AccountDialogCoordinator>();
+        services.AddSingleton<AccountImportStatusCoordinator>();
         services.AddSingleton<AccountOperationCoordinator>();
         services.AddSingleton<ChromeImportCoordinator>();
         services.AddSingleton<CookieAccountImportService>();
