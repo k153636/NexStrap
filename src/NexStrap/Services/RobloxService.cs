@@ -29,6 +29,7 @@ public class RobloxService
     private readonly RobloxSetupService _setup;
     private readonly RobloxMultiInstanceMutexService _multiInstanceMutex;
     private readonly RobloxInstallStateService _installState;
+    private readonly RobloxStockInstallFallbackService _stockFallback;
 
     // -------------------------------------------------------------------------
     // HTTP clients
@@ -75,10 +76,6 @@ public class RobloxService
     // -------------------------------------------------------------------------
     // Paths
     // -------------------------------------------------------------------------
-    private static readonly string StockRobloxVersionsDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Roblox", "Versions");
-
     private static readonly string VersionsDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "NexStrap", "Versions");
@@ -110,14 +107,47 @@ public class RobloxService
     public event EventHandler<BootstrapperProgress>? BootstrapperProgress;
 
     public RobloxService()
+        : this(CreateDefaultServices())
+    {
+    }
+
+    private RobloxService((
+        RobloxVersionManifestService VersionManifest,
+        RobloxPackageInstallerService PackageInstaller,
+        RobloxDisplayStretchService DisplayStretch,
+        RobloxSetupService Setup,
+        RobloxMultiInstanceMutexService MultiInstanceMutex,
+        RobloxInstallStateService InstallState,
+        RobloxStockInstallFallbackService StockFallback) services)
         : this(
+            services.VersionManifest,
+            services.PackageInstaller,
+            services.DisplayStretch,
+            services.Setup,
+            services.MultiInstanceMutex,
+            services.InstallState,
+            services.StockFallback)
+    {
+    }
+
+    private static (
+        RobloxVersionManifestService VersionManifest,
+        RobloxPackageInstallerService PackageInstaller,
+        RobloxDisplayStretchService DisplayStretch,
+        RobloxSetupService Setup,
+        RobloxMultiInstanceMutexService MultiInstanceMutex,
+        RobloxInstallStateService InstallState,
+        RobloxStockInstallFallbackService StockFallback) CreateDefaultServices()
+    {
+        var installState = new RobloxInstallStateService();
+        return (
             new RobloxVersionManifestService(),
             new RobloxPackageInstallerService(),
             new RobloxDisplayStretchService(),
             new RobloxSetupService(),
             new RobloxMultiInstanceMutexService(),
-            new RobloxInstallStateService())
-    {
+            installState,
+            new RobloxStockInstallFallbackService(installState));
     }
 
     public RobloxService(
@@ -126,7 +156,8 @@ public class RobloxService
         RobloxDisplayStretchService displayStretch,
         RobloxSetupService setup,
         RobloxMultiInstanceMutexService multiInstanceMutex,
-        RobloxInstallStateService installState)
+        RobloxInstallStateService installState,
+        RobloxStockInstallFallbackService stockFallback)
     {
         _versionManifest    = versionManifest;
         _packageInstaller   = packageInstaller;
@@ -134,6 +165,7 @@ public class RobloxService
         _setup              = setup;
         _multiInstanceMutex = multiInstanceMutex;
         _installState       = installState;
+        _stockFallback      = stockFallback;
     }
 
     // -------------------------------------------------------------------------
@@ -539,7 +571,7 @@ public class RobloxService
         {
             Log($"Copying from stock Roblox: {stockFolder}");
             Directory.CreateDirectory(versionDir);
-            await CopyDirectoryAsync(stockFolder, versionDir);
+            await _stockFallback.CopyDirectoryAsync(stockFolder, versionDir, ReportProgress);
         }
 
         // 3. CDN ダウンロード
@@ -558,18 +590,18 @@ public class RobloxService
                 {
                     Log($"CDN failed, copying from stock Roblox: {stockFallback}");
                     Directory.CreateDirectory(versionDir);
-                    await CopyDirectoryAsync(stockFallback, versionDir);
+                    await _stockFallback.CopyDirectoryAsync(stockFallback, versionDir, ReportProgress);
                 }
                 else
                 {
                     // 最終手段: 公式インストーラーで正確なバージョンを取得後コピー
-                    await RunOfficialInstallerAsync();
+                    await _stockFallback.RunOfficialInstallerAsync();
                     var newStock = FindStockRobloxVersionFolder(versionGuid);
                     if (newStock != null)
                     {
                         Log($"Copying from newly installed stock Roblox: {newStock}");
                         Directory.CreateDirectory(versionDir);
-                        await CopyDirectoryAsync(newStock, versionDir);
+                        await _stockFallback.CopyDirectoryAsync(newStock, versionDir, ReportProgress);
                     }
                 }
             }
@@ -642,101 +674,8 @@ public class RobloxService
         SetStatus(RobloxStatus.Idle);
     }
 
-    // -------------------------------------------------------------------------
-    // Directory copy
-    // -------------------------------------------------------------------------
-    private async Task CopyDirectoryAsync(string source, string dest)
-    {
-        await Task.Run(() =>
-        {
-            var allFiles = Directory.GetFiles(source, "*", SearchOption.AllDirectories);
-            var done = 0;
-            foreach (var file in allFiles)
-            {
-                var rel      = Path.GetRelativePath(source, file);
-                var destFile = Path.Combine(dest, rel);
-                var destDir  = Path.GetDirectoryName(destFile);
-                if (destDir != null) Directory.CreateDirectory(destDir);
-                File.Copy(file, destFile, overwrite: true);
-                done++;
-                var pct = allFiles.Length > 0 ? done / (double)allFiles.Length * 100.0 : 0;
-                ReportProgress($"Copying {Path.GetFileName(file)}", pct);
-            }
-        });
-        Log("Directory copy complete");
-    }
-
-    // -------------------------------------------------------------------------
-    // Official installer fallback
-    // -------------------------------------------------------------------------
-    private async Task RunOfficialInstallerAsync()
-    {
-        Log("CDN download failed, falling back to official installer");
-        var installerPath = FindFileInStockRoblox("RobloxPlayerInstaller.exe");
-
-        if (installerPath == null)
-        {
-            Log("Downloading official installer...");
-            var installerDir = Path.Combine(DownloadsDir, "installer");
-            Directory.CreateDirectory(installerDir);
-            var installerExe = Path.Combine(installerDir, "RobloxPlayerInstaller.exe");
-            try
-            {
-                var bytes = await Http.GetByteArrayAsync("https://setup.rbxcdn.com/RobloxPlayerInstaller.exe");
-                await File.WriteAllBytesAsync(installerExe, bytes);
-                installerPath = installerExe;
-            }
-            catch (Exception ex)
-            {
-                Log($"Failed to download official installer: {ex.Message}");
-                return;
-            }
-        }
-
-        // インストーラー実行前に存在する Roblox プロセスを記録
-        var existingPids = Process.GetProcessesByName("RobloxPlayerBeta")
-            .Select(p => p.Id).ToHashSet();
-
-        Log($"Running official installer: {installerPath}");
-        var proc = Process.Start(new ProcessStartInfo(installerPath)
-        {
-            UseShellExecute  = false,
-            WorkingDirectory = Path.GetDirectoryName(installerPath)!,
-            CreateNoWindow   = true,
-            WindowStyle      = ProcessWindowStyle.Hidden
-        });
-        if (proc != null)
-        {
-            await proc.WaitForExitAsync();
-            Log($"Official installer exited with code {proc.ExitCode}");
-        }
-
-        // インストーラーが自動起動した Roblox を終了させる
-        foreach (var roblox in Process.GetProcessesByName("RobloxPlayerBeta"))
-        {
-            if (existingPids.Contains(roblox.Id)) continue;
-            try
-            {
-                roblox.Kill();
-                Log($"Killed installer-spawned Roblox (PID {roblox.Id})");
-            }
-            catch { }
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Stock Roblox helpers
-    // -------------------------------------------------------------------------
     private string? FindStockRobloxVersionFolder(string? targetGuid = null)
-        => _installState.FindStockRobloxVersionFolder(targetGuid);
-
-    private static string? FindFileInStockRoblox(string filename)
-    {
-        if (!Directory.Exists(StockRobloxVersionsDir)) return null;
-        return Directory.GetDirectories(StockRobloxVersionsDir)
-            .Select(d => Path.Combine(d, filename))
-            .FirstOrDefault(File.Exists);
-    }
+        => _stockFallback.FindStockRobloxVersionFolder(targetGuid);
 
     public void CancelInstall() => _installCts?.Cancel();
 
