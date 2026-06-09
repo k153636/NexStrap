@@ -14,6 +14,7 @@ public static class StudioModule
         services.AddSingleton<StudioPackageInstallerService>();
         services.AddSingleton<StudioCdnConnectivityService>();
         services.AddSingleton<StudioInstallStateService>();
+        services.AddSingleton<StudioInstallDirectoryService>();
         services.AddSingleton<StudioService>();
         services.AddSingleton<StudioFastFlagService>();
         services.AddSingleton<StudioRpcServer>();

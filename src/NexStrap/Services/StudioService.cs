@@ -13,6 +13,7 @@ public class StudioService
     private readonly StudioPackageInstallerService _packageInstaller;
     private readonly StudioCdnConnectivityService _cdnConnectivity;
     private readonly StudioInstallStateService _installState;
+    private readonly StudioInstallDirectoryService _installDirectory;
 
     private static readonly string VersionsDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -46,7 +47,8 @@ public class StudioService
         StudioPackageManifestService packageManifest,
         StudioPackageInstallerService packageInstaller,
         StudioCdnConnectivityService cdnConnectivity,
-        StudioInstallStateService installState)
+        StudioInstallStateService installState,
+        StudioInstallDirectoryService installDirectory)
     {
         _appSettings      = appSettings;
         _versionCleanup   = versionCleanup;
@@ -55,6 +57,7 @@ public class StudioService
         _packageInstaller = packageInstaller;
         _cdnConnectivity  = cdnConnectivity;
         _installState     = installState;
+        _installDirectory = installDirectory;
     }
 
     // -------------------------------------------------------------------------
@@ -309,11 +312,7 @@ public class StudioService
                 return false;
             }
 
-            if (Directory.Exists(versionDir))
-                try { Directory.Delete(versionDir, recursive: true); } catch { }
-
-            Directory.CreateDirectory(versionDir);
-            Directory.CreateDirectory(DownloadsDir);
+            _installDirectory.PrepareInstallDirectories(versionDir, DownloadsDir);
 
             _packageInstaller.ResetDownloadProgress(packages.Sum(p => p.CompressedSize));
 
