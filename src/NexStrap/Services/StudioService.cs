@@ -12,22 +12,7 @@ public class StudioService
     private readonly StudioVersionManifestService _versionManifest;
     private readonly StudioPackageManifestService _packageManifest;
     private readonly StudioPackageInstallerService _packageInstaller;
-
-    private static readonly HttpClient Http         = new() { Timeout = TimeSpan.FromMinutes(10) };
-
-    static StudioService()
-    {
-        Http.DefaultRequestHeaders.UserAgent.ParseAdd("RobloxStudio/WinInet");
-    }
-
-    private static readonly (string BaseUrl, int DelayMs)[] CdnMirrors =
-    [
-        ("https://setup.rbxcdn.com",                     0),
-        ("https://setup-aws.rbxcdn.com",              2000),
-        ("https://setup-ak.rbxcdn.com",               2000),
-        ("https://roblox-setup.cachefly.net",         2000),
-        ("https://s3.amazonaws.com/setup.roblox.com", 4000),
-    ];
+    private readonly StudioCdnConnectivityService _cdnConnectivity;
 
     private static readonly string VersionsDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -65,13 +50,15 @@ public class StudioService
         StudioVersionCleanupService versionCleanup,
         StudioVersionManifestService versionManifest,
         StudioPackageManifestService packageManifest,
-        StudioPackageInstallerService packageInstaller)
+        StudioPackageInstallerService packageInstaller,
+        StudioCdnConnectivityService cdnConnectivity)
     {
         _appSettings      = appSettings;
         _versionCleanup   = versionCleanup;
         _versionManifest  = versionManifest;
         _packageManifest  = packageManifest;
         _packageInstaller = packageInstaller;
+        _cdnConnectivity  = cdnConnectivity;
     }
 
     // -------------------------------------------------------------------------
@@ -316,7 +303,7 @@ public class StudioService
         try
         {
             ReportProgress("Connecting to CDN...", 0);
-            _cdnBaseUrl = await TestConnectivityAsync(ct) ?? "https://setup.rbxcdn.com";
+            _cdnBaseUrl = await _cdnConnectivity.TestConnectivityAsync(ct) ?? "https://setup.rbxcdn.com";
 
             ReportProgress("Fetching package list...", 3);
             var packages = await FetchManifestAsync(versionGuid, ct);
@@ -394,48 +381,12 @@ public class StudioService
         return false;
     }
 
-    // -------------------------------------------------------------------------
-    // CDN
-    // -------------------------------------------------------------------------
-    private static async Task<string?> TestConnectivityAsync(CancellationToken ct)
-    {
-        using var cts   = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var       tasks = new List<Task<string>>();
-
-        foreach (var (baseUrl, delayMs) in CdnMirrors)
-        {
-            var url   = baseUrl;
-            var delay = delayMs;
-            tasks.Add(Task.Run(async () =>
-            {
-                if (delay > 0) await Task.Delay(delay, cts.Token);
-                await Http.GetAsync($"{url}/version",
-                    HttpCompletionOption.ResponseHeadersRead, cts.Token);
-                return url;
-            }, cts.Token));
-        }
-
-        while (tasks.Count > 0)
-        {
-            var completed = await Task.WhenAny(tasks);
-            tasks.Remove(completed);
-            try
-            {
-                var winner = await completed;
-                await cts.CancelAsync();
-                return winner;
-            }
-            catch { }
-        }
-        return null;
-    }
-
     private async Task<List<RobloxPackage>?> FetchManifestAsync(string versionGuid, CancellationToken ct)
     {
         var manifest = await _packageManifest.FetchManifestAsync(
             versionGuid,
             _cdnBaseUrl,
-            CdnMirrors.Select(m => m.BaseUrl),
+            _cdnConnectivity.CdnMirrorBaseUrls,
             ct);
         if (manifest != null)
         {
