@@ -15,6 +15,7 @@ public partial class AccountViewModel : ViewModelBase
     private readonly AccountService    _accounts;
     private readonly AccountActivityRefreshService _activityRefresh;
     private readonly AccountDialogCoordinator _dialogCoordinator;
+    private readonly AccountOperationCoordinator _accountOperations;
     private readonly ChromeImportCoordinator _chromeImport;
     private readonly RobloxApiService  _robloxApi;
     private readonly CookieAccountImportService _cookieImport;
@@ -104,11 +105,13 @@ public partial class AccountViewModel : ViewModelBase
         ChromeImportCoordinator chromeImport,
         AccountEntryViewModelFactory accountEntryFactory,
         AccountDialogCoordinator dialogCoordinator,
+        AccountOperationCoordinator accountOperations,
         CookieInputNormalizer cookieInputNormalizer)
     {
         _accounts              = accounts;
         _activityRefresh       = activityRefresh;
         _dialogCoordinator     = dialogCoordinator;
+        _accountOperations     = accountOperations;
         _chromeImport          = chromeImport;
         _robloxApi             = robloxApi;
         _cookieImport          = cookieImport;
@@ -130,8 +133,8 @@ public partial class AccountViewModel : ViewModelBase
         for (int i = 0; i < list.Count; i++)
         {
             var entry = _accountEntryFactory.Create(list[i], i,
-                e => { _accounts.SetActive(e.Id); Reload(); },
-                e => { _accounts.Remove(e.Id);   Reload(); StatusMessage = "Removed"; },
+                e => { _accountOperations.SetActive(e); Reload(); },
+                e => { _accountOperations.Remove(e);    Reload(); StatusMessage = "Removed"; },
                 LaunchAs);
             entry.PropertyChanged += OnEntryPropertyChanged;
             Accounts.Add(entry);
@@ -163,7 +166,7 @@ public partial class AccountViewModel : ViewModelBase
 
     private void LaunchAs(AccountEntryViewModel entry)
     {
-        _accounts.SetActive(entry.Id);
+        _accountOperations.LaunchAs(entry);
         Reload();
         LaunchAsRequested?.Invoke();
     }
