@@ -11,14 +11,13 @@ public class StudioService
     private readonly StudioAppSettingsService _appSettings;
     private readonly StudioVersionCleanupService _versionCleanup;
     private readonly StudioVersionManifestService _versionManifest;
+    private readonly StudioPackageManifestService _packageManifest;
 
     private static readonly HttpClient Http         = new() { Timeout = TimeSpan.FromMinutes(10) };
-    private static readonly HttpClient ManifestHttp = new() { Timeout = TimeSpan.FromSeconds(30) };
 
     static StudioService()
     {
         Http.DefaultRequestHeaders.UserAgent.ParseAdd("RobloxStudio/WinInet");
-        ManifestHttp.DefaultRequestHeaders.UserAgent.ParseAdd("RobloxStudio/WinInet");
     }
 
     private static readonly (string BaseUrl, int DelayMs)[] CdnMirrors =
@@ -75,11 +74,13 @@ public class StudioService
     public StudioService(
         StudioAppSettingsService appSettings,
         StudioVersionCleanupService versionCleanup,
-        StudioVersionManifestService versionManifest)
+        StudioVersionManifestService versionManifest,
+        StudioPackageManifestService packageManifest)
     {
-        _appSettings     = appSettings;
-        _versionCleanup  = versionCleanup;
-        _versionManifest = versionManifest;
+        _appSettings      = appSettings;
+        _versionCleanup   = versionCleanup;
+        _versionManifest  = versionManifest;
+        _packageManifest  = packageManifest;
     }
 
     // -------------------------------------------------------------------------
@@ -667,48 +668,17 @@ public class StudioService
 
     private async Task<List<RobloxPackage>?> FetchManifestAsync(string versionGuid, CancellationToken ct)
     {
-        var urls = new[] { _cdnBaseUrl }
-            .Concat(CdnMirrors.Select(m => m.BaseUrl).Where(u => u != _cdnBaseUrl));
-
-        foreach (var baseUrl in urls)
+        var manifest = await _packageManifest.FetchManifestAsync(
+            versionGuid,
+            _cdnBaseUrl,
+            CdnMirrors.Select(m => m.BaseUrl),
+            ct);
+        if (manifest != null)
         {
-            try
-            {
-                var text = await ManifestHttp.GetStringAsync(
-                    $"{baseUrl}/version-{versionGuid}-rbxPkgManifest.txt", ct);
-                var pkgs = ParseManifest(text);
-                if (pkgs.Count > 0)
-                {
-                    _cdnBaseUrl = baseUrl;
-                    return pkgs;
-                }
-            }
-            catch (Exception ex) { RobloxService.Log($"Studio manifest fetch failed ({baseUrl}): {ex.Message}"); }
+            _cdnBaseUrl = manifest.CdnBaseUrl;
+            return manifest.Packages;
         }
         return null;
-    }
-
-    private static List<RobloxPackage> ParseManifest(string text)
-    {
-        using var reader = new StringReader(text);
-        if (reader.ReadLine() != "v0") return [];
-
-        var result = new List<RobloxPackage>();
-        while (true)
-        {
-            var name      = reader.ReadLine();
-            var signature = reader.ReadLine();
-            var rawPacked = reader.ReadLine();
-            var rawSize   = reader.ReadLine();
-
-            if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(signature) ||
-                string.IsNullOrEmpty(rawPacked) || string.IsNullOrEmpty(rawSize))
-                break;
-
-            long packed = long.TryParse(rawPacked, out var s) ? s : 0;
-            result.Add(new RobloxPackage(name, packed, signature));
-        }
-        return result;
     }
 
     // -------------------------------------------------------------------------
