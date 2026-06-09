@@ -98,33 +98,21 @@ public partial class AccountViewModel : ViewModelBase
     [ObservableProperty] private bool   _isQuickLoginOpen;
     [ObservableProperty] private string _quickLoginInput    = string.Empty;
 
-    public AccountViewModel(AccountService accounts, RobloxApiService robloxApi,
-        FriendsViewModel friendsVm,
-        QuickLoginCoordinator quickLoginCoordinator,
-        CookieAccountImportService cookieImport,
-        AccountActivityRefreshService activityRefresh,
-        ChromeImportCoordinator chromeImport,
-        AccountEntryViewModelFactory accountEntryFactory,
-        AccountQuickSignInStatusCoordinator quickSignInStatus,
-        AccountDialogCoordinator dialogCoordinator,
-        AccountImportStatusCoordinator importStatus,
-        AccountOperationCoordinator accountOperations,
-        AccountPanelStateCoordinator panelState,
-        CookieInputNormalizer cookieInputNormalizer)
+    public AccountViewModel(FriendsViewModel friendsVm, AccountViewModelDependencies dependencies)
     {
-        _accounts              = accounts;
-        _activityRefresh       = activityRefresh;
-        _dialogCoordinator     = dialogCoordinator;
-        _importStatus          = importStatus;
-        _accountOperations     = accountOperations;
-        _panelState            = panelState;
-        _chromeImport          = chromeImport;
-        _robloxApi             = robloxApi;
-        _cookieImport          = cookieImport;
-        _cookieInputNormalizer = cookieInputNormalizer;
-        _quickLoginCoordinator = quickLoginCoordinator;
-        _quickSignInStatus     = quickSignInStatus;
-        _accountEntryFactory   = accountEntryFactory;
+        _accounts              = dependencies.Accounts;
+        _activityRefresh       = dependencies.ActivityRefresh;
+        _dialogCoordinator     = dependencies.DialogCoordinator;
+        _importStatus          = dependencies.ImportStatus;
+        _accountOperations     = dependencies.AccountOperations;
+        _panelState            = dependencies.PanelState;
+        _chromeImport          = dependencies.ChromeImport;
+        _robloxApi             = dependencies.RobloxApi;
+        _cookieImport          = dependencies.CookieImport;
+        _cookieInputNormalizer = dependencies.CookieInputNormalizer;
+        _quickLoginCoordinator = dependencies.QuickLoginCoordinator;
+        _quickSignInStatus     = dependencies.QuickSignInStatus;
+        _accountEntryFactory   = dependencies.AccountEntryFactory;
         FriendsVm              = friendsVm;
         Reload();
     }
