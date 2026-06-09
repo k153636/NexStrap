@@ -27,6 +27,8 @@ public record LaunchOptions(
 
 public class RobloxService
 {
+    private readonly RobloxVersionManifestService _versionManifest;
+
     // -------------------------------------------------------------------------
     // Win32 — multi-instance mutex control
     // -------------------------------------------------------------------------
@@ -186,10 +188,6 @@ public class RobloxService
     private readonly System.Collections.Concurrent.ConcurrentDictionary<int, int> _pidToSlot = new();
     private int _launchSlotCounter = 0;
 
-    private string?  _cachedLatestGuid;
-    private DateTime _lastVersionCheck = DateTime.MinValue;
-    private static readonly TimeSpan VersionCheckInterval = TimeSpan.FromHours(4);
-
     // ダウンロード進捗 (DownloadAndInstallAsync と progressTimer で共有)
     private long   _totalDownloadedBytes;
     private long   _totalPackedBytes;
@@ -203,6 +201,16 @@ public class RobloxService
     public RobloxStatus Status { get; private set; } = RobloxStatus.Idle;
     public event EventHandler<RobloxStatus>?         StatusChanged;
     public event EventHandler<BootstrapperProgress>? BootstrapperProgress;
+
+    public RobloxService()
+        : this(new RobloxVersionManifestService())
+    {
+    }
+
+    public RobloxService(RobloxVersionManifestService versionManifest)
+    {
+        _versionManifest = versionManifest;
+    }
 
     // -------------------------------------------------------------------------
     // Public surface
@@ -1855,55 +1863,10 @@ public class RobloxService
     // Version GUID
     // -------------------------------------------------------------------------
     private async Task<string?> GetLatestVersionGuidCachedAsync()
-    {
-        if (_cachedLatestGuid != null && DateTime.UtcNow - _lastVersionCheck < VersionCheckInterval)
-        {
-            Log($"Using cached version GUID: {_cachedLatestGuid}");
-            return _cachedLatestGuid;
-        }
-
-        var guid = await GetLatestVersionGuidAsync();
-        if (guid != null)
-        {
-            _cachedLatestGuid = guid;
-            _lastVersionCheck = DateTime.UtcNow;
-        }
-        return guid;
-    }
+        => await _versionManifest.GetLatestVersionGuidCachedAsync();
 
     private void UpdateVersionCache(string guid)
-    {
-        _cachedLatestGuid = guid;
-        _lastVersionCheck = DateTime.UtcNow;
-    }
-
-    private static async Task<string?> GetLatestVersionGuidAsync()
-    {
-        foreach (var url in new[]
-        {
-            "https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer",
-            "https://clientsettings.roblox.com/v2/client-version/WindowsPlayer"
-        })
-        {
-            try
-            {
-                var json = await Http.GetStringAsync(url);
-                using var doc = JsonDocument.Parse(json);
-                if (doc.RootElement.TryGetProperty("clientVersionUpload", out var v))
-                {
-                    var version = v.GetString();
-                    if (version == null) continue;
-                    if (version.StartsWith("version-", StringComparison.OrdinalIgnoreCase))
-                        version = version[8..];
-                    Log($"Fetched version GUID: {version} from {url}");
-                    return version;
-                }
-            }
-            catch (Exception ex) { Log($"Failed to fetch version GUID from {url}: {ex.Message}"); }
-        }
-        Log("Failed to fetch version GUID from all sources");
-        return null;
-    }
+        => _versionManifest.UpdateVersionCache(guid);
 
     // -------------------------------------------------------------------------
     // Protocol handler registration — roblox:// / roblox-player://
