@@ -28,6 +28,7 @@ public class RobloxService
     private readonly RobloxVersionManifestService _versionManifest;
     private readonly RobloxPackageInstallerService _packageInstaller;
     private readonly RobloxDisplayStretchService _displayStretch;
+    private readonly RobloxSetupService _setup;
 
     // -------------------------------------------------------------------------
     // Win32 — multi-instance mutex control
@@ -125,11 +126,6 @@ public class RobloxService
         "NexStrap", "Downloads");
 
     // -------------------------------------------------------------------------
-    // Constants
-    // -------------------------------------------------------------------------
-    private const int BufferSize = 65536;   // 64 KB (より速い)
-
-    // -------------------------------------------------------------------------
     // State
     // -------------------------------------------------------------------------
     private string  _cdnBaseUrl           = "https://setup.rbxcdn.com";
@@ -159,18 +155,21 @@ public class RobloxService
         : this(
             new RobloxVersionManifestService(),
             new RobloxPackageInstallerService(),
-            new RobloxDisplayStretchService())
+            new RobloxDisplayStretchService(),
+            new RobloxSetupService())
     {
     }
 
     public RobloxService(
         RobloxVersionManifestService versionManifest,
         RobloxPackageInstallerService packageInstaller,
-        RobloxDisplayStretchService displayStretch)
+        RobloxDisplayStretchService displayStretch,
+        RobloxSetupService setup)
     {
         _versionManifest  = versionManifest;
         _packageInstaller = packageInstaller;
         _displayStretch   = displayStretch;
+        _setup            = setup;
     }
 
     // -------------------------------------------------------------------------
@@ -1142,143 +1141,16 @@ public class RobloxService
     /// Debug / Release / 移動後など、どのパスで起動しても Web 経由が機能するようにする。
     /// </summary>
     public static void RegisterProtocolHandler()
-    {
-        var exe = Environment.ProcessPath;
-        if (string.IsNullOrEmpty(exe)) return;
-
-        var command = $"\"{exe}\" \"%1\"";
-        var versionFolder = Path.GetFileName(
-            Directory.Exists(VersionsDir)
-                ? Directory.GetDirectories(VersionsDir).FirstOrDefault() ?? string.Empty
-                : string.Empty);
-
-        foreach (var scheme in new[] { "roblox", "roblox-player" })
-        {
-            try
-            {
-                using var root = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{scheme}");
-                root.SetValue("", $"URL:{scheme} Protocol");
-                root.SetValue("URL Protocol", "");
-
-                using var icon = root.CreateSubKey("DefaultIcon");
-                icon.SetValue("", exe);
-
-                using var cmd = root.CreateSubKey(@"shell\open\command");
-                cmd.SetValue("", command);
-                if (!string.IsNullOrEmpty(versionFolder))
-                    cmd.SetValue("version", versionFolder);
-            }
-            catch (Exception ex) { Log($"RegisterProtocolHandler({scheme}): {ex.Message}"); }
-        }
-    }
-
+        => RobloxProtocolRegistrationService.RegisterProtocolHandler();
     // -------------------------------------------------------------------------
     // Setup
     // -------------------------------------------------------------------------
-    public bool NeedsSetup() => !IsVcRedistInstalled();
+    public bool NeedsSetup() => !_setup.IsVcRedistInstalled();
     public void BroadcastProgress(BootstrapperProgress p) => BootstrapperProgress?.Invoke(this, p);
     public async Task RunSetupAsync() => await CheckAndInstallVcRedistAsync();
 
-    // -------------------------------------------------------------------------
-    // VC++ redistributable
-    // -------------------------------------------------------------------------
-    private static bool IsVcRedistInstalled()
-    {
-        // 複数の既知パスを確認（VS バージョン・WoW6432Node の違いに対応）
-        var paths = new[]
-        {
-            @"SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\X64",
-            @"SOFTWARE\WoW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\X64",
-            @"SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64",
-        };
-        foreach (var path in paths)
-        {
-            try
-            {
-                using var key = Registry.LocalMachine.OpenSubKey(path);
-                if (key?.GetValue("Installed") is int v && v == 1) return true;
-            }
-            catch { }
-        }
-        // 追加チェック: アンインストールレジストリで VC++ 2015-2022 を探す
-        try
-        {
-            foreach (var uninstallPath in new[]
-            {
-                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
-                @"SOFTWARE\WoW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
-            })
-            {
-                using var key = Registry.LocalMachine.OpenSubKey(uninstallPath);
-                if (key == null) continue;
-                foreach (var sub in key.GetSubKeyNames())
-                {
-                    using var entry = key.OpenSubKey(sub);
-                    var name = entry?.GetValue("DisplayName") as string;
-                    if (name != null && name.Contains("Microsoft Visual C++") &&
-                        name.Contains("2015") || name != null && name.Contains("Redistributable") &&
-                        name?.Contains("14.") == true)
-                        return true;
-                }
-            }
-        }
-        catch { }
-        return false;
-    }
-
     private async Task CheckAndInstallVcRedistAsync()
-    {
-        if (IsVcRedistInstalled()) return;
-
-        Log("VC++ 2015-2022 x64 not found, downloading...");
-        ReportProgress("Downloading vc_redist.x64.exe", 0);
-
-        var tempExe = Path.Combine(Path.GetTempPath(), "vc_redist.x64.exe");
-        try
-        {
-            using var resp = await Http.GetAsync(
-                "https://aka.ms/vs/17/release/vc_redist.x64.exe",
-                HttpCompletionOption.ResponseHeadersRead);
-            resp.EnsureSuccessStatusCode();
-
-            var total     = resp.Content.Headers.ContentLength ?? 0;
-            var startTime = DateTime.UtcNow;
-            await using var src = await resp.Content.ReadAsStreamAsync();
-            await using var dst = File.Create(tempExe);
-
-            var buf  = new byte[BufferSize];
-            long got = 0;
-            int  n;
-            while ((n = await src.ReadAsync(buf)) > 0)
-            {
-                await dst.WriteAsync(buf.AsMemory(0, n));
-                got += n;
-                var pct     = total > 0 ? got / (double)total * 100.0 : 0;
-                var elapsed = (DateTime.UtcNow - startTime).TotalSeconds;
-                ReportProgress($"Downloading vc_redist.x64.exe ({got / 1024:N0} KB)", pct,
-                    detail: FormatSpeed(elapsed > 0.1 ? got / elapsed : 0));
-            }
-        }
-        catch (Exception ex) { Log($"Failed to download VC++ redist: {ex.Message}"); return; }
-
-        ReportProgress("Installing vc_redist.x64.exe", 100, indeterminate: true);
-        try
-        {
-            var proc = Process.Start(new ProcessStartInfo(tempExe)
-            {
-                Arguments       = "/install /quiet /norestart",
-                UseShellExecute = true
-            });
-            if (proc != null)
-            {
-                await proc.WaitForExitAsync();
-                Log($"VC++ redist install exited with code {proc.ExitCode}");
-            }
-        }
-        catch (Exception ex) { Log($"Failed to install VC++ redist: {ex.Message}"); }
-        finally { try { File.Delete(tempExe); } catch { } }
-    }
-
+        => await _setup.CheckAndInstallVcRedistAsync(ReportProgress);
     // -------------------------------------------------------------------------
     // Uninstall
     // -------------------------------------------------------------------------

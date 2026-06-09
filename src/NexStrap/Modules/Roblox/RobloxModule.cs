@@ -11,6 +11,7 @@ public static class RobloxModule
         services.AddSingleton<RobloxVersionManifestService>();
         services.AddSingleton<RobloxPackageInstallerService>();
         services.AddSingleton<RobloxDisplayStretchService>();
+        services.AddSingleton<RobloxSetupService>();
         services.AddSingleton<RobloxService>();
         services.AddSingleton<RobloxProtocolLaunchHandler>();
         services.AddSingleton<RobloxApiService>();
