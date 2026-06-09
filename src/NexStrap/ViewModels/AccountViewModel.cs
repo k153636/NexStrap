@@ -22,6 +22,7 @@ public partial class AccountViewModel : ViewModelBase
     private readonly CookieAccountImportService _cookieImport;
     private readonly CookieInputNormalizer _cookieInputNormalizer;
     private readonly QuickLoginCoordinator _quickLoginCoordinator;
+    private readonly AccountQuickSignInStatusCoordinator _quickSignInStatus;
     private readonly AccountEntryViewModelFactory _accountEntryFactory;
     private CancellationTokenSource?   _pollCts;
     private CancellationTokenSource    _presenceCts = new();
@@ -105,6 +106,7 @@ public partial class AccountViewModel : ViewModelBase
         AccountActivityRefreshService activityRefresh,
         ChromeImportCoordinator chromeImport,
         AccountEntryViewModelFactory accountEntryFactory,
+        AccountQuickSignInStatusCoordinator quickSignInStatus,
         AccountDialogCoordinator dialogCoordinator,
         AccountImportStatusCoordinator importStatus,
         AccountOperationCoordinator accountOperations,
@@ -120,6 +122,7 @@ public partial class AccountViewModel : ViewModelBase
         _cookieImport          = cookieImport;
         _cookieInputNormalizer = cookieInputNormalizer;
         _quickLoginCoordinator = quickLoginCoordinator;
+        _quickSignInStatus     = quickSignInStatus;
         _accountEntryFactory   = accountEntryFactory;
         FriendsVm              = friendsVm;
         Reload();
@@ -213,7 +216,7 @@ public partial class AccountViewModel : ViewModelBase
     private async Task StartQuickSignInAsync()
     {
         var result = await _robloxApi.CreateQuickSignInAsync();
-        if (result == null) { StatusMessage = "Failed to create Quick Sign-In session"; return; }
+        if (result == null) { _quickSignInStatus.ShowSessionCreationFailed(this); return; }
 
         await _dialogCoordinator.ShowQuickSignInAsync(
             result.Value.Code,
@@ -224,8 +227,7 @@ public partial class AccountViewModel : ViewModelBase
     [RelayCommand]
     private void ToggleQuickLoginPanel()
     {
-        IsQuickLoginOpen = !IsQuickLoginOpen;
-        if (!IsQuickLoginOpen) QuickLoginInput = string.Empty;
+        _quickSignInStatus.TogglePanel(this);
     }
 
     [RelayCommand]
@@ -233,30 +235,26 @@ public partial class AccountViewModel : ViewModelBase
     {
         var input = QuickLoginInput.Trim();
         if (input.Length != 6 || !input.All(char.IsDigit))
-        { StatusMessage = "Enter a valid 6-digit code"; return; }
+        { _quickSignInStatus.ShowInvalidCodeInput(this); return; }
 
         var data = _quickLoginCoordinator.Redeem(input);
-        if (data == null) { StatusMessage = "Code is invalid or expired"; return; }
+        if (data == null) { _quickSignInStatus.ShowInvalidOrExpiredCode(this); return; }
 
         var existing = _quickLoginCoordinator.FindExistingAccount(_accounts.Accounts, data.UserId);
         if (existing != null)
         {
             _accounts.SetActive(existing.Id);
             Reload();
-            QuickLoginInput  = string.Empty;
-            IsQuickLoginOpen = false;
-            StatusMessage    = $"Switched to {data.DisplayName}";
+            _quickSignInStatus.CompleteSwitched(this, data.DisplayName);
             return;
         }
 
-        StatusMessage = "Fetching account info...";
+        _quickSignInStatus.ShowFetchingAccountInfo(this);
         var account = await _quickLoginCoordinator.CreateAccountAsync(data);
         _accounts.Add(account, data.PlaintextCookie);
         _accounts.SetActive(account.Id);
         Reload();
-        QuickLoginInput  = string.Empty;
-        IsQuickLoginOpen = false;
-        StatusMessage    = $"Added & switched to {data.DisplayName}";
+        _quickSignInStatus.CompleteAddedAndSwitched(this, data.DisplayName);
     }
 
     [RelayCommand]

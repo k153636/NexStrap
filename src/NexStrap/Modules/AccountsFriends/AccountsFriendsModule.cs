@@ -18,6 +18,7 @@ public static class AccountsFriendsModule
         services.AddSingleton<CookieInputNormalizer>();
         services.AddSingleton<QuickLoginService>();
         services.AddSingleton<QuickLoginCoordinator>();
+        services.AddSingleton<AccountQuickSignInStatusCoordinator>();
         services.AddSingleton<FriendNotificationService>();
 
         services.AddTransient<AccountViewModel>();
