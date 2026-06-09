@@ -8,6 +8,7 @@ public static class StudioModule
     public static IServiceCollection AddStudioModule(this IServiceCollection services)
     {
         services.AddSingleton<StudioAppSettingsService>();
+        services.AddSingleton<StudioVersionCleanupService>();
         services.AddSingleton<StudioService>();
         services.AddSingleton<StudioFastFlagService>();
         services.AddSingleton<StudioRpcServer>();

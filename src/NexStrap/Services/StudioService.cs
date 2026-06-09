@@ -9,6 +9,7 @@ namespace NexStrap.Services;
 public class StudioService
 {
     private readonly StudioAppSettingsService _appSettings;
+    private readonly StudioVersionCleanupService _versionCleanup;
 
     private static readonly HttpClient Http         = new() { Timeout = TimeSpan.FromMinutes(10) };
     private static readonly HttpClient ManifestHttp = new() { Timeout = TimeSpan.FromSeconds(30) };
@@ -73,9 +74,12 @@ public class StudioService
 
     private sealed record StudioStateFile(string VersionGuid, string VersionPath);
 
-    public StudioService(StudioAppSettingsService appSettings)
+    public StudioService(
+        StudioAppSettingsService appSettings,
+        StudioVersionCleanupService versionCleanup)
     {
-        _appSettings = appSettings;
+        _appSettings    = appSettings;
+        _versionCleanup = versionCleanup;
     }
 
     // -------------------------------------------------------------------------
@@ -772,13 +776,7 @@ public class StudioService
 
     private void CleanupOldVersionDirectories(string keepGuid)
     {
-        if (!Directory.Exists(StudioVersionsDir)) return;
-        foreach (var dir in Directory.GetDirectories(StudioVersionsDir))
-        {
-            if (string.Equals(Path.GetFileName(dir), keepGuid, StringComparison.OrdinalIgnoreCase))
-                continue;
-            try { Directory.Delete(dir, recursive: true); } catch { }
-        }
+        _versionCleanup.CleanupOldVersionDirectories(StudioVersionsDir, keepGuid);
     }
 
     // -------------------------------------------------------------------------
