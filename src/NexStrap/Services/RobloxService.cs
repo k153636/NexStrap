@@ -524,33 +524,6 @@ public class RobloxService
 
     public void RestoreResolution()
         => _displayStretch.RestoreResolution();
-    // -------------------------------------------------------------------------
-    // Process management helpers
-    // -------------------------------------------------------------------------
-    private static Process? TryStartProcess(string playerPath, string? launchArgs, string? isolatedDataDir = null)
-    {
-        var psi = new ProcessStartInfo(playerPath)
-        {
-            WorkingDirectory = Path.GetDirectoryName(playerPath)!,
-            Arguments        = launchArgs ?? string.Empty
-        };
-
-        if (isolatedDataDir != null)
-        {
-            // UseShellExecute = false で環墁E��数を上書きできる
-            psi.UseShellExecute = false;
-            foreach (System.Collections.DictionaryEntry kv in System.Environment.GetEnvironmentVariables())
-                psi.Environment[(string)kv.Key] = (string?)kv.Value ?? "";
-            psi.Environment["LOCALAPPDATA"] = isolatedDataDir;
-        }
-        else
-        {
-            psi.UseShellExecute = true;
-        }
-
-        return Process.Start(psi);
-    }
-
     private async Task MonitorProcessAsync(Process process)
     {
         try { await process.WaitForExitAsync(); } catch { }
