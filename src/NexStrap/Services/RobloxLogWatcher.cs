@@ -299,6 +299,11 @@ public class RobloxLogWatcher : IDisposable
                 if (placeId <= 0) continue;
                 if (placeId == state.LastPlaceId)
                 {
+                    if (state.PendingLeave)
+                    {
+                        state.PendingLeave          = false;
+                        state.PendingLeaveTicksLeft = 0;
+                    }
                     var duplicateUniverseId = MatchUniverseId(line);
                     if (duplicateUniverseId > 0 && state.Activity is { UniverseId: 0 } activity)
                     {
