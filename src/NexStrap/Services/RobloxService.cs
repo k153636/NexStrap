@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
-using System.Text.Json;
 using Microsoft.Win32;
 
 namespace NexStrap.Services;
@@ -29,6 +28,7 @@ public class RobloxService
     private readonly RobloxDisplayStretchService _displayStretch;
     private readonly RobloxSetupService _setup;
     private readonly RobloxMultiInstanceMutexService _multiInstanceMutex;
+    private readonly RobloxInstallStateService _installState;
 
     // -------------------------------------------------------------------------
     // HTTP clients
@@ -75,10 +75,6 @@ public class RobloxService
     // -------------------------------------------------------------------------
     // Paths
     // -------------------------------------------------------------------------
-    private static readonly string StateFilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "NexStrap", "roblox-state.json");
-
     private static readonly string StockRobloxVersionsDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Roblox", "Versions");
@@ -94,8 +90,7 @@ public class RobloxService
     // -------------------------------------------------------------------------
     // State
     // -------------------------------------------------------------------------
-    private string  _cdnBaseUrl           = "https://setup.rbxcdn.com";
-    private string? _currentVersionFolder;
+    private string _cdnBaseUrl = "https://setup.rbxcdn.com";
 
     // インストール多重実行防止 (Bloxstrap の mutex に相当)
     private readonly SemaphoreSlim _installLock = new(1, 1);
@@ -120,7 +115,8 @@ public class RobloxService
             new RobloxPackageInstallerService(),
             new RobloxDisplayStretchService(),
             new RobloxSetupService(),
-            new RobloxMultiInstanceMutexService())
+            new RobloxMultiInstanceMutexService(),
+            new RobloxInstallStateService())
     {
     }
 
@@ -129,13 +125,15 @@ public class RobloxService
         RobloxPackageInstallerService packageInstaller,
         RobloxDisplayStretchService displayStretch,
         RobloxSetupService setup,
-        RobloxMultiInstanceMutexService multiInstanceMutex)
+        RobloxMultiInstanceMutexService multiInstanceMutex,
+        RobloxInstallStateService installState)
     {
         _versionManifest    = versionManifest;
         _packageInstaller   = packageInstaller;
         _displayStretch     = displayStretch;
         _setup              = setup;
         _multiInstanceMutex = multiInstanceMutex;
+        _installState       = installState;
     }
 
     // -------------------------------------------------------------------------
@@ -171,64 +169,19 @@ public class RobloxService
     // Version folder detection
     // -------------------------------------------------------------------------
     private static bool IsVersionComplete(string dir) =>
-        File.Exists(Path.Combine(dir, "RobloxPlayerBeta.exe"));
+        RobloxInstallStateService.IsVersionComplete(dir);
 
-    private sealed record RobloxStateFile(string VersionGuid, string VersionPath);
+    private RobloxInstallStateFile? LoadState()
+        => _installState.LoadState();
 
-    private static RobloxStateFile? LoadState()
-    {
-        try
-        {
-            if (!File.Exists(StateFilePath)) return null;
-            return JsonSerializer.Deserialize<RobloxStateFile>(File.ReadAllText(StateFilePath));
-        }
-        catch { return null; }
-    }
-
-    private static void SaveState(string guid, string path)
-    {
-        try { File.WriteAllText(StateFilePath, JsonSerializer.Serialize(new RobloxStateFile(guid, path))); }
-        catch { }
-    }
+    private void SaveState(string guid, string path)
+        => _installState.SaveState(guid, path);
 
     private string? FindVersionFolder()
-    {
-        if (_currentVersionFolder != null &&
-            Directory.Exists(_currentVersionFolder) &&
-            IsVersionComplete(_currentVersionFolder))
-            return _currentVersionFolder;
-
-        var state = LoadState();
-        if (state != null && IsVersionComplete(state.VersionPath))
-        {
-            _currentVersionFolder = state.VersionPath;
-            return _currentVersionFolder;
-        }
-
-        if (Directory.Exists(VersionsDir))
-        {
-            var found = Directory.GetDirectories(VersionsDir)
-                .Where(IsVersionComplete)
-                .OrderByDescending(d => new DirectoryInfo(d).LastWriteTime)
-                .FirstOrDefault();
-            if (found != null)
-            {
-                _currentVersionFolder = found;
-                return _currentVersionFolder;
-            }
-        }
-
-        _currentVersionFolder = FindStockRobloxVersionFolder();
-        return _currentVersionFolder;
-    }
+        => _installState.FindVersionFolder();
 
     private string? FindNexStrapRobloxPlayerPath()
-    {
-        var versionFolder = FindVersionFolder();
-        if (versionFolder == null) return null;
-        var playerExe = Path.Combine(versionFolder, "RobloxPlayerBeta.exe");
-        return File.Exists(playerExe) ? playerExe : null;
-    }
+        => _installState.FindPlayerPath();
 
     // -------------------------------------------------------------------------
     // Launch
@@ -576,7 +529,7 @@ public class RobloxService
         // 1. 既にインストール済み
         if (IsVersionComplete(versionDir))
         {
-            _currentVersionFolder = versionDir;
+            _installState.SetCurrentVersionFolder(versionDir);
             return Path.Combine(versionDir, "RobloxPlayerBeta.exe");
         }
 
@@ -623,7 +576,7 @@ public class RobloxService
         }
 
         if (!IsVersionComplete(versionDir)) return null;
-        _currentVersionFolder = versionDir;
+        _installState.SetCurrentVersionFolder(versionDir);
         Log($"Installation complete: {versionDir}");
         return Path.Combine(versionDir, "RobloxPlayerBeta.exe");
     }
@@ -774,18 +727,8 @@ public class RobloxService
     // -------------------------------------------------------------------------
     // Stock Roblox helpers
     // -------------------------------------------------------------------------
-    private static string? FindStockRobloxVersionFolder(string? targetGuid = null)
-    {
-        if (!Directory.Exists(StockRobloxVersionsDir)) return null;
-        if (targetGuid != null)
-        {
-            var specific = Path.Combine(StockRobloxVersionsDir, $"version-{targetGuid}");
-            return Directory.Exists(specific) && IsVersionComplete(specific) ? specific : null;
-        }
-        return Directory.GetDirectories(StockRobloxVersionsDir)
-            .OrderByDescending(d => new DirectoryInfo(d).LastWriteTime)
-            .FirstOrDefault(IsVersionComplete);
-    }
+    private string? FindStockRobloxVersionFolder(string? targetGuid = null)
+        => _installState.FindStockRobloxVersionFolder(targetGuid);
 
     private static string? FindFileInStockRoblox(string filename)
     {
@@ -892,7 +835,7 @@ public class RobloxService
                 """, ct);
 
             ReportProgress("Done", 100);
-            _currentVersionFolder = versionDir;
+            _installState.SetCurrentVersionFolder(versionDir);
             return File.Exists(Path.Combine(versionDir, "RobloxPlayerBeta.exe"));
         }
         catch (OperationCanceledException) { }
