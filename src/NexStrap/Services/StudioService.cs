@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text.Json;
 using Microsoft.Win32;
 
 namespace NexStrap.Services;
@@ -13,6 +12,7 @@ public class StudioService
     private readonly StudioPackageManifestService _packageManifest;
     private readonly StudioPackageInstallerService _packageInstaller;
     private readonly StudioCdnConnectivityService _cdnConnectivity;
+    private readonly StudioInstallStateService _installState;
 
     private static readonly string VersionsDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -30,10 +30,6 @@ public class StudioService
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "NexStrap", "Downloads");
 
-    private static readonly string StateFilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "NexStrap", "studio-state.json");
-
     private string  _cdnBaseUrl = "https://setup.rbxcdn.com";
 
     private readonly SemaphoreSlim _installLock = new(1, 1);
@@ -43,15 +39,14 @@ public class StudioService
     public event EventHandler<RobloxStatus>?         StatusChanged;
     public event EventHandler<BootstrapperProgress>? BootstrapperProgress;
 
-    private sealed record StudioStateFile(string VersionGuid, string VersionPath);
-
     public StudioService(
         StudioAppSettingsService appSettings,
         StudioVersionCleanupService versionCleanup,
         StudioVersionManifestService versionManifest,
         StudioPackageManifestService packageManifest,
         StudioPackageInstallerService packageInstaller,
-        StudioCdnConnectivityService cdnConnectivity)
+        StudioCdnConnectivityService cdnConnectivity,
+        StudioInstallStateService installState)
     {
         _appSettings      = appSettings;
         _versionCleanup   = versionCleanup;
@@ -59,6 +54,7 @@ public class StudioService
         _packageManifest  = packageManifest;
         _packageInstaller = packageInstaller;
         _cdnConnectivity  = cdnConnectivity;
+        _installState     = installState;
     }
 
     // -------------------------------------------------------------------------
@@ -407,20 +403,14 @@ public class StudioService
     // -------------------------------------------------------------------------
     // State
     // -------------------------------------------------------------------------
-    private static StudioStateFile? LoadState()
+    private StudioStateFile? LoadState()
     {
-        try
-        {
-            if (!File.Exists(StateFilePath)) return null;
-            return JsonSerializer.Deserialize<StudioStateFile>(File.ReadAllText(StateFilePath));
-        }
-        catch { return null; }
+        return _installState.LoadState();
     }
 
-    private static void SaveState(string guid, string path)
+    private void SaveState(string guid, string path)
     {
-        try { File.WriteAllText(StateFilePath, JsonSerializer.Serialize(new StudioStateFile(guid, path))); }
-        catch { }
+        _installState.SaveState(guid, path);
     }
 
     private void CleanupOldVersionDirectories(string keepGuid)
