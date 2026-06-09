@@ -17,6 +17,7 @@ public static class RobloxModule
         services.AddSingleton<RobloxInstallStateService>();
         services.AddSingleton<RobloxStockInstallFallbackService>();
         services.AddSingleton<RobloxCookieSessionService>();
+        services.AddSingleton<RobloxVersionCleanupService>();
         services.AddSingleton<RobloxService>();
         services.AddSingleton<RobloxProtocolLaunchHandler>();
         services.AddSingleton<RobloxApiService>();

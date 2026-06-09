@@ -30,6 +30,7 @@ public class RobloxService
     private readonly RobloxInstallStateService _installState;
     private readonly RobloxStockInstallFallbackService _stockFallback;
     private readonly RobloxCookieSessionService _cookieSession;
+    private readonly RobloxVersionCleanupService _versionCleanup;
 
     // -------------------------------------------------------------------------
     // Logging
@@ -96,7 +97,8 @@ public class RobloxService
         RobloxMultiInstanceMutexService MultiInstanceMutex,
         RobloxInstallStateService InstallState,
         RobloxStockInstallFallbackService StockFallback,
-        RobloxCookieSessionService CookieSession) services)
+        RobloxCookieSessionService CookieSession,
+        RobloxVersionCleanupService VersionCleanup) services)
         : this(
             services.VersionManifest,
             services.PackageManifest,
@@ -106,7 +108,8 @@ public class RobloxService
             services.MultiInstanceMutex,
             services.InstallState,
             services.StockFallback,
-            services.CookieSession)
+            services.CookieSession,
+            services.VersionCleanup)
     {
     }
 
@@ -119,7 +122,8 @@ public class RobloxService
         RobloxMultiInstanceMutexService MultiInstanceMutex,
         RobloxInstallStateService InstallState,
         RobloxStockInstallFallbackService StockFallback,
-        RobloxCookieSessionService CookieSession) CreateDefaultServices()
+        RobloxCookieSessionService CookieSession,
+        RobloxVersionCleanupService VersionCleanup) CreateDefaultServices()
     {
         var installState = new RobloxInstallStateService();
         return (
@@ -131,7 +135,8 @@ public class RobloxService
             new RobloxMultiInstanceMutexService(),
             installState,
             new RobloxStockInstallFallbackService(installState),
-            new RobloxCookieSessionService());
+            new RobloxCookieSessionService(),
+            new RobloxVersionCleanupService());
     }
 
     public RobloxService(
@@ -143,7 +148,8 @@ public class RobloxService
         RobloxMultiInstanceMutexService multiInstanceMutex,
         RobloxInstallStateService installState,
         RobloxStockInstallFallbackService stockFallback,
-        RobloxCookieSessionService cookieSession)
+        RobloxCookieSessionService cookieSession,
+        RobloxVersionCleanupService versionCleanup)
     {
         _versionManifest    = versionManifest;
         _packageManifest    = packageManifest;
@@ -154,6 +160,7 @@ public class RobloxService
         _installState       = installState;
         _stockFallback      = stockFallback;
         _cookieSession      = cookieSession;
+        _versionCleanup     = versionCleanup;
     }
 
     // -------------------------------------------------------------------------
@@ -503,18 +510,7 @@ public class RobloxService
     // -------------------------------------------------------------------------
     private void CleanupOldVersionDirectories(string keepGuid)
     {
-        if (!Directory.Exists(VersionsDir)) return;
-        foreach (var dir in Directory.GetDirectories(VersionsDir))
-        {
-            if (string.Equals(Path.GetFileName(dir), keepGuid, StringComparison.OrdinalIgnoreCase))
-                continue;
-            try
-            {
-                Directory.Delete(dir, recursive: true);
-                Log($"Cleaned up old version: {Path.GetFileName(dir)}");
-            }
-            catch { }
-        }
+        _versionCleanup.CleanupOldVersionDirectories(VersionsDir, keepGuid);
     }
 
     public bool IsStretchActive => _displayStretch.IsStretchActive;
