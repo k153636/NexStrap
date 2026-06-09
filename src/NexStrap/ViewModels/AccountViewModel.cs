@@ -17,6 +17,7 @@ public partial class AccountViewModel : ViewModelBase
     private readonly AccountDialogCoordinator _dialogCoordinator;
     private readonly AccountImportStatusCoordinator _importStatus;
     private readonly AccountOperationCoordinator _accountOperations;
+    private readonly AccountPanelStateCoordinator _panelState;
     private readonly ChromeImportCoordinator _chromeImport;
     private readonly RobloxApiService  _robloxApi;
     private readonly CookieAccountImportService _cookieImport;
@@ -45,19 +46,17 @@ public partial class AccountViewModel : ViewModelBase
     [ObservableProperty] private bool _isAddMethodDropdownOpen;
 
     [RelayCommand]
-    private void ToggleAddMethodDropdown() => IsAddMethodDropdownOpen = !IsAddMethodDropdownOpen;
+    private void ToggleAddMethodDropdown() => _panelState.ToggleAddMethodDropdown(this);
 
     [RelayCommand]
     private void SelectAddMethod(string method)
     {
-        IsAddMethodDropdownOpen = false;
-        IsPastePanelOpen        = false;
-        IsQuickLoginOpen        = false;
+        _panelState.ResetAddMethodPanels(this);
         switch (method)
         {
             case "Browser":     _ = LoginWithBrowserAsync();  break;
             case "Chrome":      _ = ImportFromChromeAsync();  break;
-            case "Cookie":      IsPastePanelOpen = true;      break;
+            case "Cookie":      _panelState.ShowPastePanel(this); break;
             case "QuickSignIn": _ = StartQuickSignInAsync();  break;
         }
     }
@@ -110,6 +109,7 @@ public partial class AccountViewModel : ViewModelBase
         AccountDialogCoordinator dialogCoordinator,
         AccountImportStatusCoordinator importStatus,
         AccountOperationCoordinator accountOperations,
+        AccountPanelStateCoordinator panelState,
         CookieInputNormalizer cookieInputNormalizer)
     {
         _accounts              = accounts;
@@ -117,6 +117,7 @@ public partial class AccountViewModel : ViewModelBase
         _dialogCoordinator     = dialogCoordinator;
         _importStatus          = importStatus;
         _accountOperations     = accountOperations;
+        _panelState            = panelState;
         _chromeImport          = chromeImport;
         _robloxApi             = robloxApi;
         _cookieImport          = cookieImport;
@@ -335,7 +336,7 @@ public partial class AccountViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void TogglePastePanel() => IsPastePanelOpen = !IsPastePanelOpen;
+    private void TogglePastePanel() => _panelState.TogglePastePanel(this);
 
     [RelayCommand]
     private async Task ImportManuallyAsync()
@@ -344,8 +345,7 @@ public partial class AccountViewModel : ViewModelBase
         if (string.IsNullOrEmpty(raw)) { _importStatus.ShowMissingManualCookie(this); return; }
         raw = _cookieInputNormalizer.StripRobloSecurityPrefix(raw);
         await ImportCookieAsync(raw);
-        ManualCookie     = string.Empty;
-        IsPastePanelOpen = false;
+        _panelState.CompleteManualImport(this);
     }
 
 }
