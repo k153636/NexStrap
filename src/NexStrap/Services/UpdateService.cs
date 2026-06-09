@@ -7,7 +7,7 @@ namespace NexStrap.Services;
 public class UpdateService
 {
     private const string GithubApiUrl = "https://api.github.com/repos/k153636/NexStrap/releases/latest";
-    private const string AssetName    = "NexStrap-x64.exe";
+    private static readonly string[] AssetNames = { "NexStrap-x64.exe", "NexStrap.exe" };
 
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(10) };
 
@@ -58,7 +58,8 @@ public class UpdateService
 
             foreach (var asset in root.GetProperty("assets").EnumerateArray())
             {
-                if (asset.GetProperty("name").GetString() != AssetName) continue;
+                var name = asset.GetProperty("name").GetString();
+                if (name == null || !AssetNames.Contains(name)) continue;
                 var url = asset.GetProperty("browser_download_url").GetString();
                 if (url != null) return (tag, url);
             }
