@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Microsoft.Win32;
 
 namespace NexStrap.Services;
 
@@ -730,42 +729,13 @@ public class RobloxService
     // -------------------------------------------------------------------------
     public async Task UninstallNexStrapRobloxAsync()
     {
-        foreach (var proc in Process.GetProcessesByName("RobloxPlayerBeta"))
-            try { proc.Kill(); await proc.WaitForExitAsync(); } catch { }
-
-        await Task.Run(() =>
-        {
-            if (Directory.Exists(VersionsDir))
-                try { Directory.Delete(VersionsDir, recursive: true); } catch { }
-            if (Directory.Exists(DownloadsDir))
-                try { Directory.Delete(DownloadsDir, recursive: true); } catch { }
-        });
-
+        await RobloxUninstallService.UninstallNexStrapRobloxAsync();
         SetStatus(RobloxStatus.NotInstalled);
     }
 
     public async Task UninstallStockRobloxAsync()
     {
-        foreach (var name in new[] { "RobloxPlayerBeta", "RobloxPlayerLauncher", "RobloxStudioBeta" })
-            foreach (var proc in Process.GetProcessesByName(name))
-                try { proc.Kill(); await proc.WaitForExitAsync(); } catch { }
-
-        await Task.Run(() =>
-        {
-            var robloxDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Roblox");
-            if (Directory.Exists(robloxDir))
-                try { Directory.Delete(robloxDir, recursive: true); } catch { }
-
-            foreach (var key in new[]
-            {
-                @"Software\Classes\roblox",
-                @"Software\Classes\roblox-player",
-                @"Software\Microsoft\Windows\CurrentVersion\Uninstall\roblox-player",
-                @"Software\Roblox",
-            })
-                try { Registry.CurrentUser.DeleteSubKeyTree(key, throwOnMissingSubKey: false); } catch { }
-        });
+        await RobloxUninstallService.UninstallStockRobloxAsync();
     }
 
     // -------------------------------------------------------------------------
