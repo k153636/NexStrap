@@ -78,12 +78,7 @@ public partial class AccountViewModel : ViewModelBase
     public string FollowersCountDisplay  => IsStatsLoading ? "—" : ActiveFollowersCount.ToString();
     public string FollowingsCountDisplay => IsStatsLoading ? "—" : ActiveFollowingsCount.ToString();
 
-    partial void OnIsStatsLoadingChanged(bool _)
-    {
-        OnPropertyChanged(nameof(FriendsCountDisplay));
-        OnPropertyChanged(nameof(FollowersCountDisplay));
-        OnPropertyChanged(nameof(FollowingsCountDisplay));
-    }
+    partial void OnIsStatsLoadingChanged(bool _) => NotifyStatsDisplayChanged();
 
     partial void OnActiveFriendsCountChanged(int _)   => OnPropertyChanged(nameof(FriendsCountDisplay));
     partial void OnActiveFollowersCountChanged(int _)  => OnPropertyChanged(nameof(FollowersCountDisplay));
@@ -135,10 +130,7 @@ public partial class AccountViewModel : ViewModelBase
             Accounts.Add(entry);
         }
 
-        OnPropertyChanged(nameof(ActiveDisplayName));
-        OnPropertyChanged(nameof(ActiveUsername));
-        OnPropertyChanged(nameof(ActiveIcon));
-        OnPropertyChanged(nameof(ActiveStatusColor));
+        NotifyActiveAccountChanged();
         IsStatsVisible = _accounts.Accounts.Any(a => a.IsActive);
 
         // 前の非同期取得をキャンセルしてから再起動
@@ -157,6 +149,28 @@ public partial class AccountViewModel : ViewModelBase
             OnPropertyChanged(nameof(ActiveIcon));
         if (e.PropertyName == nameof(AccountEntryViewModel.StatusColor))
             OnPropertyChanged(nameof(ActiveStatusColor));
+    }
+
+    private void NotifyStatsDisplayChanged()
+    {
+        OnPropertyChanged(nameof(FriendsCountDisplay));
+        OnPropertyChanged(nameof(FollowersCountDisplay));
+        OnPropertyChanged(nameof(FollowingsCountDisplay));
+    }
+
+    private void NotifyActiveAccountChanged()
+    {
+        OnPropertyChanged(nameof(ActiveDisplayName));
+        OnPropertyChanged(nameof(ActiveUsername));
+        OnPropertyChanged(nameof(ActiveIcon));
+        OnPropertyChanged(nameof(ActiveStatusColor));
+    }
+
+    private void ApplyActiveStats(AccountStatsSnapshot stats)
+    {
+        ActiveFriendsCount    = stats.Friends;
+        ActiveFollowersCount  = stats.Followers;
+        ActiveFollowingsCount = stats.Followings;
     }
 
     private void LaunchAs(AccountEntryViewModel entry)
@@ -194,9 +208,7 @@ public partial class AccountViewModel : ViewModelBase
             var stats = await _activityRefresh.GetActiveStatsAsync(active, ct);
             if (ct.IsCancellationRequested) return;
             if (stats == null) return;
-            ActiveFriendsCount    = stats.Friends;
-            ActiveFollowersCount  = stats.Followers;
-            ActiveFollowingsCount = stats.Followings;
+            ApplyActiveStats(stats);
         }
         catch { }
         finally { IsStatsLoading = false; }
