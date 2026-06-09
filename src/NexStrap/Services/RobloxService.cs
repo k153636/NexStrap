@@ -31,6 +31,7 @@ public class RobloxService
     private readonly RobloxStockInstallFallbackService _stockFallback;
     private readonly RobloxCookieSessionService _cookieSession;
     private readonly RobloxVersionCleanupService _versionCleanup;
+    private readonly RobloxAppSettingsService _appSettings;
 
     // -------------------------------------------------------------------------
     // Logging
@@ -98,7 +99,8 @@ public class RobloxService
         RobloxInstallStateService InstallState,
         RobloxStockInstallFallbackService StockFallback,
         RobloxCookieSessionService CookieSession,
-        RobloxVersionCleanupService VersionCleanup) services)
+        RobloxVersionCleanupService VersionCleanup,
+        RobloxAppSettingsService AppSettings) services)
         : this(
             services.VersionManifest,
             services.PackageManifest,
@@ -109,7 +111,8 @@ public class RobloxService
             services.InstallState,
             services.StockFallback,
             services.CookieSession,
-            services.VersionCleanup)
+            services.VersionCleanup,
+            services.AppSettings)
     {
     }
 
@@ -123,7 +126,8 @@ public class RobloxService
         RobloxInstallStateService InstallState,
         RobloxStockInstallFallbackService StockFallback,
         RobloxCookieSessionService CookieSession,
-        RobloxVersionCleanupService VersionCleanup) CreateDefaultServices()
+        RobloxVersionCleanupService VersionCleanup,
+        RobloxAppSettingsService AppSettings) CreateDefaultServices()
     {
         var installState = new RobloxInstallStateService();
         return (
@@ -136,7 +140,8 @@ public class RobloxService
             installState,
             new RobloxStockInstallFallbackService(installState),
             new RobloxCookieSessionService(),
-            new RobloxVersionCleanupService());
+            new RobloxVersionCleanupService(),
+            new RobloxAppSettingsService());
     }
 
     public RobloxService(
@@ -149,7 +154,8 @@ public class RobloxService
         RobloxInstallStateService installState,
         RobloxStockInstallFallbackService stockFallback,
         RobloxCookieSessionService cookieSession,
-        RobloxVersionCleanupService versionCleanup)
+        RobloxVersionCleanupService versionCleanup,
+        RobloxAppSettingsService appSettings)
     {
         _versionManifest    = versionManifest;
         _packageManifest    = packageManifest;
@@ -161,6 +167,7 @@ public class RobloxService
         _stockFallback      = stockFallback;
         _cookieSession      = cookieSession;
         _versionCleanup     = versionCleanup;
+        _appSettings        = appSettings;
     }
 
     // -------------------------------------------------------------------------
@@ -620,15 +627,7 @@ public class RobloxService
                     item.Path, item.Name, versionDir, ExtStart, ExtEnd, ReportProgress), ct)));
 
             ReportProgress("Configuring...", 99);
-            await File.WriteAllTextAsync(
-                Path.Combine(versionDir, "AppSettings.xml"),
-                """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <Settings>
-                	<ContentFolder>content</ContentFolder>
-                	<BaseUrl>http://www.roblox.com</BaseUrl>
-                </Settings>
-                """, ct);
+            await _appSettings.WriteAppSettingsAsync(versionDir, ct);
 
             ReportProgress("Done", 100);
             _installState.SetCurrentVersionFolder(versionDir);
