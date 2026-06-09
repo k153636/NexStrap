@@ -100,6 +100,7 @@ public class RobloxLogWatcher : IDisposable
     private static readonly string LogDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Roblox", "logs");
+    private const double MinProcessLogStartDeltaSeconds = -2;
     private const double MaxProcessLogStartDeltaSeconds = 120;
 
     // ── コンストラクタ ────────────────────────────────────────────────────
@@ -570,12 +571,13 @@ public class RobloxLogWatcher : IDisposable
                 var startTime = proc.StartTime;
                 var candidates = logFiles
                     .Where(f => !used.Contains(f))
-                    .Select(f => (Path: f, Delta: Math.Abs((File.GetCreationTime(f) - startTime).TotalSeconds)))
-                    .Where(x => x.Delta <= MaxProcessLogStartDeltaSeconds)
+                    .Select(f => (Path: f, Offset: (File.GetCreationTime(f) - startTime).TotalSeconds))
+                    .Where(x => x.Offset >= MinProcessLogStartDeltaSeconds &&
+                                x.Offset <= MaxProcessLogStartDeltaSeconds)
                     .ToList();
                 if (candidates.Count > 0)
                 {
-                    var best = candidates.MinBy(x => x.Delta);
+                    var best = candidates.MinBy(x => Math.Abs(x.Offset));
                     result[(uint)proc.Id] = (best.Path, slot++);
                     used.Add(best.Path);
                 }
@@ -598,10 +600,14 @@ public class RobloxLogWatcher : IDisposable
             {
                 if (f.Contains("_Studio_", StringComparison.OrdinalIgnoreCase)) continue;
                 if (usedLogs.Contains(f)) continue;
-                var delta = Math.Abs((File.GetCreationTime(f) - startTime).TotalSeconds);
+                var offset = (File.GetCreationTime(f) - startTime).TotalSeconds;
+                if (offset < MinProcessLogStartDeltaSeconds ||
+                    offset > MaxProcessLogStartDeltaSeconds)
+                    continue;
+                var delta = Math.Abs(offset);
                 if (delta < bestDelta) { bestDelta = delta; best = f; }
             }
-            return bestDelta <= MaxProcessLogStartDeltaSeconds ? best : null;
+            return best;
         }
         catch { return null; }
     }
