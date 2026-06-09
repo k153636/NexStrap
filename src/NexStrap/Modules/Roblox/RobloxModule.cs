@@ -15,6 +15,7 @@ public static class RobloxModule
         services.AddSingleton<RobloxMultiInstanceMutexService>();
         services.AddSingleton<RobloxInstallStateService>();
         services.AddSingleton<RobloxStockInstallFallbackService>();
+        services.AddSingleton<RobloxCookieSessionService>();
         services.AddSingleton<RobloxService>();
         services.AddSingleton<RobloxProtocolLaunchHandler>();
         services.AddSingleton<RobloxApiService>();
