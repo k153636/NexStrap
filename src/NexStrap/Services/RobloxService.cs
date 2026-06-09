@@ -283,7 +283,7 @@ public class RobloxService
 
         Log($"Launching: {playerPath} args={launchArgs ?? "(none)"}");
         SetStatus(RobloxStatus.Launching);
-        var proc = TryStartProcess(playerPath, launchArgs);
+        var proc = RobloxProcessService.TryStartProcess(playerPath, launchArgs);
         if (proc == null) { SetStatus(RobloxStatus.Idle); return false; }
 
         await Task.Delay(3000);
@@ -308,7 +308,7 @@ public class RobloxService
             Log(ok ? "Cookie injected (retry path)" : "Cookie injection failed (retry path)");
         }
         SetStatus(RobloxStatus.Launching);
-        proc = TryStartProcess(playerPath, launchArgs);
+        proc = RobloxProcessService.TryStartProcess(playerPath, launchArgs);
         if (proc == null) { SetStatus(RobloxStatus.Idle); return false; }
         return SetLaunched(proc, options);
     }
@@ -364,7 +364,7 @@ public class RobloxService
         // RobloxCrashHandler 抑制 (起動後に出現するため最大3回リトライ)
         if (opts.SuppressCrashHandler)
         {
-            var hasWindow = await WaitForMainWindowAsync(proc, TimeSpan.FromSeconds(10));
+            var hasWindow = await RobloxProcessService.WaitForMainWindowAsync(proc, TimeSpan.FromSeconds(10));
             if (!hasWindow)
             {
                 Log("Skipped RobloxCrashHandler suppression because Roblox has no main window");
@@ -387,29 +387,6 @@ public class RobloxService
                 if (handlers.Length > 0) break;
             }
         }
-    }
-
-    private static async Task<bool> WaitForMainWindowAsync(Process proc, TimeSpan timeout)
-    {
-        var deadline = DateTime.UtcNow + timeout;
-        while (DateTime.UtcNow < deadline)
-        {
-            try
-            {
-                if (proc.HasExited) return false;
-                proc.Refresh();
-                if (proc.MainWindowHandle != IntPtr.Zero)
-                    return true;
-            }
-            catch
-            {
-                return false;
-            }
-
-            await Task.Delay(500);
-        }
-
-        return false;
     }
 
     // -------------------------------------------------------------------------
