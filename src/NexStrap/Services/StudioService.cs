@@ -8,6 +8,8 @@ namespace NexStrap.Services;
 
 public class StudioService
 {
+    private readonly StudioAppSettingsService _appSettings;
+
     private static readonly HttpClient Http         = new() { Timeout = TimeSpan.FromMinutes(10) };
     private static readonly HttpClient ManifestHttp = new() { Timeout = TimeSpan.FromSeconds(30) };
 
@@ -70,6 +72,11 @@ public class StudioService
     public event EventHandler<BootstrapperProgress>? BootstrapperProgress;
 
     private sealed record StudioStateFile(string VersionGuid, string VersionPath);
+
+    public StudioService(StudioAppSettingsService appSettings)
+    {
+        _appSettings = appSettings;
+    }
 
     // -------------------------------------------------------------------------
     // Public surface
@@ -391,15 +398,7 @@ public class StudioService
                 Task.Run(() => ExtractPackage(item.Path, item.Name, versionDir, ExtStart, ExtEnd), ct)));
 
             ReportProgress("Configuring...", 99);
-            await File.WriteAllTextAsync(
-                Path.Combine(versionDir, "AppSettings.xml"),
-                """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <Settings>
-                	<ContentFolder>content</ContentFolder>
-                	<BaseUrl>http://www.roblox.com</BaseUrl>
-                </Settings>
-                """, ct);
+            await _appSettings.WriteAppSettingsAsync(versionDir, ct);
 
             ReportProgress("Done", 100);
             return File.Exists(Path.Combine(versionDir, "RobloxStudioBeta.exe"));
