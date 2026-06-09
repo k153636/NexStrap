@@ -9,6 +9,7 @@ public static class RobloxModule
     public static IServiceCollection AddRobloxModule(this IServiceCollection services)
     {
         services.AddSingleton<RobloxVersionManifestService>();
+        services.AddSingleton<RobloxPackageManifestService>();
         services.AddSingleton<RobloxPackageInstallerService>();
         services.AddSingleton<RobloxDisplayStretchService>();
         services.AddSingleton<RobloxSetupService>();

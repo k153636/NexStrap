@@ -23,6 +23,7 @@ public record LaunchOptions(
 public class RobloxService
 {
     private readonly RobloxVersionManifestService _versionManifest;
+    private readonly RobloxPackageManifestService _packageManifest;
     private readonly RobloxPackageInstallerService _packageInstaller;
     private readonly RobloxDisplayStretchService _displayStretch;
     private readonly RobloxSetupService _setup;
@@ -30,18 +31,6 @@ public class RobloxService
     private readonly RobloxInstallStateService _installState;
     private readonly RobloxStockInstallFallbackService _stockFallback;
     private readonly RobloxCookieSessionService _cookieSession;
-
-    // -------------------------------------------------------------------------
-    // HTTP clients
-    // -------------------------------------------------------------------------
-    private static readonly HttpClient Http         = new() { Timeout = TimeSpan.FromMinutes(10) };
-    private static readonly HttpClient ManifestHttp = new() { Timeout = TimeSpan.FromSeconds(30) };
-
-    static RobloxService()
-    {
-        Http.DefaultRequestHeaders.UserAgent.ParseAdd("RobloxStudio/WinInet");
-        ManifestHttp.DefaultRequestHeaders.UserAgent.ParseAdd("RobloxStudio/WinInet");
-    }
 
     // -------------------------------------------------------------------------
     // Logging
@@ -62,18 +51,6 @@ public class RobloxService
     }
 
     // -------------------------------------------------------------------------
-    // CDN — Bloxstrap と同一の5鏡構成
-    // -------------------------------------------------------------------------
-    private static readonly (string BaseUrl, int DelayMs)[] CdnMirrors =
-    [
-        ("https://setup.rbxcdn.com",                     0),
-        ("https://setup-aws.rbxcdn.com",              2000),
-        ("https://setup-ak.rbxcdn.com",               2000),
-        ("https://roblox-setup.cachefly.net",         2000),
-        ("https://s3.amazonaws.com/setup.roblox.com", 4000),
-    ];
-
-    // -------------------------------------------------------------------------
     // Paths
     // -------------------------------------------------------------------------
     private static readonly string VersionsDir = Path.Combine(
@@ -87,19 +64,19 @@ public class RobloxService
     // -------------------------------------------------------------------------
     // State
     // -------------------------------------------------------------------------
-    private string _cdnBaseUrl = "https://setup.rbxcdn.com";
+    private string _cdnBaseUrl = RobloxPackageManifestService.DefaultCdnBaseUrl;
 
-    // インストール多重実行防止 (Bloxstrap の mutex に相当)
+    // インスト�Eル多重実行防止 (Bloxstrap の mutex に相彁E
     private readonly SemaphoreSlim _installLock = new(1, 1);
 
     private CancellationTokenSource? _installCts;
     private Process? _launchedRobloxProcess;
 
-    // マルチインスタンス: プロセスID → スロットインデックス
+    // マルチインスタンス: プロセスID ↁEスロチE��インチE��クス
     private readonly System.Collections.Concurrent.ConcurrentDictionary<int, int> _pidToSlot = new();
     private int _launchSlotCounter = 0;
 
-    /// <summary>初回インストール後・起動前に呼ばれる — FastFlags/Mods の書き込みに使う。</summary>
+    /// <summary>初回インスト�Eル後�E起動前に呼ばれる  EFastFlags/Mods の書き込みに使ぁE��E/summary>
     public Func<Task>? PreLaunchAsync { get; set; }
 
     public RobloxStatus Status { get; private set; } = RobloxStatus.Idle;
@@ -113,6 +90,7 @@ public class RobloxService
 
     private RobloxService((
         RobloxVersionManifestService VersionManifest,
+        RobloxPackageManifestService PackageManifest,
         RobloxPackageInstallerService PackageInstaller,
         RobloxDisplayStretchService DisplayStretch,
         RobloxSetupService Setup,
@@ -122,6 +100,7 @@ public class RobloxService
         RobloxCookieSessionService CookieSession) services)
         : this(
             services.VersionManifest,
+            services.PackageManifest,
             services.PackageInstaller,
             services.DisplayStretch,
             services.Setup,
@@ -134,6 +113,7 @@ public class RobloxService
 
     private static (
         RobloxVersionManifestService VersionManifest,
+        RobloxPackageManifestService PackageManifest,
         RobloxPackageInstallerService PackageInstaller,
         RobloxDisplayStretchService DisplayStretch,
         RobloxSetupService Setup,
@@ -145,6 +125,7 @@ public class RobloxService
         var installState = new RobloxInstallStateService();
         return (
             new RobloxVersionManifestService(),
+            new RobloxPackageManifestService(),
             new RobloxPackageInstallerService(),
             new RobloxDisplayStretchService(),
             new RobloxSetupService(),
@@ -156,6 +137,7 @@ public class RobloxService
 
     public RobloxService(
         RobloxVersionManifestService versionManifest,
+        RobloxPackageManifestService packageManifest,
         RobloxPackageInstallerService packageInstaller,
         RobloxDisplayStretchService displayStretch,
         RobloxSetupService setup,
@@ -165,6 +147,7 @@ public class RobloxService
         RobloxCookieSessionService cookieSession)
     {
         _versionManifest    = versionManifest;
+        _packageManifest    = packageManifest;
         _packageInstaller   = packageInstaller;
         _displayStretch     = displayStretch;
         _setup              = setup;
@@ -231,8 +214,8 @@ public class RobloxService
 
         await CheckAndInstallVcRedistAsync();
 
-        // マルチインスタンス: NexStrap が ROBLOX_singletonMutex を保持することで
-        // 新しい Roblox インスタンスがシングルトンチェックをパスできる
+        // マルチインスタンス: NexStrap ぁEROBLOX_singletonMutex を保持することで
+        // 新しい Roblox インスタンスがシングルトンチェチE��をパスできる
         if (options.MultiInstance)
             AcquireRobloxSingletonMutex();
 
@@ -250,7 +233,7 @@ public class RobloxService
 
             if (!string.IsNullOrEmpty(latestGuid) && installedGuid != latestGuid)
             {
-                Log($"Update available: {installedGuid} → {latestGuid}");
+                Log($"Update available: {installedGuid} ↁE{latestGuid}");
                 SetStatus(RobloxStatus.Updating);
                 var updatedPath = await InstallVersionAsync(latestGuid);
                 if (updatedPath != null)
@@ -268,7 +251,7 @@ public class RobloxService
             }
         }
 
-        // 初回インストール
+        // 初回インスト�Eル
         if (playerPath == null)
         {
             SetStatus(RobloxStatus.Updating);
@@ -288,14 +271,14 @@ public class RobloxService
 
         if (playerPath == null) { SetStatus(RobloxStatus.Idle); return false; }
 
-        // 起動直前にクッキーを注入（タイミングを最小化）
+        // 起動直前にクチE��ーを注入�E�タイミングを最小化�E�E
         if (options.CookieToInject != null)
         {
             var ok = _cookieSession.InjectAccountCookie(options.CookieToInject);
             Log(ok ? "Cookie injected successfully before launch" : "Cookie injection failed (file may be locked)");
         }
 
-        // Stretch Resolution — Roblox 起動前に解像度を変更
+        // Stretch Resolution  ERoblox 起動前に解像度を変更
         if (options.StretchResolution)
             ApplyStretchResolution(options.StretchWidth, options.StretchHeight);
 
@@ -308,7 +291,7 @@ public class RobloxService
         if (!proc.HasExited)
             return SetLaunched(proc, options);
 
-        // 即終了 — 壊れているので強制再インストールして一度だけリトライ
+        // 即終亁E E壊れてぁE��ので強制再インスト�Eルして一度だけリトライ
         Log($"Process exited immediately (code {proc.ExitCode}), force reinstalling...");
         SetStatus(RobloxStatus.Updating);
         var retryGuid = await GetLatestVersionGuidCachedAsync();
@@ -346,10 +329,10 @@ public class RobloxService
     public bool TryGetSlotForPid(int pid, out int slot) => _pidToSlot.TryGetValue(pid, out slot);
     public IEnumerable<int> GetTrackedRobloxPids()      => _pidToSlot.Keys;
 
-    /// <summary>CPU アフィニティ・メモリ上限・クラッシュハンドラ抑制を起動後に適用する。</summary>
+    /// <summary>CPU アフィニティ・メモリ上限・クラチE��ュハンドラ抑制を起動後に適用する、E/summary>
     public async Task PostLaunchAsync(Process proc, LaunchOptions opts)
     {
-        await Task.Delay(1500); // Roblox の初期化を少し待つ
+        await Task.Delay(1500); // Roblox の初期化を少し征E��
 
         // CPU アフィニティ
         if (opts.CpuCoreLimit > 0)
@@ -364,8 +347,8 @@ public class RobloxService
             catch (Exception ex) { Log($"CPU affinity failed: {ex.Message}"); }
         }
 
-        // メモリ上限 (RAM の半分 or 4GB の小さいほう)
-        // 2GB 上限では現代の Roblox が頻繁にページアウトしパフォーマンスが低下するため 4GB に変更
+        // メモリ上限 (RAM の半�E or 4GB の小さぁE��ぁE
+        // 2GB 上限では現代の Roblox が頻繁にペ�Eジアウトしパフォーマンスが低下するためE4GB に変更
         if (opts.MemoryOptimization)
         {
             try
@@ -431,7 +414,7 @@ public class RobloxService
     }
 
     // -------------------------------------------------------------------------
-    // Account cookie injection — RobloxCookies.dat に対象アカウントを書き込む
+    // Account cookie injection  ERobloxCookies.dat に対象アカウントを書き込む
     // -------------------------------------------------------------------------
     public static void ClearRobloxCookies()
     {
@@ -439,8 +422,8 @@ public class RobloxService
     }
 
     /// <summary>
-    /// appStorage.json のセッション関連フィールドをクリアする。
-    /// Roblox が保存済みセッションを使わず auth ticket を使うようにするため。
+    /// appStorage.json のセチE��ョン関連フィールドをクリアする、E
+    /// Roblox が保存済みセチE��ョンを使わず auth ticket を使ぁE��ぁE��するため、E
     /// </summary>
     public static void ClearAppStorageSession()
     {
@@ -465,7 +448,7 @@ public class RobloxService
     // -------------------------------------------------------------------------
     private async Task<string?> InstallVersionAsync(string versionGuid, bool forceReinstall = false)
     {
-        // 同時インストール防止
+        // 同時インスト�Eル防止
         await _installLock.WaitAsync();
         try
         {
@@ -484,14 +467,14 @@ public class RobloxService
         if (forceReinstall && Directory.Exists(versionDir))
             try { Directory.Delete(versionDir, recursive: true); } catch { }
 
-        // 1. 既にインストール済み
+        // 1. 既にインスト�Eル済み
         if (IsVersionComplete(versionDir))
         {
             _installState.SetCurrentVersionFolder(versionDir);
             return Path.Combine(versionDir, "RobloxPlayerBeta.exe");
         }
 
-        // 2. ストック Roblox の正確なバージョンからコピー (CDN 不要の高速パス)
+        // 2. ストック Roblox の正確なバ�Eジョンからコピ�E (CDN 不要�E高速パス)
         var stockFolder = FindStockRobloxVersionFolder(versionGuid);
         if (stockFolder != null)
         {
@@ -500,7 +483,7 @@ public class RobloxService
             await _stockFallback.CopyDirectoryAsync(stockFolder, versionDir, ReportProgress);
         }
 
-        // 3. CDN ダウンロード
+        // 3. CDN ダウンローチE
         if (!IsVersionComplete(versionDir))
         {
             _installCts = new CancellationTokenSource();
@@ -510,7 +493,7 @@ public class RobloxService
 
             if (!ok)
             {
-                // CDN 完全失敗 — 正確なバージョンのストック Roblox があればコピー
+                // CDN 完�E失敁E E正確なバ�Eジョンのストック Roblox があれ�Eコピ�E
                 var stockFallback = FindStockRobloxVersionFolder(versionGuid);
                 if (stockFallback != null)
                 {
@@ -520,7 +503,7 @@ public class RobloxService
                 }
                 else
                 {
-                    // 最終手段: 公式インストーラーで正確なバージョンを取得後コピー
+                    // 最終手段: 公式インスト�Eラーで正確なバ�Eジョンを取得後コピ�E
                     await _stockFallback.RunOfficialInstallerAsync();
                     var newStock = FindStockRobloxVersionFolder(versionGuid);
                     if (newStock != null)
@@ -578,7 +561,7 @@ public class RobloxService
 
         if (isolatedDataDir != null)
         {
-            // UseShellExecute = false で環境変数を上書きできる
+            // UseShellExecute = false で環墁E��数を上書きできる
             psi.UseShellExecute = false;
             foreach (System.Collections.DictionaryEntry kv in System.Environment.GetEnvironmentVariables())
                 psi.Environment[(string)kv.Key] = (string?)kv.Value ?? "";
@@ -596,7 +579,7 @@ public class RobloxService
     {
         try { await process.WaitForExitAsync(); } catch { }
         _pidToSlot.TryRemove(process.Id, out _);
-        RestoreResolution(); // Stretch Resolution を使っていた場合に復元
+        RestoreResolution(); // Stretch Resolution を使ってぁE��場合に復允E
         SetStatus(RobloxStatus.Idle);
     }
 
@@ -619,12 +602,15 @@ public class RobloxService
         try
         {
             ReportProgress("Connecting to CDN...", 0);
-            _cdnBaseUrl = await TestConnectivityAsync(ct) ?? "https://setup.rbxcdn.com";
+            _cdnBaseUrl = await _packageManifest.TestConnectivityAsync(ct) ?? RobloxPackageManifestService.DefaultCdnBaseUrl;
             Log($"CDN winner: {_cdnBaseUrl}");
 
             ReportProgress("Fetching package list...", 3);
             Log($"Fetching manifest for: {versionGuid}");
-            var packages = await FetchManifestAsync(versionGuid, ct);
+            var manifest = await _packageManifest.FetchManifestAsync(versionGuid, _cdnBaseUrl, ct);
+            if (manifest != null)
+                _cdnBaseUrl = manifest.CdnBaseUrl;
+            var packages = manifest?.Packages;
             if (packages == null || packages.Count == 0)
             {
                 Log("Manifest fetch returned no packages");
@@ -680,7 +666,7 @@ public class RobloxService
 
             if (ct.IsCancellationRequested) return false;
 
-            // 展開ファイル数を先に集計 (進捗精度のため)
+            // 展開ファイル数を�Eに雁E��E(進捗精度のため)
             await _packageInstaller.CountExtractFilesAsync(downloadedPaths, ct);
 
             // 全パッケージを並列展開
@@ -713,97 +699,6 @@ public class RobloxService
     }
 
     // -------------------------------------------------------------------------
-    // CDN connectivity test
-    // -------------------------------------------------------------------------
-    private static async Task<string?> TestConnectivityAsync(CancellationToken ct)
-    {
-        using var cts   = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var       tasks = new List<Task<string>>();
-
-        foreach (var (baseUrl, delayMs) in CdnMirrors)
-        {
-            var url   = baseUrl;
-            var delay = delayMs;
-            tasks.Add(Task.Run(async () =>
-            {
-                if (delay > 0) await Task.Delay(delay, cts.Token);
-                await Http.GetAsync($"{url}/version",
-                    HttpCompletionOption.ResponseHeadersRead, cts.Token);
-                return url;
-            }, cts.Token));
-        }
-
-        while (tasks.Count > 0)
-        {
-            var completed = await Task.WhenAny(tasks);
-            tasks.Remove(completed);
-            try
-            {
-                var winner = await completed;
-                await cts.CancelAsync();
-                return winner;
-            }
-            catch { }
-        }
-        return null;
-    }
-
-    // -------------------------------------------------------------------------
-    // Manifest fetch
-    // -------------------------------------------------------------------------
-    private async Task<List<RobloxPackage>?> FetchManifestAsync(string versionGuid, CancellationToken ct)
-    {
-        var urls = new[] { _cdnBaseUrl }
-            .Concat(CdnMirrors.Select(m => m.BaseUrl).Where(u => u != _cdnBaseUrl));
-
-        foreach (var baseUrl in urls)
-        {
-            try
-            {
-                var text = await ManifestHttp.GetStringAsync(
-                    $"{baseUrl}/version-{versionGuid}-rbxPkgManifest.txt", ct);
-                var pkgs = ParseManifest(text);
-                if (pkgs.Count > 0)
-                {
-                    if (baseUrl != _cdnBaseUrl)
-                    {
-                        Log($"CDN switched: {_cdnBaseUrl} → {baseUrl}");
-                        _cdnBaseUrl = baseUrl;
-                    }
-                    return pkgs;
-                }
-            }
-            catch (Exception ex) { Log($"Manifest fetch failed ({baseUrl}): {ex.Message}"); }
-        }
-        return null;
-    }
-
-    private static List<RobloxPackage> ParseManifest(string text)
-    {
-        using var reader  = new StringReader(text);
-        if (reader.ReadLine() != "v0") return [];
-
-        var result = new List<RobloxPackage>();
-        while (true)
-        {
-            var name      = reader.ReadLine();
-            var signature = reader.ReadLine();
-            var rawPacked = reader.ReadLine();
-            var rawSize   = reader.ReadLine();
-
-            if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(signature) ||
-                string.IsNullOrEmpty(rawPacked) || string.IsNullOrEmpty(rawSize))
-                break;
-
-            if (name == "RobloxPlayerLauncher.exe") break;
-
-            long packed = long.TryParse(rawPacked, out var s) ? s : 0;
-            result.Add(new RobloxPackage(name, packed, signature));
-        }
-        return result;
-    }
-
-    // -------------------------------------------------------------------------
     // Version GUID
     // -------------------------------------------------------------------------
     private async Task<string?> GetLatestVersionGuidCachedAsync()
@@ -813,11 +708,11 @@ public class RobloxService
         => _versionManifest.UpdateVersionCache(guid);
 
     // -------------------------------------------------------------------------
-    // Protocol handler registration — roblox:// / roblox-player://
+    // Protocol handler registration  Eroblox:// / roblox-player://
     // -------------------------------------------------------------------------
     /// <summary>
-    /// 起動のたびに現在の EXE パスで roblox:// プロトコルを再登録する。
-    /// Debug / Release / 移動後など、どのパスで起動しても Web 経由が機能するようにする。
+    /// 起動�Eた�Eに現在の EXE パスで roblox:// プロトコルを�E登録する、E
+    /// Debug / Release / 移動後など、どのパスで起動してめEWeb 経由が機�Eするようにする、E
     /// </summary>
     public static void RegisterProtocolHandler()
         => RobloxProtocolRegistrationService.RegisterProtocolHandler();
@@ -896,6 +791,3 @@ public class RobloxService
         => BootstrapperProgress?.Invoke(this,
             new BootstrapperProgress(message, percent, indeterminate, detail));
 }
-
-// Signature = MD5 hash (matches Bloxstrap Package.Signature)
-internal record RobloxPackage(string Name, long CompressedSize, string Signature);
