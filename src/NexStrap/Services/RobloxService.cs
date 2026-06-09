@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using System.IO.Compression;
-using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -28,6 +26,7 @@ public record LaunchOptions(
 public class RobloxService
 {
     private readonly RobloxVersionManifestService _versionManifest;
+    private readonly RobloxPackageInstallerService _packageInstaller;
 
     // -------------------------------------------------------------------------
     // Win32 — multi-instance mutex control
@@ -124,50 +123,10 @@ public class RobloxService
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "NexStrap", "Downloads");
 
-    private static readonly string RobloxDownloadsDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Roblox", "Downloads");
-
     // -------------------------------------------------------------------------
     // Constants
     // -------------------------------------------------------------------------
-    private const int  MaxDownloadRetries  = 5;
-    private const int  BufferSize          = 65536;   // 64 KB (より速い)
-    private const int  MaxSegments         = 4;        // マルチパート並列セグメント数
-    private const long MinSegmentBytes     = 2 * 1024 * 1024; // 2MB — これ未満は単一ダウンロード
-
-    // -------------------------------------------------------------------------
-    // Package dir mapping (matches Bloxstrap)
-    // -------------------------------------------------------------------------
-    private static readonly IReadOnlyDictionary<string, string> PackageDirs =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["Libraries.zip"]                     = "",
-            ["RobloxApp.zip"]                     = "",
-            ["redist.zip"]                        = "",
-            ["shaders.zip"]                       = "shaders/",
-            ["ssl.zip"]                           = "ssl/",
-            ["WebView2.zip"]                      = "",
-            ["WebView2RuntimeInstaller.zip"]      = "WebView2/",
-            ["content-avatar.zip"]                = "content/avatar/",
-            ["content-configs.zip"]               = "content/configs/",
-            ["content-fonts.zip"]                 = "content/fonts/",
-            ["content-sky.zip"]                   = "content/sky/",
-            ["content-sounds.zip"]                = "content/sounds/",
-            ["content-textures.zip"]              = "content/textures/",
-            ["content-textures2.zip"]             = "content/textures/",
-            ["content-textures3.zip"]             = "content/textures/",
-            ["content-models.zip"]                = "content/models/",
-            ["content-terrain.zip"]               = "content/terrain/",
-            ["content-platform-fonts.zip"]        = "content/fonts/",
-            ["content-platform-dictionaries.zip"] = "PlatformContent/pc/",
-            ["extracontent-luapackages.zip"]      = "ExtraContent/LuaPackages/",
-            ["extracontent-models.zip"]           = "ExtraContent/models/",
-            ["extracontent-places.zip"]           = "ExtraContent/places/",
-            ["extracontent-textures.zip"]         = "ExtraContent/textures/",
-            ["extracontent-translations.zip"]     = "ExtraContent/translations/",
-            ["NPRobloxProxy.zip"]                 = "",
-        };
+    private const int BufferSize = 65536;   // 64 KB (より速い)
 
     // -------------------------------------------------------------------------
     // State
@@ -188,13 +147,6 @@ public class RobloxService
     private readonly System.Collections.Concurrent.ConcurrentDictionary<int, int> _pidToSlot = new();
     private int _launchSlotCounter = 0;
 
-    // ダウンロード進捗 (DownloadAndInstallAsync と progressTimer で共有)
-    private long   _totalDownloadedBytes;
-    private long   _totalPackedBytes;
-    private string _currentPackageName    = string.Empty;
-    private long   _totalExtractFiles;
-    private long   _completedExtractFiles;
-
     /// <summary>初回インストール後・起動前に呼ばれる — FastFlags/Mods の書き込みに使う。</summary>
     public Func<Task>? PreLaunchAsync { get; set; }
 
@@ -203,13 +155,16 @@ public class RobloxService
     public event EventHandler<BootstrapperProgress>? BootstrapperProgress;
 
     public RobloxService()
-        : this(new RobloxVersionManifestService())
+        : this(new RobloxVersionManifestService(), new RobloxPackageInstallerService())
     {
     }
 
-    public RobloxService(RobloxVersionManifestService versionManifest)
+    public RobloxService(
+        RobloxVersionManifestService versionManifest,
+        RobloxPackageInstallerService packageInstaller)
     {
-        _versionManifest = versionManifest;
+        _versionManifest  = versionManifest;
+        _packageInstaller = packageInstaller;
     }
 
     // -------------------------------------------------------------------------
@@ -1480,8 +1435,7 @@ public class RobloxService
             Directory.CreateDirectory(versionDir);
             Directory.CreateDirectory(DownloadsDir);
 
-            _totalDownloadedBytes = 0;
-            _totalPackedBytes     = packages.Sum(p => p.CompressedSize);
+            _packageInstaller.ResetDownloadProgress(packages.Sum(p => p.CompressedSize));
 
             var downloadStart = DateTime.UtcNow;
             var downloadedPaths = new List<(string Path, string Name)>();
@@ -1493,12 +1447,13 @@ public class RobloxService
                 {
                     while (await progressTimer.WaitForNextTickAsync(ct))
                     {
-                        var dl      = Interlocked.Read(ref _totalDownloadedBytes);
+                        var dl      = _packageInstaller.TotalDownloadedBytes;
                         var elapsed = (DateTime.UtcNow - downloadStart).TotalSeconds;
                         var speed   = elapsed > 0.1 ? dl / elapsed : 0;
-                        var ratio   = _totalPackedBytes > 0 ? dl / (double)_totalPackedBytes : 0;
+                        var total   = _packageInstaller.TotalPackedBytes;
+                        var ratio   = total > 0 ? dl / (double)total : 0;
                         var overall = DlStart + ratio * (DlEnd - DlStart);
-                        var name    = _currentPackageName;
+                        var name    = _packageInstaller.CurrentPackageName;
                         ReportProgress(string.IsNullOrEmpty(name) ? "Downloading..." : $"Downloading {name}",
                             overall, detail: FormatSpeed(speed));
                     }
@@ -1509,13 +1464,13 @@ public class RobloxService
             foreach (var pkg in packages)
             {
                 if (ct.IsCancellationRequested) break;
-                _currentPackageName = pkg.Name;
+                _packageInstaller.SetCurrentPackageName(pkg.Name);
                 var localPath = Path.Combine(DownloadsDir, pkg.Signature);
-                await DownloadPackageAsync(pkg, localPath, versionGuid, ct);
+                await _packageInstaller.DownloadPackageAsync(pkg, localPath, _cdnBaseUrl, versionGuid, ct);
                 if (pkg.Name != "WebView2RuntimeInstaller.zip")
                     downloadedPaths.Add((localPath, pkg.Name));
             }
-            _currentPackageName = string.Empty;
+            _packageInstaller.SetCurrentPackageName(string.Empty);
 
             progressTimer.Dispose();
             try { await progressTask; } catch { }
@@ -1523,26 +1478,12 @@ public class RobloxService
             if (ct.IsCancellationRequested) return false;
 
             // 展開ファイル数を先に集計 (進捗精度のため)
-            _totalExtractFiles     = 0;
-            _completedExtractFiles = 0;
-            await Task.Run(() =>
-            {
-                foreach (var (path, _) in downloadedPaths)
-                {
-                    if (!path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || !File.Exists(path))
-                        continue;
-                    try
-                    {
-                        using var z = ZipFile.OpenRead(path);
-                        _totalExtractFiles += z.Entries.Count(e => !string.IsNullOrEmpty(e.Name));
-                    }
-                    catch { }
-                }
-            }, ct);
+            await _packageInstaller.CountExtractFilesAsync(downloadedPaths, ct);
 
             // 全パッケージを並列展開
             await Task.WhenAll(downloadedPaths.Select(item =>
-                Task.Run(() => ExtractPackageWithProgress(item.Path, item.Name, versionDir, ExtStart, ExtEnd), ct)));
+                Task.Run(() => _packageInstaller.ExtractPackageWithProgress(
+                    item.Path, item.Name, versionDir, ExtStart, ExtEnd, ReportProgress), ct)));
 
             ReportProgress("Configuring...", 99);
             await File.WriteAllTextAsync(
@@ -1566,206 +1507,6 @@ public class RobloxService
             ReportProgress("Installation failed", 0, indeterminate: true);
         }
         return false;
-    }
-
-    // -------------------------------------------------------------------------
-    // Package download — MD5 キャッシュ + マルチパート並列 DL + HTTP フォールバック
-    // -------------------------------------------------------------------------
-    private async Task DownloadPackageAsync(RobloxPackage package, string localPath,
-        string versionGuid, CancellationToken ct)
-    {
-        if (ct.IsCancellationRequested) return;
-
-        // キャッシュヒット: NexStrap Downloads
-        if (File.Exists(localPath) && ComputeMd5(localPath) == package.Signature)
-        {
-            Interlocked.Add(ref _totalDownloadedBytes, package.CompressedSize);
-            return;
-        }
-        try { if (File.Exists(localPath)) File.Delete(localPath); } catch { }
-
-        // キャッシュヒット: stock Roblox Downloads
-        var robloxCached = Path.Combine(RobloxDownloadsDir, package.Signature);
-        if (File.Exists(robloxCached))
-        {
-            try
-            {
-                File.Copy(robloxCached, localPath);
-                Interlocked.Add(ref _totalDownloadedBytes, package.CompressedSize);
-                return;
-            }
-            catch { }
-        }
-
-        var url = $"{_cdnBaseUrl}/version-{versionGuid}-{package.Name}";
-
-        for (int attempt = 1; attempt <= MaxDownloadRetries; attempt++)
-        {
-            if (ct.IsCancellationRequested) return;
-            long bytesThisAttempt = 0;
-
-            try
-            {
-                // ファイルサイズが MinSegmentBytes 以上ならマルチパートを試みる
-                if (package.CompressedSize >= MinSegmentBytes)
-                {
-                    var downloaded = await TryDownloadMultipartAsync(url, localPath, package, ct);
-                    if (downloaded) return;
-                    // マルチパート失敗 → 通常ダウンロードへ fallthrough
-                }
-
-                // 通常 (単一接続) ダウンロード
-                using var resp = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
-                resp.EnsureSuccessStatusCode();
-
-                await using var src = await resp.Content.ReadAsStreamAsync(ct);
-                await using var dst = new FileStream(localPath, FileMode.Create,
-                    FileAccess.ReadWrite, FileShare.Delete);
-
-                var buffer = new byte[BufferSize];
-                int n;
-                while ((n = await src.ReadAsync(buffer, ct)) > 0)
-                {
-                    await dst.WriteAsync(buffer.AsMemory(0, n), ct);
-                    bytesThisAttempt += n;
-                    Interlocked.Add(ref _totalDownloadedBytes, n);
-                }
-
-                // MD5 検証
-                dst.Seek(0, SeekOrigin.Begin);
-                var hash = ComputeMd5(dst);
-                if (hash != package.Signature)
-                    throw new InvalidDataException(
-                        $"MD5 mismatch for {package.Name}: expected {package.Signature}, got {hash}");
-
-                return;
-            }
-            catch (OperationCanceledException) { throw; }
-            catch (Exception ex)
-            {
-                Interlocked.Add(ref _totalDownloadedBytes, -bytesThisAttempt);
-                try { File.Delete(localPath); } catch { }
-
-                Log($"Download attempt {attempt}/{MaxDownloadRetries} failed for {package.Name}: {ex.Message}");
-                if (attempt >= MaxDownloadRetries) break;
-
-                // HTTPS 失敗 → HTTP フォールバック (Bloxstrap 方式)
-                if (url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                    url = "http://" + url[8..];
-
-                await Task.Delay(500 * attempt, ct);
-            }
-        }
-    }
-
-    /// <summary>バイトレンジ並列ダウンロード (Voidstrap 方式)。失敗時は false を返す。</summary>
-    private async Task<bool> TryDownloadMultipartAsync(string url, string localPath,
-        RobloxPackage package, CancellationToken ct)
-    {
-        var bytesAtStart = Interlocked.Read(ref _totalDownloadedBytes);
-        try
-        {
-            long contentLength = package.CompressedSize;
-            int  segs          = (int)Math.Min(MaxSegments, Math.Max(1, contentLength / MinSegmentBytes));
-            if (segs <= 1) return false;
-
-            // ファイルを事前確保して並列書き込みの土台を作る
-            await using (var alloc = new FileStream(localPath, FileMode.Create, FileAccess.Write,
-                FileShare.None, 4096, FileOptions.Asynchronous))
-            {
-                alloc.SetLength(contentLength);
-            }
-
-            long segSize = contentLength / segs;
-
-            await Task.WhenAll(Enumerable.Range(0, segs).Select(async i =>
-            {
-                long start = i * segSize;
-                long end   = i == segs - 1 ? contentLength - 1 : start + segSize - 1;
-
-                using var req = new HttpRequestMessage(HttpMethod.Get, url);
-                req.Headers.Range = new RangeHeaderValue(start, end);
-
-                using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
-                if (resp.StatusCode != System.Net.HttpStatusCode.PartialContent)
-                    throw new NotSupportedException($"Server returned {resp.StatusCode}, not 206");
-
-                await using var src = await resp.Content.ReadAsStreamAsync(ct);
-                await using var dst = new FileStream(localPath, FileMode.Open, FileAccess.Write,
-                    FileShare.Write, BufferSize, FileOptions.Asynchronous);
-                dst.Position = start;
-
-                var buf = new byte[BufferSize];
-                int n;
-                while ((n = await src.ReadAsync(buf, ct)) > 0)
-                {
-                    await dst.WriteAsync(buf.AsMemory(0, n), ct);
-                    Interlocked.Add(ref _totalDownloadedBytes, n);
-                }
-            }));
-
-            // MD5 検証
-            if (ComputeMd5(localPath) != package.Signature)
-            {
-                File.Delete(localPath);
-                Log($"Multipart MD5 mismatch for {package.Name}, falling back to single download");
-                Interlocked.Add(ref _totalDownloadedBytes, -contentLength);
-                return false;
-            }
-
-            Log($"Multipart download: {package.Name} ({segs} segments)");
-            return true;
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
-        {
-            // 部分的にカウントされたバイト数をロールバックしてプログレスバーの誤計上を防ぐ
-            var bytesAdded = Interlocked.Read(ref _totalDownloadedBytes) - bytesAtStart;
-            if (bytesAdded > 0) Interlocked.Add(ref _totalDownloadedBytes, -bytesAdded);
-            Log($"Multipart download failed for {package.Name}: {ex.Message}, falling back");
-            try { File.Delete(localPath); } catch { }
-            return false;
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Extraction
-    // -------------------------------------------------------------------------
-    private void ExtractPackageWithProgress(string archivePath, string packageName,
-        string versionDir, double extStart, double extEnd)
-    {
-        try
-        {
-            if (!archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-            {
-                ReportProgress($"Installing {packageName}", extStart);
-                File.Copy(archivePath, Path.Combine(versionDir, packageName), overwrite: true);
-                return;
-            }
-
-            var sub  = PackageDirs.TryGetValue(packageName, out var d) ? d : "";
-            var dest = string.IsNullOrEmpty(sub)
-                ? versionDir
-                : Path.Combine(versionDir, sub.Replace('/', Path.DirectorySeparatorChar));
-            Directory.CreateDirectory(dest);
-
-            using var archive = ZipFile.OpenRead(archivePath);
-            var entries = archive.Entries.Where(e => !string.IsNullOrEmpty(e.Name)).ToList();
-            foreach (var entry in entries)
-            {
-                var done = Interlocked.Increment(ref _completedExtractFiles);
-                var pct  = _totalExtractFiles > 0
-                    ? extStart + done / (double)_totalExtractFiles * (extEnd - extStart)
-                    : extStart;
-                ReportProgress($"Extracting {entry.Name}", pct);
-
-                var destPath = Path.Combine(dest, entry.FullName.Replace('/', Path.DirectorySeparatorChar));
-                var dir = Path.GetDirectoryName(destPath);
-                if (dir != null) Directory.CreateDirectory(dir);
-                entry.ExtractToFile(destPath, overwrite: true);
-            }
-        }
-        catch { }
     }
 
     // -------------------------------------------------------------------------
@@ -2059,19 +1800,6 @@ public class RobloxService
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
-    private static string ComputeMd5(string filePath)
-    {
-        using var md5    = MD5.Create();
-        using var stream = File.OpenRead(filePath);
-        return Convert.ToHexString(md5.ComputeHash(stream)).ToLowerInvariant();
-    }
-
-    private static string ComputeMd5(Stream stream)
-    {
-        using var md5 = MD5.Create();
-        return Convert.ToHexString(md5.ComputeHash(stream)).ToLowerInvariant();
-    }
-
     private static string FormatSpeed(double bytesPerSec)
     {
         if (bytesPerSec >= 1_048_576) return $"{bytesPerSec / 1_048_576:F1} MB/s";
