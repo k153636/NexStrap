@@ -9,7 +9,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RootNamespace>NexStrap</RootNamespace>
     <AssemblyName>NexStrap</AssemblyName>
-    <Version>1.3.2</Version>
+    <Version>1.3.3</Version>
     <ApplicationIcon>Assets\nexstrap.ico</ApplicationIcon>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
