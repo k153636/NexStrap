@@ -272,6 +272,7 @@ public class RobloxLogWatcher : IDisposable
         long   firePlaceId    = 0;
         long   fireUniverseId = 0;
         string fireIp         = string.Empty;
+        bool   rejoinDetected = false;
         InstanceActivity? activityChanged = null;
 
         lock (_lock)
@@ -301,8 +302,14 @@ public class RobloxLogWatcher : IDisposable
                 {
                     if (state.PendingLeave)
                     {
+                        // PendingLeave 中（退出検知後タイムアウト前）に同じ placeId へ
+                        // 再参加した場合は、新規参加と同様に扱い再発火させる
                         state.PendingLeave          = false;
                         state.PendingLeaveTicksLeft = 0;
+                        rejoinDetected              = true;
+                        firePlaceId                 = placeId;
+                        fireUniverseId              = MatchUniverseId(line);
+                        break;
                     }
                     var duplicateUniverseId = MatchUniverseId(line);
                     if (duplicateUniverseId > 0 && state.Activity is { UniverseId: 0 } activity)
@@ -369,6 +376,8 @@ public class RobloxLogWatcher : IDisposable
             ActivityChanged?.Invoke(this, new ActivityChangedArgs(activityChanged));
         if (firePlaceId > 0)
         {
+            if (rejoinDetected)
+                Logger.Instance.Info("LogWatcher", $"Same place rejoin detected: slot={state.Slot}, placeId={firePlaceId}");
             Logger.Instance.Info("LogWatcher", $"Place detected: pid={state.Pid}, slot={state.Slot}, placeId={firePlaceId}, universeId={fireUniverseId}, log={Path.GetFileName(state.LogPath)}");
             PlaceJoined?.Invoke(this, new PlaceJoinedArgs(state.Pid, state.Slot, firePlaceId, fireUniverseId));
         }
