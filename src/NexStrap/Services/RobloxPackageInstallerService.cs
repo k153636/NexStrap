@@ -228,7 +228,10 @@ public sealed class RobloxPackageInstallerService
                 entry.ExtractToFile(destPath, overwrite: true);
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            RobloxService.Log($"Extraction failed for {packageName}: {ex.Message}");
+        }
     }
 
     private async Task<bool> TryDownloadMultipartAsync(

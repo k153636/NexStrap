@@ -101,11 +101,15 @@ public sealed class RobloxPackageManifestService
                 string.IsNullOrEmpty(rawPacked) || string.IsNullOrEmpty(rawSize))
                 break;
 
-            if (name == "RobloxPlayerLauncher.exe") break;
+            if (name == "RobloxPlayerLauncher.exe") continue;
 
             long packed = long.TryParse(rawPacked, out var s) ? s : 0;
             result.Add(new RobloxPackage(name, packed, signature));
         }
+
+        if (!result.Any(p => string.Equals(p.Name, "RobloxApp.zip", StringComparison.OrdinalIgnoreCase)))
+            RobloxService.Log("Manifest does not contain RobloxApp.zip");
+
         return result;
     }
 }

@@ -637,8 +637,14 @@ public class RobloxService
             await _appSettings.WriteAppSettingsAsync(versionDir, ct);
 
             ReportProgress("Done", 100);
+            var playerBetaExists = File.Exists(Path.Combine(versionDir, "RobloxPlayerBeta.exe"));
+            if (!playerBetaExists)
+            {
+                var hasRobloxApp = packages.Any(p => string.Equals(p.Name, "RobloxApp.zip", StringComparison.OrdinalIgnoreCase));
+                Log($"RobloxPlayerBeta.exe not found in {versionDir} (RobloxApp.zip in manifest: {hasRobloxApp})");
+            }
             _installState.SetCurrentVersionFolder(versionDir);
-            return File.Exists(Path.Combine(versionDir, "RobloxPlayerBeta.exe"));
+            return playerBetaExists;
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
