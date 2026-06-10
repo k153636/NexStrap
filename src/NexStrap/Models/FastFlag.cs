@@ -65,6 +65,27 @@ public static class FastFlagBundles
     [
         new PresetGroup
         {
+            Name = "Max FPS (Allowlisted)",
+            IconPath = "M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z",
+            Flags =
+            [
+                // Roblox Fast Flag Allowlist (2026年2月施行)に準拠 — FPS最優先の軽量化構成
+                new FastFlag { Name = "DFIntDebugFRMQualityLevelOverride",      Value = "1",    Type = FastFlagType.Integer, Category = "Performance" },
+                new FastFlag { Name = "DFFlagTextureQualityOverrideEnabled",    Value = "True", Type = FastFlagType.Boolean, Category = "Performance" },
+                new FastFlag { Name = "DFIntTextureQualityOverride",            Value = "0",    Type = FastFlagType.Integer, Category = "Performance" },
+                new FastFlag { Name = "FIntDebugForceMSAASamples",              Value = "0",    Type = FastFlagType.Integer, Category = "Performance" },
+                new FastFlag { Name = "FIntFRMMaxGrassDistance",                Value = "0",    Type = FastFlagType.Integer, Category = "Performance" },
+                new FastFlag { Name = "FIntFRMMinGrassDistance",                Value = "0",    Type = FastFlagType.Integer, Category = "Performance" },
+                new FastFlag { Name = "FIntGrassMovementReducedMotionFactor",   Value = "100",  Type = FastFlagType.Integer, Category = "Performance" },
+                new FastFlag { Name = "DFIntCSGLevelOfDetailSwitchingDistance", Value = "0",    Type = FastFlagType.Integer, Category = "Performance" },
+                new FastFlag { Name = "DFIntCSGLevelOfDetailSwitchingDistanceL12", Value = "0", Type = FastFlagType.Integer, Category = "Performance" },
+                new FastFlag { Name = "DFIntCSGLevelOfDetailSwitchingDistanceL23", Value = "0", Type = FastFlagType.Integer, Category = "Performance" },
+                new FastFlag { Name = "DFIntCSGLevelOfDetailSwitchingDistanceL34", Value = "0", Type = FastFlagType.Integer, Category = "Performance" },
+                new FastFlag { Name = "FFlagDebugSkyGray",                      Value = "True", Type = FastFlagType.Boolean, Category = "Graphics" },
+            ]
+        },
+        new PresetGroup
+        {
             Name = "Graphics Lite",
             IconPath = "M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z",
             Flags =
@@ -131,7 +152,16 @@ public static class FlagDescriptions
         ["DFIntDebugFRMQualityLevelOverride"]   = ("Force render quality level (1–21, lower = lighter)", "Performance"),
         ["FFlagDisablePostFx"]                  = ("Disable post-effects (bloom etc.) for better performance", "Performance"),
         ["FIntRenderShadowIntensity"]           = ("Shadow intensity (0 = no shadows)", "Performance"),
-        ["DFIntCSGLevelOfDetailSwitchingDistance"] = ("Adjust LOD switching distance", "Performance"),
+        ["DFIntCSGLevelOfDetailSwitchingDistance"] = ("CSG LOD switching distance (lower = lighter, allowlisted)", "Performance"),
+        ["DFIntCSGLevelOfDetailSwitchingDistanceL12"] = ("CSG LOD switch distance L1→L2 (lower = lighter, allowlisted)", "Performance"),
+        ["DFIntCSGLevelOfDetailSwitchingDistanceL23"] = ("CSG LOD switch distance L2→L3 (lower = lighter, allowlisted)", "Performance"),
+        ["DFIntCSGLevelOfDetailSwitchingDistanceL34"] = ("CSG LOD switch distance L3→L4 (lower = lighter, allowlisted)", "Performance"),
+        ["DFFlagTextureQualityOverrideEnabled"]    = ("Enable texture quality override (allowlisted)", "Performance"),
+        ["DFIntTextureQualityOverride"]            = ("Force texture quality (0 = lowest = lighter, allowlisted)", "Performance"),
+        ["FIntDebugForceMSAASamples"]              = ("Force MSAA sample count (0 = no AA = lighter, allowlisted)", "Performance"),
+        ["FIntFRMMaxGrassDistance"]                = ("Max grass render distance (0 = no grass = lighter, allowlisted)", "Performance"),
+        ["FIntFRMMinGrassDistance"]                = ("Min grass render distance (0 = no grass = lighter, allowlisted)", "Performance"),
+        ["FIntGrassMovementReducedMotionFactor"]   = ("Reduce grass sway computation (allowlisted)", "Performance"),
 
         // Graphics
         ["FFlagDebugGraphicsDisableDirect3D11"] = ("Disable Direct3D11 (use for compatibility issues)", "Graphics"),
@@ -142,6 +172,13 @@ public static class FlagDescriptions
         ["DFIntCullFactorPixelThresholdShadowMapHighQuality"] = ("High-quality shadow culling threshold", "Graphics"),
         ["FFlagEnableGPUPathTracing"]           = ("Enable GPU path tracing (requires high-end GPU)", "Graphics"),
         ["FIntRenderShadowMapSize"]             = ("Shadow map resolution (larger = higher quality)", "Graphics"),
+        ["FFlagDebugSkyGray"]                   = ("Replace sky with flat gray (reduces sky render cost, allowlisted)", "Graphics"),
+        ["FFlagHandleAltEnterFullscreenManually"] = ("Handle Alt+Enter fullscreen toggle manually (allowlisted)", "Graphics"),
+        ["DFFlagDisableDPIScale"]               = ("Disable DPI scaling (allowlisted)", "Graphics"),
+        ["FFlagDebugGraphicsPreferD3D11"]       = ("Force Direct3D11 graphics API (allowlisted)", "Graphics"),
+        ["FFlagDebugGraphicsPreferVulkan"]      = ("Force Vulkan graphics API (allowlisted)", "Graphics"),
+        ["FFlagDebugGraphicsPreferOpenGL"]      = ("Force OpenGL graphics API (allowlisted)", "Graphics"),
+        ["DFFlagDebugPauseVoxelizer"]           = ("Pause terrain voxelizer (debug, allowlisted)", "Graphics"),
 
         // Network
         ["DFIntConnectionMTUSize"]              = ("Network MTU size (1400 recommended)", "Network"),

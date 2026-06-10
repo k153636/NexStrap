@@ -212,19 +212,8 @@ public sealed class RobloxPackageInstallerService
                 : Path.Combine(versionDir, sub.Replace('/', Path.DirectorySeparatorChar));
             Directory.CreateDirectory(dest);
 
-            var debugLog = string.Equals(packageName, "RobloxApp.zip", StringComparison.OrdinalIgnoreCase);
-            if (debugLog)
-                RobloxService.Log($"[DEBUG] RobloxApp.zip: archivePath={archivePath}, dest={dest}");
-
             using var archive = ZipFile.OpenRead(archivePath);
             var entries = archive.Entries.Where(e => !string.IsNullOrEmpty(e.Name)).ToList();
-
-            if (debugLog)
-            {
-                RobloxService.Log($"[DEBUG] RobloxApp.zip entry count: {entries.Count}");
-                foreach (var e in entries)
-                    RobloxService.Log($"[DEBUG] RobloxApp.zip entry.FullName={e.FullName}");
-            }
 
             foreach (var entry in entries)
             {
@@ -235,8 +224,6 @@ public sealed class RobloxPackageInstallerService
                 reportProgress($"Extracting {entry.Name}", pct);
 
                 var destPath = Path.Combine(dest, entry.FullName.Replace('/', Path.DirectorySeparatorChar));
-                if (debugLog)
-                    RobloxService.Log($"[DEBUG] RobloxApp.zip destPath={destPath}");
                 var dir = Path.GetDirectoryName(destPath);
                 if (dir != null) Directory.CreateDirectory(dir);
                 entry.ExtractToFile(destPath, overwrite: true);

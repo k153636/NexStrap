@@ -8,7 +8,7 @@ public static partial class DiagnosticLogMasker
     {
         if (string.IsNullOrEmpty(text)) return text;
 
-        text = UserPathRegex().Replace(text, @"C:\Users<user>");
+        text = UserPathRegex().Replace(text, @"C:\Users\<user>");
         text = AuthKeyValueRegex().Replace(text, m => $"{m.Groups[1].Value}=[REDACTED]");
         text = EmailRegex().Replace(text, "[REDACTED EMAIL]");
 

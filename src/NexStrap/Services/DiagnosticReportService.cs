@@ -64,22 +64,24 @@ public sealed class DiagnosticReportService(RobloxService roblox)
         return string.IsNullOrEmpty(path) ? "Unknown" : Path.GetFileName(path);
     }
 
+    private const string UnknownNoAttempt = "Unknown (no install attempt in this session)";
+
     private static string FormatYesNo(bool? value) => value switch
     {
         true  => "Yes",
         false => "No",
-        null  => "Unknown",
+        null  => UnknownNoAttempt,
     };
 
     private static string FormatTriState(bool? value, string trueText, string falseText) => value switch
     {
         true  => trueText,
         false => falseText,
-        null  => "Unknown",
+        null  => UnknownNoAttempt,
     };
 
     private static string FormatLastError(string? error) =>
-        string.IsNullOrEmpty(error) ? "Unknown" : DiagnosticLogMasker.Mask(error);
+        string.IsNullOrEmpty(error) ? UnknownNoAttempt : DiagnosticLogMasker.Mask(error);
 
     private static string GetMaskedLogTail()
     {
