@@ -122,9 +122,10 @@ public partial class StatsViewModel : ViewModelBase
         TodayPlayTime = todaySec > 0 ? FormatSeconds(todaySec) : "--";
 
         // UniverseId 優先でグルーピング（同じゲームのサブプレイスを統合）
-        // UniverseId = 0 の古いエントリは PlaceId でグルーピング
+        // UniverseId = 0 の古いエントリは、同じPlaceIdの他エントリのUniverseIdで補完してグルーピング
+        var placeIdToUniverseMap = GameHistoryService.BuildPlaceIdToUniverseMap(entries);
         var aggregated = entries
-            .GroupBy(e => e.UniverseId != 0 ? e.UniverseId : e.PlaceId)
+            .GroupBy(e => GameHistoryService.ResolveGroupKey(e, placeIdToUniverseMap))
             .Select(g =>
             {
                 // 最も再生数の多い名前・アイコンを代表として使用

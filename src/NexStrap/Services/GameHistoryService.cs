@@ -20,6 +20,42 @@ public class GameHistoryService
         Directory.CreateDirectory(dir);
         _path = Path.Combine(dir, "history.json");
         _entries = Load();
+        BackfillUniverseIds();
+    }
+
+    // PlaceId -> UniverseId の補完マップを作成する。
+    // 同じPlaceIdに複数のUniverseIdが記録されている場合は最新PlayedAtのものを採用する。
+    public static Dictionary<long, long> BuildPlaceIdToUniverseMap(IEnumerable<GameHistoryEntry> entries)
+    {
+        return entries
+            .Where(e => e.PlaceId > 0 && e.UniverseId > 0)
+            .GroupBy(e => e.PlaceId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(e => e.PlayedAt).First().UniverseId);
+    }
+
+    // 履歴エントリのグルーピングキーを解決する。
+    // PlaceIdToUniverseMapに該当があればそのUniverseIdを優先し、なければ従来のフォールバックを使う。
+    public static long ResolveGroupKey(GameHistoryEntry entry, IReadOnlyDictionary<long, long> placeIdToUniverseMap)
+    {
+        if (entry.PlaceId > 0 && placeIdToUniverseMap.TryGetValue(entry.PlaceId, out var universeId))
+            return universeId;
+        return entry.UniverseId != 0 ? entry.UniverseId : entry.PlaceId;
+    }
+
+    // UniverseId=0の古いエントリに、同じPlaceIdを持つ他エントリのUniverseIdを補完する。
+    private void BackfillUniverseIds()
+    {
+        var map = BuildPlaceIdToUniverseMap(_entries);
+        var changed = false;
+        foreach (var e in _entries)
+        {
+            if (e.UniverseId == 0 && e.PlaceId > 0 && map.TryGetValue(e.PlaceId, out var universeId))
+            {
+                e.UniverseId = universeId;
+                changed = true;
+            }
+        }
+        if (changed) Save();
     }
 
     public void Add(GameHistoryEntry entry)

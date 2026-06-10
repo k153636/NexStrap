@@ -559,8 +559,9 @@ public partial class HomeViewModel : ViewModelBase
     {
         var favorites = _settings.Settings.FavoriteGameIds.ToHashSet();
         RecentGames.Clear(); FavoriteGames.Clear();
+        var placeIdToUniverseMap = GameHistoryService.BuildPlaceIdToUniverseMap(_history.Entries);
         var grouped = _history.Entries
-            .GroupBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
+            .GroupBy(e => GameHistoryService.ResolveGroupKey(e, placeIdToUniverseMap))
             .Select(g => { var best = g.OrderByDescending(e => e.PlayedAt).First(); return (Entry: best, Total: g.Sum(e => e.DurationSeconds)); });
         var sorted = HomeSortOrder == HomeSortMode.TotalTime
             ? grouped.OrderByDescending(x => x.Total)
