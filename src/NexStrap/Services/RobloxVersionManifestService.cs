@@ -10,6 +10,8 @@ public sealed class RobloxVersionManifestService
     private string?  _cachedLatestGuid;
     private DateTime _lastVersionCheck = DateTime.MinValue;
 
+    public string? CachedGuid => _cachedLatestGuid;
+
     static RobloxVersionManifestService()
     {
         Http.DefaultRequestHeaders.UserAgent.ParseAdd("RobloxStudio/WinInet");

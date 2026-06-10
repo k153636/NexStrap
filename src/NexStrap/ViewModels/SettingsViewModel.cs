@@ -1,10 +1,13 @@
 using System.Diagnostics;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using NexStrap.Models;
 using NexStrap.Services;
+using NexStrap.Views;
 
 namespace NexStrap.ViewModels;
 
@@ -13,6 +16,7 @@ public partial class SettingsViewModel : ViewModelBase
     private readonly SettingsService _settingsService;
     private readonly GameHistoryService _history;
     private readonly RobloxService _roblox;
+    private readonly DiagnosticReportService _diagnosticReport;
 
     public IStorageProvider? StorageProvider { get; set; }
 
@@ -57,11 +61,13 @@ public partial class SettingsViewModel : ViewModelBase
         };
     }
 
-    public SettingsViewModel(SettingsService settingsService, GameHistoryService history, RobloxService roblox)
+    public SettingsViewModel(SettingsService settingsService, GameHistoryService history, RobloxService roblox,
+        DiagnosticReportService diagnosticReport)
     {
         _settingsService = settingsService;
         _history = history;
         _roblox = roblox;
+        _diagnosticReport = diagnosticReport;
         _currentTabContent = new SettingsGeneralTab(this);
 
         var s = settingsService.Settings;
@@ -273,6 +279,18 @@ public partial class SettingsViewModel : ViewModelBase
             StatusMessage = "Stock Roblox uninstalled";
         }
         catch { StatusMessage = "Uninstall failed"; }
+    }
+
+    [RelayCommand]
+    private async Task ShowDiagnosticInfoAsync()
+    {
+        var report = _diagnosticReport.GenerateReport();
+        var dialog = new DiagnosticReportDialog(report);
+
+        var mainWin = (Application.Current?.ApplicationLifetime
+            as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+        if (mainWin != null) await dialog.ShowDialog(mainWin);
+        else dialog.Show();
     }
 }
 

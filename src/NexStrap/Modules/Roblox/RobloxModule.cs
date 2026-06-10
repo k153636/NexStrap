@@ -22,6 +22,7 @@ public static class RobloxModule
         services.AddSingleton<RobloxService>();
         services.AddSingleton<RobloxProtocolLaunchHandler>();
         services.AddSingleton<RobloxApiService>();
+        services.AddSingleton<DiagnosticReportService>();
         services.AddSingleton<RobloxLogWatcher>(sp =>
             new RobloxLogWatcher(sp.GetRequiredService<RobloxService>().IsNexStrapRobloxRunning));
 

@@ -84,6 +84,17 @@ public class RobloxService
     public event EventHandler<RobloxStatus>?         StatusChanged;
     public event EventHandler<BootstrapperProgress>? BootstrapperProgress;
 
+    // -------------------------------------------------------------------------
+    // Last install result (for diagnostics)
+    // -------------------------------------------------------------------------
+    public bool?   LastCdnInstallSuccess             { get; private set; }
+    public bool?   LastOfficialInstallerFallbackUsed { get; private set; }
+    public bool?   LastStockCopyFallbackUsed         { get; private set; }
+    public bool?   LastRobloxPlayerBetaFound         { get; private set; }
+    public string? LastInstallError                  { get; private set; }
+
+    public string? CachedVersionGuid => _versionManifest.CachedGuid;
+
     public RobloxService()
         : this(CreateDefaultServices())
     {
@@ -471,16 +482,24 @@ public class RobloxService
             Log($"Copying from stock Roblox: {stockFolder}");
             Directory.CreateDirectory(versionDir);
             await _stockFallback.CopyDirectoryAsync(stockFolder, versionDir, ReportProgress);
+            LastStockCopyFallbackUsed = true;
         }
 
         // 3. CDN ダウンローチE
         if (!IsVersionComplete(versionDir))
         {
+            LastCdnInstallSuccess             = null;
+            LastOfficialInstallerFallbackUsed = false;
+            LastStockCopyFallbackUsed       ??= false;
+            LastInstallError                  = null;
+
             _installCts = new CancellationTokenSource();
             var ok = await DownloadAndInstallAsync(versionGuid, versionDir, _installCts.Token);
             var wasCancelled = _installCts.IsCancellationRequested;
             _installCts.Dispose();
             _installCts = null;
+
+            LastCdnInstallSuccess = ok;
 
             if (!ok && wasCancelled)
             {
@@ -497,22 +516,26 @@ public class RobloxService
                     Log($"CDN failed, copying from stock Roblox: {stockFallback}");
                     Directory.CreateDirectory(versionDir);
                     await _stockFallback.CopyDirectoryAsync(stockFallback, versionDir, ReportProgress);
+                    LastStockCopyFallbackUsed = true;
                 }
                 else
                 {
                     // 最終手段: 公式インスト�Eラーで正確なバ�Eジョンを取得後コピ�E
                     await _stockFallback.RunOfficialInstallerAsync();
+                    LastOfficialInstallerFallbackUsed = true;
                     var newStock = FindStockRobloxVersionFolder(versionGuid);
                     if (newStock != null)
                     {
                         Log($"Copying from newly installed stock Roblox: {newStock}");
                         Directory.CreateDirectory(versionDir);
                         await _stockFallback.CopyDirectoryAsync(newStock, versionDir, ReportProgress);
+                        LastStockCopyFallbackUsed = true;
                     }
                 }
             }
         }
 
+        LastRobloxPlayerBetaFound = IsVersionComplete(versionDir);
         if (!IsVersionComplete(versionDir)) return null;
         _installState.SetCurrentVersionFolder(versionDir);
         Log($"Installation complete: {versionDir}");
@@ -573,6 +596,7 @@ public class RobloxService
             if (packages == null || packages.Count == 0)
             {
                 Log("Manifest fetch returned no packages");
+                LastInstallError = "Manifest fetch returned no packages";
                 ReportProgress("CDN unavailable", 0, indeterminate: true);
                 return false;
             }
@@ -642,6 +666,7 @@ public class RobloxService
             {
                 var hasRobloxApp = packages.Any(p => string.Equals(p.Name, "RobloxApp.zip", StringComparison.OrdinalIgnoreCase));
                 Log($"RobloxPlayerBeta.exe not found in {versionDir} (RobloxApp.zip in manifest: {hasRobloxApp})");
+                LastInstallError = $"RobloxPlayerBeta.exe not found after extraction (RobloxApp.zip in manifest: {hasRobloxApp})";
 
                 try
                 {
@@ -664,6 +689,7 @@ public class RobloxService
         catch (Exception ex)
         {
             Log($"DownloadAndInstallAsync failed: {ex.Message}");
+            LastInstallError = ex.Message;
             ReportProgress("Installation failed", 0, indeterminate: true);
         }
         return false;

@@ -1,0 +1,55 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="NexStrap.Views.DiagnosticReportDialog"
+        Title="Diagnostic Information"
+        Width="640" Height="540"
+        WindowStartupLocation="CenterOwner"
+        Background="#000000"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="-1">
+
+    <Grid RowDefinitions="30,Auto,*,Auto" Margin="20,0,20,20">
+
+        <!-- タイトルバー -->
+        <Grid Grid.Row="0" Background="Transparent" PointerPressed="TitleBar_PointerPressed">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                        Margin="0" Spacing="8" IsHitTestVisible="False">
+                <TextBlock Text="Diagnostic Information" FontSize="12" FontWeight="SemiBold"
+                           Foreground="#CCCCCC" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+
+        <TextBlock Grid.Row="1" TextWrapping="Wrap" FontSize="12" Foreground="#AAAAAA"
+                   Margin="0,8,0,12">
+            Review the information below before sharing. Sensitive data such as paths, tokens
+            and emails has been masked, but please double-check before copying.
+        </TextBlock>
+
+        <TextBox Grid.Row="2" Name="ReportTextBox"
+                 IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+                 FontFamily="Consolas,monospace" FontSize="11"
+                 Background="#1A1A1A" Foreground="#FFFFFF" BorderBrush="#2A2A2A"
+                 VerticalContentAlignment="Top"/>
+
+        <Grid Grid.Row="3" ColumnDefinitions="*,8,*" Margin="0,12,0,0">
+            <Button Grid.Column="0"
+                    Content="Copy"
+                    Click="Copy_Click"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Background="{DynamicResource OverlayBg}"
+                    Foreground="#FFFFFF"
+                    FontSize="12" Padding="0,9" CornerRadius="8"/>
+            <Button Grid.Column="2"
+                    Content="Cancel"
+                    Click="Cancel_Click"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Background="{DynamicResource OverlayBg}"
+                    Foreground="#FFFFFF"
+                    FontSize="12" Padding="0,9" CornerRadius="8"/>
+        </Grid>
+
+    </Grid>
+</Window>
