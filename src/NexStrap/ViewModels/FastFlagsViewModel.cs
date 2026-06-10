@@ -110,14 +110,17 @@ public partial class FastFlagsViewModel : ViewModelBase
 
     private void SaveCurrentFlagsToProfile(Profile profile)
     {
-        profile.FastFlags = _allFlags.Select(f => new FastFlag
-        {
-            Name        = f.Name,
-            Value       = f.Value,
-            Category    = f.Category,
-            Description = f.Description,
-            IsEnabled   = f.IsEnabled
-        }).ToList();
+        profile.FastFlags = _allFlags
+            .GroupBy(f => f.Name)
+            .Select(g => g.Last())
+            .Select(f => new FastFlag
+            {
+                Name        = f.Name,
+                Value       = f.Value,
+                Category    = f.Category,
+                Description = f.Description,
+                IsEnabled   = f.IsEnabled
+            }).ToList();
         _profileService.UpdateProfile(profile);
     }
 
@@ -125,7 +128,8 @@ public partial class FastFlagsViewModel : ViewModelBase
     {
         await _service.HotReloadAsync(
             value.FastFlags.Where(f => f.IsEnabled)
-                          .ToDictionary(f => f.Name, f => f.Value)
+                          .GroupBy(f => f.Name)
+                          .ToDictionary(g => g.Key, g => g.Last().Value)
         );
         await Dispatcher.UIThread.InvokeAsync(LoadFlags);
         await ShowStatusAsync($"Loaded profile \"{value.Name}\"");
@@ -328,25 +332,38 @@ public partial class FastFlagsViewModel : ViewModelBase
             await ShowStatusAsync("Roblox not found", isError: true);
             return;
         }
-        var entry = MakeFlagEntry(NewFlagName.Trim(), NewFlagValue.Trim());
-        _allFlags.Add(entry);
-        _service.Set(entry.Name, entry.Value);
+        var name = NewFlagName.Trim();
+        var value = NewFlagValue.Trim();
+
+        var existing = _allFlags.FirstOrDefault(f => f.Name == name);
+        if (existing != null)
+        {
+            existing.Value = value;
+            existing.IsEnabled = true;
+        }
+        else
+        {
+            _allFlags.Add(MakeFlagEntry(name, value));
+        }
+        _service.Set(name, value);
         NewFlagName = string.Empty;
         NewFlagValue = string.Empty;
         ApplyFilter();
         await _service.SaveAsync();
+        if (_loadedProfile != null) SaveCurrentFlagsToProfile(_loadedProfile);
         FlagAdded?.Invoke();
-        await ShowStatusAsync($"Added and saved {entry.Name}");
+        await ShowStatusAsync($"Added and saved {name}");
     }
 
     [RelayCommand]
     private async Task RemoveFlagAsync(FlagEntry? flag)
     {
         if (flag == null) return;
-        _allFlags.Remove(flag);
+        _allFlags.RemoveAll(f => f.Name == flag.Name);
         _service.Remove(flag.Name);
         ApplyFilter();
         await _service.SaveAsync();
+        if (_loadedProfile != null) SaveCurrentFlagsToProfile(_loadedProfile);
     }
 
     [RelayCommand]
