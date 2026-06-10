@@ -642,6 +642,20 @@ public class RobloxService
             {
                 var hasRobloxApp = packages.Any(p => string.Equals(p.Name, "RobloxApp.zip", StringComparison.OrdinalIgnoreCase));
                 Log($"RobloxPlayerBeta.exe not found in {versionDir} (RobloxApp.zip in manifest: {hasRobloxApp})");
+
+                try
+                {
+                    var topLevel = Directory.GetFiles(versionDir);
+                    Log($"[DEBUG] versionDir top-level files ({topLevel.Length}): {string.Join(", ", topLevel.Select(Path.GetFileName))}");
+                }
+                catch (Exception ex) { Log($"[DEBUG] Failed to list versionDir top-level files: {ex.Message}"); }
+
+                try
+                {
+                    var found = Directory.GetFiles(versionDir, "RobloxPlayerBeta.exe", SearchOption.AllDirectories);
+                    Log($"[DEBUG] RobloxPlayerBeta.exe recursive search results ({found.Length}): {string.Join(", ", found)}");
+                }
+                catch (Exception ex) { Log($"[DEBUG] Failed to search RobloxPlayerBeta.exe: {ex.Message}"); }
             }
             _installState.SetCurrentVersionFolder(versionDir);
             return playerBetaExists;
