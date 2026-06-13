@@ -73,61 +73,70 @@
                     </Border>
                     <Border Classes="area-divider"/>
 
-                    <!-- In-Game -->
+                    <!-- Game Information -->
                     <Border Classes="area-row">
                         <StackPanel Spacing="12">
-                            <TextBlock Text="In-Game" FontSize="12" FontWeight="SemiBold"
+                            <TextBlock Text="Game Information" FontSize="12" FontWeight="SemiBold"
                                        Foreground="{DynamicResource FgSub}"/>
 
                             <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Show creator name" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Appends &quot;by creator&quot; after the game name"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowCreator}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Show creator name" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Appends &quot;by creator&quot; after the game name"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowCreator}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
 
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Show Join Game button" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Button to join the game directly from Discord"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowJoinButton}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Show server region" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Shows your country → server region (e.g. JP → US Server)"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowServerRegion}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
 
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Show server region" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Shows your country → server region (e.g. JP → US Server)"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowServerRegion}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Show Fast Flags count" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Shows the number of active Fast Flags (e.g. 12 Flags)"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowFlagCount}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
 
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Show Fast Flags count" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Shows the number of active Fast Flags (e.g. 12 Flags)"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Show place name in local language" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Use your system language for game names instead of English (en_us)"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding PlaceNameLocalized}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
                         </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowFlagCount}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
+                    </Border>
+                    <Border Classes="area-divider"/>
 
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Show place name in local language" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Use your system language for game names instead of English (en_us)"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding PlaceNameLocalized}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
+                    <!-- Social -->
+                    <Border Classes="area-row">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Social" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource FgSub}"/>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Show Join Game button" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Button to join the game directly from Discord"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowJoinButton}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
                         </StackPanel>
                     </Border>
                     <Border Classes="area-divider"/>
@@ -139,25 +148,25 @@
                                        Foreground="{DynamicResource FgSub}"/>
 
                             <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="NexStrap Presence" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Show presence while using the launcher outside a game. Turning this off hides NexStrap's RPC entirely."
-                                       Foreground="{DynamicResource FgSub}" FontSize="11" TextWrapping="Wrap"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowLauncherPresence}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="NexStrap Presence" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Show presence while using the launcher outside a game. Turning this off hides NexStrap's RPC entirely."
+                                               Foreground="{DynamicResource FgSub}" FontSize="11" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowLauncherPresence}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
 
-                    <Grid ColumnDefinitions="*,Auto"
-                          IsVisible="{Binding ShowLauncherPresence}">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Show current page" Foreground="#FFFFFF" FontSize="13"/>
-                            <TextBlock Text="Show the current page name in the details line"
-                                       Foreground="{DynamicResource FgSub}" FontSize="11"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowLauncherDetails}"
-                                      OnContent="ON" OffContent="OFF"/>
-                    </Grid>
+                            <Grid ColumnDefinitions="*,Auto"
+                                  IsVisible="{Binding ShowLauncherPresence}">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Show current page" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Show the current page name in the details line"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowLauncherDetails}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
                         </StackPanel>
                     </Border>
                 </StackPanel>
