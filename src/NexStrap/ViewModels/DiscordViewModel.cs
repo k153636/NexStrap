@@ -13,6 +13,10 @@ public partial class DiscordViewModel : ViewModelBase
 
     [ObservableProperty] private bool _discordRpcEnabled;
     [ObservableProperty] private bool _discordAppIdConfigured;
+    [ObservableProperty] private bool _profileEnabled;
+    [ObservableProperty] private bool _gameInformationEnabled;
+    [ObservableProperty] private bool _socialEnabled;
+    [ObservableProperty] private bool _nexStrapEnabled;
     [ObservableProperty] private bool _showRobloxUsername;
     [ObservableProperty] private bool _useDisplayNameFormat;
     [ObservableProperty] private bool _showCreator;
@@ -33,6 +37,10 @@ public partial class DiscordViewModel : ViewModelBase
         var s = settingsService.Settings;
         _discordRpcEnabled      = s.DiscordRpcEnabled;
         _discordAppIdConfigured = true;
+        _profileEnabled         = s.DiscordRpcProfileEnabled;
+        _gameInformationEnabled = s.DiscordRpcGameInformationEnabled;
+        _socialEnabled          = s.DiscordRpcSocialEnabled;
+        _nexStrapEnabled        = s.DiscordRpcNexStrapEnabled;
         _showRobloxUsername     = s.DiscordShowRobloxUsername;
         _useDisplayNameFormat   = s.DiscordUseDisplayNameFormat;
         _showCreator            = s.DiscordShowCreator;
@@ -48,6 +56,32 @@ public partial class DiscordViewModel : ViewModelBase
     {
         _settingsService.Update(s => s.DiscordRpcEnabled = value);
         // SetDiscordEnabled は MainWindowViewModel の SettingsChanged で処理される
+    }
+
+    partial void OnProfileEnabledChanged(bool value)
+    {
+        _settingsService.Update(s => s.DiscordRpcProfileEnabled = value);
+        _ = ApplyUserLabelAsync();
+        _discord.EnqueueRefresh();
+    }
+
+    partial void OnGameInformationEnabledChanged(bool value)
+    {
+        _settingsService.Update(s => s.DiscordRpcGameInformationEnabled = value);
+        _robloxApi.ClearGameCache();
+        _discord.EnqueueRefresh();
+    }
+
+    partial void OnSocialEnabledChanged(bool value)
+    {
+        _settingsService.Update(s => s.DiscordRpcSocialEnabled = value);
+        _discord.EnqueueRefresh();
+    }
+
+    partial void OnNexStrapEnabledChanged(bool value)
+    {
+        _settingsService.Update(s => s.DiscordRpcNexStrapEnabled = value);
+        _discord.EnqueueRefresh();
     }
 
     partial void OnShowRobloxUsernameChanged(bool value)
@@ -88,7 +122,7 @@ public partial class DiscordViewModel : ViewModelBase
 
     private async Task ApplyUserLabelAsync()
     {
-        if (!ShowRobloxUsername)
+        if (!ProfileEnabled || !ShowRobloxUsername)
         {
             _discord.SetUserLabel(null);
             return;

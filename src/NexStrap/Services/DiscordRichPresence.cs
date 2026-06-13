@@ -544,7 +544,8 @@ public sealed class DiscordRichPresence : IDisposable
     {
         try
         {
-            var english = !_settings.Settings.DiscordPlaceNameLocalized;
+            var settings = _settings.Settings;
+            var english = !(settings.DiscordRpcGameInformationEnabled && settings.DiscordPlaceNameLocalized);
             var (name, icon, creator) = await _robloxApi.GetGameInfoAsync(placeId, universe, english);
             Enqueue(new EvGameInfo(placeId, seq, slot, name, icon, creator));
         }
@@ -610,8 +611,9 @@ public sealed class DiscordRichPresence : IDisposable
         // オーバーレイが設定されている場合は最優先
         if (_overlay != OverlayKind.None)
         {
-            if (!s.DiscordShowLauncherPresence) return null;
+            if (!s.DiscordRpcNexStrapEnabled || !s.DiscordShowLauncherPresence) return null;
             string? label; lock (_rpcLock) { label = _userLabel; }
+            if (!s.DiscordRpcProfileEnabled) label = null;
             var buttons = NexStrapDownloadButtons();
             return _overlay switch
             {
@@ -626,7 +628,7 @@ public sealed class DiscordRichPresence : IDisposable
         {
             case Phase.NexStrapIdle:
             case Phase.Studio:
-                if (!s.DiscordShowLauncherPresence) return null;
+                if (!s.DiscordRpcNexStrapEnabled || !s.DiscordShowLauncherPresence) return null;
                 return StudioOrPagePresence(s);
 
             case Phase.RobloxMenu:
@@ -644,6 +646,7 @@ public sealed class DiscordRichPresence : IDisposable
     private RichPresence? StudioOrPagePresence(Models.AppSettings s)
     {
         string? label; lock (_rpcLock) { label = _userLabel; }
+        if (!s.DiscordRpcProfileEnabled) label = null;
         Timestamps? ts; lock (_rpcLock) { ts = _startTs; }
 
         if (_phase == Phase.Studio)
@@ -658,7 +661,7 @@ public sealed class DiscordRichPresence : IDisposable
                 timestamps: ts);
         }
 
-        var pageDetails = s.DiscordShowLauncherDetails ? _pageName : null;
+        var pageDetails = s.DiscordRpcNexStrapEnabled && s.DiscordShowLauncherDetails ? _pageName : null;
         return Build(pageDetails, null, "nexstrap", "NexStrap Launcher · Created by K",
             _avatarUrl, label, NexStrapDownloadButtons());
     }
@@ -668,6 +671,7 @@ public sealed class DiscordRichPresence : IDisposable
         if (_games.Count == 0) return null;
 
         string? label; lock (_rpcLock) { label = _userLabel; }
+        if (!s.DiscordRpcProfileEnabled) label = null;
 
         int count;
         try { count = Math.Max(1, CountRobloxProcesses()); } catch { count = 1; }
@@ -677,14 +681,14 @@ public sealed class DiscordRichPresence : IDisposable
             var displaySlot = _games.Keys.Max();
             var g = _games[displaySlot];
             Timestamps? gameTs; lock (_rpcLock) { _slotGameTs.TryGetValue(displaySlot, out gameTs); }
-            var details = s.DiscordShowCreator && g.Creator != null
+            var details = s.DiscordRpcGameInformationEnabled && s.DiscordShowCreator && g.Creator != null
                 ? $"{g.Name} · by {g.Creator}" : g.Name ?? "Roblox";
-            var buttons = s.DiscordShowJoinButton && g.PlaceId > 0
+            var buttons = s.DiscordRpcSocialEnabled && s.DiscordShowJoinButton && g.PlaceId > 0
                 ? new Button[] { new() { Label = "Join Game", Url = $"https://www.roblox.com/games/{g.PlaceId}" } }
                 : null;
             return Build(details, FormatState(s, g), g.IconUrl ?? "roblox",
                 g.Name ?? "Roblox", g.AvatarUrl ?? _avatarUrl,
-                g.AvatarUrl != null || _avatarUrl != null ? (g.UserLabel ?? label ?? "Profile") : null,
+                s.DiscordRpcProfileEnabled && (g.AvatarUrl != null || _avatarUrl != null) ? (g.UserLabel ?? label ?? "Profile") : null,
                 buttons, gameTs);
         }
 
@@ -693,26 +697,27 @@ public sealed class DiscordRichPresence : IDisposable
         var focused = _games[focusedSlot];
         Timestamps? multiGameTs; lock (_rpcLock) { _slotGameTs.TryGetValue(focusedSlot, out multiGameTs); }
 
-        var multiDetails = s.DiscordShowCreator && focused.Creator != null
+        var multiDetails = s.DiscordRpcGameInformationEnabled && s.DiscordShowCreator && focused.Creator != null
             ? $"{focused.Name} · by {focused.Creator}" : focused.Name ?? "Roblox";
 
         var baseState   = FormatState(s, focused);
         var instanceStr = $"Instances {count}";
         var multiState  = baseState != null ? $"{baseState} · {instanceStr}" : instanceStr;
 
-        var multiButtons = s.DiscordShowJoinButton && focused.PlaceId > 0
+        var multiButtons = s.DiscordRpcSocialEnabled && s.DiscordShowJoinButton && focused.PlaceId > 0
             ? new Button[] { new() { Label = "Join Game", Url = $"https://www.roblox.com/games/{focused.PlaceId}" } }
             : null;
 
         return Build(multiDetails, multiState,
             focused.IconUrl ?? "roblox", focused.Name ?? "Roblox",
             focused.AvatarUrl ?? _avatarUrl,
-            focused.AvatarUrl != null || _avatarUrl != null ? (focused.UserLabel ?? label ?? "Profile") : null,
+            s.DiscordRpcProfileEnabled && (focused.AvatarUrl != null || _avatarUrl != null) ? (focused.UserLabel ?? label ?? "Profile") : null,
             multiButtons, multiGameTs);
     }
 
     private string? FormatState(Models.AppSettings s, SlotGame game)
     {
+        if (!s.DiscordRpcGameInformationEnabled) return null;
         var flagStr = s.DiscordShowFlagCount && _fastFlags.GetAll().Count > 0
             ? $"{_fastFlags.GetAll().Count} Flags" : null;
         if (!s.DiscordShowServerRegion || game.ServerCode == null) return flagStr;

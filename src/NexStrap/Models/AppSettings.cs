@@ -24,6 +24,10 @@ public class AppSettings
     public List<long> FavoriteGameIds { get; set; } = [];
     public string GlassAccentColor { get; set; } = "#FFFFFF";
     public double GlassOpacity { get; set; } = 0.75;
+    public bool DiscordRpcProfileEnabled { get; set; } = true;
+    public bool DiscordRpcGameInformationEnabled { get; set; } = true;
+    public bool DiscordRpcSocialEnabled { get; set; } = true;
+    public bool DiscordRpcNexStrapEnabled { get; set; } = true;
     public bool DiscordShowRobloxUsername { get; set; } = false;
     public bool DiscordUseDisplayNameFormat { get; set; } = false;
     public bool DiscordShowCreator { get; set; } = true;
