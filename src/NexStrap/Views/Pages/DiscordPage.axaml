@@ -6,6 +6,43 @@
              x:DataType="vm:DiscordViewModel"
              Background="Transparent">
 
+    <UserControl.Styles>
+        <Style Selector="Border.rpc-category-header">
+            <Setter Property="Background" Value="{DynamicResource OverlayBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="10,8"/>
+        </Style>
+        <Style Selector="Border.rpc-category-accent">
+            <Setter Property="Width" Value="3"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Opacity" Value="0.8"/>
+        </Style>
+        <Style Selector="TextBlock.rpc-category-title">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="ToggleSwitch.rpc-category-toggle">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="StackPanel.rpc-category-items">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity"
+                                      Duration="0:0:0.12"
+                                      Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="StackPanel.rpc-category-items:disabled">
+            <Setter Property="Opacity" Value="0.45"/>
+        </Style>
+    </UserControl.Styles>
+
     <ScrollViewer>
         <StackPanel Spacing="10" Margin="24,20" helpers:AnimationHelper.StaggerChildren="True">
 
@@ -46,15 +83,18 @@
                     <!-- Profile -->
                     <Border Classes="area-row">
                         <StackPanel Spacing="12">
-                            <Grid ColumnDefinitions="*,Auto">
-                                <TextBlock Text="Profile" FontSize="12" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource FgSub}" VerticalAlignment="Center"/>
-                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding ProfileEnabled}"
-                                              IsEnabled="{Binding DiscordRpcEnabled}"
-                                              OnContent="ON" OffContent="OFF"/>
-                            </Grid>
+                            <Border Classes="rpc-category-header">
+                                <Grid ColumnDefinitions="Auto,10,*,10,Auto">
+                                    <Border Grid.Column="0" Classes="rpc-category-accent"/>
+                                    <TextBlock Grid.Column="2" Text="Profile" Classes="rpc-category-title"/>
+                                    <ToggleSwitch Grid.Column="4" Classes="rpc-category-toggle"
+                                                  IsChecked="{Binding ProfileEnabled}"
+                                                  IsEnabled="{Binding DiscordRpcEnabled}"
+                                                  OnContent="ON" OffContent="OFF"/>
+                                </Grid>
+                            </Border>
 
-                            <StackPanel Spacing="12" IsEnabled="{Binding ProfileEnabled}">
+                            <StackPanel Classes="rpc-category-items" Spacing="12" IsEnabled="{Binding ProfileEnabled}">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="2">
                                         <TextBlock Text="Show Roblox username" Foreground="#FFFFFF" FontSize="13"/>
@@ -83,15 +123,18 @@
                     <!-- Game Information -->
                     <Border Classes="area-row">
                         <StackPanel Spacing="12">
-                            <Grid ColumnDefinitions="*,Auto">
-                                <TextBlock Text="Game Information" FontSize="12" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource FgSub}" VerticalAlignment="Center"/>
-                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding GameInformationEnabled}"
-                                              IsEnabled="{Binding DiscordRpcEnabled}"
-                                              OnContent="ON" OffContent="OFF"/>
-                            </Grid>
+                            <Border Classes="rpc-category-header">
+                                <Grid ColumnDefinitions="Auto,10,*,10,Auto">
+                                    <Border Grid.Column="0" Classes="rpc-category-accent"/>
+                                    <TextBlock Grid.Column="2" Text="Game Information" Classes="rpc-category-title"/>
+                                    <ToggleSwitch Grid.Column="4" Classes="rpc-category-toggle"
+                                                  IsChecked="{Binding GameInformationEnabled}"
+                                                  IsEnabled="{Binding DiscordRpcEnabled}"
+                                                  OnContent="ON" OffContent="OFF"/>
+                                </Grid>
+                            </Border>
 
-                            <StackPanel Spacing="12" IsEnabled="{Binding GameInformationEnabled}">
+                            <StackPanel Classes="rpc-category-items" Spacing="12" IsEnabled="{Binding GameInformationEnabled}">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="2">
                                         <TextBlock Text="Show creator name" Foreground="#FFFFFF" FontSize="13"/>
@@ -139,15 +182,18 @@
                     <!-- Social -->
                     <Border Classes="area-row">
                         <StackPanel Spacing="12">
-                            <Grid ColumnDefinitions="*,Auto">
-                                <TextBlock Text="Social" FontSize="12" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource FgSub}" VerticalAlignment="Center"/>
-                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding SocialEnabled}"
-                                              IsEnabled="{Binding DiscordRpcEnabled}"
-                                              OnContent="ON" OffContent="OFF"/>
-                            </Grid>
+                            <Border Classes="rpc-category-header">
+                                <Grid ColumnDefinitions="Auto,10,*,10,Auto">
+                                    <Border Grid.Column="0" Classes="rpc-category-accent"/>
+                                    <TextBlock Grid.Column="2" Text="Social" Classes="rpc-category-title"/>
+                                    <ToggleSwitch Grid.Column="4" Classes="rpc-category-toggle"
+                                                  IsChecked="{Binding SocialEnabled}"
+                                                  IsEnabled="{Binding DiscordRpcEnabled}"
+                                                  OnContent="ON" OffContent="OFF"/>
+                                </Grid>
+                            </Border>
 
-                            <StackPanel Spacing="12" IsEnabled="{Binding SocialEnabled}">
+                            <StackPanel Classes="rpc-category-items" Spacing="12" IsEnabled="{Binding SocialEnabled}">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="2">
                                         <TextBlock Text="Show Join Game button" Foreground="#FFFFFF" FontSize="13"/>
@@ -165,15 +211,18 @@
                     <!-- NexStrap -->
                     <Border Classes="area-row area-row-last">
                         <StackPanel Spacing="12">
-                            <Grid ColumnDefinitions="*,Auto">
-                                <TextBlock Text="NexStrap" FontSize="12" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource FgSub}" VerticalAlignment="Center"/>
-                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding NexStrapEnabled}"
-                                              IsEnabled="{Binding DiscordRpcEnabled}"
-                                              OnContent="ON" OffContent="OFF"/>
-                            </Grid>
+                            <Border Classes="rpc-category-header">
+                                <Grid ColumnDefinitions="Auto,10,*,10,Auto">
+                                    <Border Grid.Column="0" Classes="rpc-category-accent"/>
+                                    <TextBlock Grid.Column="2" Text="NexStrap" Classes="rpc-category-title"/>
+                                    <ToggleSwitch Grid.Column="4" Classes="rpc-category-toggle"
+                                                  IsChecked="{Binding NexStrapEnabled}"
+                                                  IsEnabled="{Binding DiscordRpcEnabled}"
+                                                  OnContent="ON" OffContent="OFF"/>
+                                </Grid>
+                            </Border>
 
-                            <StackPanel Spacing="12" IsEnabled="{Binding NexStrapEnabled}">
+                            <StackPanel Classes="rpc-category-items" Spacing="12" IsEnabled="{Binding NexStrapEnabled}">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="2">
                                         <TextBlock Text="NexStrap Presence" Foreground="#FFFFFF" FontSize="13"/>
