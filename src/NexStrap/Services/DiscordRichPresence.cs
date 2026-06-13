@@ -612,11 +612,12 @@ public sealed class DiscordRichPresence : IDisposable
         {
             if (!s.DiscordShowLauncherPresence) return null;
             string? label; lock (_rpcLock) { label = _userLabel; }
+            var buttons = NexStrapDownloadButtons();
             return _overlay switch
             {
-                OverlayKind.Launching        => Build("Launching", null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label),
-                OverlayKind.InstallingStudio => Build(null, null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label),
-                OverlayKind.Dev              => Build("NexStrap / Developer", null, "nexstrap", "NexStrap Developer",             null,        null),
+                OverlayKind.Launching        => Build("Launching", null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label, buttons),
+                OverlayKind.InstallingStudio => Build(null, null, "nexstrap", "NexStrap Launcher · Created by K", _avatarUrl, label, buttons),
+                OverlayKind.Dev              => Build("NexStrap / Developer", null, "nexstrap", "NexStrap Developer",             null,        null,  buttons),
                 _                            => null
             };
         }
@@ -659,7 +660,7 @@ public sealed class DiscordRichPresence : IDisposable
 
         var pageDetails = s.DiscordShowLauncherDetails ? _pageName : null;
         return Build(pageDetails, null, "nexstrap", "NexStrap Launcher · Created by K",
-            _avatarUrl, label);
+            _avatarUrl, label, NexStrapDownloadButtons());
     }
 
     private RichPresence? ComputeInGamePresence(Models.AppSettings s)
@@ -743,6 +744,11 @@ public sealed class DiscordRichPresence : IDisposable
             Buttons    = buttons
         };
     }
+
+    private static Button[] NexStrapDownloadButtons() =>
+    [
+        new() { Label = "Download NexStrap", Url = AppConstants.DownloadUrl }
+    ];
 
     // ══════════════════════════════════════════════════════════════════════
     // RPC 送信（単一ルート）

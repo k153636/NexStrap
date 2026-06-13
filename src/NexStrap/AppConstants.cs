@@ -5,4 +5,5 @@ internal static class AppConstants
     internal const string DiscordAppId       = "1506411484228485161";
     internal const string DiscordRobloxAppId = "363445589247131668";   // Roblox 公式 App ID（ゲーム参加中）
     internal const string DiscordStudioAppId = "1506588997353209886";  // Roblox Studio App ID
+    internal const string DownloadUrl        = "https://github.com/k153636/NexStrap/releases/latest";
 }
