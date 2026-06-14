@@ -2,6 +2,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using NexStrap.Models;
 using NexStrap.Services;
 using System.Collections.ObjectModel;
 
@@ -24,7 +25,7 @@ public partial class FriendEntryViewModel : ViewModelBase
 
     public string StatusText => PresenceType switch
     {
-        2 => "In Game",
+        2 => string.IsNullOrWhiteSpace(LastLocation) ? "In Game" : LastLocation,
         1 => "Online",
         _ => "Offline"
     };
@@ -59,17 +60,24 @@ public partial class FriendEntryViewModel : ViewModelBase
 public partial class FriendsViewModel : ViewModelBase
 {
     private readonly SettingsService _settings;
+    private readonly AccountService _accounts;
     private readonly RobloxApiService _robloxApi;
     private readonly FriendNotificationService _friendNotifs;
     private bool _refreshing;
+    private bool _refreshPending;
 
     [ObservableProperty] private ObservableCollection<FriendEntryViewModel> _friends = [];
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string _statusText = string.Empty;
 
-    public FriendsViewModel(SettingsService settings, RobloxApiService robloxApi, FriendNotificationService friendNotifs)
+    public FriendsViewModel(
+        SettingsService settings,
+        AccountService accounts,
+        RobloxApiService robloxApi,
+        FriendNotificationService friendNotifs)
     {
         _settings      = settings;
+        _accounts      = accounts;
         _robloxApi     = robloxApi;
         _friendNotifs  = friendNotifs;
 
@@ -86,11 +94,16 @@ public partial class FriendsViewModel : ViewModelBase
     [RelayCommand]
     public async Task RefreshAsync()
     {
-        if (_refreshing) return;
+        if (_refreshing)
+        {
+            _refreshPending = true;
+            return;
+        }
+
         _refreshing = true;
         IsLoading   = true;
 
-        var userId = _settings.Settings.CachedRobloxUserId;
+        var userId = ResolveCurrentUserId();
         if (userId <= 0)
         {
             StatusText  = "Please log in to Roblox";
@@ -99,9 +112,17 @@ public partial class FriendsViewModel : ViewModelBase
             return;
         }
 
+        _friendNotifs.Start(userId);
+
         try
         {
             var friendList = await _robloxApi.GetFriendsAsync(userId);
+            if (userId != ResolveCurrentUserId())
+            {
+                _refreshPending = true;
+                return;
+            }
+
             if (friendList.Count == 0)
             {
                 Friends    = [];
@@ -113,6 +134,19 @@ public partial class FriendsViewModel : ViewModelBase
             var presence    = await _robloxApi.GetFriendPresenceDetailsAsync(userIds);
             var presenceMap = presence.ToDictionary(p => p.UserId);
 
+            var placeNames = new Dictionary<long, string>();
+            var placeIds = presence
+                .Where(p => p.PresenceType == 2 && p.PlaceId.HasValue && IsGenericInGameLocation(p.LastLocation))
+                .Select(p => p.PlaceId!.Value)
+                .Distinct()
+                .ToList();
+
+            await Task.WhenAll(placeIds.Select(async placeId =>
+            {
+                var (name, _, _) = await _robloxApi.GetGameInfoAsync(placeId);
+                lock (placeNames) placeNames[placeId] = name;
+            }));
+
             var avatarUrls  = new Dictionary<long, string?>();
             await Task.WhenAll(userIds.Select(async id =>
             {
@@ -120,15 +154,23 @@ public partial class FriendsViewModel : ViewModelBase
                 lock (avatarUrls) avatarUrls[id] = url;
             }));
 
+            if (userId != ResolveCurrentUserId())
+            {
+                _refreshPending = true;
+                return;
+            }
+
             var sorted = friendList
                 .Select(f =>
                 {
                     presenceMap.TryGetValue(f.UserId, out var p);
                     avatarUrls.TryGetValue(f.UserId, out var avatarUrl);
+                    var location = ResolveLocationName(p, placeNames);
                     return new FriendEntryViewModel(
                         f.UserId, f.DisplayName,
                         p?.PresenceType ?? 0,
-                        p?.PlaceId, p?.LastLocation,
+                        p?.PlaceId,
+                        location,
                         avatarUrl);
                 })
                 .OrderByDescending(e => e.PresenceType)
@@ -144,6 +186,34 @@ public partial class FriendsViewModel : ViewModelBase
         {
             IsLoading   = false;
             _refreshing = false;
+            if (_refreshPending)
+            {
+                _refreshPending = false;
+                _ = RefreshAsync();
+            }
         }
+    }
+
+    private long ResolveCurrentUserId()
+    {
+        var active = _accounts.Accounts.FirstOrDefault(a => a.IsActive);
+        if (active?.UserId > 0) return active.UserId;
+        return _accounts.Accounts.Count > 0 ? 0 : _settings.Settings.CachedRobloxUserId;
+    }
+
+    private static bool IsGenericInGameLocation(string? location)
+        => string.IsNullOrWhiteSpace(location)
+           || string.Equals(location, "In Game", StringComparison.OrdinalIgnoreCase)
+           || string.Equals(location, "Playing", StringComparison.OrdinalIgnoreCase);
+
+    private static string? ResolveLocationName(
+        FriendPresenceDetail? presence,
+        IReadOnlyDictionary<long, string> placeNames)
+    {
+        if (presence == null) return null;
+        if (!IsGenericInGameLocation(presence.LastLocation)) return presence.LastLocation;
+        return presence.PlaceId.HasValue && placeNames.TryGetValue(presence.PlaceId.Value, out var name)
+            ? name
+            : presence.LastLocation;
     }
 }

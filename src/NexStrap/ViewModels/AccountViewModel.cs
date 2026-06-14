@@ -37,7 +37,12 @@ public partial class AccountViewModel : ViewModelBase
     // タブ
     [ObservableProperty] private bool _isAccountsTab = true;
     public bool IsFriendsTab => !IsAccountsTab;
-    partial void OnIsAccountsTabChanged(bool _) => OnPropertyChanged(nameof(IsFriendsTab));
+    partial void OnIsAccountsTabChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsFriendsTab));
+        if (!value)
+            _ = FriendsVm.RefreshAsync();
+    }
 
     [RelayCommand]
     private void SwitchTab(string tab) => IsAccountsTab = tab == "Accounts";
@@ -139,6 +144,7 @@ public partial class AccountViewModel : ViewModelBase
         var ct = _presenceCts.Token;
         _ = RefreshPresenceAsync(ct);
         _ = RefreshActiveStatsAsync(ct);
+        _ = FriendsVm.RefreshAsync();
     }
 
     private void OnEntryPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

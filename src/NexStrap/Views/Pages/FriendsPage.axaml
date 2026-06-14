@@ -55,10 +55,7 @@
                                         <TextBlock Text="{Binding DisplayName}" FontSize="13"
                                                    FontWeight="SemiBold" Foreground="#FFFFFF"/>
                                         <TextBlock Text="{Binding StatusText}" FontSize="11"
-                                                   Foreground="{Binding StatusColor}"/>
-                                        <TextBlock Text="{Binding LastLocation}" FontSize="11"
-                                                   Foreground="{DynamicResource FgSub}"
-                                                   IsVisible="{Binding IsInGame}"
+                                                   Foreground="{Binding StatusColor}"
                                                    TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
 
