@@ -131,7 +131,7 @@ public partial class FriendsViewModel : ViewModelBase
             }
 
             var userIds     = friendList.Select(f => f.UserId).ToList();
-            var presence    = await _robloxApi.GetFriendPresenceDetailsAsync(userIds);
+            var presence    = await _robloxApi.GetFriendPresenceDetailsAsync(userIds, ResolveCurrentAccountCookie());
             var presenceMap = presence.ToDictionary(p => p.UserId);
 
             var placeNames = new Dictionary<long, string>();
@@ -199,6 +199,13 @@ public partial class FriendsViewModel : ViewModelBase
         var active = _accounts.Accounts.FirstOrDefault(a => a.IsActive);
         if (active?.UserId > 0) return active.UserId;
         return _accounts.Accounts.Count > 0 ? 0 : _settings.Settings.CachedRobloxUserId;
+    }
+
+    private string? ResolveCurrentAccountCookie()
+    {
+        return _accounts.Accounts.Any(a => a.IsActive)
+            ? _accounts.GetActiveCookie()
+            : null;
     }
 
     private static bool IsGenericInGameLocation(string? location)

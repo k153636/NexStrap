@@ -275,13 +275,29 @@ public class RobloxApiService
         catch { return (null, null); }
     }
 
-    public async Task<List<FriendPresenceDetail>> GetFriendPresenceDetailsAsync(IList<long> userIds)
+    public async Task<List<FriendPresenceDetail>> GetFriendPresenceDetailsAsync(IList<long> userIds, string? cookie = null)
     {
         try
         {
             var body    = new JObject { ["userIds"] = new JArray(userIds.Cast<object>().ToArray()) };
             var content = new StringContent(body.ToString(), Encoding.UTF8, "application/json");
-            var resp    = await Http.PostAsync("https://presence.roblox.com/v1/presence/users", content);
+            HttpResponseMessage resp;
+
+            if (string.IsNullOrWhiteSpace(cookie))
+            {
+                resp = await Http.PostAsync("https://presence.roblox.com/v1/presence/users", content);
+            }
+            else
+            {
+                using var req = new HttpRequestMessage(HttpMethod.Post, "https://presence.roblox.com/v1/presence/users")
+                {
+                    Content = content
+                };
+                req.Headers.TryAddWithoutValidation("Cookie", $".ROBLOSECURITY={cookie}");
+                req.Headers.TryAddWithoutValidation("Referer", "https://www.roblox.com");
+                resp = await Http.SendAsync(req);
+            }
+
             if (!resp.IsSuccessStatusCode) return [];
             var json = await resp.Content.ReadAsStringAsync();
             var data = JObject.Parse(json)["userPresences"] as JArray ?? [];
