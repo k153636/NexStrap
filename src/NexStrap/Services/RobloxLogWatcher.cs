@@ -33,8 +33,8 @@ public class RobloxLogWatcher : IDisposable
         public long   DetectedUserId { get; set; }
         public bool   WasRunning     { get; set; }
         public InstanceActivity? Activity { get; set; }
-        public bool PendingLeave          { get; set; }
-        public int  PendingLeaveTicksLeft { get; set; }
+        public bool PendingLeave           { get; set; }
+        public DateTime? PendingLeaveDueUtc { get; set; }
     }
 
     private Timer? _pollTimer;
@@ -79,22 +79,15 @@ public class RobloxLogWatcher : IDisposable
 
     private static readonly string[] LeaveKeywords =
     [
+        // Match Bloxstrap's narrower leave detection. Broad network disconnect
+        // lines are also emitted during teleports and connection handoffs.
         "Time to disconnect replication data",
-        "Disconnect was called",
         "GameDisconnect",
         "game left",
         "reportGameDisconnect",
         "Game disconnect",
         "leaving game",
         "leaveUGCGameInternal",
-        "returnToLuaApp",
-        "Client:Disconnect",
-        "Sending disconnect",
-        "Disconnected from server",
-        "Disconnection Notification",
-        // "Connection lost",      // 参加プロセス中にも出現しうる
-        // "connection timeout",   // 参加プロセス中にも出現しうる
-        // "Connection closed",    // 参加プロセス中にも出現しうる
     ];
 
     private static readonly string LogDir = Path.Combine(
@@ -102,6 +95,7 @@ public class RobloxLogWatcher : IDisposable
         "Roblox", "logs");
     private const double MinProcessLogStartDeltaSeconds = -2;
     private const double MaxProcessLogStartDeltaSeconds = 120;
+    private static readonly TimeSpan PendingLeaveConfirmDelay = TimeSpan.FromSeconds(3);
 
     // ── コンストラクタ ────────────────────────────────────────────────────
 
@@ -217,15 +211,15 @@ public class RobloxLogWatcher : IDisposable
         bool firePendingLeave = false;
         lock (_lock)
         {
-            if (state.PendingLeave && --state.PendingLeaveTicksLeft <= 0)
+            if (state.PendingLeave && state.PendingLeaveDueUtc <= DateTime.UtcNow)
             {
-                state.PendingLeave          = false;
-                state.PendingLeaveTicksLeft = 0;
-                state.LastPlaceId           = 0;
-                state.DetectedIp            = string.Empty;
-                state.WasRunning            = false;
-                state.Activity              = null;
-                firePendingLeave            = true;
+                state.PendingLeave       = false;
+                state.PendingLeaveDueUtc = null;
+                state.LastPlaceId        = 0;
+                state.DetectedIp         = string.Empty;
+                state.WasRunning         = false;
+                state.Activity           = null;
+                firePendingLeave         = true;
             }
         }
         if (firePendingLeave)
@@ -304,11 +298,11 @@ public class RobloxLogWatcher : IDisposable
                     {
                         // PendingLeave 中（退出検知後タイムアウト前）に同じ placeId へ
                         // 再参加した場合は、新規参加と同様に扱い再発火させる
-                        state.PendingLeave          = false;
-                        state.PendingLeaveTicksLeft = 0;
-                        rejoinDetected              = true;
-                        firePlaceId                 = placeId;
-                        fireUniverseId              = MatchUniverseId(line);
+                        state.PendingLeave       = false;
+                        state.PendingLeaveDueUtc = null;
+                        rejoinDetected           = true;
+                        firePlaceId              = placeId;
+                        fireUniverseId           = MatchUniverseId(line);
                         break;
                     }
                     var duplicateUniverseId = MatchUniverseId(line);
@@ -336,8 +330,8 @@ public class RobloxLogWatcher : IDisposable
             {
                 if (state.PendingLeave)
                 {
-                    state.PendingLeave          = false;
-                    state.PendingLeaveTicksLeft = 0;
+                    state.PendingLeave       = false;
+                    state.PendingLeaveDueUtc = null;
                 }
                 state.WasRunning = true;
                 state.DetectedIp = string.Empty;
@@ -357,8 +351,8 @@ public class RobloxLogWatcher : IDisposable
                 foreach (var kw in LeaveKeywords)
                 {
                     if (!line.Contains(kw, StringComparison.OrdinalIgnoreCase)) continue;
-                    state.PendingLeave          = true;
-                    state.PendingLeaveTicksLeft = 12;
+                    state.PendingLeave       = true;
+                    state.PendingLeaveDueUtc = DateTime.UtcNow + PendingLeaveConfirmDelay;
                     break;
                 }
             }
@@ -646,8 +640,8 @@ public class RobloxLogWatcher : IDisposable
             if (state?.PendingLeave == true)
             {
                 Logger.Instance.Info("LogWatcher", $"Leave cancelled (game confirmed): slot={slot}");
-                state.PendingLeave          = false;
-                state.PendingLeaveTicksLeft = 0;
+                state.PendingLeave       = false;
+                state.PendingLeaveDueUtc = null;
             }
         }
     }
