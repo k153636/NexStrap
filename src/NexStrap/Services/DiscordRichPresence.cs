@@ -759,7 +759,7 @@ public sealed class DiscordRichPresence : IDisposable
         if (!s.DiscordShowServerRegion || game.ServerCode == null) return flagStr;
         var serverFlag = ToFlagEmoji(game.ServerCode);
         var ping = s.DiscordShowEstimatedPing ? FormatEstimatedPing(_myCountry, game.ServerCode) : null;
-        var pingSuffix = ping != null ? $" ({ping})" : string.Empty;
+        var pingSuffix = ping != null ? $" {ping}" : string.Empty;
         var server = _myCountry != null
             ? $"{ToFlagEmoji(_myCountry)} → {serverFlag} Server{pingSuffix}"
             : $"{serverFlag} Server{pingSuffix}";
