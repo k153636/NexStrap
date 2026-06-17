@@ -24,6 +24,7 @@ public partial class DiscordViewModel : ViewModelBase
     [ObservableProperty] private bool _showLauncherPresence;
     [ObservableProperty] private bool _showLauncherDetails;
     [ObservableProperty] private bool _showServerRegion;
+    [ObservableProperty] private bool _showEstimatedPing;
     [ObservableProperty] private bool _showFlagCount;
     [ObservableProperty] private bool _placeNameLocalized;
 
@@ -48,6 +49,7 @@ public partial class DiscordViewModel : ViewModelBase
         _showLauncherPresence   = s.DiscordShowLauncherPresence;
         _showLauncherDetails    = s.DiscordShowLauncherDetails;
         _showServerRegion       = s.DiscordShowServerRegion;
+        _showEstimatedPing      = s.DiscordShowEstimatedPing;
         _showFlagCount          = s.DiscordShowFlagCount;
         _placeNameLocalized     = s.DiscordPlaceNameLocalized;
     }
@@ -110,6 +112,12 @@ public partial class DiscordViewModel : ViewModelBase
 
     partial void OnShowServerRegionChanged(bool value)
         => _settingsService.Update(s => s.DiscordShowServerRegion = value);
+
+    partial void OnShowEstimatedPingChanged(bool value)
+    {
+        _settingsService.Update(s => s.DiscordShowEstimatedPing = value);
+        _discord.EnqueueRefresh();
+    }
 
     partial void OnShowFlagCountChanged(bool value)
         => _settingsService.Update(s => s.DiscordShowFlagCount = value);

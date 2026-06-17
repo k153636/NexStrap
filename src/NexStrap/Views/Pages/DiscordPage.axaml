@@ -146,6 +146,17 @@
                                                   OnContent="ON" OffContent="OFF"/>
                                 </Grid>
 
+                                <Grid ColumnDefinitions="*,Auto"
+                                      IsEnabled="{Binding ShowServerRegion}">
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="Show estimated ping" Foreground="#FFFFFF" FontSize="13"/>
+                                        <TextBlock Text="Adds a conservative ping estimate from country codes only"
+                                                   Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowEstimatedPing}"
+                                                  OnContent="ON" OffContent="OFF"/>
+                                </Grid>
+
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="2">
                                         <TextBlock Text="Show Fast Flags count" Foreground="#FFFFFF" FontSize="13"/>

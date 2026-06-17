@@ -125,6 +125,42 @@ public sealed class DiscordRichPresence : IDisposable
     private const int HeartbeatMs  = 15_000;
     private const int StudioPollMs =  3_000;
 
+    private static readonly Dictionary<string, string> CountryRegions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["JP"] = "EA", ["KR"] = "EA", ["CN"] = "EA", ["HK"] = "EA", ["TW"] = "EA",
+        ["SG"] = "SEA", ["MY"] = "SEA", ["TH"] = "SEA", ["VN"] = "SEA", ["PH"] = "SEA", ["ID"] = "SEA",
+        ["IN"] = "SAS", ["PK"] = "SAS", ["BD"] = "SAS", ["LK"] = "SAS",
+        ["AU"] = "OC", ["NZ"] = "OC",
+        ["US"] = "NA", ["CA"] = "NA", ["MX"] = "NA",
+        ["BR"] = "SAM", ["AR"] = "SAM", ["CL"] = "SAM", ["CO"] = "SAM", ["PE"] = "SAM",
+        ["GB"] = "EU", ["IE"] = "EU", ["FR"] = "EU", ["DE"] = "EU", ["NL"] = "EU", ["BE"] = "EU",
+        ["ES"] = "EU", ["PT"] = "EU", ["IT"] = "EU", ["SE"] = "EU", ["NO"] = "EU", ["FI"] = "EU",
+        ["DK"] = "EU", ["PL"] = "EU", ["CZ"] = "EU", ["AT"] = "EU", ["CH"] = "EU",
+        ["TR"] = "ME", ["AE"] = "ME", ["SA"] = "ME", ["IL"] = "ME", ["QA"] = "ME",
+        ["ZA"] = "AF", ["EG"] = "AF", ["NG"] = "AF", ["KE"] = "AF"
+    };
+
+    private static readonly Dictionary<(string From, string To), int> RegionPingMs = new()
+    {
+        [("EA", "EA")] = 45,   [("EA", "SEA")] = 85,  [("EA", "SAS")] = 125, [("EA", "OC")] = 130,
+        [("EA", "NA")] = 155,  [("EA", "EU")] = 230,  [("EA", "ME")] = 190,  [("EA", "AF")] = 260,
+        [("SEA", "EA")] = 85,  [("SEA", "SEA")] = 45, [("SEA", "SAS")] = 95, [("SEA", "OC")] = 115,
+        [("SEA", "NA")] = 185, [("SEA", "EU")] = 210, [("SEA", "ME")] = 145, [("SEA", "AF")] = 230,
+        [("SAS", "EA")] = 125, [("SAS", "SEA")] = 95, [("SAS", "SAS")] = 55, [("SAS", "OC")] = 180,
+        [("SAS", "NA")] = 230, [("SAS", "EU")] = 160, [("SAS", "ME")] = 90, [("SAS", "AF")] = 180,
+        [("OC", "EA")] = 130,  [("OC", "SEA")] = 115, [("OC", "SAS")] = 180, [("OC", "OC")] = 40,
+        [("OC", "NA")] = 170,  [("OC", "EU")] = 260,  [("OC", "ME")] = 230, [("OC", "AF")] = 280,
+        [("NA", "EA")] = 155,  [("NA", "SEA")] = 185, [("NA", "SAS")] = 230, [("NA", "OC")] = 170,
+        [("NA", "NA")] = 45,   [("NA", "EU")] = 115,  [("NA", "ME")] = 170, [("NA", "AF")] = 190,
+        [("SAM", "NA")] = 120, [("SAM", "SAM")] = 55, [("SAM", "EU")] = 200, [("SAM", "AF")] = 220,
+        [("EU", "EA")] = 230,  [("EU", "SEA")] = 210, [("EU", "SAS")] = 160, [("EU", "OC")] = 260,
+        [("EU", "NA")] = 115,  [("EU", "EU")] = 40,   [("EU", "ME")] = 95,  [("EU", "AF")] = 120,
+        [("ME", "EA")] = 190,  [("ME", "SEA")] = 145, [("ME", "SAS")] = 90, [("ME", "OC")] = 230,
+        [("ME", "NA")] = 170,  [("ME", "EU")] = 95,   [("ME", "ME")] = 50,  [("ME", "AF")] = 140,
+        [("AF", "EA")] = 260,  [("AF", "SEA")] = 230, [("AF", "SAS")] = 180, [("AF", "OC")] = 280,
+        [("AF", "NA")] = 190,  [("AF", "EU")] = 120,  [("AF", "ME")] = 140, [("AF", "AF")] = 70
+    };
+
     // ══════════════════════════════════════════════════════════════════════
     // 公開状態（読み取り専用）
     // ══════════════════════════════════════════════════════════════════════
@@ -684,7 +720,7 @@ public sealed class DiscordRichPresence : IDisposable
             var details = s.DiscordRpcGameInformationEnabled && s.DiscordShowCreator && g.Creator != null
                 ? $"{g.Name} · by {g.Creator}" : g.Name ?? "Roblox";
             var buttons = s.DiscordRpcSocialEnabled && s.DiscordShowJoinButton && g.PlaceId > 0
-                ? new Button[] { new() { Label = "Join Game", Url = $"https://www.roblox.com/games/{g.PlaceId}" } }
+                ? RobloxGameButtons(g.PlaceId)
                 : null;
             return Build(details, FormatState(s, g), g.IconUrl ?? "roblox",
                 g.Name ?? "Roblox", g.AvatarUrl ?? _avatarUrl,
@@ -705,7 +741,7 @@ public sealed class DiscordRichPresence : IDisposable
         var multiState  = baseState != null ? $"{baseState} · {instanceStr}" : instanceStr;
 
         var multiButtons = s.DiscordRpcSocialEnabled && s.DiscordShowJoinButton && focused.PlaceId > 0
-            ? new Button[] { new() { Label = "Join Game", Url = $"https://www.roblox.com/games/{focused.PlaceId}" } }
+            ? RobloxGameButtons(focused.PlaceId)
             : null;
 
         return Build(multiDetails, multiState,
@@ -722,10 +758,38 @@ public sealed class DiscordRichPresence : IDisposable
             ? $"{_fastFlags.GetAll().Count} Flags" : null;
         if (!s.DiscordShowServerRegion || game.ServerCode == null) return flagStr;
         var serverFlag = ToFlagEmoji(game.ServerCode);
+        var ping = s.DiscordShowEstimatedPing ? FormatEstimatedPing(_myCountry, game.ServerCode) : null;
+        var pingSuffix = ping != null ? $" ({ping})" : string.Empty;
         var server = _myCountry != null
-            ? $"{ToFlagEmoji(_myCountry)} → {serverFlag} Server"
-            : $"{serverFlag} Server";
+            ? $"{ToFlagEmoji(_myCountry)} → {serverFlag} Server{pingSuffix}"
+            : $"{serverFlag} Server{pingSuffix}";
         return flagStr != null ? $"{server} · {flagStr}" : server;
+    }
+
+    private static string? FormatEstimatedPing(string? fromCountry, string toCountry)
+    {
+        var ping = EstimatePingMs(fromCountry, toCountry);
+        return ping != null ? $"~{ping.Value}ms est." : null;
+    }
+
+    private static int? EstimatePingMs(string? fromCountry, string toCountry)
+    {
+        if (string.IsNullOrWhiteSpace(fromCountry) || string.IsNullOrWhiteSpace(toCountry))
+            return null;
+
+        if (!CountryRegions.TryGetValue(fromCountry, out var fromRegion))
+            return null;
+
+        if (!CountryRegions.TryGetValue(toCountry, out var toRegion))
+            return null;
+
+        if (RegionPingMs.TryGetValue((fromRegion, toRegion), out var ping))
+            return ping;
+
+        if (RegionPingMs.TryGetValue((toRegion, fromRegion), out ping))
+            return ping;
+
+        return null;
     }
 
     private static RichPresence Build(string? details, string? state,
@@ -752,7 +816,14 @@ public sealed class DiscordRichPresence : IDisposable
 
     private static Button[] NexStrapDownloadButtons() =>
     [
-        new() { Label = "Download NexStrap", Url = AppConstants.DownloadUrl }
+        new() { Label = "GitHub",  Url = "https://github.com/k153636/NexStrap" },
+        new() { Label = "Discord", Url = "https://discord.gg/PPrKt97jRn" }
+    ];
+
+    private static Button[] RobloxGameButtons(long placeId) =>
+    [
+        new() { Label = "Join Game", Url = $"https://www.roblox.com/games/{placeId}" },
+        new() { Label = "GitHub",    Url = "https://github.com/k153636/NexStrap" }
     ];
 
     // ══════════════════════════════════════════════════════════════════════

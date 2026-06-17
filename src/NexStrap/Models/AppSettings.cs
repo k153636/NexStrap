@@ -35,6 +35,7 @@ public class AppSettings
     public bool DiscordShowLauncherPresence { get; set; } = true;
     public bool DiscordShowLauncherDetails { get; set; } = true;
     public bool DiscordShowServerRegion { get; set; } = true;
+    public bool DiscordShowEstimatedPing { get; set; } = false;
     public bool DiscordShowFlagCount { get; set; } = true;
     public bool DiscordPlaceNameLocalized { get; set; } = false;
     public bool StartWithWindows { get; set; } = false;
