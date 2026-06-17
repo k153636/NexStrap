@@ -769,7 +769,7 @@ public sealed class DiscordRichPresence : IDisposable
     private static string? FormatEstimatedPing(string? fromCountry, string toCountry)
     {
         var ping = EstimatePingMs(fromCountry, toCountry);
-        return ping != null ? $"~{ping.Value}ms est." : null;
+        return ping != null ? $"{ping.Value}ms" : null;
     }
 
     private static int? EstimatePingMs(string? fromCountry, string toCountry)
