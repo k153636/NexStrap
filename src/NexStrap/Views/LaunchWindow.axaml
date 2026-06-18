@@ -5,8 +5,8 @@
         x:DataType="vm:LaunchWindowViewModel"
         Title="NexStrap"
         Icon="avares://NexStrap/Assets/nexstrap.png"
-        Width="620" Height="300"
-        MinWidth="620" MinHeight="300"
+        Width="640" Height="280"
+        MinWidth="640" MinHeight="280"
         CanResize="False"
         WindowStartupLocation="CenterScreen"
         Background="Transparent"
@@ -33,55 +33,86 @@
         <Border Grid.Row="1"
                 Margin="18,6,18,18"
                 Classes="area-panel"
-                Padding="22">
-            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
-                <Border Width="72" Height="72"
-                        CornerRadius="18"
-                        Background="{DynamicResource SurfaceBg}"
-                        BorderBrush="{DynamicResource DividerBrush}"
-                        BorderThickness="1"
-                        ClipToBounds="True">
-                    <Image Source="avares://NexStrap/Assets/nexstrap.png"
-                           Width="72" Height="72"
-                           RenderOptions.BitmapInterpolationMode="HighQuality"/>
-                </Border>
+                Padding="18">
+            <Grid ColumnDefinitions="224,*">
+                <StackPanel Margin="4,4,16,4"
+                            VerticalAlignment="Center"
+                            Spacing="10">
+                    <Border Width="76" Height="76"
+                            CornerRadius="20"
+                            Background="{DynamicResource SurfaceBg}"
+                            BorderBrush="{DynamicResource DividerBrush}"
+                            BorderThickness="1"
+                            ClipToBounds="True">
+                        <Image Source="avares://NexStrap/Assets/nexstrap.png"
+                               Width="76" Height="76"
+                               RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                    </Border>
 
-                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center" Margin="18,0,0,0">
-                    <TextBlock Text="NexStrap"
-                               FontSize="24"
-                               FontWeight="Bold"
-                               Foreground="#FFFFFF"/>
-                    <TextBlock Text="Start the launcher or Roblox directly"
-                               FontSize="12"
-                               Foreground="{DynamicResource FgSub}"/>
-                    <TextBlock Text="{Binding StatusText}"
-                               FontSize="11"
-                               Foreground="{DynamicResource FgMuted}"/>
+                    <StackPanel Spacing="3">
+                        <TextBlock Text="NexStrap"
+                                   FontSize="28"
+                                   FontWeight="Bold"
+                                   Foreground="#FFFFFF"/>
+                        <TextBlock Text="Roblox launcher"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource FgSub}"/>
+                        <TextBlock Text="{Binding StatusText}"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource FgMuted}"/>
+                    </StackPanel>
                 </StackPanel>
 
-                <StackPanel Grid.Column="0"
-                            Grid.ColumnSpan="2"
-                            Grid.Row="2"
-                            Orientation="Horizontal"
-                            HorizontalAlignment="Right"
-                            Spacing="8"
-                            Margin="0,18,0,0">
-                    <Button Content="Launch NexStrap"
-                            Command="{Binding LaunchAppCommand}"
+                <StackPanel Grid.Column="1"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,4,4,4"
+                            Spacing="8">
+                    <Button Content="Launch Roblox"
+                            Command="{Binding LaunchRobloxCommand}"
+                            IsEnabled="{Binding IsLaunchingRoblox, Converter={x:Static BoolConverters.Not}}"
+                            HorizontalAlignment="Stretch"
                             Background="#FFFFFF"
                             Foreground="#080808"
                             FontSize="13"
                             FontWeight="SemiBold"
-                            Padding="16,11"
+                            Padding="16,14"
                             CornerRadius="10"/>
-                    <Button Content="Launch Roblox"
-                            Command="{Binding LaunchRobloxCommand}"
-                            IsEnabled="{Binding IsLaunchingRoblox, Converter={x:Static BoolConverters.Not}}"
-                            Background="{DynamicResource SurfaceBg}"
-                            Foreground="{DynamicResource FgSub}"
-                            FontSize="13"
-                            FontWeight="SemiBold"
-                            Padding="16,11"
+
+                    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto">
+                        <Button Grid.Column="0"
+                                Content="Settings"
+                                Command="{Binding OpenSettingsCommand}"
+                                HorizontalAlignment="Stretch"
+                                Background="{DynamicResource SurfaceBg}"
+                                Foreground="{DynamicResource FgSub}"
+                                FontSize="12"
+                                FontWeight="SemiBold"
+                                Padding="16,12"
+                                CornerRadius="10"
+                                Margin="0,0,6,0"/>
+                        <Button Grid.Column="1"
+                                Content="Studio"
+                                Command="{Binding LaunchStudioCommand}"
+                                HorizontalAlignment="Stretch"
+                                Background="{DynamicResource SurfaceBg}"
+                                Foreground="{DynamicResource FgSub}"
+                                FontSize="12"
+                                FontWeight="SemiBold"
+                                Padding="16,12"
+                                CornerRadius="10"
+                                Margin="6,0,0,0"/>
+                    </Grid>
+
+                    <Button Content="Launch NexStrap"
+                            Command="{Binding LaunchAppCommand}"
+                            HorizontalAlignment="Stretch"
+                            Background="Transparent"
+                            Foreground="{DynamicResource FgMuted}"
+                            BorderBrush="{DynamicResource DividerBrush}"
+                            BorderThickness="1"
+                            FontSize="12"
+                            Padding="16,12"
                             CornerRadius="10"/>
                 </StackPanel>
             </Grid>

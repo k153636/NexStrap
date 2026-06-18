@@ -10,6 +10,7 @@ public partial class LaunchWindowViewModel : ViewModelBase
     private readonly RobloxService _roblox;
     private readonly FastFlagService _fastFlags;
     private readonly ModService _mods;
+    private readonly StudioService _studio;
     private readonly SettingsService _settings;
     private readonly AccountService _accounts;
     private readonly RobloxApiService _robloxApi;
@@ -17,12 +18,13 @@ public partial class LaunchWindowViewModel : ViewModelBase
     [ObservableProperty] private string _statusText = "Choose how to start";
     [ObservableProperty] private bool _isLaunchingRoblox;
 
-    public event Action? OpenMainWindowRequested;
+    public event Action<string?>? OpenMainWindowRequested;
 
     public LaunchWindowViewModel(
         RobloxService roblox,
         FastFlagService fastFlags,
         ModService mods,
+        StudioService studio,
         SettingsService settings,
         AccountService accounts,
         RobloxApiService robloxApi)
@@ -30,13 +32,32 @@ public partial class LaunchWindowViewModel : ViewModelBase
         _roblox = roblox;
         _fastFlags = fastFlags;
         _mods = mods;
+        _studio = studio;
         _settings = settings;
         _accounts = accounts;
         _robloxApi = robloxApi;
     }
 
     [RelayCommand]
-    private void LaunchApp() => OpenMainWindowRequested?.Invoke();
+    private void LaunchApp() => OpenMainWindowRequested?.Invoke(null);
+
+    [RelayCommand]
+    private void OpenSettings() => OpenMainWindowRequested?.Invoke("Settings");
+
+    [RelayCommand]
+    private async Task LaunchStudioAsync()
+    {
+        StatusText = "Launching Studio...";
+        try
+        {
+            var launched = await _studio.LaunchAsync();
+            StatusText = launched ? "Studio launched" : "Studio launch failed";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Studio launch failed: {ex.Message}";
+        }
+    }
 
     [RelayCommand]
     private async Task LaunchRobloxAsync()

@@ -98,8 +98,8 @@ public sealed class StartupCoordinator(
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
             _launchWindowViewModel = services.GetRequiredService<LaunchWindowViewModel>();
-            _launchWindowViewModel.OpenMainWindowRequested += () =>
-                Dispatcher.UIThread.InvokeAsync(() => OpenMainWindow(desktop));
+            _launchWindowViewModel.OpenMainWindowRequested += initialPage =>
+                Dispatcher.UIThread.InvokeAsync(() => OpenMainWindow(desktop, initialPage));
 
             _launchWindow = new LaunchWindow
             {
@@ -115,13 +115,15 @@ public sealed class StartupCoordinator(
         RobloxService.Log("Launch window shown");
     }
 
-    private void OpenMainWindow(IClassicDesktopStyleApplicationLifetime desktop)
+    private void OpenMainWindow(IClassicDesktopStyleApplicationLifetime desktop, string? initialPage)
     {
         if (_mainWindow != null)
         {
             _mainWindow.Show();
             _mainWindow.WindowState = WindowState.Normal;
             _mainWindow.Activate();
+            if (!string.IsNullOrWhiteSpace(initialPage))
+                _mainViewModel?.NavigateToCommand.Execute(initialPage);
             return;
         }
 
@@ -137,7 +139,11 @@ public sealed class StartupCoordinator(
         hotKeys.Install();
 
         if (_mainViewModel != null)
+        {
+            if (!string.IsNullOrWhiteSpace(initialPage))
+                _mainViewModel.NavigateToCommand.Execute(initialPage);
             _ = _mainViewModel.BeginDeferredStartupAsync();
+        }
 
         _launchWindow?.Close();
         _launchWindow = null;
