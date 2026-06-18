@@ -184,8 +184,6 @@
 
             </StackPanel>
         </ScrollViewer>
-
-
     </Grid>
 
 </UserControl>

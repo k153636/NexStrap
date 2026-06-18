@@ -61,7 +61,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ThemeVM = themeVM;
 
         ResetLazyPages();
-        _currentPage = homeVM;
+        CurrentPage = homeVM;
 
         IsDiscordAppIdMissing = false;
 

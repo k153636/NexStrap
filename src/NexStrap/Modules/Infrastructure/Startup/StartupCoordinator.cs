@@ -21,6 +21,10 @@ public sealed class StartupCoordinator(
     private BootstrapperViewModel? _robloxBootstrapperViewModel;
     private BootstrapperWindow? _studioBootstrapperWindow;
     private BootstrapperViewModel? _studioBootstrapperViewModel;
+    private LaunchWindow? _launchWindow;
+    private LaunchWindowViewModel? _launchWindowViewModel;
+    private MainWindow? _mainWindow;
+    private MainWindowViewModel? _mainViewModel;
     private bool _initialized;
 
     public void Initialize()
@@ -45,27 +49,7 @@ public sealed class StartupCoordinator(
             return;
         }
 
-        MainWindowViewModel? vm = null;
-
-        await Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            vm = services.GetRequiredService<MainWindowViewModel>();
-            var mainWindow = new MainWindow
-            {
-                DataContext = vm
-            };
-
-            desktop.MainWindow = mainWindow;
-            desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
-            mainWindow.Show();
-            mainWindow.Activate();
-            hotKeys.Install();
-        });
-
-        RobloxService.Log("Main window shown");
-
-        if (vm != null)
-            _ = vm.BeginDeferredStartupAsync();
+        await ShowLaunchWindowAsync(desktop);
 
         _ = RunDeferredStartupChecksAsync();
 
@@ -107,6 +91,59 @@ public sealed class StartupCoordinator(
         {
             RobloxService.Log($"Deferred startup checks failed: {ex.Message}");
         }
+    }
+
+    private async Task ShowLaunchWindowAsync(IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _launchWindowViewModel = services.GetRequiredService<LaunchWindowViewModel>();
+            _launchWindowViewModel.OpenMainWindowRequested += () =>
+                Dispatcher.UIThread.InvokeAsync(() => OpenMainWindow(desktop));
+
+            _launchWindow = new LaunchWindow
+            {
+                DataContext = _launchWindowViewModel
+            };
+
+            desktop.MainWindow = _launchWindow;
+            desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
+            _launchWindow.Show();
+            _launchWindow.Activate();
+        });
+
+        RobloxService.Log("Launch window shown");
+    }
+
+    private void OpenMainWindow(IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        if (_mainWindow != null)
+        {
+            _mainWindow.Show();
+            _mainWindow.WindowState = WindowState.Normal;
+            _mainWindow.Activate();
+            return;
+        }
+
+        _mainViewModel = services.GetRequiredService<MainWindowViewModel>();
+        _mainWindow = new MainWindow
+        {
+            DataContext = _mainViewModel
+        };
+
+        desktop.MainWindow = _mainWindow;
+        _mainWindow.Show();
+        _mainWindow.Activate();
+        hotKeys.Install();
+
+        if (_mainViewModel != null)
+            _ = _mainViewModel.BeginDeferredStartupAsync();
+
+        _launchWindow?.Close();
+        _launchWindow = null;
+        _launchWindowViewModel = null;
+
+        RobloxService.Log("Main window shown");
     }
 
     private void RegisterRobloxBootstrapperWindow()

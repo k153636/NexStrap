@@ -1,0 +1,90 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using NexStrap.Models;
+using NexStrap.Services;
+
+namespace NexStrap.ViewModels;
+
+public partial class LaunchWindowViewModel : ViewModelBase
+{
+    private readonly RobloxService _roblox;
+    private readonly FastFlagService _fastFlags;
+    private readonly ModService _mods;
+    private readonly SettingsService _settings;
+    private readonly AccountService _accounts;
+    private readonly RobloxApiService _robloxApi;
+
+    [ObservableProperty] private string _statusText = "Choose how to start";
+    [ObservableProperty] private bool _isLaunchingRoblox;
+
+    public event Action? OpenMainWindowRequested;
+
+    public LaunchWindowViewModel(
+        RobloxService roblox,
+        FastFlagService fastFlags,
+        ModService mods,
+        SettingsService settings,
+        AccountService accounts,
+        RobloxApiService robloxApi)
+    {
+        _roblox = roblox;
+        _fastFlags = fastFlags;
+        _mods = mods;
+        _settings = settings;
+        _accounts = accounts;
+        _robloxApi = robloxApi;
+    }
+
+    [RelayCommand]
+    private void LaunchApp() => OpenMainWindowRequested?.Invoke();
+
+    [RelayCommand]
+    private async Task LaunchRobloxAsync()
+    {
+        if (IsLaunchingRoblox) return;
+
+        IsLaunchingRoblox = true;
+        StatusText = "Preparing Roblox...";
+
+        try
+        {
+            var s = _settings.Settings;
+
+            _fastFlags.ApplyPerformanceSettings(s);
+            await _fastFlags.SaveAsync();
+            await _mods.ApplyEnabledModsAsync();
+
+            string? launchArgs = null;
+            var cookie = _accounts.GetActiveCookie();
+            if (cookie != null)
+            {
+                var ticket = await _robloxApi.GetAuthTicketAsync(cookie);
+                if (ticket != null)
+                    launchArgs = $"--launchMode app --authenticationTicket {ticket} --authenticationUrl https://auth.roblox.com";
+            }
+
+            var opts = new LaunchOptions(
+                MultiInstance: s.MultiInstanceEnabled,
+                SuppressCrashHandler: s.SuppressCrashHandler,
+                CpuCoreLimit: s.CpuAffinityEnabled ? s.CpuCoreLimit : 0,
+                MemoryOptimization: s.MemoryOptimizationEnabled,
+                CleanupOldVersions: s.CleanupOldVersions,
+                CookieToInject: cookie,
+                StretchResolution: s.StretchResolutionEnabled,
+                StretchWidth: s.StretchResolutionWidth,
+                StretchHeight: s.StretchResolutionHeight);
+
+            StatusText = "Launching Roblox...";
+            var launched = await _roblox.LaunchAsync(launchArgs, autoUpdate: s.AutoUpdateRoblox, options: opts);
+            StatusText = launched ? "Roblox launched" : "Launch failed";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Launch failed: {ex.Message}";
+        }
+        finally
+        {
+            IsLaunchingRoblox = false;
+        }
+    }
+}
