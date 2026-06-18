@@ -18,6 +18,7 @@ public static class ShellModule
         services.AddSingleton<StartupCoordinator>();
 
         services.AddTransient<MainWindowViewModel>();
+        services.AddTransient<LaunchWindowViewModel>();
         services.AddTransient<HomeViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<DevViewModel>();
