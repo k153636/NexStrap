@@ -228,10 +228,10 @@ public partial class HomeViewModel : ViewModelBase
         };
 
         // ── ゲーム参加 ─────────────────────────────────────────────────────
-        _logWatcher.ActivityChanged += (_, e) =>
+        _logWatcher.PlaceJoined += (_, args) =>
         {
             if (_logWatcher.IsWatchingStudioLog) return;
-            _presence.EnqueueActivity(e.Activity);
+            _presence.EnqueuePlaceJoined(args.PlaceId, args.UniverseId, args.Slot);
         };
 
         // ── DiscordRichPresence → HomeViewModel イベント ──────────────────
