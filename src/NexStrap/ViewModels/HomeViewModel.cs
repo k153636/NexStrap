@@ -454,10 +454,10 @@ public partial class HomeViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task LaunchRobloxAsync()
+    public async Task<bool> LaunchRobloxAsync()
     {
         var multiInstance = _settings.Settings.MultiInstanceEnabled;
-        if (IsLaunching || (IsRobloxRunning && !multiInstance)) return;
+        if (IsLaunching || (IsRobloxRunning && !multiInstance)) return false;
 
         IsLaunching = true;
         _presence.EnqueueLaunchStarted();
@@ -488,7 +488,15 @@ public partial class HomeViewModel : ViewModelBase
             StretchWidth: s.StretchResolutionWidth, StretchHeight: s.StretchResolutionHeight);
 
         var launched = await _roblox.LaunchAsync(launchArgs, autoUpdate: s.AutoUpdateRoblox, options: opts);
-        if (!launched) { StatusText = "Launch failed"; IsLaunching = false; IsRobloxRunning = false; }
+        if (!launched)
+        {
+            StatusText = "Launch failed";
+            IsLaunching = false;
+            IsRobloxRunning = false;
+            return false;
+        }
+
+        return true;
     }
 
     [RelayCommand]

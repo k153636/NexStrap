@@ -17,7 +17,7 @@ public partial class LaunchWindowViewModel : ViewModelBase
     private readonly SettingsService _settings;
     private readonly AccountService _accounts;
     private readonly RobloxApiService _robloxApi;
-    private Func<Task>? _launchRobloxFromMainAsync;
+    private Func<Task<bool>>? _launchRobloxFromMainAsync;
 
     [ObservableProperty] private string _statusText = "Choose how to start";
     [ObservableProperty] private bool _isLaunchingRoblox;
@@ -32,8 +32,9 @@ public partial class LaunchWindowViewModel : ViewModelBase
     }
 
     public event Action<string?>? OpenMainWindowRequested;
+    public event Action? CloseRequested;
 
-    public void SetMainLaunchHandler(Func<Task> launchRobloxAsync)
+    public void SetMainLaunchHandler(Func<Task<bool>> launchRobloxAsync)
         => _launchRobloxFromMainAsync = launchRobloxAsync;
 
     public LaunchWindowViewModel(
@@ -84,6 +85,7 @@ public partial class LaunchWindowViewModel : ViewModelBase
 
             var launched = await _studio.LaunchAsync();
             StatusText = launched ? "Studio launched" : "Studio launch failed";
+            if (launched) CloseRequested?.Invoke();
         }
         catch (Exception ex)
         {
@@ -102,8 +104,9 @@ public partial class LaunchWindowViewModel : ViewModelBase
             if (_launchRobloxFromMainAsync != null)
             {
                 StatusText = "Launching Roblox...";
-                await _launchRobloxFromMainAsync();
-                StatusText = "Roblox launch requested";
+                var mainLaunched = await _launchRobloxFromMainAsync();
+                StatusText = mainLaunched ? "Roblox launched" : "Launch failed";
+                if (mainLaunched) CloseRequested?.Invoke();
                 return;
             }
 
@@ -137,6 +140,7 @@ public partial class LaunchWindowViewModel : ViewModelBase
             StatusText = "Launching Roblox...";
             var launched = await _roblox.LaunchAsync(launchArgs, autoUpdate: s.AutoUpdateRoblox, options: opts);
             StatusText = launched ? "Roblox launched" : "Launch failed";
+            if (launched) CloseRequested?.Invoke();
         }
         catch (Exception ex)
         {

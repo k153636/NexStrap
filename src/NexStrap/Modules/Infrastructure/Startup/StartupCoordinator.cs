@@ -102,11 +102,8 @@ public sealed class StartupCoordinator(
             _launchWindowViewModel.OpenMainWindowRequested += initialPage =>
                 Dispatcher.UIThread.InvokeAsync(() => OpenMainWindow(desktop, initialPage));
             if (_mainViewModel != null)
-                _launchWindowViewModel.SetMainLaunchHandler(() =>
-                {
-                    _mainViewModel.HomeVM.LaunchRobloxCommand.Execute(null);
-                    return Task.CompletedTask;
-                });
+                _launchWindowViewModel.SetMainLaunchHandler(() => _mainViewModel.HomeVM.LaunchRobloxAsync());
+            _launchWindowViewModel.CloseRequested += CloseLaunchWindow;
 
             _launchWindow = new LaunchWindow
             {
@@ -120,6 +117,15 @@ public sealed class StartupCoordinator(
         });
 
         RobloxService.Log("Launch window shown");
+    }
+
+    private void CloseLaunchWindow()
+    {
+        _launchWindow?.Close();
+        _launchWindow = null;
+        if (_launchWindowViewModel != null)
+            _launchWindowViewModel.CloseRequested -= CloseLaunchWindow;
+        _launchWindowViewModel = null;
     }
 
     private async Task PrepareMainWindowAsync()
