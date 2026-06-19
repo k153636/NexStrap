@@ -103,7 +103,6 @@ public sealed class StartupCoordinator(
                 Dispatcher.UIThread.InvokeAsync(() => OpenMainWindow(desktop, initialPage));
             if (_mainViewModel != null)
                 _launchWindowViewModel.SetMainLaunchHandler(() => _mainViewModel.HomeVM.LaunchRobloxAsync());
-            _launchWindowViewModel.CloseRequested += CloseLaunchWindow;
 
             _launchWindow = new LaunchWindow
             {
@@ -117,15 +116,6 @@ public sealed class StartupCoordinator(
         });
 
         RobloxService.Log("Launch window shown");
-    }
-
-    private void CloseLaunchWindow()
-    {
-        _launchWindow?.Close();
-        _launchWindow = null;
-        if (_launchWindowViewModel != null)
-            _launchWindowViewModel.CloseRequested -= CloseLaunchWindow;
-        _launchWindowViewModel = null;
     }
 
     private async Task PrepareMainWindowAsync()
@@ -149,13 +139,6 @@ public sealed class StartupCoordinator(
 
     private void OpenMainWindow(IClassicDesktopStyleApplicationLifetime desktop, string? initialPage)
     {
-        void CloseLaunchWindow()
-        {
-            _launchWindow?.Close();
-            _launchWindow = null;
-            _launchWindowViewModel = null;
-        }
-
         if (_mainWindow != null)
         {
             desktop.MainWindow = _mainWindow;
@@ -164,7 +147,7 @@ public sealed class StartupCoordinator(
             _mainWindow.Activate();
             if (!string.IsNullOrWhiteSpace(initialPage))
                 _mainViewModel?.NavigateToCommand.Execute(initialPage);
-            CloseLaunchWindow();
+            DisposeLaunchWindow();
             return;
         }
 
@@ -186,9 +169,16 @@ public sealed class StartupCoordinator(
             _ = _mainViewModel.BeginDeferredStartupAsync();
         }
 
-        CloseLaunchWindow();
+        DisposeLaunchWindow();
 
         RobloxService.Log("Main window shown");
+    }
+
+    private void DisposeLaunchWindow()
+    {
+        _launchWindow?.Close();
+        _launchWindow = null;
+        _launchWindowViewModel = null;
     }
 
     private void RegisterRobloxBootstrapperWindow()

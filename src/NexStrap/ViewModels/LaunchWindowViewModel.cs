@@ -32,8 +32,6 @@ public partial class LaunchWindowViewModel : ViewModelBase
     }
 
     public event Action<string?>? OpenMainWindowRequested;
-    public event Action? CloseRequested;
-
     public void SetMainLaunchHandler(Func<Task<bool>> launchRobloxAsync)
         => _launchRobloxFromMainAsync = launchRobloxAsync;
 
@@ -85,7 +83,7 @@ public partial class LaunchWindowViewModel : ViewModelBase
 
             var launched = await _studio.LaunchAsync();
             StatusText = launched ? "Studio launched" : "Studio launch failed";
-            if (launched) CloseRequested?.Invoke();
+            if (launched) OpenMainWindowRequested?.Invoke(null);
         }
         catch (Exception ex)
         {
@@ -106,7 +104,7 @@ public partial class LaunchWindowViewModel : ViewModelBase
                 StatusText = "Launching Roblox...";
                 var mainLaunched = await _launchRobloxFromMainAsync();
                 StatusText = mainLaunched ? "Roblox launched" : "Launch failed";
-                if (mainLaunched) CloseRequested?.Invoke();
+                if (mainLaunched) OpenMainWindowRequested?.Invoke(null);
                 return;
             }
 
@@ -140,7 +138,7 @@ public partial class LaunchWindowViewModel : ViewModelBase
             StatusText = "Launching Roblox...";
             var launched = await _roblox.LaunchAsync(launchArgs, autoUpdate: s.AutoUpdateRoblox, options: opts);
             StatusText = launched ? "Roblox launched" : "Launch failed";
-            if (launched) CloseRequested?.Invoke();
+            if (launched) OpenMainWindowRequested?.Invoke(null);
         }
         catch (Exception ex)
         {
