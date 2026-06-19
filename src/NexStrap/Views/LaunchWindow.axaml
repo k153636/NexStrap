@@ -43,10 +43,10 @@
                 Classes="area-panel"
                 Padding="10">
             <Grid ColumnDefinitions="186,46,280">
-                <StackPanel Margin="10,12,0,0"
+                <StackPanel Margin="10,10,0,0"
                             VerticalAlignment="Top"
                             HorizontalAlignment="Left"
-                            Spacing="5">
+                            Spacing="4">
                     <Grid ColumnDefinitions="66,*"
                           VerticalAlignment="Center">
                         <Border Width="66"
@@ -63,18 +63,25 @@
                                    RenderOptions.BitmapInterpolationMode="HighQuality"/>
                         </Border>
 
-                        <TextBlock Grid.Column="1"
-                                   Text="NexStrap"
-                                   Margin="8,0,0,0"
-                                   VerticalAlignment="Center"
-                                   FontSize="22"
-                                   FontWeight="Bold"
-                                   Foreground="#FFFFFF"
-                                   TextAlignment="Left"/>
+                        <StackPanel Grid.Column="1"
+                                    Margin="8,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Spacing="1">
+                            <TextBlock Text="NexStrap"
+                                       FontSize="22"
+                                       FontWeight="Bold"
+                                       Foreground="#FFFFFF"
+                                       TextAlignment="Left"/>
+                            <TextBlock Text="Ver. 1.3.3"
+                                       FontSize="9"
+                                       Foreground="{DynamicResource FgMuted}"
+                                       Opacity="0.8"
+                                       TextAlignment="Left"/>
+                        </StackPanel>
                     </Grid>
 
-                    <StackPanel Margin="2,0,0,0"
-                                Spacing="2">
+                    <StackPanel Margin="2,-1,0,0"
+                                Spacing="1">
                         <TextBlock Text="Roblox launcher"
                                    FontSize="11"
                                    Foreground="{DynamicResource FgSub}"
