@@ -39,30 +39,30 @@
         </Grid>
 
         <Border Grid.Row="1"
-                Margin="0"
+                Margin="8,6,8,8"
                 Classes="area-panel"
-                Padding="12">
-            <Grid ColumnDefinitions="210,*,320">
-                <StackPanel Margin="2,4,10,0"
+                Padding="10">
+            <Grid ColumnDefinitions="220,150,300">
+                <StackPanel Margin="2,4,8,0"
                             VerticalAlignment="Top"
-                            Spacing="7">
-                    <Border Width="74"
-                            Height="74"
-                            CornerRadius="18"
+                            Spacing="6">
+                    <Border Width="66"
+                            Height="66"
+                            CornerRadius="17"
                             Background="{DynamicResource SurfaceBg}"
                             BorderBrush="{DynamicResource DividerBrush}"
                             BorderThickness="1"
                             ClipToBounds="True">
                         <Image Source="avares://NexStrap/Assets/nexstrap.png"
-                               Width="74"
-                               Height="74"
+                               Width="66"
+                               Height="66"
                                RenderOptions.BitmapInterpolationMode="HighQuality"/>
                     </Border>
 
                     <StackPanel Margin="0,2,0,0"
-                                Spacing="2">
+                                Spacing="1">
                         <TextBlock Text="NexStrap"
-                                   FontSize="27"
+                                   FontSize="25"
                                    FontWeight="Bold"
                                    Foreground="#FFFFFF"/>
                         <TextBlock Text="Roblox launcher"
@@ -74,15 +74,15 @@
                     </StackPanel>
 
                     <StackPanel Margin="0,6,0,0"
-                                Spacing="3">
+                                Spacing="2">
                         <Button Classes="plain"
                                 Command="{Binding OpenAboutCommand}"
                                 HorizontalAlignment="Left"
                                 Padding="0"
                                 Background="Transparent">
                             <TextBlock Text="NexStrapについて"
-                                       FontSize="12"
-                                       Foreground="#4DA3FF"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource FgSub}"
                                        VerticalAlignment="Center"/>
                         </Button>
 
@@ -92,8 +92,8 @@
                                 Padding="0"
                                 Background="Transparent">
                             <TextBlock Text="GitHub"
-                                       FontSize="12"
-                                       Foreground="#4DA3FF"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource FgSub}"
                                        VerticalAlignment="Center"/>
                         </Button>
 
@@ -103,8 +103,8 @@
                                 Padding="0"
                                 Background="Transparent">
                             <TextBlock Text="Discord"
-                                       FontSize="12"
-                                       Foreground="#4DA3FF"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource FgSub}"
                                        VerticalAlignment="Center"/>
                         </Button>
                     </StackPanel>
@@ -114,20 +114,20 @@
                             VerticalAlignment="Center"
                             HorizontalAlignment="Stretch"
                             Margin="0,2,0,2"
-                            Spacing="6">
+                            Spacing="8">
                     <Button Command="{Binding LaunchRobloxCommand}"
                             IsEnabled="{Binding IsLaunchingRoblox, Converter={x:Static BoolConverters.Not}}"
                             HorizontalAlignment="Stretch"
                             Background="#FFFFFF"
                             Foreground="#080808"
-                            FontSize="13"
+                            FontSize="14"
                             FontWeight="SemiBold"
                             Height="46"
-                            Padding="10,9"
+                            Padding="12,10"
                             CornerRadius="10">
                         <TextBlock Text="Launch Roblox"
                                    HorizontalAlignment="Center"
-                                   FontSize="13"
+                                   FontSize="14"
                                    FontWeight="SemiBold"
                                    Foreground="#080808"
                                    VerticalAlignment="Center"/>
@@ -139,8 +139,8 @@
                             Foreground="{DynamicResource FgSub}"
                             FontSize="12"
                             FontWeight="SemiBold"
-                            Height="40"
-                            Padding="10,8"
+                            Height="38"
+                            Padding="12,7"
                             CornerRadius="10">
                         <TextBlock Text="Launch Roblox Studio"
                                    HorizontalAlignment="Center"
@@ -156,8 +156,8 @@
                             Foreground="{DynamicResource FgSub}"
                             FontSize="12"
                             FontWeight="SemiBold"
-                            Height="40"
-                            Padding="10,8"
+                            Height="38"
+                            Padding="12,7"
                             CornerRadius="10">
                         <TextBlock Text="Settings"
                                    HorizontalAlignment="Center"
@@ -174,8 +174,8 @@
                             BorderBrush="{DynamicResource DividerBrush}"
                             BorderThickness="1"
                             FontSize="12"
-                            Height="40"
-                            Padding="10,8"
+                            Height="38"
+                            Padding="12,7"
                             CornerRadius="10">
                         <TextBlock Text="Launch NexStrap"
                                    HorizontalAlignment="Center"
