@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using NexStrap.ViewModels;
 
 namespace NexStrap.Views;
 
@@ -8,6 +9,7 @@ public partial class LaunchWindow : Window
     public LaunchWindow()
     {
         InitializeComponent();
+        Closed += OnClosed;
     }
 
     private void TitleBar_PointerPressed(object? sender, PointerPressedEventArgs e)
@@ -16,10 +18,14 @@ public partial class LaunchWindow : Window
             BeginMoveDrag(e);
     }
 
-    private void TitleBar_DoubleTapped(object? sender, TappedEventArgs e)
+    private void CloseButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        WindowState = WindowState == WindowState.Maximized
-            ? WindowState.Normal
-            : WindowState.Maximized;
+        Close();
+    }
+
+    private void OnClosed(object? sender, EventArgs e)
+    {
+        if (DataContext is LaunchWindowViewModel vm)
+            vm.SetTemporaryDetails(null);
     }
 }

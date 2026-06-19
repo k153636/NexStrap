@@ -56,7 +56,10 @@ public partial class LaunchWindowViewModel : ViewModelBase
         _robloxApi = robloxApi;
 
         StartLauncherConnections();
+        _discord.SetTemporaryDetails("Launcher");
     }
+
+    public void SetTemporaryDetails(string? details) => _discord.SetTemporaryDetails(details);
 
     [RelayCommand]
     private void LaunchApp() => OpenMainWindowRequested?.Invoke(null);
@@ -80,6 +83,7 @@ public partial class LaunchWindowViewModel : ViewModelBase
 
         IsLaunchingStudio = true;
         StartLauncherConnections();
+        _discord.SetTemporaryDetails("Preparing Studio...");
         _discord.EnqueueInstallingStudioPresence();
         StatusText = "Preparing Studio...";
         try
@@ -109,6 +113,7 @@ public partial class LaunchWindowViewModel : ViewModelBase
 
         IsLaunchingRoblox = true;
         StartLauncherConnections();
+        _discord.SetTemporaryDetails("Preparing Roblox...");
         _discord.EnqueueLaunchStarted();
         StatusText = "Preparing Roblox...";
 
