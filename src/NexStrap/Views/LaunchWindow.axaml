@@ -18,8 +18,8 @@
 
     <Window.Resources>
         <x:Double x:Key="LaunchWindowWidth">580</x:Double>
-        <x:Double x:Key="LaunchWindowHeight">352</x:Double>
-        <Thickness x:Key="LaunchOuterMargin">8,6,8,8</Thickness>
+        <x:Double x:Key="LaunchWindowHeight">336</x:Double>
+        <Thickness x:Key="LaunchOuterMargin">6,4,6,6</Thickness>
         <Thickness x:Key="LaunchPanelPadding">0</Thickness>
         <x:Double x:Key="LaunchLeftColumnWidth">280</x:Double>
         <x:Double x:Key="LaunchGapColumnWidth">16</x:Double>
@@ -78,7 +78,7 @@
         </Style>
     </Window.Styles>
 
-    <Grid RowDefinitions="30,*"
+    <Grid RowDefinitions="28,*"
           Background="{DynamicResource CardBg}">
         <Grid Grid.Row="0"
               Background="Transparent"
@@ -111,7 +111,7 @@
                             HorizontalAlignment="Center"
                             Spacing="0">
                     <Grid HorizontalAlignment="Center"
-                          Margin="0,0,0,30">
+                          Margin="0,0,0,24">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*" />
@@ -148,7 +148,7 @@
                         </StackPanel>
                     </Grid>
 
-                    <StackPanel Margin="0,0,0,0"
+                    <StackPanel Margin="0,-2,0,0"
                                 Spacing="2">
                         <Button Classes="plain launch-link"
                                 Command="{Binding OpenAboutCommand}"
@@ -216,7 +216,7 @@
                             Width="{StaticResource LaunchRightColumnWidth}"
                             VerticalAlignment="Center"
                             HorizontalAlignment="Right"
-                            Spacing="{StaticResource LaunchButtonSpacing}">
+                            Spacing="7">
                     <Button Command="{Binding LaunchRobloxCommand}"
                             Classes="launch-primary"
                             IsEnabled="{Binding IsLaunchingRoblox, Converter={x:Static BoolConverters.Not}}"
