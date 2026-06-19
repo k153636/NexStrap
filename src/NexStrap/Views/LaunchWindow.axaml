@@ -122,35 +122,34 @@
                             Foreground="#111111"
                             BorderBrush="#FFFFFF"
                             BorderThickness="0"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch"
                             FontSize="14"
                             FontWeight="SemiBold"
-                            Height="58"
-                            Padding="18,9"
+                            Height="56"
+                            Padding="16,8"
                             CornerRadius="12">
-                        <Grid ColumnDefinitions="*,Auto">
+                        <Grid ColumnDefinitions="*,Auto"
+                              VerticalAlignment="Center">
                             <StackPanel VerticalAlignment="Center"
-                                        Spacing="1">
+                                        Spacing="2">
                                 <TextBlock Text="Launch Roblox"
                                            FontSize="15"
                                            FontWeight="SemiBold"
+                                           LineHeight="18"
                                            Foreground="#080808"/>
                                 <TextBlock Text="Recommended start"
-                                           FontSize="10"
+                                           FontSize="11"
+                                           LineHeight="14"
                                            Foreground="#555555"/>
                             </StackPanel>
-                            <Border Grid.Column="1"
-                                    Width="28"
-                                    Height="28"
-                                    CornerRadius="14"
-                                    Background="#111111"
-                                    VerticalAlignment="Center">
-                                <TextBlock Text=">"
-                                           FontSize="16"
-                                           FontWeight="SemiBold"
-                                           Foreground="#FFFFFF"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                            </Border>
+                            <TextBlock Grid.Column="1"
+                                       Text=">"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="#1F1F1F"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
 
@@ -160,21 +159,19 @@
                             Foreground="#DCDCDC"
                             BorderBrush="#303030"
                             BorderThickness="1"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch"
                             FontSize="12"
                             FontWeight="Normal"
-                            Height="42"
-                            Padding="14,7"
+                            Height="40"
+                            Padding="14,8"
                             CornerRadius="10">
-                        <Grid ColumnDefinitions="*,Auto">
+                        <Grid>
                             <TextBlock Text="Launch Roblox Studio"
                                        FontSize="12"
                                        FontWeight="SemiBold"
                                        Foreground="#E3E3E3"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1"
-                                       Text="Optional"
-                                       FontSize="10"
-                                       Foreground="#777777"
+                                       HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
@@ -185,21 +182,19 @@
                             Foreground="#C9C9C9"
                             BorderBrush="#2A2A2A"
                             BorderThickness="1"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch"
                             FontSize="12"
                             FontWeight="Normal"
-                            Height="42"
-                            Padding="14,7"
+                            Height="40"
+                            Padding="14,8"
                             CornerRadius="10">
-                        <Grid ColumnDefinitions="*,Auto">
+                        <Grid>
                             <TextBlock Text="Settings"
                                        FontSize="12"
                                        FontWeight="SemiBold"
                                        Foreground="#D0D0D0"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1"
-                                       Text="Configure"
-                                       FontSize="10"
-                                       Foreground="#707070"
+                                       HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
@@ -210,21 +205,19 @@
                             Foreground="#8E8E8E"
                             BorderBrush="#222222"
                             BorderThickness="1"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch"
                             FontSize="12"
-                            Height="42"
-                            Padding="14,7"
+                            Height="40"
+                            Padding="14,8"
                             Opacity="0.72"
                             CornerRadius="10">
-                        <Grid ColumnDefinitions="*,Auto">
+                        <Grid>
                             <TextBlock Text="Launch NexStrap"
                                        FontSize="12"
                                        FontWeight="SemiBold"
                                        Foreground="#A6A6A6"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1"
-                                       Text="Full app"
-                                       FontSize="10"
-                                       Foreground="#666666"
+                                       HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
