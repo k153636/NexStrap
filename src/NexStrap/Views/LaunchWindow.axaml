@@ -25,7 +25,7 @@
         <x:Double x:Key="LaunchGapColumnWidth">16</x:Double>
         <x:Double x:Key="LaunchRightColumnWidth">268</x:Double>
         <x:Double x:Key="LaunchMainButtonHeight">44</x:Double>
-        <x:Double x:Key="LaunchSecondaryButtonHeight">44</x:Double>
+        <x:Double x:Key="LaunchSecondaryButtonHeight">40</x:Double>
         <x:Double x:Key="LaunchButtonSpacing">8</x:Double>
         <x:Double x:Key="LaunchTitleFontSize">24</x:Double>
         <x:Double x:Key="LaunchVersionFontSize">12</x:Double>
@@ -148,8 +148,8 @@
                         </StackPanel>
                     </Grid>
 
-                    <StackPanel Margin="0,-4,0,0"
-                                Spacing="1">
+                    <StackPanel Margin="0,-2,0,0"
+                                Spacing="8">
                         <Button Classes="plain launch-link"
                                 Command="{Binding OpenAboutCommand}"
                                 HorizontalAlignment="Center"
@@ -157,16 +157,16 @@
                                 Background="Transparent">
                             <Grid ColumnDefinitions="14,*">
                                 <PathIcon Data="{StaticResource IconInfo}"
-                                          Width="11"
-                                          Height="11"
+                                          Width="12"
+                                          Height="12"
                                           Foreground="{DynamicResource FgMuted}"
                                           VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="1"
                                            Text="NexStrapについて"
-                                           FontSize="10"
-                                          Foreground="{DynamicResource FgMuted}"
-                                          Margin="6,0,0,0"
-                                          VerticalAlignment="Center"/>
+                                           FontSize="12"
+                                           Foreground="{DynamicResource FgMuted}"
+                                           Margin="6,0,0,0"
+                                           VerticalAlignment="Center"/>
                             </Grid>
                         </Button>
 
@@ -177,13 +177,13 @@
                                 Background="Transparent">
                             <Grid ColumnDefinitions="14,*">
                                 <PathIcon Data="{StaticResource IconGlobe}"
-                                          Width="11"
-                                          Height="11"
+                                          Width="12"
+                                          Height="12"
                                           Foreground="{DynamicResource FgMuted}"
                                           VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="1"
                                            Text="GitHub"
-                                           FontSize="10"
+                                           FontSize="12"
                                            Foreground="{DynamicResource FgMuted}"
                                            Margin="6,0,0,0"
                                            VerticalAlignment="Center"/>
@@ -197,16 +197,16 @@
                                 Background="Transparent">
                             <Grid ColumnDefinitions="14,*">
                                 <PathIcon Data="{StaticResource IconChat}"
-                                          Width="11"
-                                          Height="11"
+                                          Width="12"
+                                          Height="12"
                                           Foreground="{DynamicResource FgMuted}"
                                           VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="1"
                                            Text="Discord"
-                                           FontSize="10"
-                                          Foreground="{DynamicResource FgMuted}"
-                                          Margin="6,0,0,0"
-                                          VerticalAlignment="Center"/>
+                                           FontSize="12"
+                                           Foreground="{DynamicResource FgMuted}"
+                                           Margin="6,0,0,0"
+                                           VerticalAlignment="Center"/>
                             </Grid>
                         </Button>
                     </StackPanel>
@@ -233,7 +233,7 @@
                             Width="{StaticResource LaunchRightColumnWidth}"
                             Padding="14,0"
                             CornerRadius="8">
-                        <Grid ColumnDefinitions="18,*"
+                        <Grid ColumnDefinitions="18,*,12"
                               VerticalAlignment="Center">
                             <PathIcon Data="{StaticResource IconPlay}"
                                       Width="12"
@@ -248,6 +248,13 @@
                                        Foreground="#080808"
                                        Margin="6,0,0,0"
                                        HorizontalAlignment="Left"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2"
+                                       Text=">"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="#080808"
+                                       HorizontalAlignment="Right"
                                        VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
@@ -267,7 +274,7 @@
                             Width="{StaticResource LaunchRightColumnWidth}"
                             Padding="14,0"
                             CornerRadius="{StaticResource LaunchSecondaryButtonCornerRadius}">
-                        <Grid ColumnDefinitions="18,*"
+                        <Grid ColumnDefinitions="18,*,12"
                               VerticalAlignment="Center">
                             <PathIcon Data="{StaticResource IconSettings}"
                                       Width="11"
@@ -281,6 +288,13 @@
                                        Foreground="#D0D0D0"
                                        Margin="6,0,0,0"
                                        HorizontalAlignment="Left"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2"
+                                       Text=">"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="#D0D0D0"
+                                       HorizontalAlignment="Right"
                                        VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
@@ -300,7 +314,7 @@
                             Width="{StaticResource LaunchRightColumnWidth}"
                             Padding="14,0"
                             CornerRadius="{StaticResource LaunchSecondaryButtonCornerRadius}">
-                        <Grid ColumnDefinitions="18,*"
+                        <Grid ColumnDefinitions="18,*,12"
                               VerticalAlignment="Center">
                             <PathIcon Data="{StaticResource IconVideo}"
                                       Width="11"
@@ -314,6 +328,13 @@
                                        Foreground="#E3E3E3"
                                        Margin="6,0,0,0"
                                        HorizontalAlignment="Left"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2"
+                                       Text=">"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="#E3E3E3"
+                                       HorizontalAlignment="Right"
                                        VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
