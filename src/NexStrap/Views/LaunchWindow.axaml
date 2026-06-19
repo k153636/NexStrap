@@ -119,70 +119,55 @@
                             IsEnabled="{Binding IsLaunchingRoblox, Converter={x:Static BoolConverters.Not}}"
                             HorizontalAlignment="Stretch"
                             Background="#FFFFFF"
-                            Foreground="#080808"
+                            Foreground="#111111"
+                            BorderThickness="0"
                             FontSize="14"
                             FontWeight="SemiBold"
                             Height="46"
-                            Padding="12,10"
-                            CornerRadius="10">
-                        <TextBlock Text="Launch Roblox"
-                                   HorizontalAlignment="Center"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"
-                                   Foreground="#080808"
-                                   VerticalAlignment="Center"/>
+                            Padding="18,11"
+                            CornerRadius="12">
+                        Launch Roblox
                     </Button>
 
                     <Button Command="{Binding LaunchStudioCommand}"
                             HorizontalAlignment="Stretch"
-                            Background="{DynamicResource SurfaceBg}"
-                            Foreground="{DynamicResource FgSub}"
+                            Background="#1A1A1A"
+                            Foreground="#D7D7D7"
+                            BorderBrush="#2A2A2A"
+                            BorderThickness="1"
                             FontSize="12"
-                            FontWeight="SemiBold"
+                            FontWeight="Normal"
                             Height="38"
-                            Padding="12,7"
+                            Padding="16,8"
                             CornerRadius="10">
-                        <TextBlock Text="Launch Roblox Studio"
-                                   HorizontalAlignment="Center"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource FgSub}"
-                                   VerticalAlignment="Center"/>
+                        Launch Roblox Studio
                     </Button>
 
                     <Button Command="{Binding OpenSettingsCommand}"
                             HorizontalAlignment="Stretch"
-                            Background="{DynamicResource SurfaceBg}"
-                            Foreground="{DynamicResource FgSub}"
+                            Background="#1A1A1A"
+                            Foreground="#C9C9C9"
+                            BorderBrush="#2A2A2A"
+                            BorderThickness="1"
                             FontSize="12"
-                            FontWeight="SemiBold"
+                            FontWeight="Normal"
                             Height="38"
-                            Padding="12,7"
+                            Padding="16,8"
                             CornerRadius="10">
-                        <TextBlock Text="Settings"
-                                   HorizontalAlignment="Center"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource FgSub}"
-                                   VerticalAlignment="Center"/>
+                        Settings
                     </Button>
 
                     <Button Command="{Binding LaunchAppCommand}"
                             HorizontalAlignment="Stretch"
-                            Background="Transparent"
-                            Foreground="{DynamicResource FgMuted}"
-                            BorderBrush="{DynamicResource DividerBrush}"
+                            Background="#141414"
+                            Foreground="#9C9C9C"
+                            BorderBrush="#242424"
                             BorderThickness="1"
                             FontSize="12"
                             Height="38"
-                            Padding="12,7"
+                            Padding="16,8"
                             CornerRadius="10">
-                        <TextBlock Text="Launch NexStrap"
-                                   HorizontalAlignment="Center"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource FgMuted}"
-                                   VerticalAlignment="Center"/>
+                        Launch NexStrap
                     </Button>
                 </StackPanel>
             </Grid>
