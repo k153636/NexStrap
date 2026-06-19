@@ -59,23 +59,23 @@
                 Classes="area-panel"
                 Padding="{StaticResource LaunchPanelPadding}">
             <Grid ColumnDefinitions="186,46,280">
-                <StackPanel Margin="10,10,0,0"
+                <StackPanel Margin="8,8,0,0"
                             VerticalAlignment="Top"
                             HorizontalAlignment="Left"
-                            Spacing="4">
-                    <Grid ColumnDefinitions="66,*"
+                            Spacing="3">
+                    <Grid ColumnDefinitions="72,*"
                           VerticalAlignment="Center">
-                        <Border Width="66"
-                                Height="66"
-                                CornerRadius="17"
+                        <Border Width="72"
+                                Height="72"
+                                CornerRadius="18"
                                 Background="{DynamicResource SurfaceBg}"
                                 BorderBrush="{DynamicResource DividerBrush}"
                                 BorderThickness="1"
                                 ClipToBounds="True"
                                 HorizontalAlignment="Center">
                             <Image Source="avares://NexStrap/Assets/nexstrap.png"
-                                   Width="56"
-                                   Height="56"
+                                   Width="60"
+                                   Height="60"
                                    RenderOptions.BitmapInterpolationMode="HighQuality"/>
                         </Border>
 
@@ -84,7 +84,7 @@
                                     VerticalAlignment="Center"
                                     Spacing="1">
                             <TextBlock Text="NexStrap"
-                                       FontSize="{StaticResource LaunchTitleFontSize}"
+                                       FontSize="23"
                                        FontWeight="Bold"
                                        Foreground="#FFFFFF"
                                        TextAlignment="Left"/>
