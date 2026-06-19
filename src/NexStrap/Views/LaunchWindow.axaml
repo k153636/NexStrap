@@ -47,39 +47,44 @@
                             VerticalAlignment="Top"
                             HorizontalAlignment="Left"
                             Spacing="5">
-                    <Border Width="66"
-                            Height="66"
-                            CornerRadius="17"
-                            Background="{DynamicResource SurfaceBg}"
-                            BorderBrush="{DynamicResource DividerBrush}"
-                            BorderThickness="1"
-                            ClipToBounds="True"
-                            HorizontalAlignment="Center">
-                        <Image Source="avares://NexStrap/Assets/nexstrap.png"
-                               Width="56"
-                               Height="56"
-                               RenderOptions.BitmapInterpolationMode="HighQuality"/>
-                    </Border>
-
-                    <StackPanel Margin="0,2,0,0"
-                                Spacing="2"
+                    <Grid ColumnDefinitions="66,*"
+                          VerticalAlignment="Center">
+                        <Border Width="66"
+                                Height="66"
+                                CornerRadius="17"
+                                Background="{DynamicResource SurfaceBg}"
+                                BorderBrush="{DynamicResource DividerBrush}"
+                                BorderThickness="1"
+                                ClipToBounds="True"
                                 HorizontalAlignment="Center">
-                        <TextBlock Text="NexStrap"
+                            <Image Source="avares://NexStrap/Assets/nexstrap.png"
+                                   Width="56"
+                                   Height="56"
+                                   RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                        </Border>
+
+                        <TextBlock Grid.Column="1"
+                                   Text="NexStrap"
+                                   Margin="8,0,0,0"
+                                   VerticalAlignment="Center"
                                    FontSize="22"
                                    FontWeight="Bold"
                                    Foreground="#FFFFFF"
-                                   HorizontalAlignment="Center"
-                                   TextAlignment="Center"/>
+                                   TextAlignment="Left"/>
+                    </Grid>
+
+                    <StackPanel Margin="2,0,0,0"
+                                Spacing="2">
                         <TextBlock Text="Roblox launcher"
                                    FontSize="11"
                                    Foreground="{DynamicResource FgSub}"
-                                   HorizontalAlignment="Center"
-                                   TextAlignment="Center"/>
+                                   HorizontalAlignment="Left"
+                                   TextAlignment="Left"/>
                         <TextBlock Text="{Binding StatusText}"
                                    FontSize="10"
                                    Foreground="{DynamicResource FgMuted}"
-                                   HorizontalAlignment="Center"
-                                   TextAlignment="Center"/>
+                                   HorizontalAlignment="Left"
+                                   TextAlignment="Left"/>
                     </StackPanel>
 
                     <StackPanel Margin="0,4,0,0"
