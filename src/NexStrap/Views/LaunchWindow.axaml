@@ -42,7 +42,7 @@
                 Margin="0"
                 Classes="area-panel"
                 Padding="12">
-            <Grid ColumnDefinitions="210,*">
+            <Grid ColumnDefinitions="210,320">
                 <StackPanel Margin="2,4,10,0"
                             VerticalAlignment="Top"
                             Spacing="7">
@@ -80,18 +80,10 @@
                                 HorizontalAlignment="Left"
                                 Padding="0"
                                 Background="Transparent">
-                            <StackPanel Orientation="Horizontal"
-                                        Spacing="6">
-                                <PathIcon Data="{StaticResource IconInfo}"
-                                          Width="12"
-                                          Height="12"
-                                          Foreground="{DynamicResource FgSub}"
-                                          VerticalAlignment="Center"/>
-                                <TextBlock Text="NexStrapについて"
-                                           FontSize="12"
-                                           Foreground="#4DA3FF"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
+                            <TextBlock Text="NexStrapについて"
+                                       FontSize="12"
+                                       Foreground="#4DA3FF"
+                                       VerticalAlignment="Center"/>
                         </Button>
 
                         <Button Classes="plain"
@@ -99,18 +91,10 @@
                                 HorizontalAlignment="Left"
                                 Padding="0"
                                 Background="Transparent">
-                            <StackPanel Orientation="Horizontal"
-                                        Spacing="6">
-                                <PathIcon Data="{StaticResource IconGlobe}"
-                                          Width="12"
-                                          Height="12"
-                                          Foreground="{DynamicResource FgSub}"
-                                          VerticalAlignment="Center"/>
-                                <TextBlock Text="GitHub"
-                                           FontSize="12"
-                                           Foreground="#4DA3FF"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
+                            <TextBlock Text="GitHub"
+                                       FontSize="12"
+                                       Foreground="#4DA3FF"
+                                       VerticalAlignment="Center"/>
                         </Button>
 
                         <Button Classes="plain"
@@ -118,25 +102,18 @@
                                 HorizontalAlignment="Left"
                                 Padding="0"
                                 Background="Transparent">
-                            <StackPanel Orientation="Horizontal"
-                                        Spacing="6">
-                                <PathIcon Data="{StaticResource IconChat}"
-                                          Width="12"
-                                          Height="12"
-                                          Foreground="{DynamicResource FgSub}"
-                                          VerticalAlignment="Center"/>
-                                <TextBlock Text="Discord"
-                                           FontSize="12"
-                                           Foreground="#4DA3FF"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
+                            <TextBlock Text="Discord"
+                                       FontSize="12"
+                                       Foreground="#4DA3FF"
+                                       VerticalAlignment="Center"/>
                         </Button>
                     </StackPanel>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1"
                             VerticalAlignment="Center"
-                            HorizontalAlignment="Stretch"
+                            HorizontalAlignment="Left"
+                            Width="320"
                             Margin="0,2,0,2"
                             Spacing="6">
                     <Button Command="{Binding LaunchRobloxCommand}"
@@ -147,29 +124,14 @@
                             FontSize="13"
                             FontWeight="SemiBold"
                             Height="46"
-                            Padding="12,9"
+                            Padding="10,9"
                             CornerRadius="10">
-                        <Grid ColumnDefinitions="Auto,*,Auto"
-                              VerticalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconPlay}"
-                                      Width="14"
-                                      Height="14"
-                                      Foreground="#080808"
-                                      VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1"
-                                       Text="Launch Roblox"
-                                       HorizontalAlignment="Center"
-                                       FontSize="13"
-                                       FontWeight="SemiBold"
-                                       Foreground="#080808"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2"
-                                       Text="›"
-                                       FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Foreground="#080808"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
+                        <TextBlock Text="Launch Roblox"
+                                   HorizontalAlignment="Center"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="#080808"
+                                   VerticalAlignment="Center"/>
                     </Button>
 
                     <Button Command="{Binding LaunchStudioCommand}"
@@ -179,29 +141,14 @@
                             FontSize="12"
                             FontWeight="SemiBold"
                             Height="40"
-                            Padding="12,8"
+                            Padding="10,8"
                             CornerRadius="10">
-                        <Grid ColumnDefinitions="Auto,*,Auto"
-                              VerticalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconSettings}"
-                                      Width="14"
-                                      Height="14"
-                                      Foreground="{DynamicResource FgSub}"
-                                      VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1"
-                                       Text="Launch Roblox Studio"
-                                       HorizontalAlignment="Center"
-                                       FontSize="12"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource FgSub}"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2"
-                                       Text="›"
-                                       FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource FgSub}"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
+                        <TextBlock Text="Launch Roblox Studio"
+                                   HorizontalAlignment="Center"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource FgSub}"
+                                   VerticalAlignment="Center"/>
                     </Button>
 
                     <Button Command="{Binding OpenSettingsCommand}"
@@ -211,29 +158,14 @@
                             FontSize="12"
                             FontWeight="SemiBold"
                             Height="40"
-                            Padding="12,8"
+                            Padding="10,8"
                             CornerRadius="10">
-                        <Grid ColumnDefinitions="Auto,*,Auto"
-                              VerticalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconSettings}"
-                                      Width="14"
-                                      Height="14"
-                                      Foreground="{DynamicResource FgSub}"
-                                      VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1"
-                                       Text="Settings"
-                                       HorizontalAlignment="Center"
-                                       FontSize="12"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource FgSub}"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2"
-                                       Text="›"
-                                       FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource FgSub}"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
+                        <TextBlock Text="Settings"
+                                   HorizontalAlignment="Center"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource FgSub}"
+                                   VerticalAlignment="Center"/>
                     </Button>
 
                     <Button Command="{Binding LaunchAppCommand}"
@@ -244,29 +176,14 @@
                             BorderThickness="1"
                             FontSize="12"
                             Height="40"
-                            Padding="12,8"
+                            Padding="10,8"
                             CornerRadius="10">
-                        <Grid ColumnDefinitions="Auto,*,Auto"
-                              VerticalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconInfo}"
-                                      Width="14"
-                                      Height="14"
-                                      Foreground="{DynamicResource FgMuted}"
-                                      VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1"
-                                       Text="Launch NexStrap"
-                                       HorizontalAlignment="Center"
-                                       FontSize="12"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource FgMuted}"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2"
-                                       Text="›"
-                                       FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource FgMuted}"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
+                        <TextBlock Text="Launch NexStrap"
+                                   HorizontalAlignment="Center"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource FgMuted}"
+                                   VerticalAlignment="Center"/>
                     </Button>
                 </StackPanel>
             </Grid>
