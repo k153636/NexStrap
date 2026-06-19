@@ -58,9 +58,9 @@
                 Margin="{StaticResource LaunchOuterMargin}"
                 Classes="area-panel"
                 Padding="{StaticResource LaunchPanelPadding}">
-            <Grid ColumnDefinitions="186,46,280">
-                <StackPanel Margin="8,8,0,0"
-                            VerticalAlignment="Top"
+            <Grid ColumnDefinitions="194,38,280">
+                <StackPanel Margin="8,0,0,0"
+                            VerticalAlignment="Center"
                             HorizontalAlignment="Left"
                             Spacing="3">
                     <Grid ColumnDefinitions="72,*"
