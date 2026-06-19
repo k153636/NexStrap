@@ -5,10 +5,10 @@
         x:DataType="vm:LaunchWindowViewModel"
         Title="NexStrap"
         Icon="avares://NexStrap/Assets/nexstrap.png"
-        Width="548"
-        Height="256"
-        MinWidth="548"
-        MinHeight="256"
+        Width="{StaticResource LaunchWindowWidth}"
+        Height="{StaticResource LaunchWindowHeight}"
+        MinWidth="{StaticResource LaunchWindowWidth}"
+        MinHeight="{StaticResource LaunchWindowHeight}"
         CanResize="False"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource CardBg}"
@@ -16,7 +16,24 @@
         ExtendClientAreaChromeHints="PreferSystemChrome"
         ExtendClientAreaTitleBarHeightHint="-1">
 
-    <Grid RowDefinitions="30,*"
+    <Window.Resources>
+        <x:Double x:Key="LaunchWindowWidth">548</x:Double>
+        <x:Double x:Key="LaunchWindowHeight">256</x:Double>
+        <x:Double x:Key="LaunchTitleBarHeight">30</x:Double>
+        <x:Double x:Key="LaunchOuterMargin">8</x:Double>
+        <x:Double x:Key="LaunchPanelPadding">10</x:Double>
+        <x:Double x:Key="LaunchLeftColumnWidth">186</x:Double>
+        <x:Double x:Key="LaunchGapColumnWidth">46</x:Double>
+        <x:Double x:Key="LaunchRightColumnWidth">280</x:Double>
+        <x:Double x:Key="LaunchMainButtonHeight">48</x:Double>
+        <x:Double x:Key="LaunchSecondaryButtonHeight">48</x:Double>
+        <x:Double x:Key="LaunchButtonSpacing">8</x:Double>
+        <x:Double x:Key="LaunchTitleFontSize">22</x:Double>
+        <x:Double x:Key="LaunchVersionFontSize">9</x:Double>
+        <x:Double x:Key="LaunchSecondaryButtonCornerRadius">9</x:Double>
+    </Window.Resources>
+
+    <Grid RowDefinitions="{StaticResource LaunchTitleBarHeight},*"
           Background="{DynamicResource CardBg}">
         <Grid Grid.Row="0"
               Background="Transparent"
@@ -25,7 +42,7 @@
             <StackPanel Orientation="Horizontal"
                         VerticalAlignment="Center"
                         Margin="12,0"
-                        Spacing="5"
+                        Spacing="{StaticResource LaunchButtonSpacing}"
                         IsHitTestVisible="False">
                 <Image Source="avares://NexStrap/Assets/nexstrap.png"
                        Width="14"
@@ -39,10 +56,10 @@
         </Grid>
 
         <Border Grid.Row="1"
-                Margin="8,6,8,8"
+                Margin="{StaticResource LaunchOuterMargin},6,{StaticResource LaunchOuterMargin},{StaticResource LaunchOuterMargin}"
                 Classes="area-panel"
-                Padding="10">
-            <Grid ColumnDefinitions="186,46,280">
+                Padding="{StaticResource LaunchPanelPadding}">
+            <Grid ColumnDefinitions="{StaticResource LaunchLeftColumnWidth},{StaticResource LaunchGapColumnWidth},{StaticResource LaunchRightColumnWidth}">
                 <StackPanel Margin="10,10,0,0"
                             VerticalAlignment="Top"
                             HorizontalAlignment="Left"
@@ -68,12 +85,12 @@
                                     VerticalAlignment="Center"
                                     Spacing="1">
                             <TextBlock Text="NexStrap"
-                                       FontSize="22"
+                                       FontSize="{StaticResource LaunchTitleFontSize}"
                                        FontWeight="Bold"
                                        Foreground="#FFFFFF"
                                        TextAlignment="Left"/>
                             <TextBlock Text="{Binding VersionText}"
-                                       FontSize="9"
+                                       FontSize="{StaticResource LaunchVersionFontSize}"
                                        Foreground="{DynamicResource FgMuted}"
                                        Opacity="0.8"
                                        TextAlignment="Left"/>
@@ -135,7 +152,7 @@
                             VerticalAlignment="Center"
                             HorizontalAlignment="Stretch"
                             Margin="0,2,0,2"
-                            Spacing="8">
+                            Spacing="{StaticResource LaunchButtonSpacing}">
                     <Button Command="{Binding LaunchRobloxCommand}"
                             IsEnabled="{Binding IsLaunchingRoblox, Converter={x:Static BoolConverters.Not}}"
                             HorizontalAlignment="Stretch"
@@ -147,7 +164,7 @@
                             VerticalContentAlignment="Stretch"
                             FontSize="13"
                             FontWeight="SemiBold"
-                            Height="48"
+                            Height="{StaticResource LaunchMainButtonHeight}"
                             Padding="14,6"
                             CornerRadius="11">
                             <Grid ColumnDefinitions="*,Auto"
@@ -186,9 +203,9 @@
                                 VerticalContentAlignment="Stretch"
                                 FontSize="11"
                                 FontWeight="Normal"
-                                Height="48"
+                                Height="{StaticResource LaunchSecondaryButtonHeight}"
                                 Padding="12,6"
-                                CornerRadius="9">
+                                CornerRadius="{StaticResource LaunchSecondaryButtonCornerRadius}">
                             <Grid>
                                 <TextBlock Text="Settings"
                                            FontSize="11"
@@ -211,9 +228,9 @@
                                 VerticalContentAlignment="Stretch"
                                 FontSize="11"
                                 FontWeight="Normal"
-                                Height="48"
+                                Height="{StaticResource LaunchSecondaryButtonHeight}"
                                 Padding="12,6"
-                                CornerRadius="9">
+                                CornerRadius="{StaticResource LaunchSecondaryButtonCornerRadius}">
                             <Grid>
                                 <TextBlock Text="Studio"
                                            FontSize="11"
