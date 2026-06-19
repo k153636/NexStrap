@@ -16,6 +16,7 @@ public partial class App : Application
     public static IServiceProvider Services { get; private set; } = null!;
     private bool _isBackground;
     private bool _isPlaying;
+    internal bool IsExiting { get; private set; }
 
     public override void Initialize()
     {
@@ -127,7 +128,10 @@ public partial class App : Application
     private void OnTrayIconClicked(object? sender, EventArgs e) => ShowMainWindow();
     private void OnTrayShowClicked(object? sender, EventArgs e) => ShowMainWindow();
     private void OnTrayExitClicked(object? sender, EventArgs e)
-        => (ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
+    {
+        IsExiting = true;
+        (ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
+    }
 
     private void ShowMainWindow()
     {
