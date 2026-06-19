@@ -11,14 +11,15 @@
         MinHeight="334"
         CanResize="False"
         WindowStartupLocation="CenterScreen"
-        Background="Transparent"
+        Background="{DynamicResource CardBg}"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="PreferSystemChrome"
         ExtendClientAreaTitleBarHeightHint="0">
 
-    <Grid RowDefinitions="22,*">
+    <Grid RowDefinitions="22,*"
+          Background="{DynamicResource CardBg}">
         <Grid Grid.Row="0"
-              Background="Transparent"
+              Background="{DynamicResource CardBg}"
               PointerPressed="TitleBar_PointerPressed"
               DoubleTapped="TitleBar_DoubleTapped">
             <StackPanel Orientation="Horizontal"
@@ -38,7 +39,7 @@
         </Grid>
 
         <Border Grid.Row="1"
-                Margin="0,6,0,0"
+                Margin="0"
                 Classes="area-panel"
                 Padding="12">
             <Grid ColumnDefinitions="210,*">
@@ -146,7 +147,7 @@
                             FontSize="13"
                             FontWeight="SemiBold"
                             Height="46"
-                            Padding="14,10"
+                            Padding="12,9"
                             CornerRadius="10">
                         <Grid ColumnDefinitions="Auto,*,Auto"
                               VerticalAlignment="Center">
@@ -164,7 +165,7 @@
                                        VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="2"
                                        Text="›"
-                                       FontSize="15"
+                                       FontSize="14"
                                        FontWeight="SemiBold"
                                        Foreground="#080808"
                                        VerticalAlignment="Center"/>
@@ -178,7 +179,7 @@
                             FontSize="12"
                             FontWeight="SemiBold"
                             Height="40"
-                            Padding="14,9"
+                            Padding="12,8"
                             CornerRadius="10">
                         <Grid ColumnDefinitions="Auto,*,Auto"
                               VerticalAlignment="Center">
@@ -196,7 +197,7 @@
                                        VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="2"
                                        Text="›"
-                                       FontSize="15"
+                                       FontSize="14"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource FgSub}"
                                        VerticalAlignment="Center"/>
@@ -210,7 +211,7 @@
                             FontSize="12"
                             FontWeight="SemiBold"
                             Height="40"
-                            Padding="14,9"
+                            Padding="12,8"
                             CornerRadius="10">
                         <Grid ColumnDefinitions="Auto,*,Auto"
                               VerticalAlignment="Center">
@@ -228,7 +229,7 @@
                                        VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="2"
                                        Text="›"
-                                       FontSize="15"
+                                       FontSize="14"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource FgSub}"
                                        VerticalAlignment="Center"/>
@@ -243,7 +244,7 @@
                             BorderThickness="1"
                             FontSize="12"
                             Height="40"
-                            Padding="14,9"
+                            Padding="12,8"
                             CornerRadius="10">
                         <Grid ColumnDefinitions="Auto,*,Auto"
                               VerticalAlignment="Center">
@@ -261,7 +262,7 @@
                                        VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="2"
                                        Text="›"
-                                       FontSize="15"
+                                       FontSize="14"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource FgMuted}"
                                        VerticalAlignment="Center"/>
