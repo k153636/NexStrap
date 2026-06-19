@@ -17,18 +17,18 @@
         ExtendClientAreaTitleBarHeightHint="-1">
 
     <Window.Resources>
-        <x:Double x:Key="LaunchWindowWidth">576</x:Double>
+        <x:Double x:Key="LaunchWindowWidth">580</x:Double>
         <x:Double x:Key="LaunchWindowHeight">344</x:Double>
         <Thickness x:Key="LaunchOuterMargin">8,6,8,8</Thickness>
         <Thickness x:Key="LaunchPanelPadding">10</Thickness>
-        <x:Double x:Key="LaunchLeftColumnWidth">184</x:Double>
-        <x:Double x:Key="LaunchGapColumnWidth">24</x:Double>
-        <x:Double x:Key="LaunchRightColumnWidth">332</x:Double>
+        <x:Double x:Key="LaunchLeftColumnWidth">280</x:Double>
+        <x:Double x:Key="LaunchGapColumnWidth">0</x:Double>
+        <x:Double x:Key="LaunchRightColumnWidth">284</x:Double>
         <x:Double x:Key="LaunchMainButtonHeight">48</x:Double>
         <x:Double x:Key="LaunchSecondaryButtonHeight">48</x:Double>
         <x:Double x:Key="LaunchButtonSpacing">8</x:Double>
-        <x:Double x:Key="LaunchTitleFontSize">23</x:Double>
-        <x:Double x:Key="LaunchVersionFontSize">10</x:Double>
+        <x:Double x:Key="LaunchTitleFontSize">24</x:Double>
+        <x:Double x:Key="LaunchVersionFontSize">12</x:Double>
         <CornerRadius x:Key="LaunchSecondaryButtonCornerRadius">7</CornerRadius>
     </Window.Resources>
 
@@ -104,14 +104,15 @@
                 Margin="{StaticResource LaunchOuterMargin}"
                 Classes="area-panel"
                 Padding="{StaticResource LaunchPanelPadding}">
-            <Grid ColumnDefinitions="184,24,332">
-                <StackPanel Margin="8,0,0,0"
+            <Grid ColumnDefinitions="280,*">
+                <StackPanel Margin="0,0,0,0"
                             VerticalAlignment="Center"
-                            HorizontalAlignment="Left"
-                            Spacing="12">
+                            HorizontalAlignment="Center"
+                            Spacing="16">
                     <StackPanel HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
-                                Spacing="4">
+                                Spacing="6"
+                                Margin="0,0,0,32">
                         <Border Width="72"
                                 Height="72"
                                 CornerRadius="18"
@@ -141,11 +142,11 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <StackPanel Margin="0,10,0,0"
+                    <StackPanel Margin="0,0,0,0"
                                 Spacing="2">
                         <Button Classes="plain launch-link"
                                 Command="{Binding OpenAboutCommand}"
-                                HorizontalAlignment="Left"
+                                HorizontalAlignment="Center"
                                 Padding="0"
                                 Background="Transparent">
                             <Grid ColumnDefinitions="14,*">
@@ -165,7 +166,7 @@
 
                         <Button Classes="plain launch-link"
                                 Command="{Binding OpenGitHubCommand}"
-                                HorizontalAlignment="Left"
+                                HorizontalAlignment="Center"
                                 Padding="0"
                                 Background="Transparent">
                             <Grid ColumnDefinitions="14,*">
@@ -185,7 +186,7 @@
 
                         <Button Classes="plain launch-link"
                                 Command="{Binding OpenDiscordCommand}"
-                                HorizontalAlignment="Left"
+                                HorizontalAlignment="Center"
                                 Padding="0"
                                 Background="Transparent">
                             <Grid ColumnDefinitions="14,*">
@@ -205,11 +206,11 @@
                     </StackPanel>
                 </StackPanel>
 
-                <Grid Grid.Column="2"
-                      VerticalAlignment="Center"
-                      HorizontalAlignment="Right"
-                      Margin="0,2,0,2"
-                      RowDefinitions="Auto,Auto,Auto">
+                <StackPanel Grid.Column="1"
+                            Margin="16"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Stretch"
+                            Spacing="{StaticResource LaunchButtonSpacing}">
                     <Button Command="{Binding LaunchRobloxCommand}"
                             Classes="launch-primary"
                             IsEnabled="{Binding IsLaunchingRoblox, Converter={x:Static BoolConverters.Not}}"
@@ -223,10 +224,9 @@
                             FontSize="14"
                             FontWeight="SemiBold"
                             Height="{StaticResource LaunchMainButtonHeight}"
-                            Width="{StaticResource LaunchRightColumnWidth}"
                             Padding="14,6"
                             CornerRadius="7">
-                        <Grid ColumnDefinitions="18,*,Auto"
+                        <Grid ColumnDefinitions="18,*"
                               VerticalAlignment="Center">
                             <PathIcon Data="{StaticResource IconPlay}"
                                       Width="12"
@@ -242,21 +242,12 @@
                                        Margin="6,0,0,0"
                                        HorizontalAlignment="Left"
                                        VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2"
-                                       Text=">"
-                                       FontSize="15"
-                                       FontWeight="SemiBold"
-                                       Foreground="#1F1F1F"
-                                       HorizontalAlignment="Right"
-                                       VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
 
-                    <Button Grid.Row="1"
-                            Classes="launch-secondary"
+                    <Button Classes="launch-secondary"
                             Command="{Binding OpenSettingsCommand}"
                             HorizontalAlignment="Stretch"
-                            Margin="0,9,0,0"
                             Background="#151515"
                             Foreground="#C9C9C9"
                             BorderBrush="#262626"
@@ -266,10 +257,9 @@
                             FontSize="14"
                             FontWeight="Normal"
                             Height="{StaticResource LaunchSecondaryButtonHeight}"
-                            Width="{StaticResource LaunchRightColumnWidth}"
                             Padding="14,6"
                             CornerRadius="{StaticResource LaunchSecondaryButtonCornerRadius}">
-                        <Grid ColumnDefinitions="18,*,Auto"
+                        <Grid ColumnDefinitions="18,*"
                               VerticalAlignment="Center">
                             <PathIcon Data="{StaticResource IconSettings}"
                                       Width="11"
@@ -284,21 +274,14 @@
                                        Margin="6,0,0,0"
                                        HorizontalAlignment="Left"
                                        VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2"
-                                       Text=">"
-                                       FontSize="15"
-                                       FontWeight="SemiBold"
-                                       Foreground="#8C8C8C"
-                                       HorizontalAlignment="Right"
-                                       VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
 
-                    <Button Grid.Row="2"
-                            Classes="launch-secondary"
+                    <Border Margin="16" />
+
+                    <Button Classes="launch-secondary"
                             Command="{Binding LaunchStudioCommand}"
                             HorizontalAlignment="Stretch"
-                            Margin="0,9,0,0"
                             Background="#181818"
                             Foreground="#DCDCDC"
                             BorderBrush="#262626"
@@ -308,10 +291,9 @@
                             FontSize="14"
                             FontWeight="Normal"
                             Height="{StaticResource LaunchSecondaryButtonHeight}"
-                            Width="{StaticResource LaunchRightColumnWidth}"
                             Padding="14,6"
                             CornerRadius="{StaticResource LaunchSecondaryButtonCornerRadius}">
-                        <Grid ColumnDefinitions="18,*,Auto"
+                        <Grid ColumnDefinitions="18,*"
                               VerticalAlignment="Center">
                             <PathIcon Data="{StaticResource IconVideo}"
                                       Width="11"
@@ -326,16 +308,9 @@
                                        Margin="6,0,0,0"
                                        HorizontalAlignment="Left"
                                        VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2"
-                                       Text=">"
-                                       FontSize="15"
-                                       FontWeight="SemiBold"
-                                       Foreground="#8C8C8C"
-                                       HorizontalAlignment="Right"
-                                       VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
-                </Grid>
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>
