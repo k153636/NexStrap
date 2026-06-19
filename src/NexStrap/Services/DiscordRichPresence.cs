@@ -71,7 +71,6 @@ public sealed class DiscordRichPresence : IDisposable
     private string? _studioPlaceName;
     private bool    _studioTesting;
     private bool    _studioRpcActive;  // プラグインが接続中かどうか
-    private string? _temporaryDetails;
     private int     _activeFocusedSlot = -1;
     private int     _lastFocusedSlot   = -1;
     private int     _robloxCount;
@@ -225,13 +224,6 @@ public sealed class DiscordRichPresence : IDisposable
     public void SetCurrentPage(string page)          => Enqueue(new EvPage(page));
     public void SetUserAvatar(string? url)           => Enqueue(new EvAvatar(url));
     public void SetUserLabel(string? label)          => Enqueue(new EvLabel(label));
-    public void SetTemporaryDetails(string? details)
-    {
-        lock (_rpcLock)
-            _temporaryDetails = details;
-
-        UpdatePresence();
-    }
 
     /// <summary>ゲーム参加を非同期で処理し完了を待つ必要はない。内部でシリアル処理される。</summary>
     public void EnqueuePlaceJoined(long placeId, long universeIdFromLog, int slot)
@@ -647,13 +639,6 @@ public sealed class DiscordRichPresence : IDisposable
     {
         if (!_settings.Settings.DiscordRpcEnabled) { SchedulePresence(null); return; }
         var presence = ComputePresence();
-        if (presence != null)
-        {
-            string? temporaryDetails;
-            lock (_rpcLock) { temporaryDetails = _temporaryDetails; }
-            if (temporaryDetails != null)
-                presence.Details = temporaryDetails;
-        }
 
         SchedulePresence(presence);
     }
