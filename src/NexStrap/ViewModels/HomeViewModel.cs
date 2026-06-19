@@ -169,18 +169,7 @@ public partial class HomeViewModel : ViewModelBase
                     _ => StatusText
                 };
 
-                if (_presence.GameDetected) return;
-
-                switch (status)
-                {
-                    case RobloxStatus.Updating:  _presence.EnqueueLaunchingPresence(); break;
-                    case RobloxStatus.Launching: _presence.EnqueueLaunchingPresence(); break;
-                    case RobloxStatus.Running:
-                    case RobloxStatus.Idle:
-                    case RobloxStatus.NotInstalled:
-                        _presence.EnqueueRefresh();
-                        break;
-                }
+                UpdateRobloxPresence(status);
             });
         };
 
@@ -364,16 +353,9 @@ public partial class HomeViewModel : ViewModelBase
         // ── Studio 状態 ───────────────────────────────────────────────────
         _studio.StatusChanged += (_, status) =>
         {
-            if (_presence.GameDetected) return;
             Dispatcher.UIThread.InvokeAsync(() =>
             {
-                switch (status)
-                {
-                    case RobloxStatus.Updating:  _presence.EnqueueInstallingStudioPresence(); break;
-                    case RobloxStatus.Launching: _presence.EnqueueInstallingStudioPresence(); break;
-                    case RobloxStatus.Running:   break;
-                    case RobloxStatus.Idle:      _presence.EnqueueRefresh(); break;
-                }
+                UpdateStudioPresence(status);
             });
         };
 
@@ -419,6 +401,40 @@ public partial class HomeViewModel : ViewModelBase
     // ══════════════════════════════════════════════════════════════════════
 
     public void RefreshPresence() => _presence.EnqueueRefresh();
+
+    private void UpdateRobloxPresence(RobloxStatus status)
+    {
+        if (_presence.GameDetected) return;
+
+        switch (status)
+        {
+            case RobloxStatus.Updating:
+            case RobloxStatus.Launching:
+                _presence.EnqueueLaunchingPresence();
+                break;
+            case RobloxStatus.Running:
+            case RobloxStatus.Idle:
+            case RobloxStatus.NotInstalled:
+                _presence.EnqueueRefresh();
+                break;
+        }
+    }
+
+    private void UpdateStudioPresence(RobloxStatus status)
+    {
+        if (_presence.GameDetected) return;
+
+        switch (status)
+        {
+            case RobloxStatus.Updating:
+            case RobloxStatus.Launching:
+                _presence.EnqueueInstallingStudioPresence();
+                break;
+            case RobloxStatus.Idle:
+                _presence.EnqueueRefresh();
+                break;
+        }
+    }
 
     private async Task InstallStudioPluginAsync()
     {

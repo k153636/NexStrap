@@ -99,10 +99,7 @@ public sealed class StartupCoordinator(
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
             _launchWindowViewModel = services.GetRequiredService<LaunchWindowViewModel>();
-            _launchWindowViewModel.OpenMainWindowRequested += initialPage =>
-                Dispatcher.UIThread.InvokeAsync(() => OpenMainWindow(desktop, initialPage));
-            if (_mainViewModel != null)
-                _launchWindowViewModel.SetMainLaunchHandler(() => _mainViewModel.HomeVM.LaunchRobloxAsync());
+            ConfigureLaunchWindow(desktop, _launchWindowViewModel);
 
             _launchWindow = new LaunchWindow
             {
@@ -120,36 +117,31 @@ public sealed class StartupCoordinator(
 
     private async Task PrepareMainWindowAsync()
     {
-        if (_mainWindow != null) return;
-
-        await Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            _mainViewModel = services.GetRequiredService<MainWindowViewModel>();
-            _mainWindow = new MainWindow
-            {
-                DataContext = _mainViewModel
-            };
-
-            hotKeys.Install();
-
-            if (_mainViewModel != null)
-                _ = _mainViewModel.BeginDeferredStartupAsync();
-        });
+        await Dispatcher.UIThread.InvokeAsync(EnsureMainWindowCreated);
     }
 
     private void OpenMainWindow(IClassicDesktopStyleApplicationLifetime desktop, string? initialPage)
     {
-        if (_mainWindow != null)
-        {
-            desktop.MainWindow = _mainWindow;
-            _mainWindow.Show();
-            _mainWindow.WindowState = WindowState.Normal;
-            _mainWindow.Activate();
-            if (!string.IsNullOrWhiteSpace(initialPage))
-                _mainViewModel?.NavigateToCommand.Execute(initialPage);
-            DisposeLaunchWindow();
-            return;
-        }
+        EnsureMainWindowCreated();
+        var mainWindow = _mainWindow;
+        var mainViewModel = _mainViewModel;
+        if (mainWindow == null) return;
+
+        desktop.MainWindow = mainWindow;
+        mainWindow.Show();
+        mainWindow.WindowState = WindowState.Normal;
+        mainWindow.Activate();
+        if (!string.IsNullOrWhiteSpace(initialPage))
+            mainViewModel?.NavigateToCommand.Execute(initialPage);
+
+        DisposeLaunchWindow();
+
+        RobloxService.Log("Main window shown");
+    }
+
+    private void EnsureMainWindowCreated()
+    {
+        if (_mainWindow != null) return;
 
         _mainViewModel = services.GetRequiredService<MainWindowViewModel>();
         _mainWindow = new MainWindow
@@ -157,21 +149,18 @@ public sealed class StartupCoordinator(
             DataContext = _mainViewModel
         };
 
-        desktop.MainWindow = _mainWindow;
-        _mainWindow.Show();
-        _mainWindow.Activate();
         hotKeys.Install();
 
         if (_mainViewModel != null)
-        {
-            if (!string.IsNullOrWhiteSpace(initialPage))
-                _mainViewModel.NavigateToCommand.Execute(initialPage);
             _ = _mainViewModel.BeginDeferredStartupAsync();
-        }
+    }
 
-        DisposeLaunchWindow();
-
-        RobloxService.Log("Main window shown");
+    private void ConfigureLaunchWindow(IClassicDesktopStyleApplicationLifetime desktop, LaunchWindowViewModel viewModel)
+    {
+        viewModel.OpenMainWindowRequested += initialPage =>
+            Dispatcher.UIThread.InvokeAsync(() => OpenMainWindow(desktop, initialPage));
+        if (_mainViewModel != null)
+            viewModel.SetMainLaunchHandler(() => _mainViewModel.HomeVM.LaunchRobloxAsync());
     }
 
     private void DisposeLaunchWindow()

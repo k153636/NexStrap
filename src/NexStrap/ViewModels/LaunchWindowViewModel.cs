@@ -56,7 +56,7 @@ public partial class LaunchWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void LaunchApp() => OpenMainWindowRequested?.Invoke(null);
+    private void LaunchApp() => OpenMainWindowRequested?.Invoke("Home");
 
     [RelayCommand]
     private void OpenAbout() => OpenUrl("https://github.com/k153636/NexStrap#readme");
