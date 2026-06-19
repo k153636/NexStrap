@@ -18,8 +18,8 @@
 
     <Window.Resources>
         <x:Double x:Key="LaunchWindowWidth">580</x:Double>
-        <x:Double x:Key="LaunchWindowHeight">336</x:Double>
-        <Thickness x:Key="LaunchOuterMargin">6,4,6,6</Thickness>
+        <x:Double x:Key="LaunchWindowHeight">320</x:Double>
+        <Thickness x:Key="LaunchOuterMargin">4,2,4,4</Thickness>
         <Thickness x:Key="LaunchPanelPadding">0</Thickness>
         <x:Double x:Key="LaunchLeftColumnWidth">280</x:Double>
         <x:Double x:Key="LaunchGapColumnWidth">16</x:Double>
@@ -78,7 +78,7 @@
         </Style>
     </Window.Styles>
 
-    <Grid RowDefinitions="28,*"
+    <Grid RowDefinitions="26,*"
           Background="{DynamicResource CardBg}">
         <Grid Grid.Row="0"
               Background="Transparent"
@@ -111,7 +111,7 @@
                             HorizontalAlignment="Center"
                             Spacing="0">
                     <Grid HorizontalAlignment="Center"
-                          Margin="0,0,0,24">
+                          Margin="0,0,0,18">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*" />
@@ -148,8 +148,8 @@
                         </StackPanel>
                     </Grid>
 
-                    <StackPanel Margin="0,-2,0,0"
-                                Spacing="2">
+                    <StackPanel Margin="0,-4,0,0"
+                                Spacing="1">
                         <Button Classes="plain launch-link"
                                 Command="{Binding OpenAboutCommand}"
                                 HorizontalAlignment="Center"
@@ -216,7 +216,7 @@
                             Width="{StaticResource LaunchRightColumnWidth}"
                             VerticalAlignment="Center"
                             HorizontalAlignment="Right"
-                            Spacing="7">
+                            Spacing="6">
                     <Button Command="{Binding LaunchRobloxCommand}"
                             Classes="launch-primary"
                             IsEnabled="{Binding IsLaunchingRoblox, Converter={x:Static BoolConverters.Not}}"
@@ -229,7 +229,7 @@
                             VerticalContentAlignment="Stretch"
                             FontSize="14"
                             FontWeight="SemiBold"
-                            Height="{StaticResource LaunchMainButtonHeight}"
+                            Height="42"
                             Width="{StaticResource LaunchRightColumnWidth}"
                             Padding="14,0"
                             CornerRadius="8">
@@ -263,7 +263,7 @@
                             VerticalContentAlignment="Stretch"
                             FontSize="14"
                             FontWeight="Normal"
-                            Height="{StaticResource LaunchSecondaryButtonHeight}"
+                            Height="40"
                             Width="{StaticResource LaunchRightColumnWidth}"
                             Padding="14,0"
                             CornerRadius="{StaticResource LaunchSecondaryButtonCornerRadius}">
@@ -296,7 +296,7 @@
                             VerticalContentAlignment="Stretch"
                             FontSize="14"
                             FontWeight="Normal"
-                            Height="{StaticResource LaunchSecondaryButtonHeight}"
+                            Height="40"
                             Width="{StaticResource LaunchRightColumnWidth}"
                             Padding="14,0"
                             CornerRadius="{StaticResource LaunchSecondaryButtonCornerRadius}">
