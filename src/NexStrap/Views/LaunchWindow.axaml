@@ -17,8 +17,8 @@
         ExtendClientAreaTitleBarHeightHint="-1">
 
     <Window.Resources>
-        <x:Double x:Key="LaunchWindowWidth">548</x:Double>
-        <x:Double x:Key="LaunchWindowHeight">256</x:Double>
+        <x:Double x:Key="LaunchWindowWidth">420</x:Double>
+        <x:Double x:Key="LaunchWindowHeight">420</x:Double>
         <Thickness x:Key="LaunchOuterMargin">8,6,8,8</Thickness>
         <Thickness x:Key="LaunchPanelPadding">10</Thickness>
         <x:Double x:Key="LaunchLeftColumnWidth">194</x:Double>
@@ -104,9 +104,9 @@
                 Margin="{StaticResource LaunchOuterMargin}"
                 Classes="area-panel"
                 Padding="{StaticResource LaunchPanelPadding}">
-            <Grid ColumnDefinitions="194,38,280">
+            <Grid RowDefinitions="Auto,Auto">
                 <StackPanel Margin="8,0,0,0"
-                            VerticalAlignment="Center"
+                            VerticalAlignment="Top"
                             HorizontalAlignment="Left"
                             Spacing="3">
                     <Grid ColumnDefinitions="72,*"
@@ -220,10 +220,10 @@
                     </StackPanel>
                 </StackPanel>
 
-                <StackPanel Grid.Column="2"
-                            VerticalAlignment="Center"
+                <StackPanel Grid.Row="1"
+                            VerticalAlignment="Top"
                             HorizontalAlignment="Stretch"
-                            Margin="0,2,0,2"
+                            Margin="0,14,0,2"
                             Spacing="{StaticResource LaunchButtonSpacing}">
                     <Button Command="{Binding LaunchRobloxCommand}"
                             Classes="launch-primary"
