@@ -145,6 +145,7 @@ public sealed class StartupCoordinator(
             _ = _mainViewModel.BeginDeferredStartupAsync();
         }
 
+        _launchWindowViewModel?.SetTemporaryDetails(null);
         _launchWindow?.Close();
         _launchWindow = null;
         _launchWindowViewModel = null;
