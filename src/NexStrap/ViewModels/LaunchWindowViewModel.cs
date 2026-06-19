@@ -13,12 +13,15 @@ public partial class LaunchWindowViewModel : ViewModelBase
     private readonly FastFlagService _fastFlags;
     private readonly ModService _mods;
     private readonly StudioService _studio;
+    private readonly StudioFastFlagService _studioFastFlags;
+    private readonly DiscordRichPresence _discord;
     private readonly SettingsService _settings;
     private readonly AccountService _accounts;
     private readonly RobloxApiService _robloxApi;
 
     [ObservableProperty] private string _statusText = "Choose how to start";
     [ObservableProperty] private bool _isLaunchingRoblox;
+    [ObservableProperty] private bool _isLaunchingStudio;
 
     public string VersionText
     {
@@ -36,6 +39,8 @@ public partial class LaunchWindowViewModel : ViewModelBase
         FastFlagService fastFlags,
         ModService mods,
         StudioService studio,
+        StudioFastFlagService studioFastFlags,
+        DiscordRichPresence discord,
         SettingsService settings,
         AccountService accounts,
         RobloxApiService robloxApi)
@@ -44,9 +49,13 @@ public partial class LaunchWindowViewModel : ViewModelBase
         _fastFlags = fastFlags;
         _mods = mods;
         _studio = studio;
+        _studioFastFlags = studioFastFlags;
+        _discord = discord;
         _settings = settings;
         _accounts = accounts;
         _robloxApi = robloxApi;
+
+        StartLauncherConnections();
     }
 
     [RelayCommand]
@@ -67,15 +76,29 @@ public partial class LaunchWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task LaunchStudioAsync()
     {
-        StatusText = "Launching Studio...";
+        if (IsLaunchingStudio) return;
+
+        IsLaunchingStudio = true;
+        StartLauncherConnections();
+        _discord.EnqueueInstallingStudioPresence();
+        StatusText = "Preparing Studio...";
         try
         {
+            if (await StudioPluginInstaller.IsUpdateAvailableAsync())
+                await StudioPluginInstaller.DownloadAndInstallAsync();
+
+            await _studioFastFlags.SaveAsync();
+
             var launched = await _studio.LaunchAsync();
             StatusText = launched ? "Studio launched" : "Studio launch failed";
         }
         catch (Exception ex)
         {
             StatusText = $"Studio launch failed: {ex.Message}";
+        }
+        finally
+        {
+            IsLaunchingStudio = false;
         }
     }
 
@@ -85,6 +108,8 @@ public partial class LaunchWindowViewModel : ViewModelBase
         if (IsLaunchingRoblox) return;
 
         IsLaunchingRoblox = true;
+        StartLauncherConnections();
+        _discord.EnqueueLaunchStarted();
         StatusText = "Preparing Roblox...";
 
         try
@@ -127,6 +152,12 @@ public partial class LaunchWindowViewModel : ViewModelBase
         {
             IsLaunchingRoblox = false;
         }
+    }
+
+    private void StartLauncherConnections()
+    {
+        if (_settings.Settings.DiscordRpcEnabled)
+            _discord.SetDiscordEnabled(true);
     }
 
     private static void OpenUrl(string url)

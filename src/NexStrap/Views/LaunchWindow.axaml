@@ -17,17 +17,17 @@
         ExtendClientAreaTitleBarHeightHint="-1">
 
     <Window.Resources>
-        <x:Double x:Key="LaunchWindowWidth">580</x:Double>
-        <x:Double x:Key="LaunchWindowHeight">320</x:Double>
+        <x:Double x:Key="LaunchWindowWidth">565</x:Double>
+        <x:Double x:Key="LaunchWindowHeight">234</x:Double>
         <Thickness x:Key="LaunchOuterMargin">4,2,4,4</Thickness>
         <Thickness x:Key="LaunchPanelPadding">0</Thickness>
         <x:Double x:Key="LaunchLeftColumnWidth">280</x:Double>
         <x:Double x:Key="LaunchGapColumnWidth">16</x:Double>
         <x:Double x:Key="LaunchRightColumnWidth">268</x:Double>
-        <x:Double x:Key="LaunchMainButtonHeight">44</x:Double>
-        <x:Double x:Key="LaunchSecondaryButtonHeight">40</x:Double>
+        <x:Double x:Key="LaunchMainButtonHeight">55</x:Double>
+        <x:Double x:Key="LaunchSecondaryButtonHeight">55</x:Double>
         <x:Double x:Key="LaunchButtonSpacing">8</x:Double>
-        <x:Double x:Key="LaunchTitleFontSize">24</x:Double>
+        <x:Double x:Key="LaunchTitleFontSize">25</x:Double>
         <x:Double x:Key="LaunchVersionFontSize">12</x:Double>
         <CornerRadius x:Key="LaunchSecondaryButtonCornerRadius">8</CornerRadius>
     </Window.Resources>
@@ -64,7 +64,7 @@
         </Style>
 
         <Style Selector="Button.launch-link">
-            <Setter Property="Opacity" Value="0.78"/>
+            <Setter Property="Opacity" Value="0.72"/>
             <Setter Property="Transitions">
                 <Transitions>
                     <DoubleTransition Property="Opacity"
@@ -82,8 +82,7 @@
           Background="{DynamicResource CardBg}">
         <Grid Grid.Row="0"
               Background="Transparent"
-              PointerPressed="TitleBar_PointerPressed"
-              DoubleTapped="TitleBar_DoubleTapped">
+              PointerPressed="TitleBar_PointerPressed">
             <StackPanel Orientation="Horizontal"
                         VerticalAlignment="Center"
                         Margin="12,0"
@@ -98,6 +97,22 @@
                            Foreground="{DynamicResource SubtextBrush}"
                            VerticalAlignment="Center"/>
             </StackPanel>
+
+            <Button Content="×"
+                    Click="CloseButton_Click"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Margin="0,0,8,0"
+                    Width="28"
+                    Height="28"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    BorderThickness="0"
+                    Foreground="{DynamicResource SubtextBrush}"
+                    FontSize="18"
+                    FontWeight="Normal"
+                    Padding="0"
+                    Opacity="0.75"/>
         </Grid>
 
         <Border Grid.Row="1"
@@ -111,7 +126,7 @@
                             HorizontalAlignment="Center"
                             Spacing="0">
                     <Grid HorizontalAlignment="Center"
-                          Margin="0,0,0,18">
+                          Margin="0,0,0,20">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*" />
@@ -148,7 +163,7 @@
                         </StackPanel>
                     </Grid>
 
-                    <StackPanel Margin="0,-2,0,0"
+                    <StackPanel Margin="0,0,0,0"
                                 Spacing="8">
                         <Button Classes="plain launch-link"
                                 Command="{Binding OpenAboutCommand}"
@@ -163,7 +178,7 @@
                                           VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="1"
                                            Text="NexStrapについて"
-                                           FontSize="12"
+                                           FontSize="11"
                                            Foreground="{DynamicResource FgMuted}"
                                            Margin="6,0,0,0"
                                            VerticalAlignment="Center"/>
@@ -183,7 +198,7 @@
                                           VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="1"
                                            Text="GitHub"
-                                           FontSize="12"
+                                           FontSize="11"
                                            Foreground="{DynamicResource FgMuted}"
                                            Margin="6,0,0,0"
                                            VerticalAlignment="Center"/>
@@ -203,7 +218,7 @@
                                           VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="1"
                                            Text="Discord"
-                                           FontSize="12"
+                                           FontSize="11"
                                            Foreground="{DynamicResource FgMuted}"
                                            Margin="6,0,0,0"
                                            VerticalAlignment="Center"/>
@@ -216,36 +231,37 @@
                             Width="{StaticResource LaunchRightColumnWidth}"
                             VerticalAlignment="Center"
                             HorizontalAlignment="Right"
-                            Spacing="6">
+                            Margin="0,0,18,0"
+                            Spacing="8">
                     <Button Command="{Binding LaunchRobloxCommand}"
                             Classes="launch-primary"
                             IsEnabled="{Binding IsLaunchingRoblox, Converter={x:Static BoolConverters.Not}}"
                             HorizontalAlignment="Stretch"
-                            Background="#FFFFFF"
-                            Foreground="#111111"
-                            BorderBrush="#FFFFFF"
-                            BorderThickness="0"
+                            Background="#181818"
+                            Foreground="#E3E3E3"
+                            BorderBrush="#262626"
+                            BorderThickness="1"
                             HorizontalContentAlignment="Stretch"
                             VerticalContentAlignment="Stretch"
-                            FontSize="14"
+                            FontSize="15"
                             FontWeight="SemiBold"
-                            Height="42"
+                            Height="{StaticResource LaunchMainButtonHeight}"
                             Width="{StaticResource LaunchRightColumnWidth}"
-                            Padding="14,0"
+                            Padding="16,0"
                             CornerRadius="8">
                         <Grid ColumnDefinitions="18,*,12"
                               VerticalAlignment="Center">
                             <PathIcon Data="{StaticResource IconPlay}"
                                       Width="12"
                                       Height="12"
-                                      Foreground="#080808"
+                                      Foreground="#E3E3E3"
                                       VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1"
                                        Text="Launch Roblox"
-                                       FontSize="14"
+                                       FontSize="15"
                                        FontWeight="SemiBold"
                                        LineHeight="17"
-                                       Foreground="#080808"
+                                       Foreground="#E3E3E3"
                                        Margin="6,0,0,0"
                                        HorizontalAlignment="Left"
                                        VerticalAlignment="Center"/>
@@ -253,7 +269,7 @@
                                        Text=">"
                                        FontSize="14"
                                        FontWeight="SemiBold"
-                                       Foreground="#080808"
+                                       Foreground="#E3E3E3"
                                        HorizontalAlignment="Right"
                                        VerticalAlignment="Center"/>
                         </Grid>
@@ -268,11 +284,11 @@
                             BorderThickness="1"
                             HorizontalContentAlignment="Stretch"
                             VerticalContentAlignment="Stretch"
-                            FontSize="14"
+                            FontSize="13"
                             FontWeight="Normal"
-                            Height="40"
+                            Height="{StaticResource LaunchSecondaryButtonHeight}"
                             Width="{StaticResource LaunchRightColumnWidth}"
-                            Padding="14,0"
+                            Padding="16,0"
                             CornerRadius="{StaticResource LaunchSecondaryButtonCornerRadius}">
                         <Grid ColumnDefinitions="18,*,12"
                               VerticalAlignment="Center">
@@ -283,7 +299,7 @@
                                       VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1"
                                        Text="Settings"
-                                       FontSize="14"
+                                       FontSize="13"
                                        FontWeight="SemiBold"
                                        Foreground="#D0D0D0"
                                        Margin="6,0,0,0"
@@ -291,7 +307,7 @@
                                        VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="2"
                                        Text=">"
-                                       FontSize="14"
+                                       FontSize="13"
                                        FontWeight="SemiBold"
                                        Foreground="#D0D0D0"
                                        HorizontalAlignment="Right"
@@ -301,6 +317,7 @@
 
                     <Button Classes="launch-secondary"
                             Command="{Binding LaunchStudioCommand}"
+                            IsEnabled="{Binding IsLaunchingStudio, Converter={x:Static BoolConverters.Not}}"
                             HorizontalAlignment="Stretch"
                             Background="#181818"
                             Foreground="#DCDCDC"
@@ -308,11 +325,11 @@
                             BorderThickness="1"
                             HorizontalContentAlignment="Stretch"
                             VerticalContentAlignment="Stretch"
-                            FontSize="14"
+                            FontSize="13"
                             FontWeight="Normal"
-                            Height="40"
+                            Height="{StaticResource LaunchSecondaryButtonHeight}"
                             Width="{StaticResource LaunchRightColumnWidth}"
-                            Padding="14,0"
+                            Padding="16,0"
                             CornerRadius="{StaticResource LaunchSecondaryButtonCornerRadius}">
                         <Grid ColumnDefinitions="18,*,12"
                               VerticalAlignment="Center">
@@ -323,7 +340,7 @@
                                       VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1"
                                        Text="Studio"
-                                       FontSize="14"
+                                       FontSize="13"
                                        FontWeight="SemiBold"
                                        Foreground="#E3E3E3"
                                        Margin="6,0,0,0"
@@ -331,7 +348,7 @@
                                        VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="2"
                                        Text=">"
-                                       FontSize="14"
+                                       FontSize="13"
                                        FontWeight="SemiBold"
                                        Foreground="#E3E3E3"
                                        HorizontalAlignment="Right"
