@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NexStrap.Models;
@@ -18,6 +19,15 @@ public partial class LaunchWindowViewModel : ViewModelBase
 
     [ObservableProperty] private string _statusText = "Choose how to start";
     [ObservableProperty] private bool _isLaunchingRoblox;
+
+    public string VersionText
+    {
+        get
+        {
+            var v = Assembly.GetEntryAssembly()?.GetName().Version;
+            return v != null ? $"Ver. {v.Major}.{v.Minor}.{v.Build}" : "Ver. 1.1";
+        }
+    }
 
     public event Action<string?>? OpenMainWindowRequested;
 

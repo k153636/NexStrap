@@ -72,7 +72,7 @@
                                        FontWeight="Bold"
                                        Foreground="#FFFFFF"
                                        TextAlignment="Left"/>
-                            <TextBlock Text="Ver. 1.3.3"
+                            <TextBlock Text="{Binding VersionText}"
                                        FontSize="9"
                                        Foreground="{DynamicResource FgMuted}"
                                        Opacity="0.8"
@@ -186,7 +186,7 @@
                                 VerticalContentAlignment="Stretch"
                                 FontSize="11"
                                 FontWeight="Normal"
-                                Height="34"
+                                Height="48"
                                 Padding="12,6"
                                 CornerRadius="9">
                             <Grid>
@@ -211,7 +211,7 @@
                                 VerticalContentAlignment="Stretch"
                                 FontSize="11"
                                 FontWeight="Normal"
-                                Height="34"
+                                Height="48"
                                 Padding="12,6"
                                 CornerRadius="9">
                             <Grid>
