@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NexStrap.Models;
@@ -40,6 +41,15 @@ public partial class LaunchWindowViewModel : ViewModelBase
 
     [RelayCommand]
     private void LaunchApp() => OpenMainWindowRequested?.Invoke(null);
+
+    [RelayCommand]
+    private void OpenAbout() => OpenUrl("https://github.com/k153636/NexStrap#readme");
+
+    [RelayCommand]
+    private void OpenGitHub() => OpenUrl("https://github.com/k153636/NexStrap");
+
+    [RelayCommand]
+    private void OpenDiscord() => OpenUrl("https://discord.gg/PPrKt97jRn");
 
     [RelayCommand]
     private void OpenSettings() => OpenMainWindowRequested?.Invoke("Settings");
@@ -107,5 +117,13 @@ public partial class LaunchWindowViewModel : ViewModelBase
         {
             IsLaunchingRoblox = false;
         }
+    }
+
+    private static void OpenUrl(string url)
+    {
+        Process.Start(new ProcessStartInfo(url)
+        {
+            UseShellExecute = true
+        });
     }
 }
