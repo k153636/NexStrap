@@ -49,6 +49,7 @@ public sealed class StartupCoordinator(
             return;
         }
 
+        await PrepareMainWindowAsync();
         await ShowLaunchWindowAsync(desktop);
 
         _ = RunDeferredStartupChecksAsync();
@@ -100,6 +101,12 @@ public sealed class StartupCoordinator(
             _launchWindowViewModel = services.GetRequiredService<LaunchWindowViewModel>();
             _launchWindowViewModel.OpenMainWindowRequested += initialPage =>
                 Dispatcher.UIThread.InvokeAsync(() => OpenMainWindow(desktop, initialPage));
+            if (_mainViewModel != null)
+                _launchWindowViewModel.SetMainLaunchHandler(() =>
+                {
+                    _mainViewModel.HomeVM.LaunchRobloxCommand.Execute(null);
+                    return Task.CompletedTask;
+                });
 
             _launchWindow = new LaunchWindow
             {
@@ -115,15 +122,43 @@ public sealed class StartupCoordinator(
         RobloxService.Log("Launch window shown");
     }
 
+    private async Task PrepareMainWindowAsync()
+    {
+        if (_mainWindow != null) return;
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _mainViewModel = services.GetRequiredService<MainWindowViewModel>();
+            _mainWindow = new MainWindow
+            {
+                DataContext = _mainViewModel
+            };
+
+            hotKeys.Install();
+
+            if (_mainViewModel != null)
+                _ = _mainViewModel.BeginDeferredStartupAsync();
+        });
+    }
+
     private void OpenMainWindow(IClassicDesktopStyleApplicationLifetime desktop, string? initialPage)
     {
+        void CloseLaunchWindow()
+        {
+            _launchWindow?.Close();
+            _launchWindow = null;
+            _launchWindowViewModel = null;
+        }
+
         if (_mainWindow != null)
         {
+            desktop.MainWindow = _mainWindow;
             _mainWindow.Show();
             _mainWindow.WindowState = WindowState.Normal;
             _mainWindow.Activate();
             if (!string.IsNullOrWhiteSpace(initialPage))
                 _mainViewModel?.NavigateToCommand.Execute(initialPage);
+            CloseLaunchWindow();
             return;
         }
 
@@ -145,7 +180,7 @@ public sealed class StartupCoordinator(
             _ = _mainViewModel.BeginDeferredStartupAsync();
         }
 
-        _launchWindow?.Hide();
+        CloseLaunchWindow();
 
         RobloxService.Log("Main window shown");
     }

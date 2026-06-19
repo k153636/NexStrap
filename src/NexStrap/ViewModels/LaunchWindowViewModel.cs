@@ -17,6 +17,7 @@ public partial class LaunchWindowViewModel : ViewModelBase
     private readonly SettingsService _settings;
     private readonly AccountService _accounts;
     private readonly RobloxApiService _robloxApi;
+    private Func<Task>? _launchRobloxFromMainAsync;
 
     [ObservableProperty] private string _statusText = "Choose how to start";
     [ObservableProperty] private bool _isLaunchingRoblox;
@@ -31,6 +32,9 @@ public partial class LaunchWindowViewModel : ViewModelBase
     }
 
     public event Action<string?>? OpenMainWindowRequested;
+
+    public void SetMainLaunchHandler(Func<Task> launchRobloxAsync)
+        => _launchRobloxFromMainAsync = launchRobloxAsync;
 
     public LaunchWindowViewModel(
         RobloxService roblox,
@@ -93,10 +97,17 @@ public partial class LaunchWindowViewModel : ViewModelBase
         if (IsLaunchingRoblox) return;
 
         IsLaunchingRoblox = true;
-        StatusText = "Preparing Roblox...";
-
         try
         {
+            if (_launchRobloxFromMainAsync != null)
+            {
+                StatusText = "Launching Roblox...";
+                await _launchRobloxFromMainAsync();
+                StatusText = "Roblox launch requested";
+                return;
+            }
+
+            StatusText = "Preparing Roblox...";
             var s = _settings.Settings;
 
             _fastFlags.ApplyPerformanceSettings(s);

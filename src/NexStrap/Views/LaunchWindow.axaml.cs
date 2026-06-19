@@ -23,24 +23,11 @@ public partial class LaunchWindow : Window
 
     private void CloseButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        HideToBackground();
+        Close();
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
-        if (Application.Current is App app && !app.IsExiting)
-        {
-            e.Cancel = true;
-            HideToBackground();
-            return;
-        }
-
         base.OnClosing(e);
-    }
-
-    private void HideToBackground()
-    {
-        Hide();
-        (Application.Current as App)?.SetBackgroundMode(true);
     }
 }
