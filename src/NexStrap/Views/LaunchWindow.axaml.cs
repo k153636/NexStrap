@@ -18,6 +18,6 @@ public partial class LaunchWindow : Window
 
     private void CloseButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        Close();
+        Hide();
     }
 }

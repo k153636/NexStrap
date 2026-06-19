@@ -146,9 +146,7 @@ public sealed class StartupCoordinator(
         }
 
         _launchWindowViewModel?.SetTemporaryDetails(null);
-        _launchWindow?.Close();
-        _launchWindow = null;
-        _launchWindowViewModel = null;
+        _launchWindow?.Hide();
 
         RobloxService.Log("Main window shown");
     }
