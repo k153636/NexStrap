@@ -42,7 +42,7 @@
                 Margin="0"
                 Classes="area-panel"
                 Padding="12">
-            <Grid ColumnDefinitions="210,320">
+            <Grid ColumnDefinitions="210,*,320">
                 <StackPanel Margin="2,4,10,0"
                             VerticalAlignment="Top"
                             Spacing="7">
@@ -110,10 +110,9 @@
                     </StackPanel>
                 </StackPanel>
 
-                <StackPanel Grid.Column="1"
+                <StackPanel Grid.Column="2"
                             VerticalAlignment="Center"
-                            HorizontalAlignment="Left"
-                            Width="320"
+                            HorizontalAlignment="Stretch"
                             Margin="0,2,0,2"
                             Spacing="6">
                     <Button Command="{Binding LaunchRobloxCommand}"
