@@ -112,9 +112,23 @@ public sealed class StudioRpcServer : IDisposable
 
             _lastSeen = DateTime.UtcNow;
 
-            var label = envelope.Command == "SetRichPresence" && envelope.Data?.Details is { } d
-                ? $" ({d})" : string.Empty;
+            var label = (envelope.Command == "SetRichPresence" || envelope.Command == "Initialize") && envelope.Data is { } data
+                ? $" ({data.Details ?? data.Context ?? data.Mode ?? data.Workspace ?? "Studio"})"
+                : string.Empty;
             Logger.Instance.Info("StudioRPC", $"{envelope.Command}{label}");
+
+            if ((envelope.Command == "SetRichPresence" || envelope.Command == "Initialize") && envelope.Data is { } presenceData)
+            {
+                Logger.Instance.Info(
+                    "StudioRPC",
+                    $"payload placeId={presenceData.PlaceId}, testing={presenceData.Testing}, workspace={presenceData.Workspace ?? "none"}");
+            }
+            else if (envelope.Command == "RPCToggle" && envelope.Data is { } toggleData)
+            {
+                Logger.Instance.Info(
+                    "StudioRPC",
+                    $"toggle enabled={toggleData.Enabled}, workspace={toggleData.Workspace ?? "none"}");
+            }
 
             MessageReceived?.Invoke(this, new StudioRpcMessage(envelope.Command, envelope.Data));
             Respond(ctx, HttpStatusCode.OK);
@@ -188,6 +202,8 @@ public sealed record StudioRpcMessage(string Command, StudioRpcData? Data);
 public sealed record StudioRpcData
 {
     [JsonPropertyName("details")]  public string? Details  { get; init; }
+    [JsonPropertyName("context")]  public string? Context  { get; init; }
+    [JsonPropertyName("mode")]     public string? Mode     { get; init; }
     [JsonPropertyName("testing")]  public bool    Testing  { get; init; }
     [JsonPropertyName("placeId")]  public long    PlaceId  { get; init; }
     [JsonPropertyName("isPublic")] public bool    IsPublic { get; init; }
@@ -195,4 +211,7 @@ public sealed record StudioRpcData
     // RPCToggle 用
     [JsonPropertyName("enabled")]    public bool    Enabled   { get; init; }
     [JsonPropertyName("workspace")]  public string? Workspace { get; init; }
+    [JsonPropertyName("activeScript")]  public string? ActiveScript  { get; init; }
+    [JsonPropertyName("selectionCount")] public int     SelectionCount { get; init; }
+    [JsonPropertyName("openDocuments")]   public int     OpenDocuments   { get; init; }
 }

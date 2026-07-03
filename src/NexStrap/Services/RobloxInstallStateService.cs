@@ -21,7 +21,9 @@ public sealed class RobloxInstallStateService
     private string? _currentVersionFolder;
 
     public static bool IsVersionComplete(string dir) =>
-        File.Exists(Path.Combine(dir, "RobloxPlayerBeta.exe"));
+        File.Exists(Path.Combine(dir, "RobloxPlayerBeta.exe")) &&
+        File.Exists(Path.Combine(dir, "RobloxPlayerBeta.dll")) &&
+        File.Exists(Path.Combine(dir, "WebView2Loader.dll"));
 
     internal RobloxInstallStateFile? LoadState()
     {

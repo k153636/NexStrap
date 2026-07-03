@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Newtonsoft.Json.Linq;
 using NexStrap.Models;
 
@@ -22,7 +22,7 @@ public class RobloxApiService
 
         try
         {
-            // universeId がログから直接取得できていれば API 呼び出しをスキップ
+            // universeId 縺後Ο繧ｰ縺九ｉ逶ｴ謗･蜿門ｾ励〒縺阪※縺・ｌ縺ｰ API 蜻ｼ縺ｳ蜃ｺ縺励ｒ繧ｹ繧ｭ繝・・
             long? resolvedUniverseId = universeId > 0 ? universeId : await GetUniverseIdAsync(placeId);
             if (resolvedUniverseId == null) return ("Roblox", null, null);
 
@@ -30,7 +30,7 @@ public class RobloxApiService
             var iconUrl         = await GetGameIconUrlAsync(resolvedUniverseId.Value);
 
             var result = (name ?? "Roblox", iconUrl, creator);
-            // 失敗結果（name="Roblox" かつ iconUrl=null）はキャッシュしない
+            // 螟ｱ謨礼ｵ先棡・・ame="Roblox" 縺九▽ iconUrl=null・峨・繧ｭ繝｣繝・す繝･縺励↑縺・
             if (result.Item1 != "Roblox" || iconUrl != null)
                 _gameCache[cacheKey] = result;
             return result;
@@ -59,36 +59,77 @@ public class RobloxApiService
 
     private static async Task<(string? name, string? creator)> GetGameNameAndCreatorAsync(long universeId, bool english = false)
     {
-        var url = $"https://games.roblox.com/v1/games?universeIds={universeId}";
-        string json;
-        if (english)
+        async Task<(string? name, string? creator)> ReadGamesEndpointAsync()
         {
-            using var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
-            req.Headers.Add("Accept-Language", "en-US,en;q=0.9");
-            using var resp = await Http.SendAsync(req);
-            json = await resp.Content.ReadAsStringAsync();
+            var url = $"https://games.roblox.com/v1/games?universeIds={universeId}";
+            string json;
+            if (english)
+            {
+                using var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
+                req.Headers.Add("Accept-Language", "en-US,en;q=0.9");
+                using var resp = await Http.SendAsync(req);
+                json = await resp.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                json = await Http.GetStringAsync(url);
+            }
+
+            var data = JObject.Parse(json)["data"] as JArray;
+            var item = data?.FirstOrDefault();
+            if (item == null) return (null, null);
+
+            var creatorName = item["creator"]?["name"]?.Value<string>();
+            var hasVerified = item["creator"]?["hasVerifiedBadge"]?.Value<bool>() ?? false;
+            var creatorDisplay = creatorName != null && hasVerified ? $"{creatorName} ☑️" : creatorName;
+            return (item["name"]?.Value<string>(), creatorDisplay);
         }
-        else
+
+        async Task<(string? name, string? creator)> ReadUniverseEndpointAsync()
         {
-            json = await Http.GetStringAsync(url);
+            var json = await Http.GetStringAsync($"https://develop.roblox.com/v1/universes/{universeId}");
+            var obj = JObject.Parse(json);
+            var name = obj["name"]?.Value<string>();
+            var creatorName = obj["creatorName"]?.Value<string>();
+            return (name, creatorName);
         }
-        var data           = JObject.Parse(json)["data"]?[0];
-        var creatorName    = data?["creator"]?["name"]?.Value<string>();
-        var hasVerified    = data?["creator"]?["hasVerifiedBadge"]?.Value<bool>() ?? false;
-        var creatorDisplay = creatorName != null && hasVerified ? $"{creatorName} ☑️" : creatorName;
-        return (data?["name"]?.Value<string>(), creatorDisplay);
+
+        var (name, creator) = await ReadGamesEndpointAsync();
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(creator))
+        {
+            var fallback = await ReadUniverseEndpointAsync();
+            name ??= fallback.name;
+            creator ??= fallback.creator;
+        }
+
+        return (name, creator);
     }
 
     private static async Task<string?> GetGameIconUrlAsync(long universeId)
     {
         var url = $"https://thumbnails.roblox.com/v1/games/icons" +
                   $"?universeIds={universeId}&size=512x512&format=Png&isCircular=false";
-        var json = await Http.GetStringAsync(url);
-        var obj = JObject.Parse(json);
-        return obj["data"]?[0]?["imageUrl"]?.Value<string>();
-    }
 
-    // ゲームサーバーの国コードを返す（例: "SG", "US"）
+        for (var attempt = 0; attempt < 4; attempt++)
+        {
+            var json = await Http.GetStringAsync(url);
+            var obj = JObject.Parse(json);
+            var data = obj["data"]?[0];
+            var imageUrl = data?["imageUrl"]?.Value<string>();
+            var state = data?["state"]?.Value<string>();
+
+            if (!string.IsNullOrWhiteSpace(imageUrl))
+                return imageUrl;
+
+            if (!string.Equals(state, "Pending", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            await Task.Delay(250 * (attempt + 1));
+        }
+
+        return null;
+    }
+    // 繧ｲ繝ｼ繝繧ｵ繝ｼ繝舌・縺ｮ蝗ｽ繧ｳ繝ｼ繝峨ｒ霑斐☆・井ｾ・ "SG", "US"・・
     public async Task<string?> GetServerCountryCodeAsync(string ip)
     {
         try
@@ -99,14 +140,14 @@ public class RobloxApiService
         catch { return null; }
     }
 
-    // プレイヤー自身の国名を返す（例: "Japan", "United States"）
+    // 繝励Ξ繧､繝､繝ｼ閾ｪ霄ｫ縺ｮ蝗ｽ蜷阪ｒ霑斐☆・井ｾ・ "Japan", "United States"・・
     public async Task<string?> GetMyCountryAsync()
     {
         try
         {
             var json = await Http.GetStringAsync("https://ipinfo.io/json");
             var obj  = JObject.Parse(json);
-            // ipinfo は国コードしか返さないので country フィールドをそのまま使う
+            // ipinfo 縺ｯ蝗ｽ繧ｳ繝ｼ繝峨＠縺玖ｿ斐＆縺ｪ縺・・縺ｧ country 繝輔ぅ繝ｼ繝ｫ繝峨ｒ縺昴・縺ｾ縺ｾ菴ｿ縺・
             return obj["country"]?.Value<string>();
         }
         catch { return null; }
@@ -122,7 +163,7 @@ public class RobloxApiService
             var ids  = data.Select(f => f["id"]!.Value<long>()).ToList();
             if (ids.Count == 0) return [];
 
-            // friends endpoint returns empty name/displayName without auth — batch-fetch via users API
+            // friends endpoint returns empty name/displayName without auth 窶・batch-fetch via users API
             var bodyJson = Newtonsoft.Json.JsonConvert.SerializeObject(
                 new { userIds = ids, excludeBannedUsers = false });
             using var req = new HttpRequestMessage(HttpMethod.Post, "https://users.roblox.com/v1/users")
@@ -222,15 +263,15 @@ public class RobloxApiService
     }
 
     /// <summary>
-    /// Bloxstrap 互換: gamejoin.roblox.com/v1/join-* API を呼び joinScriptUrl と authTicket を返す。
-    /// gameId 指定で特定サーバー参加、accessCode でプライベートサーバー参加。
+    /// Bloxstrap 莠呈鋤: gamejoin.roblox.com/v1/join-* API 繧貞他縺ｳ joinScriptUrl 縺ｨ authTicket 繧定ｿ斐☆縲・
+    /// gameId 謖・ｮ壹〒迚ｹ螳壹し繝ｼ繝舌・蜿ょ刈縲∥ccessCode 縺ｧ繝励Λ繧､繝吶・繝医し繝ｼ繝舌・蜿ょ刈縲・
     /// </summary>
     public async Task<(string? JoinScriptUrl, string? AuthTicket)> GetJoinInfoAsync(
         string cookie, long placeId, string? gameId = null, string? accessCode = null)
     {
         try
         {
-            // CSRF トークン取得
+            // CSRF 繝医・繧ｯ繝ｳ蜿門ｾ・
             using var csrf1 = new HttpRequestMessage(HttpMethod.Post,
                 "https://auth.roblox.com/v1/authentication-ticket");
             csrf1.Headers.TryAddWithoutValidation("Cookie", $".ROBLOSECURITY={cookie}");
@@ -240,7 +281,7 @@ public class RobloxApiService
             if (!r1.Headers.TryGetValues("x-csrf-token", out var toks)) return (null, null);
             var csrf = toks.First();
 
-            // join エンドポイントとボディを決定
+            // join 繧ｨ繝ｳ繝峨・繧､繝ｳ繝医→繝懊ョ繧｣繧呈ｱｺ螳・
             string endpoint;
             JObject body;
             if (!string.IsNullOrEmpty(accessCode))
@@ -310,7 +351,7 @@ public class RobloxApiService
         catch { return []; }
     }
 
-    // ── 統計カード用（公開 API） ───────────────────────────────────────────────
+    // 笏笏 邨ｱ險医き繝ｼ繝臥畑・亥・髢・API・・笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
 
     public async Task<int> GetFriendsCountAsync(long userId)
     {
@@ -345,7 +386,7 @@ public class RobloxApiService
         catch { return 0; }
     }
 
-    // ── Quick Sign-In（Roblox 公式 API） ─────────────────────────────────────
+    // 笏笏 Quick Sign-In・・oblox 蜈ｬ蠑・API・・笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
 
     public async Task<(string Code, string PrivateKey)?> CreateQuickSignInAsync()
     {
@@ -381,7 +422,7 @@ public class RobloxApiService
         catch { return "Error"; }
     }
 
-    // 1回目は XSRF 取得用に失敗させる。返却値は (xsrfToken, status)
+    // 1蝗樒岼縺ｯ XSRF 蜿門ｾ礼畑縺ｫ螟ｱ謨励＆縺帙ｋ縲りｿ泌唆蛟､縺ｯ (xsrfToken, status)
     public async Task<(string Xsrf, string Status)> PollQuickSignInFirstAsync(string code, string privateKey)
     {
         try
@@ -437,3 +478,4 @@ public class RobloxApiService
         catch { return null; }
     }
 }
+

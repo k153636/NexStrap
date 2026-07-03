@@ -1,248 +1,392 @@
 --!strict
 
---[[
-    NexStrap Studio RPC Plugin  v2.1.0
-    Discord Rich Presence integration for Roblox Studio.
+-- NexStrap Studio RPC plugin.
+-- Sends a structured Studio snapshot to the local NexStrap app.
 
-    Requires: Experience Settings → Security → Allow HTTP Requests = ON
-    Launcher:  NexStrap (localhost:4876)
---]]
-
--- ── Services ──────────────────────────────────────────────────────────────
-
-local HttpService         = game:GetService("HttpService")
-local MarketplaceService  = game:GetService("MarketplaceService")
-local RunService          = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local RunService = game:GetService("RunService")
 local ScriptEditorService = game:GetService("ScriptEditorService")
-local Selection           = game:GetService("Selection")
-local StudioService       = game:GetService("StudioService")
+local Selection = game:GetService("Selection")
+local StudioService = game:GetService("StudioService")
 
--- ── Constants ─────────────────────────────────────────────────────────────
+local VERSION = "2.2.0"
+local ENDPOINT = "http://localhost:4876/rpc"
+local HTTP_TIMEOUT = 2
+local POLL_INTERVAL = 0.5
+local UPDATE_INTERVAL = 10
+local COOLDOWN_TIME = 1.5
 
-local VERSION         : string = "2.1.0"
-local ENDPOINT        : string = "http://localhost:4876/rpc"
-local HTTP_TIMEOUT    : number = 2
-local POLL_INTERVAL   : number = 0.5   -- IsRunning() ポーリング間隔（秒）
-local UPDATE_INTERVAL : number = 10    -- 定期送信間隔（秒）
-local COOLDOWN_TIME   : number = 1.5   -- 連続送信の最小間隔（秒）
-
--- ── Types ─────────────────────────────────────────────────────────────────
-
-type WorkspaceInfo = {
-    name     : string,
-    placeId  : number,
-    isPublic : boolean,
+type StudioSnapshot = {
+	name: string,
+	placeId: number,
+	isPublic: boolean,
 }
 
 type Payload = {
-    details  : string,
-    testing  : boolean,
-    placeId  : number,
-    isPublic : boolean,
-    version  : string,
+	details: string,
+	context: string,
+	mode: string,
+	testing: boolean,
+	placeId: number,
+	isPublic: boolean,
+	version: string,
+	workspace: string,
+	activeScript: string?,
+	selectionCount: number,
+	openDocuments: number,
 }
 
 type RpcEnvelope = {
-    command : string,
-    data    : { [string]: unknown },
+	command: string,
+	data: { [string]: unknown },
 }
 
--- ── State ─────────────────────────────────────────────────────────────────
+local enabled = plugin ~= nil
+local onCooldown = false
+local startupInitialized = false
+local lastPayload: Payload? = nil
+local studioSnapshot: StudioSnapshot = {
+	name = "Unsaved Project",
+	placeId = 0,
+	isPublic = false,
+}
+local connections: { RBXScriptConnection } = {}
 
-local enabled       : boolean          = plugin ~= nil  -- Studio プラグイン環境以外では無効
-local onCooldown    : boolean          = false
-local lastPayload   : Payload?         = nil
-local workspace     : WorkspaceInfo    = { name = "Unsaved Project", placeId = 0, isPublic = false }
-local connections   : { RBXScriptConnection } = {}
-
--- ── Workspace ─────────────────────────────────────────────────────────────
-
-local function fetchWorkspace(): WorkspaceInfo
-    local placeId = game.PlaceId
-
-    if placeId > 0 then
-        local ok, result = pcall(function()
-            return MarketplaceService:GetProductInfoAsync(placeId)
-        end)
-        if ok and typeof(result) == "table" then
-            local info = result :: { Name: string? }
-            local name = info.Name
-            if name and #name > 0 then
-                return { name = name, placeId = placeId, isPublic = true }
-            end
-        end
-    end
-
-    local raw = game.Name
-    local name = (raw ~= "" and raw ~= "Place") and raw or "Unsaved Project"
-    return { name = name, placeId = placeId, isPublic = false }
+local function truncate(text: string, maxLength: number): string
+	if #text <= maxLength then
+		return text
+	end
+	if maxLength <= 3 then
+		return string.sub(text, 1, maxLength)
+	end
+	return string.sub(text, 1, maxLength - 3) .. "..."
 end
 
--- ── HTTP ──────────────────────────────────────────────────────────────────
+local function labelFromInstance(instance: Instance?): string?
+	if instance == nil then
+		return nil
+	end
+
+	local ok, fullName = pcall(function()
+		return instance:GetFullName()
+	end)
+
+	if ok and typeof(fullName) == "string" and #fullName > 0 then
+		if string.sub(fullName, 1, 5) == "game." then
+			fullName = string.sub(fullName, 6)
+		end
+		return truncate(fullName, 80)
+	end
+
+	if instance.Name ~= "" then
+		return truncate(instance.Name, 48)
+	end
+
+	return instance.ClassName
+end
+
+local function fetchStudioSnapshot(): StudioSnapshot
+	local placeId = game.PlaceId
+
+	if placeId > 0 then
+		local ok, result = pcall(function()
+			return MarketplaceService:GetProductInfoAsync(placeId)
+		end)
+		if ok and typeof(result) == "table" then
+			local info = result :: { Name: string? }
+			local name = info.Name
+			if name and #name > 0 then
+				return {
+					name = name,
+					placeId = placeId,
+					isPublic = true,
+				}
+			end
+		end
+	end
+
+	local raw = game.Name
+	local name = (raw ~= "" and raw ~= "Place") and raw or "Unsaved Project"
+	return {
+		name = name,
+		placeId = placeId,
+		isPublic = false,
+	}
+end
+
+local function getSelectionSummary(): (number, string?)
+	local selected = Selection:Get()
+	local count = #selected
+	if count == 0 then
+		return 0, nil
+	end
+
+	local names = table.create(math.min(count, 3))
+	for i = 1, math.min(count, 3) do
+		names[i] = labelFromInstance(selected[i]) or selected[i].ClassName
+	end
+
+	local suffix = ""
+	if count > 3 then
+		suffix = string.format(" +%d", count - 3)
+	end
+
+	return count, truncate(table.concat(names, ", ") .. suffix, 80)
+end
+
+local function getOpenDocumentCount(): number
+	local ok, docs = pcall(function()
+		return ScriptEditorService:GetScriptDocuments()
+	end)
+	if not ok or typeof(docs) ~= "table" then
+		return 0
+	end
+	return #docs
+end
+
+local function buildDetails(): Payload
+	studioSnapshot = fetchStudioSnapshot()
+
+	local activeScript = labelFromInstance(StudioService.ActiveScript)
+	local selectionCount, selectionLabel = getSelectionSummary()
+	local openDocuments = getOpenDocumentCount()
+	local testing = RunService:IsRunning()
+
+	local mode = "Idle"
+	local details = "Studio"
+	local action = "Idle"
+	local target = "No active context"
+	local modeSource = "fallback"
+	local contextParts = {
+		"Project: " .. studioSnapshot.name,
+		"PlaceId: " .. tostring(studioSnapshot.placeId),
+		"Visibility: " .. (studioSnapshot.isPublic and "Public" or "Private"),
+		"Script: None",
+		"Selection: None",
+		"Open docs: 0",
+		"Mode source: fallback",
+	}
+
+	if testing then
+		mode = "Testing"
+		action = "Testing"
+		modeSource = "RunService:IsRunning()"
+		if activeScript ~= nil then
+			target = "Script: " .. activeScript
+		elseif selectionLabel ~= nil then
+			target = "Selection: " .. selectionLabel
+		elseif selectionCount > 0 then
+			target = string.format("Selection: %d selected", selectionCount)
+		else
+			target = string.format("Open docs: %d", openDocuments)
+		end
+	elseif activeScript ~= nil then
+		mode = "Editing"
+		action = "Editing"
+		modeSource = "StudioService.ActiveScript"
+		target = "Script: " .. activeScript
+	elseif selectionCount > 0 then
+		mode = "Selecting"
+		action = "Selecting"
+		modeSource = "Selection:Get()"
+		target = selectionLabel ~= nil and ("Selection: " .. selectionLabel) or string.format("Selection: %d selected", selectionCount)
+	elseif openDocuments > 0 then
+		mode = "Browsing"
+		action = "Browsing"
+		modeSource = "ScriptEditorService:GetScriptDocuments()"
+		target = string.format("Open docs: %d", openDocuments)
+	end
+
+	contextParts[4] = "Script: " .. (activeScript or "None")
+	contextParts[5] = selectionLabel ~= nil and ("Selection: " .. selectionLabel) or string.format("Selection: %d selected", selectionCount)
+	contextParts[6] = "Open docs: " .. tostring(openDocuments)
+	contextParts[7] = "Mode source: " .. modeSource
+
+	details = truncate(action .. " - " .. target, 120)
+
+	return {
+		details = details,
+		context = truncate(table.concat(contextParts, " | "), 160),
+		mode = mode,
+		testing = testing,
+		placeId = studioSnapshot.placeId,
+		isPublic = studioSnapshot.isPublic,
+		version = VERSION,
+		workspace = studioSnapshot.name,
+		activeScript = activeScript,
+		selectionCount = selectionCount,
+		openDocuments = openDocuments,
+	}
+end
 
 local function send(command: string, data: { [string]: unknown }): ()
-    local envelope: RpcEnvelope = { command = command, data = data }
-    local body = HttpService:JSONEncode(envelope)
+	local envelope: RpcEnvelope = {
+		command = command,
+		data = data,
+	}
+	local body = HttpService:JSONEncode(envelope)
 
-    task.spawn(function()
-        -- HTTP が無効 / ランチャー未起動はサイレントに無視（pcall で完全に捕捉）
-        pcall(function()
-            HttpService:RequestAsync({
-                Url     = ENDPOINT,
-                Method  = "POST",
-                Headers = { ["Content-Type"] = "application/json" },
-                Body    = body,
-                Timeout = HTTP_TIMEOUT,
-            })
-        end)
-    end)
-end
-
--- ── Presence ──────────────────────────────────────────────────────────────
-
-local function buildPayload(): Payload
-    return {
-        details  = workspace.name,
-        testing  = RunService:IsRunning(),
-        placeId  = workspace.placeId,
-        isPublic = workspace.isPublic,
-        version  = VERSION,
-    }
+	task.spawn(function()
+		pcall(function()
+			HttpService:RequestAsync({
+				Url = ENDPOINT,
+				Method = "POST",
+				Headers = { ["Content-Type"] = "application/json" },
+				Body = body,
+				Timeout = HTTP_TIMEOUT,
+			})
+		end)
+	end)
 end
 
 local function payloadsEqual(a: Payload, b: Payload): boolean
-    return a.details  == b.details
-        and a.testing  == b.testing
-        and a.placeId  == b.placeId
-        and a.isPublic == b.isPublic
+	return a.details == b.details
+		and a.context == b.context
+		and a.mode == b.mode
+		and a.testing == b.testing
+		and a.placeId == b.placeId
+		and a.isPublic == b.isPublic
+		and a.workspace == b.workspace
+		and a.activeScript == b.activeScript
+		and a.selectionCount == b.selectionCount
+		and a.openDocuments == b.openDocuments
 end
 
-local function updatePresence(force: boolean?): ()
-    if not enabled then return end
-    if onCooldown and not force then return end
+local function updatePresence(force: boolean?, isStartup: boolean?): ()
+	if not enabled then
+		return
+	end
+	if onCooldown and not force then
+		return
+	end
 
-    local payload = buildPayload()
+	local payload = buildDetails()
 
-    if not force then
-        local last = lastPayload
-        if last ~= nil and payloadsEqual(payload, last) then return end
-    end
+	if not force then
+		local last = lastPayload
+		if last ~= nil and payloadsEqual(payload, last) then
+			return
+		end
+	end
 
-    lastPayload = payload
-    onCooldown  = true
-    task.delay(COOLDOWN_TIME, function() onCooldown = false end)
+	lastPayload = payload
+	onCooldown = true
+	task.delay(COOLDOWN_TIME, function()
+		onCooldown = false
+	end)
 
-    send("SetRichPresence", payload :: { [string]: unknown })
+	if isStartup and not startupInitialized then
+		startupInitialized = true
+		send("Initialize", payload :: { [string]: unknown })
+	else
+		send("SetRichPresence", payload :: { [string]: unknown })
+	end
 end
 
--- API 取得完了後にのみ presence を送信する（仮名を表示しないため updatePresence の後に定義）
-local function refreshWorkspaceThenUpdate(): ()
-    task.spawn(function()
-        workspace = fetchWorkspace()
-        updatePresence(true)
-    end)
+local function refreshStudioThenUpdate(isStartup: boolean?): ()
+	task.spawn(function()
+		updatePresence(true, isStartup)
+	end)
 end
-
--- ── Teardown ──────────────────────────────────────────────────────────────
 
 local function disconnect(): ()
-    for _, c in connections do
-        c:Disconnect()
-    end
-    table.clear(connections)
+	for _, connection in connections do
+		connection:Disconnect()
+	end
+	table.clear(connections)
 end
 
 local function shutdown(): ()
-    enabled = false
-    send("RPCToggle", {
-        enabled   = false,
-        workspace = workspace.name,
-        isPublic  = workspace.isPublic,
-    })
-    disconnect()
+	enabled = false
+	send("RPCToggle", {
+		enabled = false,
+		workspace = studioSnapshot.name,
+		isPublic = studioSnapshot.isPublic,
+		details = lastPayload and lastPayload.details or "Studio",
+		context = lastPayload and lastPayload.context or "",
+		mode = lastPayload and lastPayload.mode or "Idle",
+	})
+	disconnect()
 end
-
--- ── Event Wiring ──────────────────────────────────────────────────────────
 
 local function wire(): ()
-    -- スクリプト選択 / アクティブスクリプト切り替え
-    table.insert(connections, Selection.SelectionChanged:Connect(function()
-        task.defer(updatePresence)
-    end))
+	table.insert(connections, Selection.SelectionChanged:Connect(function()
+		task.defer(updatePresence)
+	end))
 
-    table.insert(connections, StudioService:GetPropertyChangedSignal("ActiveScript"):Connect(function()
-        task.defer(updatePresence)
-    end))
+	table.insert(connections, StudioService:GetPropertyChangedSignal("ActiveScript"):Connect(function()
+		task.defer(updatePresence)
+	end))
 
-    -- テストプレイ開始 / 終了（IsRunning はイベントを持たないのでポーリング）
-    task.spawn(function()
-        local prev = RunService:IsRunning()
-        while enabled do
-            task.wait(POLL_INTERVAL)
-            local cur = RunService:IsRunning()
-            if cur ~= prev then
-                prev = cur
-                updatePresence(true)
-            end
-        end
-    end)
+	task.spawn(function()
+		local prev = RunService:IsRunning()
+		while enabled do
+			task.wait(POLL_INTERVAL)
+			local cur = RunService:IsRunning()
+			if cur ~= prev then
+				prev = cur
+				updatePresence(true, false)
+			end
+		end
+	end)
 
-    -- テレポート（PlaceId の変化）
-    table.insert(connections, game:GetPropertyChangedSignal("PlaceId"):Connect(function()
-        task.delay(1, refreshWorkspaceThenUpdate) -- テレポート後に PlaceId が確定してから取得
-    end))
+	table.insert(connections, game:GetPropertyChangedSignal("PlaceId"):Connect(function()
+		task.delay(1, function()
+			refreshStudioThenUpdate(false)
+		end)
+	end))
 
-    -- ゲームロード完了
-    if game:IsLoaded() then
-        refreshWorkspaceThenUpdate()
-    else
-        table.insert(connections, game.Loaded:Connect(function()
-            task.delay(0.5, refreshWorkspaceThenUpdate)
-        end))
-    end
+	if game:IsLoaded() then
+		refreshStudioThenUpdate(true)
+	else
+		table.insert(connections, game.Loaded:Connect(function()
+			task.delay(0.5, function()
+				refreshStudioThenUpdate(true)
+			end)
+		end))
+	end
 
-    -- 定期送信（接続が切れた場合のフォールバック）
-    task.spawn(function()
-        while enabled do
-            task.wait(UPDATE_INTERVAL)
-            if enabled then updatePresence() end
-        end
-    end)
+	task.spawn(function()
+		while enabled do
+			task.wait(UPDATE_INTERVAL)
+			if enabled then
+				updatePresence()
+			end
+		end
+	end)
 end
-
--- ── Plugin Entry ──────────────────────────────────────────────────────────
 
 if not plugin then
-    -- テスト環境（Studio 外）では何もしない
-    return
+	return
 end
 
--- ツールバーボタン
 local toolbar = plugin:CreateToolbar("NexStrap")
-local button  = toolbar:CreateButton(
-    "Toggle RPC",
-    "Discord Rich Presence のオン/オフ",
-    "rbxassetid://111400040119373"
+local button = toolbar:CreateButton(
+	"Toggle RPC",
+	"Toggle the NexStrap Studio RPC bridge.",
+	"rbxassetid://111400040119373"
 )
 button:SetActive(true)
 
 button.Click:Connect(function()
-    enabled = not enabled
-    button:SetActive(enabled)
+	enabled = not enabled
+	button:SetActive(enabled)
 
-    send("RPCToggle", {
-        enabled   = enabled,
-        workspace = workspace.name,
-        isPublic  = workspace.isPublic,
-    })
+	send("RPCToggle", {
+		enabled = enabled,
+		workspace = studioSnapshot.name,
+		isPublic = studioSnapshot.isPublic,
+		details = lastPayload and lastPayload.details or "Studio",
+		context = lastPayload and lastPayload.context or "",
+		mode = lastPayload and lastPayload.mode or "Idle",
+	})
 
-    if enabled then
-        refreshWorkspaceThenUpdate()
-    end
+	if enabled then
+		refreshStudioThenUpdate(startupInitialized == false)
+	end
 end)
 
 plugin.Unloading:Connect(shutdown)
 
--- 初回起動（API 取得完了後に送信するため refreshWorkspaceThenUpdate を使う）
 wire()
-refreshWorkspaceThenUpdate()

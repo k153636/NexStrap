@@ -130,7 +130,10 @@ public partial class HomeViewModel : ViewModelBase
         _studioRpcServer = studioRpcServer;
         _studioRpcServer.MessageReceived += (_, msg) =>
         {
-            if (msg.Command == "SetRichPresence" && msg.Data != null)
+            if (msg.Data == null) return;
+            if (msg.Command == "Initialize")
+                _presence.EnqueueStudioInitialized(msg.Data);
+            else if (msg.Command == "SetRichPresence")
                 _presence.EnqueueStudioRpcMessage(msg.Data);
         };
         _studioRpcServer.Start();

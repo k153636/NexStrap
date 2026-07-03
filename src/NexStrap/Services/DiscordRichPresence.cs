@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using DiscordRPC;
@@ -8,28 +8,28 @@ using NexStrap.Services;
 namespace NexStrap.Services;
 
 /// <summary>
-/// Discord Rich Presence の全管理クラス。
-/// 単一チャネル + 状態機械により、複数イベントの同時発火でも競合しない設計。
-/// 外部から直接 presence を変更することはできない。
+/// Discord Rich Presence 邵ｺ・ｮ陷茨ｽｨ驍ゑｽ｡騾・・縺醍ｹ晢ｽｩ郢ｧ・ｹ邵ｲ繝ｻ
+/// 陷雁・ｽｸﾂ郢昶・ﾎ慕ｹ晞亂ﾎ・+ 霑･・ｶ隲ｷ蛹ｺ・ｩ貊難ｽ｢・ｰ邵ｺ・ｫ郢ｧ蛹ｻ・顔ｸｲ竏ｬ・､繝ｻ辟夂ｹｧ・､郢晏生ﾎｦ郢晏現繝ｻ陷ｷ譴ｧ蜃ｾ騾具ｽｺ霓｣・ｫ邵ｺ・ｧ郢ｧ繧会ｽｫ・ｶ陷ｷ蛹ｻ・邵ｺ・ｪ邵ｺ繝ｻ・ｨ・ｭ髫ｪ蛹ｻﾂ繝ｻ
+/// 陞溷､慚夂ｸｺ荵晢ｽ蛾ｶ・ｴ隰暦ｽ･ presence 郢ｧ雋橸ｽ､逕ｻ蟲ｩ邵ｺ蜷ｶ・狗ｸｺ阮吮・邵ｺ・ｯ邵ｺ・ｧ邵ｺ髦ｪ竊醍ｸｺ繝ｻﾂ繝ｻ
 /// </summary>
 public sealed class DiscordRichPresence : IDisposable
 {
-    // ══════════════════════════════════════════════════════════════════════
-    // 状態フェーズ
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // 霑･・ｶ隲ｷ荵昴Ψ郢ｧ・ｧ郢晢ｽｼ郢ｧ・ｺ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     private enum Phase
     {
-        NexStrapIdle,  // NexStrap のみ
-        RobloxMenu,    // Roblox 起動（メニュー）
-        FetchingGame,  // API 取得中
-        InGame,        // ゲームプレイ中
-        Studio,        // Studio 使用中
+        NexStrapIdle,  // NexStrap 邵ｺ・ｮ邵ｺ・ｿ
+        RobloxMenu,    // Roblox 隘搾ｽｷ陷榊桁・ｼ蛹ｻﾎ鍋ｹ昜ｹ斟礼ｹ晢ｽｼ繝ｻ繝ｻ
+        FetchingGame,  // API 陷ｿ髢・ｾ蠍ｺ・ｸ・ｭ
+        InGame,        // 郢ｧ・ｲ郢晢ｽｼ郢晢｣ｰ郢晏干ﾎ樒ｹｧ・､闕ｳ・ｭ
+        Studio,        // Studio 闖ｴ・ｿ騾包ｽｨ闕ｳ・ｭ
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // イベント定義（全ての状態変化はこれを通じてキューに入れる）
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // 郢ｧ・､郢晏生ﾎｦ郢昜ｺ･・ｮ螟ゑｽｾ・ｩ繝ｻ莠･繝ｻ邵ｺ・ｦ邵ｺ・ｮ霑･・ｶ隲ｷ蜿･・､迚吝密邵ｺ・ｯ邵ｺ阮呻ｽ檎ｹｧ蟶敖螢ｹﾂｧ邵ｺ・ｦ郢ｧ・ｭ郢晢ｽ･郢晢ｽｼ邵ｺ・ｫ陷茨ｽ･郢ｧ蠕鯉ｽ九・繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     private abstract record Ev;
     private record EvRoblox(bool Running)                                               : Ev;
@@ -45,6 +45,7 @@ public sealed class DiscordRichPresence : IDisposable
     private record EvPage(string Name)                                                 : Ev;
     private record EvDiscordReady                                                      : Ev;
     private record EvStudio(bool Detected, string? PlaceName, bool Testing)            : Ev;
+    private record EvStudioInit(NexStrap.Services.StudioRpcData Data)             : Ev;
     private record EvStudioRpc(NexStrap.Services.StudioRpcData Data)             : Ev;
     private record EvCountry(string Code)                                              : Ev;
     private record EvHeartbeat                                                         : Ev;
@@ -52,9 +53,9 @@ public sealed class DiscordRichPresence : IDisposable
     private record EvRefresh                                                           : Ev;
     private record EvDisposeClient(DiscordRpcClient? Client)                           : Ev;
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 処理ループのみが読み書きする状態（外部からは読み取り専用プロパティ経由）
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // 陷・ｽｦ騾・・ﾎ晉ｹ晢ｽｼ郢晏干繝ｻ邵ｺ・ｿ邵ｺ迹夲ｽｪ・ｭ邵ｺ・ｿ隴厄ｽｸ邵ｺ髦ｪ笘・ｹｧ迢玲・隲ｷ蜈ｷ・ｼ莠･・､螟慚夂ｸｺ荵晢ｽ臥ｸｺ・ｯ髫ｱ・ｭ邵ｺ・ｿ陷ｿ謔ｶ・願氣繧臥舞郢晏干ﾎ溽ｹ昜ｻ｣繝ｦ郢ｧ・｣驍ｨ讙守ｽｰ繝ｻ繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     private readonly record struct SlotGame(
         string? Name, string? IconUrl, string? Creator,
@@ -69,8 +70,12 @@ public sealed class DiscordRichPresence : IDisposable
     private string? _myCountry;
     private bool    _studioDetected;
     private string? _studioPlaceName;
+    private string? _studioContext;
+    private string? _studioMode;
     private bool    _studioTesting;
-    private bool    _studioRpcActive;  // プラグインが接続中かどうか
+    private long    _studioPlaceId;
+    private string? _studioIconUrl;
+    private bool    _studioRpcActive;  // 郢晏干ﾎ帷ｹｧ・ｰ郢ｧ・､郢晢ｽｳ邵ｺ譴ｧ逎・け螢ｻ・ｸ・ｭ邵ｺ荵昶・邵ｺ繝ｻﾂｰ
     private int     _activeFocusedSlot = -1;
     private int     _lastFocusedSlot   = -1;
     private int     _robloxCount;
@@ -87,25 +92,25 @@ public sealed class DiscordRichPresence : IDisposable
     private readonly Dictionary<int, int>                          _slotFetchRetries = new();
     private readonly Dictionary<int, string>                       _slotServerCodes = new();
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 外部サービス
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // 陞溷､慚夂ｹｧ・ｵ郢晢ｽｼ郢晁侭縺・
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     private readonly SettingsService  _settings;
     private readonly RobloxApiService _robloxApi;
     private readonly FastFlagService  _fastFlags;
 
-    // ══════════════════════════════════════════════════════════════════════
-    // イベントチャネル（SingleReader で競合排除）
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // 郢ｧ・､郢晏生ﾎｦ郢晏現繝｡郢晢ｽ｣郢晞亂ﾎ昴・繝ｻingleReader 邵ｺ・ｧ驕ｶ・ｶ陷ｷ蝓溯ｳ憺ｫｯ・､繝ｻ繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     private readonly Channel<Ev> _ch = Channel.CreateUnbounded<Ev>(
         new UnboundedChannelOptions { SingleReader = true, AllowSynchronousContinuations = false });
     private readonly CancellationTokenSource _cts = new();
 
-    // ══════════════════════════════════════════════════════════════════════
-    // Discord RPC クライアント（処理ループ外で使うため別ロック）
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // Discord RPC 郢ｧ・ｯ郢晢ｽｩ郢ｧ・､郢ｧ・｢郢晢ｽｳ郢晁肩・ｼ莠･繝ｻ騾・・ﾎ晉ｹ晢ｽｼ郢晄懶ｽ､謔ｶ縲定抄・ｿ邵ｺ繝ｻ笳・ｹｧ竏晄肩郢晢ｽｭ郢昴・縺代・繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     private DiscordRpcClient? _client;
     private bool              _rpcConnected;
@@ -116,9 +121,9 @@ public sealed class DiscordRichPresence : IDisposable
     private Timer?            _debounce;
     private RichPresence?     _pending;
 
-    // ══════════════════════════════════════════════════════════════════════
-    // タイマー
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // 郢ｧ・ｿ郢ｧ・､郢晄ｧｭ繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     private Timer? _heartbeatTimer;
     private Timer? _studioTimer;
@@ -161,18 +166,18 @@ public sealed class DiscordRichPresence : IDisposable
         [("AF", "NA")] = 190,  [("AF", "EU")] = 120,  [("AF", "ME")] = 140, [("AF", "AF")] = 70
     };
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 公開状態（読み取り専用）
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // 陷茨ｽｬ鬮｢迢玲・隲ｷ蜈ｷ・ｼ驛・ｽｪ・ｭ邵ｺ・ｿ陷ｿ謔ｶ・願氣繧臥舞繝ｻ繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     public bool    IsConnected       => _rpcConnected;
     public bool    GameDetected      => _phase is Phase.InGame or Phase.FetchingGame;
     public long    CurrentUniverseId => GetDisplaySlot() is { } slot && _slotUniverseIds.TryGetValue(slot, out var universeId) ? universeId : 0;
     public string  CurrentPageName   => _pageName;
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 外部向けイベント（HomeViewModel が subscribe する）
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // 陞溷､慚夊惺莉｣・郢ｧ・､郢晏生ﾎｦ郢晁肩・ｼ繝ｻomeViewModel 邵ｺ繝ｻsubscribe 邵ｺ蜷ｶ・九・繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     public event EventHandler<bool>?               ConnectionChanged;
     public event EventHandler<GameInfoFetchedArgs>? GameInfoFetched;
@@ -183,9 +188,9 @@ public sealed class DiscordRichPresence : IDisposable
         int Slot, long PlaceId, long UniverseId, string Name, string IconUrl,
         DateTime PlayedAt, DateTime StartedAt);
 
-    // ══════════════════════════════════════════════════════════════════════
-    // コンストラクタ
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // 郢ｧ・ｳ郢晢ｽｳ郢ｧ・ｹ郢晏現ﾎ帷ｹｧ・ｯ郢ｧ・ｿ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     public DiscordRichPresence(SettingsService settings, RobloxApiService robloxApi,
         FastFlagService fastFlags)
@@ -206,9 +211,9 @@ public sealed class DiscordRichPresence : IDisposable
         });
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 公開 API（全て同期でキューに入れるだけ）
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // 陷茨ｽｬ鬮｢繝ｻAPI繝ｻ莠･繝ｻ邵ｺ・ｦ陷ｷ譴ｧ謔・ｸｺ・ｧ郢ｧ・ｭ郢晢ｽ･郢晢ｽｼ邵ｺ・ｫ陷茨ｽ･郢ｧ蠕鯉ｽ狗ｸｺ・ｰ邵ｺ謇假ｽｼ繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     public void EnqueueRobloxChanged(bool running)   => Enqueue(running ? new EvRoblox(true) : new EvRoblox(false));
     public void EnqueueLaunchStarted()               => Enqueue(new EvLaunch());
@@ -218,6 +223,7 @@ public sealed class DiscordRichPresence : IDisposable
     public void EnqueueServerCode(int slot, string? code) { if (code != null) Enqueue(new EvServerCode(slot, code)); }
     public void EnqueueStudioPlaytestStarted()       => Enqueue(new EvStudio(_studioDetected, _studioPlaceName, true));
     public void EnqueueStudioPlaytestStopped()       => Enqueue(new EvStudio(_studioDetected, _studioPlaceName, false));
+    public void EnqueueStudioInitialized(NexStrap.Services.StudioRpcData data) => Enqueue(new EvStudioInit(data));
     public void EnqueueStudioRpcMessage(NexStrap.Services.StudioRpcData data) => Enqueue(new EvStudioRpc(data));
     public void EnqueueFocusChanged(int? slot)       => Enqueue(new EvFocus(slot));
     public void EnqueueRefresh()                     => Enqueue(new EvRefresh());
@@ -225,11 +231,11 @@ public sealed class DiscordRichPresence : IDisposable
     public void SetUserAvatar(string? url)           => Enqueue(new EvAvatar(url));
     public void SetUserLabel(string? label)          => Enqueue(new EvLabel(label));
 
-    /// <summary>ゲーム参加を非同期で処理し完了を待つ必要はない。内部でシリアル処理される。</summary>
+    /// <summary>郢ｧ・ｲ郢晢ｽｼ郢晢｣ｰ陷ｿ繧・・郢ｧ蟶晄直陷ｷ譴ｧ謔・ｸｺ・ｧ陷・ｽｦ騾・・・陞ｳ蠕｡・ｺ繝ｻ・定輔・笆ｽ陟｢繝ｻ・ｦ竏壹・邵ｺ・ｪ邵ｺ繝ｻﾂ繧・・鬩幢ｽｨ邵ｺ・ｧ郢ｧ・ｷ郢晢ｽｪ郢ｧ・｢郢晢ｽｫ陷・ｽｦ騾・・・・ｹｧ蠕鯉ｽ狗ｸｲ繝ｻ/summary>
     public void EnqueuePlaceJoined(long placeId, long universeIdFromLog, int slot)
         => Enqueue(new EvPlaceJoined(placeId, universeIdFromLog, slot));
 
-    // ── RPC 管理（Initialize は内部で処理ループから呼ぶ） ─────────────────
+    // 隨渉隨渉 RPC 驍ゑｽ｡騾・・・ｼ繝ｻnitialize 邵ｺ・ｯ陷繝ｻﾎ夂ｸｺ・ｧ陷・ｽｦ騾・・ﾎ晉ｹ晢ｽｼ郢晏干ﾂｰ郢ｧ迚吩ｻ也ｸｺ・ｶ繝ｻ繝ｻ隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
 
     public void SetDiscordEnabled(bool enabled, string? explicitAppId = null)
     {
@@ -240,7 +246,7 @@ public sealed class DiscordRichPresence : IDisposable
         Enqueue(new EvRefresh());
     }
 
-    // 特殊表示（起動中・インストール中・Dev）— フェーズに干渉しない一時オーバーレイ
+    // 霑夲ｽｹ隹ｿ鬘假ｽ｡・ｨ驕会ｽｺ繝ｻ驛・ｽｵ・ｷ陷咲ｩゑｽｸ・ｭ郢晢ｽｻ郢ｧ・､郢晢ｽｳ郢ｧ・ｹ郢晏現繝ｻ郢晢ｽｫ闕ｳ・ｭ郢晢ｽｻDev繝ｻ菫・繝ｻ郢晁ｼ斐♂郢晢ｽｼ郢ｧ・ｺ邵ｺ・ｫ陝ｷ・ｲ雋ょｳｨ・邵ｺ・ｪ邵ｺ繝ｻ・ｸﾂ隴弱ｅ縺檎ｹ晢ｽｼ郢晁・繝ｻ郢晢ｽｬ郢ｧ・､
     public void EnqueueLaunchingPresence()        => Enqueue(new EvOverlay(OverlayKind.Launching));
     public void EnqueueInstallingStudioPresence() => Enqueue(new EvOverlay(OverlayKind.InstallingStudio));
     public void SetDevPresence()                  => Enqueue(new EvOverlay(OverlayKind.Dev));
@@ -252,16 +258,16 @@ public sealed class DiscordRichPresence : IDisposable
     public void ResetGameTimestamp() => Enqueue(new EvGameTimestampReset());
     private record EvGameTimestampReset : Ev;
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 処理ループ（唯一の状態書き換え者）
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // 陷・ｽｦ騾・・ﾎ晉ｹ晢ｽｼ郢晄圜・ｼ莠･鬮ｪ闕ｳﾂ邵ｺ・ｮ霑･・ｶ隲ｷ蛹ｺ蠍檎ｸｺ閧ｴ驪､邵ｺ驛・繝ｻ・ｼ繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     private async Task ProcessLoopAsync(CancellationToken ct)
     {
         await foreach (var ev in _ch.Reader.ReadAllAsync(ct))
         {
             try { await HandleEventAsync(ev); }
-            catch { /* イベント処理の例外はループを止めない */ }
+            catch { /* 郢ｧ・､郢晏生ﾎｦ郢昜ｺ･繝ｻ騾・・繝ｻ關灘唱・､謔ｶ繝ｻ郢晢ｽｫ郢晢ｽｼ郢晏干・定ｱ・ｽ｢郢ｧ竏壺・邵ｺ繝ｻ*/ }
         }
     }
 
@@ -278,9 +284,9 @@ public sealed class DiscordRichPresence : IDisposable
         var log = NexStrap.Services.Logger.Instance;
         switch (ev)
         {
-            // ── Roblox 起動 / 終了 ──────────────────────────────────────────
+            // 隨渉隨渉 Roblox 隘搾ｽｷ陷阪・/ 驍ｨ繧・ｽｺ繝ｻ隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvRoblox { Running: true }:
-                log.Info("Discord", "Roblox 起動");
+                log.Info("Discord", "Roblox running");
                 ClearAllSlots();
                 _phase         = Phase.RobloxMenu;
                 await SwitchAppIdAsync(AppConstants.DiscordRobloxAppId);
@@ -288,16 +294,16 @@ public sealed class DiscordRichPresence : IDisposable
                 break;
 
             case EvRoblox { Running: false }:
-                log.Info("Discord", "Roblox 終了");
+                log.Info("Discord", "Roblox stopped");
                 ClearAllSlots();
                 _phase         = Phase.NexStrapIdle;
                 await SwitchAppIdAsync(AppConstants.DiscordAppId);
                 ApplyPresence();
                 break;
 
-            // ── Roblox 起動開始（前セッションをクリア） ─────────────────────
+            // 隨渉隨渉 Roblox 隘搾ｽｷ陷肴坩蟷戊沂蜈ｷ・ｼ莠･辯慕ｹｧ・ｻ郢昴・縺咏ｹ晢ｽｧ郢晢ｽｳ郢ｧ蛛ｵ縺醍ｹ晢ｽｪ郢ｧ・｢繝ｻ繝ｻ隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvLaunch:
-                // 実行中のスロットがある場合（マルチインスタンス）はクリアしない
+                // 陞ｳ貅ｯ・｡蠕｡・ｸ・ｭ邵ｺ・ｮ郢ｧ・ｹ郢晢ｽｭ郢昴・繝ｨ邵ｺ蠕娯旺郢ｧ蜿･・ｰ・ｴ陷ｷ闌ｨ・ｼ蛹ｻ繝ｻ郢晢ｽｫ郢昶・縺・ｹ晢ｽｳ郢ｧ・ｹ郢ｧ・ｿ郢晢ｽｳ郢ｧ・ｹ繝ｻ蟲ｨ繝ｻ郢ｧ・ｯ郢晢ｽｪ郢ｧ・｢邵ｺ蜉ｱ竊醍ｸｺ繝ｻ
                 if (_games.Count == 0 && _slotPlaceIds.Count == 0)
                 {
                     ClearAllSlots();
@@ -305,7 +311,7 @@ public sealed class DiscordRichPresence : IDisposable
                 }
                 break;
 
-            // ── ゲーム参加 ──────────────────────────────────────────────────
+            // 隨渉隨渉 郢ｧ・ｲ郢晢ｽｼ郢晢｣ｰ陷ｿ繧・・ 隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvActivity { Activity: var activity }:
                 await HandleActivityChangedAsync(activity);
                 break;
@@ -314,9 +320,9 @@ public sealed class DiscordRichPresence : IDisposable
                 await HandlePlaceJoinedAsync(pid, uid, slot);
                 break;
 
-            // ── ゲーム退出 ──────────────────────────────────────────────────
+            // 隨渉隨渉 郢ｧ・ｲ郢晢ｽｼ郢晢｣ｰ鬨ｾﾂ陷・ｽｺ 隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvGameLeft { Slot: var slot, RobloxCount: var count }:
-                log.Info("Discord", $"ゲーム退出 (slot={slot}, robloxCount={count})");
+                log.Info("Discord", $"Game left detected (slot={slot}, robloxCount={count})");
                 HandleGameLeft(slot, count);
                 await SwitchAppIdAsync(
                     count > 0 ? AppConstants.DiscordRobloxAppId : AppConstants.DiscordAppId);
@@ -326,10 +332,10 @@ public sealed class DiscordRichPresence : IDisposable
                 ApplyPresence();
                 break;
 
-            // ── API 取得結果 ─────────────────────────────────────────────────
+            // 隨渉隨渉 API 陷ｿ髢・ｾ遉ｼ・ｵ蜈域｣｡ 隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvGameInfo { PlaceId: var pid, Seq: var seq, Slot: var infoSlot, Name: var name, Icon: var icon, Creator: var creator }:
                 if (_phase != Phase.FetchingGame && _phase != Phase.InGame) break;
-                // 同一スロットに新しいPlaceJoinedが来ていたら古い結果を捨てる
+                // 陷ｷ蠕｡・ｸﾂ郢ｧ・ｹ郢晢ｽｭ郢昴・繝ｨ邵ｺ・ｫ隴・ｽｰ邵ｺ蜉ｱ・霸laceJoined邵ｺ譴ｧ謫らｸｺ・ｦ邵ｺ繝ｻ笳・ｹｧ迚吝膚邵ｺ繝ｻ・ｵ蜈域｣｡郢ｧ蜻域・邵ｺ・ｦ郢ｧ繝ｻ
                 if (!_slotJoinSeqs.TryGetValue(infoSlot, out var slotLatest) || seq != slotLatest) break;
                 if (name == null)
                 {
@@ -338,12 +344,12 @@ public sealed class DiscordRichPresence : IDisposable
                     _slotFetchRetries[infoSlot] = retries;
                     if (retries < MaxFetchRetries)
                     {
-                        log.Warning("Discord", $"ゲーム情報取得失敗 ({retries}/{MaxFetchRetries}) placeId={pid}, slot={infoSlot}");
+                        log.Warning("Discord", $"Game info retry ({retries}/{MaxFetchRetries}) placeId={pid}, slot={infoSlot}");
                         _phase = _games.Count > 0 ? Phase.InGame : Phase.FetchingGame;
                     }
                     else
                     {
-                        log.Warning("Discord", $"ゲーム情報取得を断念 placeId={pid}, slot={infoSlot}");
+                        log.Warning("Discord", $"Game info fetch failed after retries placeId={pid}, slot={infoSlot}");
                         _phase = _games.Count > 0 ? Phase.InGame : Phase.RobloxMenu;
                     }
                     ApplyPresence();
@@ -351,12 +357,12 @@ public sealed class DiscordRichPresence : IDisposable
                 }
                 if (icon == null)
                 {
-                    log.Warning("Discord", $"ゲーム情報取得不可（非公開またはアクセス不可）placeId={pid}, slot={infoSlot}");
+                    log.Warning("Discord", $"Game info fetch returned no usable data placeId={pid}, slot={infoSlot}");
                     _phase = _games.Count > 0 ? Phase.InGame : Phase.RobloxMenu;
                     ApplyPresence();
                     break;
                 }
-                log.Info("Discord", $"ゲーム参加: {name} (placeId={pid}, slot={infoSlot})");
+                log.Info("Discord", $"Game info fetched: {name} (placeId={pid}, slot={infoSlot})");
                 _users.TryGetValue(infoSlot, out var su);
                 _slotUniverseIds.TryGetValue(infoSlot, out var infoUniverse);
                 var serverCode = _games.TryGetValue(infoSlot, out var oldGame) && oldGame.ServerCode != null
@@ -372,7 +378,7 @@ public sealed class DiscordRichPresence : IDisposable
                 GameInfoFetched?.Invoke(this, new GameInfoFetchedArgs(infoSlot, pid, infoUniverse, name, icon ?? "roblox", DateTime.Now, startedAt));
                 break;
 
-            // ── サーバー国コード ─────────────────────────────────────────────
+            // 隨渉隨渉 郢ｧ・ｵ郢晢ｽｼ郢晁・繝ｻ陜暦ｽｽ郢ｧ・ｳ郢晢ｽｼ郢昴・隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvServerCode { Slot: var serverSlot, Code: var code }:
                 _slotServerCodes[serverSlot] = code;
                 if (_games.TryGetValue(serverSlot, out var serverGame))
@@ -380,7 +386,7 @@ public sealed class DiscordRichPresence : IDisposable
                 if (_phase == Phase.InGame) ApplyPresence();
                 break;
 
-            // ── ユーザー情報更新 ─────────────────────────────────────────────
+            // 隨渉隨渉 郢晢ｽｦ郢晢ｽｼ郢ｧ・ｶ郢晢ｽｼ隲繝ｻ・ｰ・ｱ隴厄ｽｴ隴・ｽｰ 隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvUserUpdated { Slot: var slot, Url: var url, Label: var label }:
                 _users[slot] = (url, label);
                 if (_games.TryGetValue(slot, out var g))
@@ -399,25 +405,56 @@ public sealed class DiscordRichPresence : IDisposable
                 ApplyPresence();
                 break;
 
-            // ── ページ切り替え ────────────────────────────────────────────────
+            // 隨渉隨渉 郢晏｣ｹ繝ｻ郢ｧ・ｸ陋ｻ繝ｻ・願ｭ厄ｽｿ邵ｺ繝ｻ隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvPage { Name: var name }:
                 _pageName = name;
                 ApplyPresence();
                 break;
 
-            // ── Discord 接続確立 ─────────────────────────────────────────────
+            // 隨渉隨渉 Discord 隰暦ｽ･驍ｯ螟ゑｽ｢・ｺ驕ｶ繝ｻ隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvDiscordReady:
                 _rpcConnected = true;
-                ApplyPresence(); // 接続後に現在の状態を再送
+                ApplyPresence(); // 隰暦ｽ･驍ｯ螢ｼ・ｾ蠕娯・霑ｴ・ｾ陜ｨ・ｨ邵ｺ・ｮ霑･・ｶ隲ｷ荵晢ｽ定怙蝓ｼﾂ繝ｻ
                 ConnectionChanged?.Invoke(this, true);
                 break;
 
-            // ── Studio RPC（プラグインからのデータ — ウィンドウタイトルより優先）──
+            // 隨渉隨渉 Studio RPC繝ｻ蛹ｻ繝ｻ郢晢ｽｩ郢ｧ・ｰ郢ｧ・､郢晢ｽｳ邵ｺ荵晢ｽ臥ｸｺ・ｮ郢昴・繝ｻ郢ｧ・ｿ 遯ｶ繝ｻ郢ｧ・ｦ郢ｧ・｣郢晢ｽｳ郢晏ｳｨ縺育ｹｧ・ｿ郢ｧ・､郢晏現ﾎ晉ｹｧ蛹ｻ・願怕・ｪ陷郁肩・ｼ菫・･ｳ隨渉
+            case EvStudioInit { Data: var d }:
+                if (!StudioPluginInstaller.IsInstalled) break;
+                _studioRpcActive = true;
+                _studioDetected  = true;
+                _studioPlaceName = d.Details;
+                _studioContext   = d.Context;
+                _studioMode      = d.Mode;
+                _studioTesting   = d.Testing;
+                _studioPlaceId   = d.PlaceId;
+                _studioIconUrl   = null;
+                if (_studioPlaceId > 0)
+                    _ = RefreshStudioIconAsync(_studioPlaceId);
+                if (_phase != Phase.Studio)
+                {
+                    _phase = Phase.Studio;
+                    await SwitchAppIdAsync(AppConstants.DiscordStudioAppId);
+                }
+                ApplyPresence();
+                break;
+
             case EvStudioRpc { Data: var d }:
                 if (!StudioPluginInstaller.IsInstalled) break;
                 _studioRpcActive = true;
                 _studioPlaceName = d.Details;
+                _studioContext   = d.Context;
+                _studioMode      = d.Mode == "Testing" && !d.Testing ? null : d.Mode;
                 _studioTesting   = d.Testing;
+                _studioPlaceId   = d.PlaceId;
+                if (_studioPlaceId <= 0)
+                {
+                    _studioIconUrl = null;
+                }
+                else
+                {
+                    _ = RefreshStudioIconAsync(_studioPlaceId);
+                }
                 if (_phase == Phase.NexStrapIdle || _phase == Phase.Studio)
                 {
                     _phase = Phase.Studio;
@@ -426,12 +463,25 @@ public sealed class DiscordRichPresence : IDisposable
                 }
                 break;
 
-            // ── Studio 状態（ウィンドウタイトル監視 — プラグインが未接続の場合のフォールバック）──
+            // 隨渉隨渉 Studio 霑･・ｶ隲ｷ蜈ｷ・ｼ蛹ｻ縺育ｹｧ・｣郢晢ｽｳ郢晏ｳｨ縺育ｹｧ・ｿ郢ｧ・､郢晏現ﾎ晞ｶ・｣髫輔・遯ｶ繝ｻ郢晏干ﾎ帷ｹｧ・ｰ郢ｧ・､郢晢ｽｳ邵ｺ譴ｧ謔ｴ隰暦ｽ･驍ｯ螢ｹ繝ｻ陜｣・ｴ陷ｷ蛹ｻ繝ｻ郢晁ｼ斐°郢晢ｽｼ郢晢ｽｫ郢晁・繝｣郢ｧ・ｯ繝ｻ菫・･ｳ隨渉
             case EvStudio { Detected: var det, PlaceName: var place, Testing: var test }:
                 _studioDetected  = det;
                 _studioPlaceName = place;
+                _studioContext   = det ? (test ? "Testing" : "Studio") : null;
+                _studioMode      = det ? (test ? "Testing" : "Studio") : null;
                 _studioTesting   = test;
-                if (det) _overlay = OverlayKind.None; // Studio 検出時は Launching 等の overlay をクリア
+                if (det && test)
+                {
+                    _studioPlaceName = null;
+                    _studioContext   = "Testing";
+                    _studioMode      = "Testing";
+                }
+                if (!det)
+                {
+                    _studioPlaceId = 0;
+                    _studioIconUrl = null;
+                }
+                if (det) _overlay = OverlayKind.None; // Studio 隶諛ｷ繝ｻ隴弱ｅ繝ｻ Launching 驕ｲ蟲ｨ繝ｻ overlay 郢ｧ蛛ｵ縺醍ｹ晢ｽｪ郢ｧ・｢
                 if (_phase == Phase.NexStrapIdle || _phase == Phase.Studio)
                 {
                     _phase = det ? Phase.Studio : Phase.NexStrapIdle;
@@ -440,16 +490,16 @@ public sealed class DiscordRichPresence : IDisposable
                 }
                 break;
 
-            // ── 国コード ─────────────────────────────────────────────────────
+            // 隨渉隨渉 陜暦ｽｽ郢ｧ・ｳ郢晢ｽｼ郢昴・隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvCountry { Code: var code }:
                 _myCountry = code;
                 if (_phase == Phase.InGame) ApplyPresence();
                 break;
 
-            // ── ハートビート ─────────────────────────────────────────────────
+            // 隨渉隨渉 郢昜ｸ翫・郢晏現繝ｳ郢晢ｽｼ郢昴・隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvHeartbeat:
                 if (_phase == Phase.InGame)
-                    ApplyPresence(); // タイムスタンプ等の再送
+                    ApplyPresence(); // 郢ｧ・ｿ郢ｧ・､郢晢｣ｰ郢ｧ・ｹ郢ｧ・ｿ郢晢ｽｳ郢晉､ｼ・ｭ蟲ｨ繝ｻ陷蝓ｼﾂ繝ｻ
                 else if (_phase == Phase.FetchingGame)
                 {
                     var retrySlot = GetDisplaySlot();
@@ -458,11 +508,11 @@ public sealed class DiscordRichPresence : IDisposable
                         && _slotUniverseIds.TryGetValue(retrySlot.Value, out var retryUniverse)
                         && _slotJoinSeqs.TryGetValue(retrySlot.Value, out var retrySeq)
                         && (!_slotFetchRetries.TryGetValue(retrySlot.Value, out var retries) || retries < MaxFetchRetries))
-                        _ = FetchGameInfoAsync(retryPlace, retryUniverse, retrySeq, retrySlot.Value); // リトライ
+                        _ = FetchGameInfoAsync(retryPlace, retryUniverse, retrySeq, retrySlot.Value); // 郢晢ｽｪ郢晏現ﾎ帷ｹｧ・､
                 }
                 break;
 
-            // ── フォーカス ────────────────────────────────────────────────────
+            // 隨渉隨渉 郢晁ｼ斐°郢晢ｽｼ郢ｧ・ｫ郢ｧ・ｹ 隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvFocus { Slot: var slot }:
                 _activeFocusedSlot = slot ?? -1;
                 if (slot.HasValue) _lastFocusedSlot = slot.Value;
@@ -472,36 +522,36 @@ public sealed class DiscordRichPresence : IDisposable
                 if (_phase == Phase.InGame) ApplyPresence();
                 break;
 
-            // ── 強制リフレッシュ ──────────────────────────────────────────────
+            // 隨渉隨渉 陟托ｽｷ陋ｻ・ｶ郢晢ｽｪ郢晁ｼ釆樒ｹ昴・縺咏ｹ晢ｽ･ 隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvRefresh:
                 _overlay = OverlayKind.None;
                 ApplyPresence();
                 break;
 
-            // ── 旧クライアント解放（EvDiscordReady の後に必ず処理される） ─────
+            // 隨渉隨渉 隴鯉ｽｧ郢ｧ・ｯ郢晢ｽｩ郢ｧ・､郢ｧ・｢郢晢ｽｳ郢晞メ・ｧ・｣隰ｾ・ｾ繝ｻ繝ｻvDiscordReady 邵ｺ・ｮ陟募ｾ娯・陟｢繝ｻ笘・怎・ｦ騾・・・・ｹｧ蠕鯉ｽ九・繝ｻ隨渉隨渉隨渉隨渉隨渉
             case EvDisposeClient { Client: var clientToDispose }:
-                // FIFO により ApplyPresence() → SchedulePresence() は既に完了している。
-                // debounce(300ms) の発火を確実に待つ。
+                // FIFO 邵ｺ・ｫ郢ｧ蛹ｻ・・ApplyPresence() 遶翫・SchedulePresence() 邵ｺ・ｯ隴鯉ｽ｢邵ｺ・ｫ陞ｳ蠕｡・ｺ繝ｻ・邵ｺ・ｦ邵ｺ繝ｻ・狗ｸｲ繝ｻ
+                // debounce(300ms) 邵ｺ・ｮ騾具ｽｺ霓｣・ｫ郢ｧ蝣､・｢・ｺ陞ｳ貅倪・陟輔・笆ｽ邵ｲ繝ｻ
                 await Task.Delay(350);
                 clientToDispose?.Dispose();
                 break;
 
-            // ── 特殊オーバーレイ（起動中・インストール中・Dev） ───────────────
+            // 隨渉隨渉 霑夲ｽｹ隹ｿ鄙ｫ縺檎ｹ晢ｽｼ郢晁・繝ｻ郢晢ｽｬ郢ｧ・､繝ｻ驛・ｽｵ・ｷ陷咲ｩゑｽｸ・ｭ郢晢ｽｻ郢ｧ・､郢晢ｽｳ郢ｧ・ｹ郢晏現繝ｻ郢晢ｽｫ闕ｳ・ｭ郢晢ｽｻDev繝ｻ繝ｻ隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvOverlay { Kind: var kind }:
                 _overlay = kind;
                 ApplyPresence();
                 break;
 
-            // ── ゲームタイムスタンプリセット ──────────────────────────────────
+            // 隨渉隨渉 郢ｧ・ｲ郢晢ｽｼ郢晢｣ｰ郢ｧ・ｿ郢ｧ・､郢晢｣ｰ郢ｧ・ｹ郢ｧ・ｿ郢晢ｽｳ郢晏干ﾎ懃ｹｧ・ｻ郢昴・繝ｨ 隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉隨渉
             case EvGameTimestampReset:
                 lock (_rpcLock) { _gameTs = Timestamps.Now; }
                 break;
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // ゲーム参加処理（処理ループ内から呼ぶ）
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // 郢ｧ・ｲ郢晢ｽｼ郢晢｣ｰ陷ｿ繧・・陷・ｽｦ騾・・・ｼ莠･繝ｻ騾・・ﾎ晉ｹ晢ｽｼ郢晄懊・邵ｺ荵晢ｽ芽惱・ｼ邵ｺ・ｶ繝ｻ繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     private async Task HandleActivityChangedAsync(InstanceActivity activity)
     {
@@ -538,7 +588,7 @@ public sealed class DiscordRichPresence : IDisposable
         _slotUniverseIds.TryGetValue(slot, out var prevUniverse);
         var seq          = ++_joinSeq;
 
-        _slotJoinSeqs[slot] = seq; // スロット別に最新シーケンスを記録
+        _slotJoinSeqs[slot] = seq; // 郢ｧ・ｹ郢晢ｽｭ郢昴・繝ｨ陋ｻ・･邵ｺ・ｫ隴崢隴・ｽｰ郢ｧ・ｷ郢晢ｽｼ郢ｧ・ｱ郢晢ｽｳ郢ｧ・ｹ郢ｧ螳夲ｽｨ蛟ｬ鮖ｸ
         _phase            = _games.Count > 0 ? Phase.InGame : Phase.FetchingGame;
 
         long universe = universeIdFromLog;
@@ -547,7 +597,7 @@ public sealed class DiscordRichPresence : IDisposable
             try { universe = (await _robloxApi.GetUniverseIdAsync(placeId)) ?? 0; } catch { }
         }
 
-        // 同一スロットでより新しいPlaceJoinedが来た場合のみキャンセル（他スロットは影響しない）
+        // 陷ｷ蠕｡・ｸﾂ郢ｧ・ｹ郢晢ｽｭ郢昴・繝ｨ邵ｺ・ｧ郢ｧ蛹ｻ・願ｭ・ｽｰ邵ｺ蜉ｱ・霸laceJoined邵ｺ譴ｧ謫らｸｺ貅ｷ・ｰ・ｴ陷ｷ蛹ｻ繝ｻ邵ｺ・ｿ郢ｧ・ｭ郢晢ｽ｣郢晢ｽｳ郢ｧ・ｻ郢晢ｽｫ繝ｻ莠包ｽｻ謔ｶ縺帷ｹ晢ｽｭ郢昴・繝ｨ邵ｺ・ｯ陟厄ｽｱ鬮ｻ・ｿ邵ｺ蜉ｱ竊醍ｸｺ繝ｻ・ｼ繝ｻ
         if (_slotJoinSeqs.TryGetValue(slot, out var latestForSlot) && latestForSlot != seq) return;
 
         bool isTeleport = prevPhase == Phase.InGame && universe != 0 && universe == prevUniverse;
@@ -567,7 +617,7 @@ public sealed class DiscordRichPresence : IDisposable
             return;
         }
 
-        // 新規セッション
+        // 隴・ｽｰ髫穂ｸ翫◎郢昴・縺咏ｹ晢ｽｧ郢晢ｽｳ
         SessionEnded?.Invoke(this, EventArgs.Empty);
         _slotFetchRetries[slot] = 0;
         lock (_rpcLock) { _gameTs = new Timestamps(startedAt); _slotGameTs[slot] = _gameTs; }
@@ -591,9 +641,34 @@ public sealed class DiscordRichPresence : IDisposable
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // ゲーム退出処理（処理ループ内から呼ぶ）
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // 郢ｧ・ｲ郢晢ｽｼ郢晢｣ｰ鬨ｾﾂ陷・ｽｺ陷・ｽｦ騾・・・ｼ莠･繝ｻ騾・・ﾎ晉ｹ晢ｽｼ郢晄懊・邵ｺ荵晢ｽ芽惱・ｼ邵ｺ・ｶ繝ｻ繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+
+    private async Task RefreshStudioIconAsync(long placeId)
+    {
+        try
+        {
+            var (_, iconUrl, _) = await _robloxApi.GetGameInfoAsync(placeId);
+            if (_studioPlaceId != placeId) return;
+            _studioIconUrl = iconUrl;
+            NexStrap.Services.Logger.Instance.Info(
+                "Discord",
+                $"Studio icon resolved: placeId={placeId}, iconUrl={(iconUrl ?? "null")}");
+            if (_phase == Phase.Studio)
+                ApplyPresence();
+        }
+        catch
+        {
+            if (_studioPlaceId == placeId)
+            {
+                _studioIconUrl = null;
+                NexStrap.Services.Logger.Instance.Warning(
+                    "Discord",
+                    $"Studio icon lookup failed: placeId={placeId}");
+            }
+        }
+    }
 
     private void HandleGameLeft(int slot, int count)
     {
@@ -608,7 +683,7 @@ public sealed class DiscordRichPresence : IDisposable
             _slotUniverseIds.Remove(slot);
             _slotFetchRetries.Remove(slot);
             _slotServerCodes.Remove(slot);
-            // 実プロセス数との乖離を整理（確実な slot 削除後のみ実行）
+            // 陞ｳ貅倥・郢晢ｽｭ郢ｧ・ｻ郢ｧ・ｹ隰ｨ・ｰ邵ｺ・ｨ邵ｺ・ｮ闕ｵ螟懷ｱｬ郢ｧ蜻育ｴ幃・・・ｼ閧ｲ・｢・ｺ陞ｳ貅倪・ slot 陷台ｼ∝求陟募ｾ後・邵ｺ・ｿ陞ｳ貅ｯ・｡魃会ｽｼ繝ｻ
             while (_games.Count > count && _games.Count > 0)
             {
                 var key = _games.Keys.Min();
@@ -623,15 +698,15 @@ public sealed class DiscordRichPresence : IDisposable
         }
         else
         {
-            NexStrap.Services.Logger.Instance.Warning("Discord", $"GameLeft: slot 不明 (count={count})");
-            // slot 不明でも count=0 なら全クリア
+            NexStrap.Services.Logger.Instance.Warning("Discord", $"GameLeft: slot removed (count={count})");
+            // slot 闕ｳ閧ｴ繝ｻ邵ｺ・ｧ郢ｧ繝ｻcount=0 邵ｺ・ｪ郢ｧ迚吶・郢ｧ・ｯ郢晢ｽｪ郢ｧ・｢
             if (count == 0) ClearAllSlots();
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // Presence 計算・適用（状態から決定論的に計算）
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // Presence 髫ｪ閧ｲ・ｮ蜉ｱ繝ｻ鬩包ｽｩ騾包ｽｨ繝ｻ閧ｲ諞ｾ隲ｷ荵敖ｰ郢ｧ逕ｻ・ｱ・ｺ陞ｳ螟奇ｽｫ荵溷飭邵ｺ・ｫ髫ｪ閧ｲ・ｮ證ｦ・ｼ繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     private void ApplyPresence() => UpdatePresence();
 
@@ -646,9 +721,9 @@ public sealed class DiscordRichPresence : IDisposable
     private RichPresence? ComputePresence()
     {
         var s = _settings.Settings;
-        if (!s.DiscordShowLauncherPresence && _overlay != OverlayKind.Dev) { /* ラウンチャー表示オフでも Dev は表示 */ }
+        if (!s.DiscordShowLauncherPresence && _overlay != OverlayKind.Dev) { /* 郢晢ｽｩ郢ｧ・ｦ郢晢ｽｳ郢昶・ﾎ慕ｹ晢ｽｼ髯ｦ・ｨ驕会ｽｺ郢ｧ・ｪ郢晁ｼ斐堤ｹｧ繝ｻDev 邵ｺ・ｯ髯ｦ・ｨ驕会ｽｺ */ }
 
-        // オーバーレイが設定されている場合は最優先
+        // 郢ｧ・ｪ郢晢ｽｼ郢晁・繝ｻ郢晢ｽｬ郢ｧ・､邵ｺ迹夲ｽｨ・ｭ陞ｳ螢ｹ・・ｹｧ蠕娯ｻ邵ｺ繝ｻ・玖撻・ｴ陷ｷ蛹ｻ繝ｻ隴崢陷・ｽｪ陷医・
         if (_overlay != OverlayKind.None)
         {
             if (!s.DiscordRpcNexStrapEnabled || !s.DiscordShowLauncherPresence) return null;
@@ -673,7 +748,7 @@ public sealed class DiscordRichPresence : IDisposable
 
             case Phase.RobloxMenu:
             case Phase.FetchingGame:
-                return null; // メニュー・API取得中は表示なし
+                return null; // 郢晢ｽ｡郢昜ｹ斟礼ｹ晢ｽｼ郢晢ｽｻAPI陷ｿ髢・ｾ蠍ｺ・ｸ・ｭ邵ｺ・ｯ髯ｦ・ｨ驕会ｽｺ邵ｺ・ｪ邵ｺ繝ｻ
 
             case Phase.InGame:
                 return ComputeInGamePresence(s);
@@ -691,12 +766,17 @@ public sealed class DiscordRichPresence : IDisposable
 
         if (_phase == Phase.Studio)
         {
-            // プレース名はプラグイン接続後に届く。それまでは details なしで表示
+            // details: core action/target, state: related context bundle.
             var details = string.IsNullOrEmpty(_studioPlaceName) ? null : _studioPlaceName;
-            var state   = _studioTesting ? "Testing" : null;
+            var state   = !string.IsNullOrEmpty(_studioContext) && _studioContext != "Testing"
+                        ? _studioContext
+                        : !string.IsNullOrEmpty(_studioMode) && _studioMode != "Testing"
+                            ? _studioMode
+                            : (_studioTesting ? "Testing" : null);
 
             return Build(s.DiscordShowLauncherDetails ? details : null, state,
-                "nexstrap", "Roblox Studio",
+                _studioIconUrl ?? "nexstrap",
+                _studioPlaceName ?? "Roblox Studio",
                 _avatarUrl, _avatarUrl != null ? (label ?? "Profile") : null,
                 timestamps: ts);
         }
@@ -732,7 +812,7 @@ public sealed class DiscordRichPresence : IDisposable
                 buttons, gameTs);
         }
 
-        // マルチインスタンス: フォーカス中（またはスロット最大）のゲームを表示
+        // 郢晄ｧｭﾎ晉ｹ昶・縺・ｹ晢ｽｳ郢ｧ・ｹ郢ｧ・ｿ郢晢ｽｳ郢ｧ・ｹ: 郢晁ｼ斐°郢晢ｽｼ郢ｧ・ｫ郢ｧ・ｹ闕ｳ・ｭ繝ｻ蛹ｻ竏ｪ邵ｺ貅倥・郢ｧ・ｹ郢晢ｽｭ郢昴・繝ｨ隴崢陞滂ｽｧ繝ｻ蟲ｨ繝ｻ郢ｧ・ｲ郢晢ｽｼ郢晢｣ｰ郢ｧ螳夲ｽ｡・ｨ驕会ｽｺ
         var focusedSlot = GetDisplaySlot() ?? _games.Keys.Max();
         var focused = _games[focusedSlot];
         Timestamps? multiGameTs; lock (_rpcLock) { _slotGameTs.TryGetValue(focusedSlot, out multiGameTs); }
@@ -830,9 +910,9 @@ public sealed class DiscordRichPresence : IDisposable
         new() { Label = "GitHub",    Url = "https://github.com/k153636/NexStrap" }
     ];
 
-    // ══════════════════════════════════════════════════════════════════════
-    // RPC 送信（単一ルート）
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // RPC 鬨ｾ竏ｽ・ｿ・｡繝ｻ莠･閻ｰ闕ｳﾂ郢晢ｽｫ郢晢ｽｼ郢晁肩・ｼ繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     private void SchedulePresence(RichPresence? presence)
     {
@@ -872,9 +952,9 @@ public sealed class DiscordRichPresence : IDisposable
         catch { }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // App ID 切り替え（接続確立まで待つ）
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // App ID 陋ｻ繝ｻ・願ｭ厄ｽｿ邵ｺ闌ｨ・ｼ蝓溽｣・け螟ゑｽ｢・ｺ驕ｶ荵昶穐邵ｺ・ｧ陟輔・笆ｽ繝ｻ繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     private async Task SwitchAppIdAsync(string appId)
     {
@@ -887,7 +967,7 @@ public sealed class DiscordRichPresence : IDisposable
 
         var from = AppIdName(_currentAppId);
         var to   = AppIdName(appId);
-        NexStrap.Services.Logger.Instance.Info("Discord", $"App 切り替え: {from} → {to}");
+        NexStrap.Services.Logger.Instance.Info("Discord", $"App switch: {from} -> {to}");
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         void OnReady(object? _, bool c) { if (c) tcs.TrySetResult(true); }
         ConnectionChanged += OnReady;
@@ -895,9 +975,9 @@ public sealed class DiscordRichPresence : IDisposable
         var completed = await Task.WhenAny(tcs.Task, Task.Delay(3000));
         ConnectionChanged -= OnReady;
         if (completed == tcs.Task)
-            NexStrap.Services.Logger.Instance.Info("Discord", $"接続完了: {to}");
+            NexStrap.Services.Logger.Instance.Info("Discord", $"App connected: {to}");
         else
-            NexStrap.Services.Logger.Instance.Warning("Discord", $"接続タイムアウト: {to}");
+            NexStrap.Services.Logger.Instance.Warning("Discord", $"App connection timeout: {to}");
     }
 
     private void RpcInitialize(string appId)
@@ -927,13 +1007,13 @@ public sealed class DiscordRichPresence : IDisposable
                 lock (_rpcLock) { _rpcConnected = true; }
                 Task.Run(() =>
                 {
-                    // FIFO キューの特性を利用した順序保証：
-                    //   EvDiscordReady → ApplyPresence() → SchedulePresence() → debounce(300ms) → FlushPresence()
-                    //   EvDisposeClient → 350ms 待機 → oldClient.Dispose()
+                    // FIFO 郢ｧ・ｭ郢晢ｽ･郢晢ｽｼ邵ｺ・ｮ霑夲ｽｹ隲､・ｧ郢ｧ雋櫁懸騾包ｽｨ邵ｺ蜉ｱ笳・ｬ・・・ｺ荳茨ｽｿ譎・ｽｨ・ｼ繝ｻ繝ｻ
+                    //   EvDiscordReady 遶翫・ApplyPresence() 遶翫・SchedulePresence() 遶翫・debounce(300ms) 遶翫・FlushPresence()
+                    //   EvDisposeClient 遶翫・350ms 陟輔・・ｩ繝ｻ遶翫・oldClient.Dispose()
                     //
-                    // EvDisposeClient は必ず EvDiscordReady の後に処理される（SingleReader FIFO）。
-                    // 350ms > debounce(300ms) なので FlushPresence() は必ず先に完了する。
-                    // スペック・回線速度に依存しない（Discord RPC はローカルパイプ）。
+                    // EvDisposeClient 邵ｺ・ｯ陟｢繝ｻ笘・EvDiscordReady 邵ｺ・ｮ陟募ｾ娯・陷・ｽｦ騾・・・・ｹｧ蠕鯉ｽ九・繝ｻingleReader FIFO繝ｻ蟲ｨﾂ繝ｻ
+                    // 350ms > debounce(300ms) 邵ｺ・ｪ邵ｺ・ｮ邵ｺ・ｧ FlushPresence() 邵ｺ・ｯ陟｢繝ｻ笘・怦蛹ｻ竊楢楜蠕｡・ｺ繝ｻ笘・ｹｧ荵敖繝ｻ
+                    // 郢ｧ・ｹ郢晏｣ｹ繝｣郢ｧ・ｯ郢晢ｽｻ陜玲ｨ抵ｽｷ螟青貅ｷ・ｺ・ｦ邵ｺ・ｫ關捺剌・ｭ蛟･・邵ｺ・ｪ邵ｺ繝ｻ・ｼ繝ｻiscord RPC 邵ｺ・ｯ郢晢ｽｭ郢晢ｽｼ郢ｧ・ｫ郢晢ｽｫ郢昜ｻ｣縺・ｹ晄圜・ｼ蟲ｨﾂ繝ｻ
                     Enqueue(new EvDiscordReady());
                     Enqueue(new EvDisposeClient(oldClient));
                     ConnectionChanged?.Invoke(this, true);
@@ -955,13 +1035,13 @@ public sealed class DiscordRichPresence : IDisposable
         catch { oldClient?.Dispose(); }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // Studio 監視（タイマーから呼ぶ）
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // Studio 騾ｶ・｣髫募私・ｼ蛹ｻ縺｡郢ｧ・､郢晄ｧｭ繝ｻ邵ｺ荵晢ｽ芽惱・ｼ邵ｺ・ｶ繝ｻ繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     private string _lastStudioPresenceKey = string.Empty;
     private int    _studioHomeConfirmCount;
-    private const int StudioHomeConfirmThreshold = 3; // 3 ポーリング（9秒）連続でホームが確認されたら確定
+    private const int StudioHomeConfirmThreshold = 3; // 3 郢晄亢繝ｻ郢晢ｽｪ郢晢ｽｳ郢ｧ・ｰ繝ｻ繝ｻ驕俶慣・ｼ陋ｾﾂ・｣驍ｯ螢ｹ縲堤ｹ晏ｸ吶・郢晢｣ｰ邵ｺ讙趣ｽ｢・ｺ髫ｱ髦ｪ・・ｹｧ蠕娯螺郢ｧ閾･・｢・ｺ陞ｳ繝ｻ
 
     private void CheckStudioAndEnqueue()
     {
@@ -987,17 +1067,17 @@ public sealed class DiscordRichPresence : IDisposable
 
             if (title.Contains(" - Roblox Studio"))
             {
-                // プレースが開いている — * (未保存マーク) を除去してから使う
+                // 郢晏干ﾎ樒ｹ晢ｽｼ郢ｧ・ｹ邵ｺ遒∝ｹ慕ｸｺ繝ｻ窶ｻ邵ｺ繝ｻ・・遯ｶ繝ｻ* (隴幢ｽｪ闖ｫ譎擾ｽｭ蛟･繝ｻ郢晢ｽｼ郢ｧ・ｯ) 郢ｧ蟶晏求陷ｴ・ｻ邵ｺ蜉ｱ窶ｻ邵ｺ荵晢ｽ芽抄・ｿ邵ｺ繝ｻ
                 _studioHomeConfirmCount = 0;
                 var placeName = title.Replace(" - Roblox Studio", "").Trim().TrimStart('*').Trim();
-                var key       = placeName; // プレース名をキーにする
+                var key       = placeName; // 郢晏干ﾎ樒ｹ晢ｽｼ郢ｧ・ｹ陷ｷ髦ｪ・堤ｹｧ・ｭ郢晢ｽｼ邵ｺ・ｫ邵ｺ蜷ｶ・・
                 if (key == _lastStudioPresenceKey) return;
                 _lastStudioPresenceKey = key;
                 Enqueue(new EvStudio(true, placeName, false));
             }
             else
             {
-                // ホーム or 不明なタイトル — 一時的な変化を無視するため複数回確認
+                // 郢晏ｸ吶・郢晢｣ｰ or 闕ｳ閧ｴ繝ｻ邵ｺ・ｪ郢ｧ・ｿ郢ｧ・､郢晏現ﾎ・遯ｶ繝ｻ闕ｳﾂ隴弱ｉ蝎ｪ邵ｺ・ｪ陞溽甥蝟ｧ郢ｧ蝣､笏碁囎謔ｶ笘・ｹｧ荵昶螺郢ｧ竏ｬ・､繝ｻ辟夊摎讓抵ｽ｢・ｺ髫ｱ繝ｻ
                 _studioHomeConfirmCount++;
                 if (_studioHomeConfirmCount < StudioHomeConfirmThreshold) return;
                 if (_lastStudioPresenceKey == "home") return;
@@ -1008,9 +1088,9 @@ public sealed class DiscordRichPresence : IDisposable
         catch { }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // ヘルパー
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
+    // 郢晏･ﾎ晉ｹ昜ｻ｣繝ｻ
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     private void Enqueue(Ev ev) => _ch.Writer.TryWrite(ev);
 
@@ -1053,9 +1133,9 @@ public sealed class DiscordRichPresence : IDisposable
         return char.ConvertFromUtf32(0x1F1E6 + (c0 - 'A')) + char.ConvertFromUtf32(0x1F1E6 + (c1 - 'A'));
     }
 
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
     // Disable / Dispose
-    // ══════════════════════════════════════════════════════════════════════
+    // 隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ隨顔ｵｶ豁ｦ
 
     public void Disable()
     {
