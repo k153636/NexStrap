@@ -8,6 +8,12 @@ public class UpdateService
 {
     private const string GithubApiUrl = "https://api.github.com/repos/k153636/NexStrap/releases/latest";
     private static readonly string[] AssetNames = { "NexStrap-x64.exe", "NexStrap.exe" };
+    private static readonly string[] AllowedGitHubHosts =
+    [
+        "github.com",
+        "objects.githubusercontent.com",
+        "release-assets.githubusercontent.com"
+    ];
 
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(10) };
 
@@ -17,7 +23,7 @@ public class UpdateService
     }
 
     // Returns (tag, download URL) if a newer release exists, null otherwise
-    public async Task<(string Version, string DownloadUrl)?> CheckForUpdateAsync()
+    public async Task<(string Version, string DownloadUrl, string? Sha256Digest)?> CheckForUpdateAsync()
     {
         try
         {
@@ -61,7 +67,20 @@ public class UpdateService
                 var name = asset.GetProperty("name").GetString();
                 if (name == null || !AssetNames.Contains(name)) continue;
                 var url = asset.GetProperty("browser_download_url").GetString();
-                if (url != null) return (tag, url);
+                if (url == null) continue;
+
+                DownloadSecurityVerifier.EnsureAllowedHttpsUrl(url, AllowedGitHubHosts);
+
+                string? digest = null;
+                if (asset.TryGetProperty("digest", out var digestProp))
+                {
+                    var rawDigest = digestProp.GetString();
+                    if (!string.IsNullOrWhiteSpace(rawDigest) &&
+                        rawDigest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
+                        digest = rawDigest["sha256:".Length..];
+                }
+
+                return (tag, url, digest);
             }
         }
         catch { }
@@ -69,9 +88,10 @@ public class UpdateService
     }
 
     // Downloads the new exe, writes an updater script, launches it, then exits the app
-    public async Task DownloadAndApplyAsync(string downloadUrl, Action<BootstrapperProgress> report)
+    public async Task DownloadAndApplyAsync(string downloadUrl, string? sha256Digest, Action<BootstrapperProgress> report)
     {
         report(new BootstrapperProgress("Downloading NexStrap update...", 0, false));
+        DownloadSecurityVerifier.EnsureAllowedHttpsUrl(downloadUrl, AllowedGitHubHosts);
 
         var currentExe = Environment.ProcessPath;
         if (currentExe == null) return;
@@ -104,6 +124,17 @@ public class UpdateService
             }
         }
         catch { return; }
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(sha256Digest))
+                DownloadSecurityVerifier.VerifySha256(tempExe, sha256Digest);
+        }
+        catch
+        {
+            try { File.Delete(tempExe); } catch { }
+            return;
+        }
 
         report(new BootstrapperProgress("Applying update...", 100, true));
 

@@ -92,6 +92,17 @@ public sealed class RobloxSetupService
         }
         catch (Exception ex) { RobloxService.Log($"Failed to download VC++ redist: {ex.Message}"); return; }
 
+        try
+        {
+            DownloadSecurityVerifier.VerifySignedExecutable(tempExe, "CN=Microsoft Corporation");
+        }
+        catch (Exception ex)
+        {
+            RobloxService.Log($"VC++ redist signature verification failed: {ex.Message}");
+            try { File.Delete(tempExe); } catch { }
+            return;
+        }
+
         reportProgress("Installing vc_redist.x64.exe", 100, indeterminate: true);
         try
         {

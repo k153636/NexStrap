@@ -10,6 +10,7 @@ public static class DiscordModule
     {
         services.AddSingleton<DiscordRichPresence>();
         services.AddTransient<DiscordViewModel>();
+        services.AddTransient<DiscordPartyPresetsViewModel>();
 
         return services;
     }

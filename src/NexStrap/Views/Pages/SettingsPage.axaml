@@ -6,6 +6,19 @@
              x:DataType="vm:SettingsViewModel"
              Background="Transparent">
 
+    <UserControl.Styles>
+        <Style Selector="NumericUpDown.settings-spinner /template/ Button">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="MinWidth" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+        </Style>
+        <Style Selector="NumericUpDown.settings-spinner /template/ RepeatButton">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="MinWidth" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+        </Style>
+    </UserControl.Styles>
+
     <Grid RowDefinitions="Auto,*" Margin="24,20,24,0">
 
         <!-- Header -->
@@ -172,8 +185,9 @@
                                                        Foreground="{DynamicResource FgSub}" FontSize="11"/>
                                         </StackPanel>
                                         <NumericUpDown Grid.Column="1" Value="{Binding VM.CpuCoreLimit}"
+                                                       Classes="settings-spinner"
                                                        Minimum="0" Maximum="64" Increment="1"
-                                                       Width="90" FontSize="12"
+                                                       Width="104" FontSize="13"
                                                        Background="#000000" Foreground="#FFFFFF"
                                                        BorderBrush="#2A2A2A"/>
                                     </Grid>

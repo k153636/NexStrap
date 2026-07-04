@@ -1,5 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using NexStrap.Services;
+using NexStrap.Models;
 using NexStrap.Services;
 
 namespace NexStrap.ViewModels;

@@ -18,6 +18,7 @@ public static class StudioPluginInstaller
 
     private const string DownloadUrl =
         "https://raw.githubusercontent.com/k153636/NexStrap/master/plugins/NexStrapStudioRPC.lua";
+    private const int MaxPluginBytes = 512 * 1024;
 
     public static string PluginPath => Path.Combine(PluginDir, FileName);
 
@@ -33,6 +34,7 @@ public static class StudioPluginInstaller
         var log = NexStrap.Services.Logger.Instance;
         try
         {
+            DownloadSecurityVerifier.EnsureAllowedHttpsUrl(DownloadUrl, "raw.githubusercontent.com");
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
             var remote = await http.GetStringAsync(DownloadUrl, ct);
             remote = remote.TrimStart('﻿'); // BOM 除去
@@ -69,10 +71,17 @@ public static class StudioPluginInstaller
         {
             log.Info("StudioPlugin", $"Downloading from {DownloadUrl}");
             progress?.Report(("Downloading Studio plugin...", 0, true));
+            DownloadSecurityVerifier.EnsureAllowedHttpsUrl(DownloadUrl, "raw.githubusercontent.com");
 
             using var http    = new HttpClient();
             http.Timeout      = TimeSpan.FromSeconds(30);
-            var content       = await http.GetStringAsync(DownloadUrl, ct);
+            using var resp    = await http.GetAsync(DownloadUrl, HttpCompletionOption.ResponseHeadersRead, ct);
+            resp.EnsureSuccessStatusCode();
+            if (resp.Content.Headers.ContentLength is long len && len > MaxPluginBytes)
+                throw new InvalidOperationException("Studio plugin payload is unexpectedly large.");
+            var content = await resp.Content.ReadAsStringAsync(ct);
+            if (content.Length > MaxPluginBytes)
+                throw new InvalidOperationException("Studio plugin payload is unexpectedly large.");
 
             progress?.Report(("Installing Studio plugin...", 80, false));
 

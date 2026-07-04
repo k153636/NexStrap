@@ -19,6 +19,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private Lazy<ModsViewModel> _modsVM = null!;
     private Lazy<SettingsViewModel> _settingsVM = null!;
     private Lazy<DiscordViewModel> _discordVM = null!;
+    private Lazy<DiscordPartyPresetsViewModel> _discordPartyPresetsVM = null!;
     private Lazy<StatsViewModel> _statsVM = null!;
     private Lazy<DevViewModel> _devVM = null!;
     private Lazy<AccountViewModel> _accountVM = null!;
@@ -38,6 +39,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public ModsViewModel ModsVM => _modsVM.Value;
     public SettingsViewModel SettingsVM => _settingsVM.Value;
     public DiscordViewModel DiscordVM => _discordVM.Value;
+    public DiscordPartyPresetsViewModel DiscordPartyPresetsVM => _discordPartyPresetsVM.Value;
     public StatsViewModel StatsVM => _statsVM.Value;
     public DevViewModel DevVM => _devVM.Value;
     public AccountViewModel AccountVM => _accountVM.Value;
@@ -95,6 +97,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _modsVM = CreateLazy<ModsViewModel>();
         _settingsVM = CreateLazy<SettingsViewModel>();
         _discordVM = CreateLazy<DiscordViewModel>();
+        _discordPartyPresetsVM = CreateLazy<DiscordPartyPresetsViewModel>();
         _statsVM = CreateLazy<StatsViewModel>();
         _devVM = CreateLazy<DevViewModel>();
         _stretchVM = CreateLazy<StretchResolutionViewModel>();
@@ -124,6 +127,7 @@ public partial class MainWindowViewModel : ViewModelBase
             await WarmPageAsync("Loading Shortcuts", () => _shortcutsVM.Value);
             await WarmPageAsync("Loading Stats", () => _statsVM.Value);
             await WarmPageAsync("Loading Discord RPC", () => _discordVM.Value);
+            await WarmPageAsync("Loading Party Presets", () => _discordPartyPresetsVM.Value);
             await WarmPageAsync("Loading Account", () => _accountVM.Value);
             await WarmPageAsync("Loading Dev Tools", () => _devVM.Value);
             await Dispatcher.UIThread.InvokeAsync(() => StartupStatusText = "Ready");
@@ -183,6 +187,7 @@ public partial class MainWindowViewModel : ViewModelBase
             "Theme" => ThemeVM,
             "Stats" => StatsVM,
             "Discord" => DiscordVM,
+            "DiscordPartyPresets" => DiscordPartyPresetsVM,
             "Settings" => SettingsVM,
             "Account" => AccountVM,
             "Stretch" => StretchVM,
@@ -194,6 +199,7 @@ public partial class MainWindowViewModel : ViewModelBase
         HomeVM.CurrentPageName = page switch
         {
             "Discord"   => "Discord RPC",
+            "DiscordPartyPresets" => "Party",
             "Stretch"   => "Stretch Res",
             "Shortcuts" => "Shortcuts",
             _ => page
@@ -219,5 +225,17 @@ public partial class MainWindowViewModel : ViewModelBase
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe)
                 { UseShellExecute = true });
         Shutdown();
+    }
+
+    [RelayCommand]
+    private void SaveCurrentPage()
+    {
+        if (CurrentPage == DiscordPartyPresetsVM)
+        {
+            DiscordPartyPresetsVM.SavePendingChanges();
+            return;
+        }
+
+        HomeVM.HotReloadFlagsCommand.Execute(null);
     }
 }

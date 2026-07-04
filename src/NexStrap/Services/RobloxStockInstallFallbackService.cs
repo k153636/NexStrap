@@ -61,6 +61,7 @@ public sealed class RobloxStockInstallFallbackService(RobloxInstallStateService 
             {
                 var bytes = await Http.GetByteArrayAsync("https://setup.rbxcdn.com/RobloxPlayerInstaller.exe");
                 await File.WriteAllBytesAsync(installerExe, bytes);
+                DownloadSecurityVerifier.VerifySignedExecutable(installerExe, "CN=ROBLOX Corporation", "CN=Roblox Corporation");
                 installerPath = installerExe;
             }
             catch (Exception ex)
@@ -72,6 +73,16 @@ public sealed class RobloxStockInstallFallbackService(RobloxInstallStateService 
 
         var existingPids = Process.GetProcessesByName("RobloxPlayerBeta")
             .Select(p => p.Id).ToHashSet();
+
+        try
+        {
+            DownloadSecurityVerifier.VerifySignedExecutable(installerPath, "CN=ROBLOX Corporation", "CN=Roblox Corporation");
+        }
+        catch (Exception ex)
+        {
+            RobloxService.Log($"Official installer signature verification failed: {ex.Message}");
+            return;
+        }
 
         RobloxService.Log($"Running official installer: {installerPath}");
         var proc = Process.Start(new ProcessStartInfo(installerPath)

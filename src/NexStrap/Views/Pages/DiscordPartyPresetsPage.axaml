@@ -1,0 +1,149 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NexStrap.ViewModels"
+             xmlns:helpers="using:NexStrap.Helpers"
+             x:Class="NexStrap.Views.Pages.DiscordPartyPresetsPage"
+             x:DataType="vm:DiscordPartyPresetsViewModel"
+             Background="Transparent">
+
+    <UserControl.Styles>
+        <Style Selector="NumericUpDown.party-spinner /template/ Button">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="MinWidth" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style Selector="NumericUpDown.party-spinner /template/ RepeatButton">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="MinWidth" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer>
+        <StackPanel Spacing="10" Margin="24,20" helpers:AnimationHelper.StaggerChildren="True">
+
+            <TextBlock Text="Party" FontSize="22" FontWeight="Bold"
+                       Foreground="#FFFFFF" Margin="0,0,0,2"/>
+            <TextBlock Text="Configure manual Discord party presets by Roblox game URL or place ID"
+                       FontSize="11" Foreground="{DynamicResource FgSub}" Margin="0,0,0,4"/>
+
+            <Border Classes="area-panel" Padding="16,12">
+                <TextBlock Text="{Binding IsDirty, Converter={StaticResource BoolToStringConverter}, ConverterParameter='Unsaved changes. Presets are only reflected in Discord after bottom Save.,Changes saved.'}"
+                           Foreground="{DynamicResource FgSub}"
+                           FontSize="11"
+                           VerticalAlignment="Center"/>
+            </Border>
+
+            <Border Classes="area-panel">
+                <StackPanel Spacing="0">
+                    <Border Classes="area-row area-row-first area-row-last">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Enable Party Presets" Foreground="#FFFFFF" FontSize="13"/>
+                                    <TextBlock Text="Applies a saved Discord party label and size when the current placeId matches"
+                                               Foreground="{DynamicResource FgSub}" FontSize="11" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1"
+                                              IsChecked="{Binding PartyPresetsEnabled}"
+                                              OnContent="ON" OffContent="OFF"/>
+                            </Grid>
+
+                            <TextBlock Text="Party uses the preset label as the Discord state line when matched."
+                                       Foreground="{DynamicResource FgSub}" FontSize="11" TextWrapping="Wrap"
+                                       IsVisible="{Binding PartyPresetsEnabled}"/>
+
+                            <Button Content="Add preset"
+                                    Command="{Binding AddPartyPresetCommand}"
+                                    HorizontalAlignment="Left"
+                                    Padding="12,6"
+                                    IsEnabled="{Binding PartyPresetsEnabled}"/>
+
+                            <ItemsControl ItemsSource="{Binding PartyPresets}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource CardBg}"
+                                                BorderBrush="{DynamicResource DividerBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="10"
+                                                Padding="12"
+                                                IsEnabled="{Binding $parent[ItemsControl].DataContext.PartyPresetsEnabled}">
+                                            <StackPanel Spacing="10">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <StackPanel Grid.Column="0" Spacing="2">
+                                                        <TextBlock Text="Preset label" Foreground="#FFFFFF" FontSize="13"/>
+                                                        <TextBlock Text="Shown in Discord when this preset is active"
+                                                                   Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1"
+                                                            Content="Remove"
+                                                            Command="{Binding $parent[ItemsControl].DataContext.RemovePartyPresetCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            Padding="10,4"/>
+                                                </Grid>
+
+                                                <TextBox Text="{Binding Label}" Watermark="Duo / Levi Hunt / Ranked VC"/>
+
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <StackPanel Grid.Column="0" Spacing="2">
+                                                        <TextBlock Text="Enabled" Foreground="#FFFFFF" FontSize="13"/>
+                                                        <TextBlock Text="Only enabled presets can be auto-applied"
+                                                                   Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                                    </StackPanel>
+                                                    <ToggleSwitch Grid.Column="1"
+                                                                  IsChecked="{Binding Enabled}"
+                                                                  OnContent="ON" OffContent="OFF"/>
+                                                </Grid>
+
+                                                <Grid RowDefinitions="Auto,Auto"
+                                                      HorizontalAlignment="Stretch">
+                                                    <StackPanel Grid.Row="0"
+                                                                Spacing="2"
+                                                                HorizontalAlignment="Stretch">
+                                                        <TextBlock Text="Place URL or ID" Foreground="#FFFFFF" FontSize="13"/>
+                                                        <TextBlock Text="Paste a Roblox game URL or enter the exact placeId"
+                                                                   Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                                        <TextBox Text="{Binding PlaceIdText}"
+                                                                 Watermark="https://www.roblox.com/games/11353528705/..."
+                                                                 HorizontalAlignment="Stretch"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Grid.Row="1" Spacing="2" HorizontalAlignment="Left" Margin="0,10,0,0">
+                                                        <TextBlock Text="Current / Max" Foreground="#FFFFFF" FontSize="13"/>
+                                                        <TextBlock Text="Manual party size"
+                                                                   Foreground="{DynamicResource FgSub}" FontSize="11"/>
+                                                        <Grid ColumnDefinitions="Auto,Auto,Auto">
+                                                            <NumericUpDown Grid.Column="0" Value="{Binding CurrentSize}"
+                                                                           Classes="party-spinner"
+                                                                           Minimum="1" Maximum="99" Increment="1"
+                                                                           Width="104" FontSize="13"
+                                                                           Background="#000000" Foreground="#FFFFFF"
+                                                                           BorderBrush="#2A2A2A"/>
+                                                            <TextBlock Grid.Column="1" Text="/"
+                                                                       Margin="6,0"
+                                                                       VerticalAlignment="Center"
+                                                                       Foreground="{DynamicResource FgSub}"/>
+                                                            <NumericUpDown Grid.Column="2" Value="{Binding MaxSize}"
+                                                                           Classes="party-spinner"
+                                                                           Minimum="1" Maximum="99" Increment="1"
+                                                                           Width="104" FontSize="13"
+                                                                           Background="#000000" Foreground="#FFFFFF"
+                                                                           BorderBrush="#2A2A2A"/>
+                                                        </Grid>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

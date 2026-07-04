@@ -806,10 +806,12 @@ public sealed class DiscordRichPresence : IDisposable
             var buttons = s.DiscordRpcSocialEnabled && s.DiscordShowJoinButton && g.PlaceId > 0
                 ? RobloxGameButtons(g.PlaceId)
                 : null;
-            return Build(details, FormatState(s, g), g.IconUrl ?? "roblox",
+            var partyPreset = ResolvePartyPreset(s, g.PlaceId);
+            var partyState = partyPreset?.Label;
+            return Build(details, partyState ?? FormatState(s, g), g.IconUrl ?? "roblox",
                 g.Name ?? "Roblox", g.AvatarUrl ?? _avatarUrl,
                 s.DiscordRpcProfileEnabled && (g.AvatarUrl != null || _avatarUrl != null) ? (g.UserLabel ?? label ?? "Profile") : null,
-                buttons, gameTs);
+                buttons, gameTs, ToDiscordParty(partyPreset, g.PlaceId));
         }
 
         // 郢晄ｧｭﾎ晉ｹ昶・縺・ｹ晢ｽｳ郢ｧ・ｹ郢ｧ・ｿ郢晢ｽｳ郢ｧ・ｹ: 郢晁ｼ斐°郢晢ｽｼ郢ｧ・ｫ郢ｧ・ｹ闕ｳ・ｭ繝ｻ蛹ｻ竏ｪ邵ｺ貅倥・郢ｧ・ｹ郢晢ｽｭ郢昴・繝ｨ隴崢陞滂ｽｧ繝ｻ蟲ｨ繝ｻ郢ｧ・ｲ郢晢ｽｼ郢晢｣ｰ郢ｧ螳夲ｽ｡・ｨ驕会ｽｺ
@@ -820,9 +822,12 @@ public sealed class DiscordRichPresence : IDisposable
         var multiDetails = s.DiscordRpcGameInformationEnabled && s.DiscordShowCreator && focused.Creator != null
             ? $"{focused.Name} · by {focused.Creator}" : focused.Name ?? "Roblox";
 
+        var multiPartyPreset = ResolvePartyPreset(s, focused.PlaceId);
         var baseState   = FormatState(s, focused);
         var instanceStr = $"Instances {count}";
-        var multiState  = baseState != null ? $"{baseState} · {instanceStr}" : instanceStr;
+        var multiState  = multiPartyPreset != null
+            ? multiPartyPreset.Label
+            : (baseState != null ? $"{baseState} · {instanceStr}" : instanceStr);
 
         var multiButtons = s.DiscordRpcSocialEnabled && s.DiscordShowJoinButton && focused.PlaceId > 0
             ? RobloxGameButtons(focused.PlaceId)
@@ -832,7 +837,7 @@ public sealed class DiscordRichPresence : IDisposable
             focused.IconUrl ?? "roblox", focused.Name ?? "Roblox",
             focused.AvatarUrl ?? _avatarUrl,
             s.DiscordRpcProfileEnabled && (focused.AvatarUrl != null || _avatarUrl != null) ? (focused.UserLabel ?? label ?? "Profile") : null,
-            multiButtons, multiGameTs);
+            multiButtons, multiGameTs, ToDiscordParty(multiPartyPreset, focused.PlaceId));
     }
 
     private string? FormatState(Models.AppSettings s, SlotGame game)
@@ -879,7 +884,7 @@ public sealed class DiscordRichPresence : IDisposable
     private static RichPresence Build(string? details, string? state,
         string largeImage, string largeText,
         string? smallImage, string? smallText,
-        Button[]? buttons = null, Timestamps? timestamps = null)
+        Button[]? buttons = null, Timestamps? timestamps = null, Party? party = null)
     {
         Timestamps? ts = timestamps;
         return new RichPresence
@@ -894,7 +899,42 @@ public sealed class DiscordRichPresence : IDisposable
                 SmallImageText = smallText
             },
             Timestamps = ts,
-            Buttons    = buttons
+            Buttons    = buttons,
+            Party      = party
+        };
+    }
+
+    private static Models.DiscordPartyPreset? ResolvePartyPreset(Models.AppSettings settings, long placeId)
+    {
+        if (!settings.DiscordRpcSocialEnabled
+            || !settings.DiscordPartyPresetsEnabled
+            || placeId <= 0
+            || settings.DiscordPartyPresets.Count == 0)
+            return null;
+
+        var preset = settings.DiscordPartyPresets.FirstOrDefault(p =>
+            p.Enabled && p.PlaceId == placeId && p.CurrentSize > 0 && p.MaxSize > 0);
+        if (preset == null) return null;
+
+        var size = Math.Max(1, preset.CurrentSize);
+        var max = Math.Max(size, preset.MaxSize);
+
+        return preset;
+    }
+
+    private static Party? ToDiscordParty(Models.DiscordPartyPreset? preset, long placeId)
+    {
+        if (preset == null) return null;
+
+        var size = Math.Max(1, preset.CurrentSize);
+        var max = Math.Max(size, preset.MaxSize);
+
+        return new Party
+        {
+            ID = $"preset-place-{placeId}",
+            Size = size,
+            Max = max,
+            Privacy = Party.PrivacySetting.Private
         };
     }
 

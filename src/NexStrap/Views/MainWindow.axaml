@@ -7,8 +7,8 @@
         x:DataType="vm:MainWindowViewModel"
         Title="NexStrap"
         Icon="avares://NexStrap/Assets/nexstrap.png"
-        Width="897" Height="529"
-        MinWidth="782" MinHeight="460"
+        Width="897" Height="556"
+        MinWidth="782" MinHeight="483"
         Background="Transparent"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="PreferSystemChrome"
@@ -171,6 +171,12 @@
                     </ui:NavigationViewItem.IconSource>
                 </ui:NavigationViewItem>
 
+                <ui:NavigationViewItem Content="Party" Tag="DiscordPartyPresets">
+                    <ui:NavigationViewItem.IconSource>
+                        <ui:SymbolIconSource Symbol="People"/>
+                    </ui:NavigationViewItem.IconSource>
+                </ui:NavigationViewItem>
+
                 <ui:NavigationViewItem Content="Settings" Tag="Settings">
                     <ui:NavigationViewItem.IconSource>
                         <ui:SymbolIconSource Symbol="Settings"/>
@@ -200,6 +206,9 @@
                         </DataTemplate>
                         <DataTemplate DataType="vm:DiscordViewModel">
                             <pages:DiscordPage/>
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:DiscordPartyPresetsViewModel">
+                            <pages:DiscordPartyPresetsPage/>
                         </DataTemplate>
                         <DataTemplate DataType="vm:ThemeViewModel">
                             <pages:ThemePage/>
@@ -270,7 +279,7 @@
 
                     <!-- Save (FastFlags 適用) -->
                     <Button Content="Save"
-                            Command="{Binding HomeVM.HotReloadFlagsCommand}"
+                            Command="{Binding SaveCurrentPageCommand}"
                             Background="#FFFFFF" Foreground="#080808"
                             FontSize="12" FontWeight="SemiBold"
                             Padding="14,8" CornerRadius="8"/>

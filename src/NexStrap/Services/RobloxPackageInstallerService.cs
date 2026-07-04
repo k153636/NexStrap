@@ -158,9 +158,6 @@ public sealed class RobloxPackageInstallerService
                 RobloxService.Log($"Download attempt {attempt}/{MaxDownloadRetries} failed for {package.Name}: {ex.Message}");
                 if (attempt >= MaxDownloadRetries) break;
 
-                if (url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                    url = "http://" + url[8..];
-
                 await Task.Delay(500 * attempt, ct);
             }
         }
@@ -223,7 +220,12 @@ public sealed class RobloxPackageInstallerService
                     : extStart;
                 reportProgress($"Extracting {entry.Name}", pct);
 
-                var destPath = Path.Combine(dest, entry.FullName.Replace('/', Path.DirectorySeparatorChar));
+                var destRoot = Path.GetFullPath(dest);
+                var destPath = Path.GetFullPath(Path.Combine(destRoot, entry.FullName.Replace('/', Path.DirectorySeparatorChar)));
+                if (!destPath.StartsWith(destRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(destPath, destRoot, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException($"Blocked archive entry outside destination: {entry.FullName}");
+
                 var dir = Path.GetDirectoryName(destPath);
                 if (dir != null) Directory.CreateDirectory(dir);
                 entry.ExtractToFile(destPath, overwrite: true);

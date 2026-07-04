@@ -38,6 +38,8 @@ public class AppSettings
     public bool DiscordShowEstimatedPing { get; set; } = false;
     public bool DiscordShowFlagCount { get; set; } = true;
     public bool DiscordPlaceNameLocalized { get; set; } = false;
+    public bool DiscordPartyPresetsEnabled { get; set; } = false;
+    public List<DiscordPartyPreset> DiscordPartyPresets { get; set; } = [];
     public bool StartWithWindows { get; set; } = false;
     public double BackgroundVignetteIntensity { get; set; } = 0.0;
     public double BackgroundVignetteRange { get; set; } = 0.15;

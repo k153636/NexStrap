@@ -9,6 +9,7 @@ public static partial class DiagnosticLogMasker
         if (string.IsNullOrEmpty(text)) return text;
 
         text = UserPathRegex().Replace(text, @"C:\Users\<user>");
+        text = RobloxUrlSecretRegex().Replace(text, m => $"{m.Groups[1].Value}[REDACTED]");
         text = AuthKeyValueRegex().Replace(text, m => $"{m.Groups[1].Value}=[REDACTED]");
         text = EmailRegex().Replace(text, "[REDACTED EMAIL]");
 
@@ -24,6 +25,10 @@ public static partial class DiagnosticLogMasker
     [GeneratedRegex(@"(\.ROBLOSECURITY|ROBLOSECURITY|authenticationTicket|cookie|token)\s*[:=]\s*\S+",
         RegexOptions.IgnoreCase)]
     private static partial Regex AuthKeyValueRegex();
+
+    [GeneratedRegex(@"((?:accessCode|linkCode|privateKey|code|joinScriptUrl)=)[^&\s]+",
+        RegexOptions.IgnoreCase)]
+    private static partial Regex RobloxUrlSecretRegex();
 
     [GeneratedRegex(@"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")]
     private static partial Regex EmailRegex();

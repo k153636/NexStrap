@@ -45,7 +45,7 @@ public sealed class StartupCoordinator(
         var update = justUpdated ? null : await updateService.CheckForUpdateAsync();
         if (update != null)
         {
-            await ShowUpdateBootstrapperAndApplyAsync(update.Value.DownloadUrl);
+            await ShowUpdateBootstrapperAndApplyAsync(update.Value.DownloadUrl, update.Value.Sha256Digest);
             return;
         }
 
@@ -57,7 +57,7 @@ public sealed class StartupCoordinator(
         desktop.Exit += (_, _) => Logger.Instance.Dispose();
     }
 
-    private async Task ShowUpdateBootstrapperAndApplyAsync(string downloadUrl)
+    private async Task ShowUpdateBootstrapperAndApplyAsync(string downloadUrl, string? sha256Digest)
     {
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
@@ -68,6 +68,7 @@ public sealed class StartupCoordinator(
 
         await updateService.DownloadAndApplyAsync(
             downloadUrl,
+            sha256Digest,
             p => roblox.BroadcastProgress(p));
     }
 
