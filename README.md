@@ -95,6 +95,14 @@
 
 ---
 
+## Preview
+
+Preview examples are available on the dedicated page:
+
+[![Preview](https://img.shields.io/badge/Preview-7a39fb?style=for-the-badge)](docs/preview.md)
+
+---
+
 ## Installing
 
 Download the [latest release](https://github.com/k153636/NexStrap/releases/latest).
@@ -104,7 +112,7 @@ Current releases ship with:
 - `NexStrap.exe`
 - `NexStrap-x64.exe`
 
-For normal Windows use, run `NexStrap.exe`.
+For normal Windows use, run `NexStrap-x64.exe`.
 
 You will need [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/9.0). If it's not installed, Windows will prompt you automatically.
 
