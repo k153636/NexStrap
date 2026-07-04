@@ -14,7 +14,7 @@
 </div>
 
 <p align="center">
-  A Roblox launcher built for developers and power users —<br>
+  A Roblox launcher built for developers and power users<br>
   with full <strong>Roblox Studio support</strong>, multi-instance play, deep Discord integration, and extensive customization.
 </p>
 
@@ -28,67 +28,94 @@
 
 ## Features
 
-**🎮 Discord Rich Presence**
+**Discord Rich Presence**
+
 - Game icon, name, creator, server region, and elapsed playtime
-- **Multi-instance support** — tracks each Roblox window independently; displays the focused window's game in real time
+- Multi-instance support that tracks each Roblox window independently and displays the focused window's game in real time
 - Automatically switches between NexStrap / Roblox / Studio Discord apps
 - Join Game button with direct game link
 - Graceful fallback for private or friends-only games
-- Studio presence: Home / Editing / Testing states (via Roblox Studio plugin)
+- Studio presence with Home / Editing / Testing states via the Roblox Studio plugin
 
-**🎭 Roblox Studio**
-- Independent Studio install and launch — no official installer needed
+**Party Presets**
+
+- Optional Discord party presets with per-place label and party size
+- Separate Party page instead of mixing party controls into the main Discord RPC page
+- Presets are off by default and only apply after pressing Save
+
+**Roblox Studio**
+
+- Independent Studio install and launch with no official installer needed
 - Discord presence with Home / Editing / Testing detection
 - Separate Fast Flags profile for Studio
 
-**⚡ Fast Flags**
+**Fast Flags**
+
 - Edit `ClientAppSettings.json` flags directly
 - Save and load named profiles
 - Preset bundles: Graphics Lite, Render Optimized, Memory/CPU, Network
-- Hot reload — apply flags to a running session without restart
+- Hot reload to apply flags to a running session without restart
 - Bulk import from text
 
-**👥 Friends**
+**Friends**
+
 - Real-time friends list with online / in-game presence
 - Toast notifications when a friend comes online
 - Avatar thumbnails and last-seen location
 
-**👤 Multi-Account Manager**
+**Multi-Account Manager**
+
 - Manage multiple Roblox accounts
-- Import cookies from Chrome — no password required
+- Import cookies from Chrome without a password
 - One-click account switching
 - Quick sign-in dialog
 
-**📊 Play Stats**
+**Play Stats**
+
 - Total playtime, session count, and top games
 - Per-game breakdown with 7-day bar chart
 
-**🎨 Theme & UI**
+**Theme & UI**
+
 - Glass UI with semi-transparent sidebar
-- 8 accent colors + custom color picker
+- 8 accent colors plus a custom color picker
 - Custom background image with blur and brightness controls
 - Stretch resolution helper
 
-**🔧 Mods**
+**Mods**
+
 - Import and enable / disable mod folders
 - Apply textures, sounds, and fonts to Roblox's content directory
+
+**Safer Install / Update Flow**
+
+- Signed executable verification for installer and update paths
+- Safer diagnostic log masking around sensitive values
+- More consistent release packaging and update handling
 
 ---
 
 ## Installing
 
-Download the [latest release](https://github.com/k153636/NexStrap/releases/latest) and run `NexStrap.exe`.
+Download the [latest release](https://github.com/k153636/NexStrap/releases/latest).
+
+Current releases ship with:
+
+- `NexStrap.exe`
+- `NexStrap-x64.exe`
+
+For normal Windows use, run `NexStrap.exe`.
 
 You will need [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/9.0). If it's not installed, Windows will prompt you automatically.
 
-> Windows SmartScreen may show a warning on first launch. Click **More info** → **Run anyway**. This happens because NexStrap is not yet code-signed.
+> Windows SmartScreen may show a warning on first launch. Click **More info** -> **Run anyway**. This happens because NexStrap is not yet code-signed.
 
 ---
 
 ## FAQ
 
 **Q: Is this malware?**  
-A: No. NexStrap is fully open source — the complete source code is available here on GitHub for anyone to verify.
+A: No. NexStrap is fully open source - the complete source code is available here on GitHub for anyone to verify.
 
 **Q: Will I get banned from Roblox?**  
 A: No. NexStrap does not interact with the Roblox client the way exploits do. It only manages launch settings, Fast Flags, and Discord Rich Presence.
@@ -110,6 +137,12 @@ A: Yes. NexStrap can install and launch Studio independently, with full Discord 
 git clone https://github.com/k153636/NexStrap.git
 cd NexStrap
 dotnet build NexStrap.sln -c Release
+```
+
+To produce the win-x64 release executable bundle used for GitHub Releases:
+
+```
+dotnet publish src/NexStrap/NexStrap.csproj /p:PublishProfile=win-x64-standalone
 ```
 
 ---
