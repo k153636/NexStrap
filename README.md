@@ -18,6 +18,13 @@
   with full <strong>Roblox Studio support</strong>, multi-instance play, deep Discord integration, and extensive customization.
 </p>
 
+<p align="center">
+  <a href="docs/preview.md"><strong>Preview</strong></a> ·
+  <a href="#features">Features</a> ·
+  <a href="#installing">Installing</a> ·
+  <a href="#faq">FAQ</a>
+</p>
+
 > [!CAUTION]
 > The only official place to download NexStrap is this GitHub repository. Any other sources are not affiliated with us.
 
