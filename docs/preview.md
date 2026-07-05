@@ -44,6 +44,12 @@ Mods is still early and not a main focus yet.
 
 ![Discord RPC preview 2](images/preview-rpc-2.png)
 
+### RPC Preview
+
+![RPC standard preview](images/rpc-preview-standard.png)
+
+![RPC party preview](images/rpc-preview-party.png)
+
 ### Party
 
 ![Party preview](images/preview-party.png)
