@@ -73,7 +73,7 @@
 **Multi-Account Manager**
 
 - Manage multiple Roblox accounts
-- Import cookies from Chrome without a password
+- Import authenticated cookies from a local Chrome profile on the same Windows account
 - One-click account switching
 - Quick sign-in dialog
 
@@ -123,6 +123,10 @@ For normal Windows use, run `NexStrap-x64.exe`.
 
 You will need [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/9.0). If it's not installed, Windows will prompt you automatically.
 
+Cookie import from Chrome is handled locally on your machine. NexStrap reads the signed-in browser profile to find the `.ROBLOSECURITY` cookie and then uses it to identify the account. It does not need your Chrome password, but it should only be used on a trusted PC where you are already signed in.
+
+If you want an extra download check, compare a known-good SHA-256 value against your local file. VirusTotal can also be useful as a quick signal, but it is only a supplementary check and can report false positives, especially for unsigned apps.
+
 > Windows SmartScreen may show a warning on first launch. Click **More info** -> **Run anyway**. This happens because NexStrap is not yet code-signed.
 
 ---
@@ -130,13 +134,13 @@ You will need [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/en-us/downlo
 ## FAQ
 
 **Q: Is this malware?**  
-A: No. NexStrap is fully open source - the complete source code is available here on GitHub for anyone to verify.
+A: NexStrap is open source, so the complete source code is available here on GitHub for anyone to inspect. As with any third-party binary, you should only run builds you trust.
 
 **Q: Will I get banned from Roblox?**  
-A: No. NexStrap does not interact with the Roblox client the way exploits do. It only manages launch settings, Fast Flags, and Discord Rich Presence.
+A: NexStrap is not designed to behave like an exploit. It mainly manages launch settings, Fast Flags, and Discord Rich Presence, but no third-party tool can guarantee how a platform will interpret its use.
 
 **Q: Windows Defender flagged it**  
-A: This is a false positive common with unsigned applications. You can review the full source code here to verify it is safe.
+A: This can be a false positive, especially for unsigned applications. You can review the source code here and compare a known-good SHA-256 value to your local file if you want to double-check the download.
 
 **Q: Does it work with multiple Roblox instances?**  
 A: Yes. NexStrap tracks each instance independently and shows the focused window's game in your Discord status.
