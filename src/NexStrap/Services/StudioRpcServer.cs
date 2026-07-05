@@ -206,7 +206,7 @@ public sealed record StudioRpcData
     [JsonPropertyName("mode")]     public string? Mode     { get; init; }
     [JsonPropertyName("testing")]  public bool    Testing  { get; init; }
     [JsonPropertyName("placeId")]  public long    PlaceId  { get; init; }
-    [JsonPropertyName("isPublic")] public bool    IsPublic { get; init; }
+    [JsonPropertyName("isPublic")] public bool?   IsPublic { get; init; }
     [JsonPropertyName("version")]  public string? Version  { get; init; }
     // RPCToggle 用
     [JsonPropertyName("enabled")]    public bool    Enabled   { get; init; }

@@ -10,17 +10,18 @@ local ScriptEditorService = game:GetService("ScriptEditorService")
 local Selection = game:GetService("Selection")
 local StudioService = game:GetService("StudioService")
 
-local VERSION = "2.2.2"
+local VERSION = "2.2.3"
 local ENDPOINT = "http://localhost:4876/rpc"
 local HTTP_TIMEOUT = 2
 local POLL_INTERVAL = 0.5
 local UPDATE_INTERVAL = 10
 local COOLDOWN_TIME = 1.5
+local SEND_WARNING_INTERVAL = 30
 
 type StudioSnapshot = {
 	name: string,
 	placeId: number,
-	isPublic: boolean,
+	isPublic: boolean?,
 }
 
 type Payload = {
@@ -29,7 +30,7 @@ type Payload = {
 	mode: string,
 	testing: boolean,
 	placeId: number,
-	isPublic: boolean,
+	isPublic: boolean?,
 	version: string,
 	workspace: string,
 	activeScript: string?,
@@ -43,6 +44,7 @@ type RpcEnvelope = {
 }
 
 local enabled = plugin ~= nil
+local unloading = false
 local onCooldown = false
 local updateQueued = false
 local startupInitialized = false
@@ -50,10 +52,13 @@ local lastPayload: Payload? = nil
 local pendingPayload: Payload? = nil
 local latestRequestId = 0
 local contextPreference: string? = nil
+local snapshotInitialized = false
+local lastSendError: string? = nil
+local lastSendWarningAt = 0
 local studioSnapshot: StudioSnapshot = {
 	name = "Unsaved Project",
 	placeId = 0,
-	isPublic = false,
+	isPublic = nil,
 }
 local connections: { RBXScriptConnection } = {}
 
@@ -104,7 +109,7 @@ local function fetchStudioSnapshot(): StudioSnapshot
 				return {
 					name = name,
 					placeId = placeId,
-					isPublic = true,
+					isPublic = nil,
 				}
 			end
 		end
@@ -115,8 +120,16 @@ local function fetchStudioSnapshot(): StudioSnapshot
 	return {
 		name = name,
 		placeId = placeId,
-		isPublic = false,
+		isPublic = nil,
 	}
+end
+
+local function refreshStudioSnapshot(): ()
+	if snapshotInitialized and studioSnapshot.placeId == game.PlaceId then
+		return
+	end
+	studioSnapshot = fetchStudioSnapshot()
+	snapshotInitialized = true
 end
 
 local function getSelectionSummary(): (number, string?)
@@ -160,7 +173,7 @@ local function isTesting(): boolean
 end
 
 local function buildDetails(): Payload
-	studioSnapshot = fetchStudioSnapshot()
+	refreshStudioSnapshot()
 
 	local activeScript = labelFromInstance(StudioService.ActiveScript)
 	local selectionCount, selectionLabel = getSelectionSummary()
@@ -175,7 +188,7 @@ local function buildDetails(): Payload
 	local contextParts = {
 		"Project: " .. studioSnapshot.name,
 		"PlaceId: " .. tostring(studioSnapshot.placeId),
-		"Visibility: " .. (studioSnapshot.isPublic and "Public" or "Private"),
+		"Visibility: Unknown",
 		"Script: None",
 		"Selection: None",
 		"Open docs: 0",
@@ -185,7 +198,7 @@ local function buildDetails(): Payload
 	if testing then
 		mode = "Testing"
 		action = "Testing"
-		modeSource = "RunService:IsRunning()"
+		modeSource = "RunService.RunState"
 		if activeScript ~= nil then
 			target = "Script: " .. activeScript
 		elseif selectionLabel ~= nil then
@@ -251,8 +264,26 @@ local function send(command: string, data: { [string]: unknown }, completed: ((b
 				Timeout = HTTP_TIMEOUT,
 			})
 		end)
+		local success = ok and response.Success
+		if success then
+			lastSendError = nil
+		else
+			local errorMessage = if ok
+				then string.format("HTTP %s %s", tostring(response.StatusCode), tostring(response.StatusMessage))
+				else tostring(response)
+			local now = os.clock()
+			if errorMessage ~= lastSendError or now - lastSendWarningAt >= SEND_WARNING_INTERVAL then
+				lastSendError = errorMessage
+				lastSendWarningAt = now
+				warn(
+					"[NexStrap Studio RPC] Send failed: "
+						.. errorMessage
+						.. ". Check Studio localhost permission and HTTP settings."
+				)
+			end
+		end
 		if completed ~= nil then
-			completed(ok and response.Success)
+			completed(success)
 		end
 	end)
 end
@@ -264,6 +295,7 @@ local function payloadsEqual(a: Payload, b: Payload): boolean
 		and a.testing == b.testing
 		and a.placeId == b.placeId
 		and a.isPublic == b.isPublic
+		and a.version == b.version
 		and a.workspace == b.workspace
 		and a.activeScript == b.activeScript
 		and a.selectionCount == b.selectionCount
@@ -308,7 +340,7 @@ updatePresence = function(force: boolean?, isStartup: boolean?): ()
 		onCooldown = false
 	end)
 
-	local initialize = isStartup and not startupInitialized
+	local initialize = not startupInitialized
 	local command = initialize and "Initialize" or "SetRichPresence"
 	send(command, payload :: { [string]: unknown }, function(success)
 		if initialize and success then
@@ -337,6 +369,7 @@ local function disconnect(): ()
 end
 
 local function shutdown(): ()
+	unloading = true
 	enabled = false
 	send("RPCToggle", {
 		enabled = false,
@@ -368,20 +401,28 @@ local function wire(): ()
 
 	task.spawn(function()
 		local prev = isTesting()
-		while enabled do
+		while not unloading do
 			task.wait(POLL_INTERVAL)
-			local cur = isTesting()
-			if cur ~= prev then
-				prev = cur
-				updatePresence(true, false)
+			if enabled then
+				local cur = isTesting()
+				if cur ~= prev then
+					prev = cur
+					updatePresence(true, false)
+				end
 			end
 		end
 	end)
 
 	table.insert(connections, game:GetPropertyChangedSignal("PlaceId"):Connect(function()
+		snapshotInitialized = false
 		task.delay(1, function()
 			refreshStudioThenUpdate(false)
 		end)
+	end))
+
+	table.insert(connections, game:GetPropertyChangedSignal("Name"):Connect(function()
+		snapshotInitialized = false
+		task.defer(updatePresence)
 	end))
 
 	if game:IsLoaded() then
@@ -395,7 +436,7 @@ local function wire(): ()
 	end
 
 	task.spawn(function()
-		while enabled do
+		while not unloading do
 			task.wait(UPDATE_INTERVAL)
 			if enabled then
 				updatePresence(true)
