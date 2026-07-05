@@ -17,3 +17,5 @@ publish-vm2/
 Voidstrap/
 
 Images/
+
+.playwright-mcp/
