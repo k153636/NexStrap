@@ -15,7 +15,7 @@
 
 <p align="center">
   A Roblox launcher built for developers and power users<br>
-  with full <strong>Roblox Studio support</strong>, multi-instance play, deep Discord integration, and extensive customization.
+  with <strong>Roblox Studio RPC support</strong>, multi-instance play, deep Discord integration, and extensive customization.
 </p>
 
 <p align="center">
@@ -50,10 +50,10 @@
 - Separate Party page instead of mixing party controls into the main Discord RPC page
 - Presets are off by default and only apply after pressing Save
 
-**Roblox Studio**
+**Roblox Studio RPC**
 
 - Independent Studio install and launch with no official installer needed
-- Discord presence with Home / Editing / Testing detection
+- Roblox Studio RPC with Home / Editing / Testing detection
 - Separate Fast Flags profile for Studio
 
 **Fast Flags**
