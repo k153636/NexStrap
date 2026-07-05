@@ -42,10 +42,16 @@ public class AccountService
     public void SetActive(Guid id)
     {
         foreach (var a in _accounts)
-        {
             a.IsActive = a.Id == id;
-            if (a.IsActive) a.LastUsedAt = DateTime.UtcNow;
-        }
+        Save();
+    }
+
+    public void MarkActiveUsed()
+    {
+        var active = _accounts.FirstOrDefault(a => a.IsActive);
+        if (active == null) return;
+
+        active.LastUsedAt = DateTime.UtcNow;
         Save();
     }
 

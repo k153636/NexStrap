@@ -226,8 +226,8 @@ public partial class AccountViewModel : ViewModelBase
     private void LaunchAs(AccountEntryViewModel entry)
     {
         _accountOperations.LaunchAs(entry);
-        Reload();
         LaunchAsRequested?.Invoke();
+        Reload();
     }
 
     private async Task RefreshPresenceAsync(CancellationToken ct)

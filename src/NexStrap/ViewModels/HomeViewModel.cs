@@ -555,6 +555,7 @@ public partial class HomeViewModel : ViewModelBase
         var multiInstance = _settings.Settings.MultiInstanceEnabled;
         if (IsLaunching || (IsRobloxRunning && !multiInstance)) return false;
 
+        _accountService.MarkActiveUsed();
         IsLaunching = true;
         _presence.EnqueueLaunchStarted();
         StatusText = "Applying flags...";

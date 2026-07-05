@@ -108,6 +108,7 @@ public partial class LaunchWindowViewModel : ViewModelBase
                 return;
             }
 
+            _accounts.MarkActiveUsed();
             StatusText = "Preparing Roblox...";
             var s = _settings.Settings;
 
