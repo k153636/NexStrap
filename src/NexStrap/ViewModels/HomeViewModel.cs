@@ -141,6 +141,8 @@ public partial class HomeViewModel : ViewModelBase
                 _presence.EnqueueStudioInitialized(msg.Data);
             else if (msg.Command == "SetRichPresence")
                 _presence.EnqueueStudioRpcMessage(msg.Data);
+            else if (msg.Command == "RPCToggle" && !msg.Data.Enabled)
+                _presence.EnqueueStudioRpcDisabled();
         };
         _studioRpcServer.Start();
 

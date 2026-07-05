@@ -47,6 +47,7 @@ public sealed class DiscordRichPresence : IDisposable
     private record EvStudio(bool Detected, string? PlaceName, bool Testing)            : Ev;
     private record EvStudioInit(NexStrap.Services.StudioRpcData Data)             : Ev;
     private record EvStudioRpc(NexStrap.Services.StudioRpcData Data)             : Ev;
+    private record EvStudioRpcDisabled                                            : Ev;
     private record EvCountry(string Code)                                              : Ev;
     private record EvHeartbeat                                                         : Ev;
     private record EvFocus(int? Slot)                                                  : Ev;
@@ -73,6 +74,8 @@ public sealed class DiscordRichPresence : IDisposable
     private string? _studioContext;
     private string? _studioMode;
     private bool    _studioTesting;
+    private DateTime _lastStudioRpcAt;
+    private bool    _studioRpcHeartbeatExpected;
     private long    _studioPlaceId;
     private string? _studioIconUrl;
     private bool    _studioRpcActive;  // 郢晏干ﾎ帷ｹｧ・ｰ郢ｧ・､郢晢ｽｳ邵ｺ譴ｧ逎・け螢ｻ・ｸ・ｭ邵ｺ荵昶・邵ｺ繝ｻﾂｰ
@@ -129,6 +132,7 @@ public sealed class DiscordRichPresence : IDisposable
     private Timer? _studioTimer;
     private const int HeartbeatMs  = 15_000;
     private const int StudioPollMs =  3_000;
+    private static readonly Version StudioHeartbeatPluginVersion = new(2, 2, 1);
 
     private static readonly Dictionary<string, string> CountryRegions = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -225,6 +229,7 @@ public sealed class DiscordRichPresence : IDisposable
     public void EnqueueStudioPlaytestStopped()       => Enqueue(new EvStudio(_studioDetected, _studioPlaceName, false));
     public void EnqueueStudioInitialized(NexStrap.Services.StudioRpcData data) => Enqueue(new EvStudioInit(data));
     public void EnqueueStudioRpcMessage(NexStrap.Services.StudioRpcData data) => Enqueue(new EvStudioRpc(data));
+    public void EnqueueStudioRpcDisabled()            => Enqueue(new EvStudioRpcDisabled());
     public void EnqueueFocusChanged(int? slot)       => Enqueue(new EvFocus(slot));
     public void EnqueueRefresh()                     => Enqueue(new EvRefresh());
     public void SetCurrentPage(string page)          => Enqueue(new EvPage(page));
@@ -422,6 +427,9 @@ public sealed class DiscordRichPresence : IDisposable
             case EvStudioInit { Data: var d }:
                 if (!StudioPluginInstaller.IsInstalled) break;
                 _studioRpcActive = true;
+                _lastStudioRpcAt = DateTime.UtcNow;
+                _studioRpcHeartbeatExpected = Version.TryParse(d.Version, out var initVersion)
+                    && initVersion >= StudioHeartbeatPluginVersion;
                 _studioDetected  = true;
                 _studioPlaceName = d.Details;
                 _studioContext   = d.Context;
@@ -442,6 +450,9 @@ public sealed class DiscordRichPresence : IDisposable
             case EvStudioRpc { Data: var d }:
                 if (!StudioPluginInstaller.IsInstalled) break;
                 _studioRpcActive = true;
+                _lastStudioRpcAt = DateTime.UtcNow;
+                _studioRpcHeartbeatExpected = Version.TryParse(d.Version, out var rpcVersion)
+                    && rpcVersion >= StudioHeartbeatPluginVersion;
                 _studioPlaceName = d.Details;
                 _studioContext   = d.Context;
                 _studioMode      = d.Mode == "Testing" && !d.Testing ? null : d.Mode;
@@ -461,6 +472,19 @@ public sealed class DiscordRichPresence : IDisposable
                     await SwitchAppIdAsync(AppConstants.DiscordStudioAppId);
                     ApplyPresence();
                 }
+                break;
+
+            case EvStudioRpcDisabled:
+                _studioRpcActive = false;
+                _studioRpcHeartbeatExpected = false;
+                _studioTesting   = false;
+                _studioPlaceName = null;
+                _studioContext   = null;
+                _studioMode      = null;
+                _studioPlaceId   = 0;
+                _studioIconUrl   = null;
+                _lastStudioPresenceKey = string.Empty;
+                ApplyPresence();
                 break;
 
             // 隨渉隨渉 Studio 霑･・ｶ隲ｷ蜈ｷ・ｼ蛹ｻ縺育ｹｧ・｣郢晢ｽｳ郢晏ｳｨ縺育ｹｧ・ｿ郢ｧ・､郢晏現ﾎ晞ｶ・｣髫輔・遯ｶ繝ｻ郢晏干ﾎ帷ｹｧ・ｰ郢ｧ・､郢晢ｽｳ邵ｺ譴ｧ謔ｴ隰暦ｽ･驍ｯ螢ｹ繝ｻ陜｣・ｴ陷ｷ蛹ｻ繝ｻ郢晁ｼ斐°郢晢ｽｼ郢晢ｽｫ郢晁・繝｣郢ｧ・ｯ繝ｻ菫・･ｳ隨渉
@@ -1100,7 +1124,13 @@ public sealed class DiscordRichPresence : IDisposable
                 return;
             }
 
-            if (!detected || GameDetected || _studioTesting) return;
+            if (!detected || GameDetected) return;
+            if (_studioTesting)
+            {
+                if (!_studioRpcHeartbeatExpected
+                    || DateTime.UtcNow - _lastStudioRpcAt < TimeSpan.FromSeconds(30)) return;
+                _lastStudioPresenceKey = string.Empty;
+            }
 
             var title = proc!.MainWindowTitle;
             if (string.IsNullOrEmpty(title)) return;

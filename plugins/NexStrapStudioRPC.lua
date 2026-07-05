@@ -10,7 +10,7 @@ local ScriptEditorService = game:GetService("ScriptEditorService")
 local Selection = game:GetService("Selection")
 local StudioService = game:GetService("StudioService")
 
-local VERSION = "2.2.0"
+local VERSION = "2.2.1"
 local ENDPOINT = "http://localhost:4876/rpc"
 local HTTP_TIMEOUT = 2
 local POLL_INTERVAL = 0.5
@@ -44,8 +44,11 @@ type RpcEnvelope = {
 
 local enabled = plugin ~= nil
 local onCooldown = false
+local updateQueued = false
 local startupInitialized = false
 local lastPayload: Payload? = nil
+local pendingPayload: Payload? = nil
+local latestRequestId = 0
 local studioSnapshot: StudioSnapshot = {
 	name = "Unsaved Project",
 	placeId = 0,
@@ -220,7 +223,7 @@ local function buildDetails(): Payload
 	}
 end
 
-local function send(command: string, data: { [string]: unknown }): ()
+local function send(command: string, data: { [string]: unknown }, completed: ((boolean) -> ())?): ()
 	local envelope: RpcEnvelope = {
 		command = command,
 		data = data,
@@ -228,8 +231,8 @@ local function send(command: string, data: { [string]: unknown }): ()
 	local body = HttpService:JSONEncode(envelope)
 
 	task.spawn(function()
-		pcall(function()
-			HttpService:RequestAsync({
+		local ok, response = pcall(function()
+			return HttpService:RequestAsync({
 				Url = ENDPOINT,
 				Method = "POST",
 				Headers = { ["Content-Type"] = "application/json" },
@@ -237,6 +240,9 @@ local function send(command: string, data: { [string]: unknown }): ()
 				Timeout = HTTP_TIMEOUT,
 			})
 		end)
+		if completed ~= nil then
+			completed(ok and response.Success)
+		end
 	end)
 end
 
@@ -253,11 +259,20 @@ local function payloadsEqual(a: Payload, b: Payload): boolean
 		and a.openDocuments == b.openDocuments
 end
 
-local function updatePresence(force: boolean?, isStartup: boolean?): ()
+local updatePresence: (boolean?, boolean?) -> ()
+
+updatePresence = function(force: boolean?, isStartup: boolean?): ()
 	if not enabled then
 		return
 	end
 	if onCooldown and not force then
+		if not updateQueued then
+			updateQueued = true
+			task.delay(COOLDOWN_TIME, function()
+				updateQueued = false
+				updatePresence()
+			end)
+		end
 		return
 	end
 
@@ -268,20 +283,33 @@ local function updatePresence(force: boolean?, isStartup: boolean?): ()
 		if last ~= nil and payloadsEqual(payload, last) then
 			return
 		end
+		local pending = pendingPayload
+		if pending ~= nil and payloadsEqual(payload, pending) then
+			return
+		end
 	end
 
-	lastPayload = payload
+	pendingPayload = payload
+	latestRequestId += 1
+	local requestId = latestRequestId
 	onCooldown = true
 	task.delay(COOLDOWN_TIME, function()
 		onCooldown = false
 	end)
 
-	if isStartup and not startupInitialized then
-		startupInitialized = true
-		send("Initialize", payload :: { [string]: unknown })
-	else
-		send("SetRichPresence", payload :: { [string]: unknown })
-	end
+	local initialize = isStartup and not startupInitialized
+	local command = initialize and "Initialize" or "SetRichPresence"
+	send(command, payload :: { [string]: unknown }, function(success)
+		if initialize and success then
+			startupInitialized = true
+		end
+		if requestId == latestRequestId then
+			pendingPayload = nil
+			if success then
+				lastPayload = payload
+			end
+		end
+	end)
 end
 
 local function refreshStudioThenUpdate(isStartup: boolean?): ()
@@ -351,7 +379,7 @@ local function wire(): ()
 		while enabled do
 			task.wait(UPDATE_INTERVAL)
 			if enabled then
-				updatePresence()
+				updatePresence(true)
 			end
 		end
 	end)
