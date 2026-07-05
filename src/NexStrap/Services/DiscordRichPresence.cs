@@ -435,10 +435,18 @@ public sealed class DiscordRichPresence : IDisposable
                 _studioContext   = d.Context;
                 _studioMode      = d.Mode;
                 _studioTesting   = d.Testing;
+                var initPreviousPlaceId = _studioPlaceId;
                 _studioPlaceId   = d.PlaceId;
-                _studioIconUrl   = null;
-                if (_studioPlaceId > 0)
+                if (_studioPlaceId <= 0)
+                {
+                    _studioIconUrl = null;
+                }
+                else if (initPreviousPlaceId != _studioPlaceId || _studioIconUrl is null)
+                {
+                    if (initPreviousPlaceId != _studioPlaceId)
+                        _studioIconUrl = null;
                     _ = RefreshStudioIconAsync(_studioPlaceId);
+                }
                 if (_phase != Phase.Studio)
                 {
                     _phase = Phase.Studio;
@@ -457,13 +465,16 @@ public sealed class DiscordRichPresence : IDisposable
                 _studioContext   = d.Context;
                 _studioMode      = d.Mode == "Testing" && !d.Testing ? null : d.Mode;
                 _studioTesting   = d.Testing;
+                var rpcPreviousPlaceId = _studioPlaceId;
                 _studioPlaceId   = d.PlaceId;
                 if (_studioPlaceId <= 0)
                 {
                     _studioIconUrl = null;
                 }
-                else
+                else if (rpcPreviousPlaceId != _studioPlaceId || _studioIconUrl is null)
                 {
+                    if (rpcPreviousPlaceId != _studioPlaceId)
+                        _studioIconUrl = null;
                     _ = RefreshStudioIconAsync(_studioPlaceId);
                 }
                 if (_phase == Phase.NexStrapIdle || _phase == Phase.Studio)
