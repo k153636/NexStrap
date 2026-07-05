@@ -11,6 +11,7 @@ public class AccountService
     private readonly List<RobloxAccount> _accounts;
 
     public IReadOnlyList<RobloxAccount> Accounts => _accounts;
+    public event Action<RobloxAccount>? ActiveAccountChanged;
 
     public AccountService()
     {
@@ -41,9 +42,14 @@ public class AccountService
 
     public void SetActive(Guid id)
     {
+        var previousId = _accounts.FirstOrDefault(a => a.IsActive)?.Id;
         foreach (var a in _accounts)
             a.IsActive = a.Id == id;
         Save();
+
+        var active = _accounts.FirstOrDefault(a => a.IsActive);
+        if (active != null && previousId != active.Id)
+            ActiveAccountChanged?.Invoke(active);
     }
 
     public void MarkActiveUsed()

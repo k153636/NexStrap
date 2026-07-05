@@ -130,6 +130,7 @@ public partial class HomeViewModel : ViewModelBase
         _history             = history;
         _friendNotifications = friendNotifications;
         _accountService      = accountService;
+        _accountService.ActiveAccountChanged += ApplyActiveAccountPresence;
 
         // Studio RPC サーバー起動（プラグインからのデータを受信）
         _studioRpcServer = studioRpcServer;
@@ -410,6 +411,24 @@ public partial class HomeViewModel : ViewModelBase
     // ══════════════════════════════════════════════════════════════════════
 
     public void RefreshPresence() => _presence.EnqueueRefresh();
+
+    private void ApplyActiveAccountPresence(RobloxAccount account)
+    {
+        var displayName = string.IsNullOrEmpty(account.DisplayName)
+            ? account.Username
+            : account.DisplayName;
+        _userAvatarUrl = account.AvatarUrl;
+        UserDisplayName = displayName;
+
+        var label = _settings.Settings.DiscordShowRobloxUsername
+            ? _settings.Settings.DiscordUseDisplayNameFormat
+                ? $"{displayName} (@{account.Username})"
+                : $"@{account.Username}"
+            : null;
+
+        _presence.SetUserAvatar(account.AvatarUrl);
+        _presence.SetUserLabel(label);
+    }
 
     private async Task RefreshRobloxAccountAsync(int slot, long userId, long generation)
     {
