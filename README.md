@@ -134,7 +134,7 @@ If you want an extra download check, compare a known-good SHA-256 value against 
 ## FAQ
 
 **Q: Is this malware?**  
-A: NexStrap is open source, so the complete source code is available here on GitHub for anyone to inspect. As an extra check, the public [VirusTotal report](https://www.virustotal.com/gui/file/182d5d4ea403180e445baa699e1c690888884883959151fe252c2a7f53b5ebfb/summary) for the GitHub release build showed `0/68` detections at the time of writing. As with any third-party binary, you should only run builds you trust.
+A: NexStrap is open source, so the complete source code is available here on GitHub for anyone to inspect. As with any third-party binary, you should only run builds you trust. [VirusTotal](https://www.virustotal.com/gui/file/182d5d4ea403180e445baa699e1c690888884883959151fe252c2a7f53b5ebfb/summary)
 
 **Q: Will I get banned from Roblox?**  
 A: NexStrap is not designed to behave like an exploit. It mainly manages launch settings, Fast Flags, and Discord Rich Presence, but no third-party tool can guarantee how a platform will interpret its use.
