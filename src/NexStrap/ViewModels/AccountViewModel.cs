@@ -325,6 +325,27 @@ public partial class AccountViewModel : ViewModelBase
             var cookie       = importResult.Cookie;
             var userId       = importResult.UserId;
 
+            if (userId == null && importResult.RequiresSecureFallback)
+            {
+                _importStatus.ShowChromeSecureLoginFallback(this);
+                try
+                {
+                    cookie = await _dialogCoordinator.ShowBrowserLoginAsync();
+                }
+                catch
+                {
+                    _importStatus.ShowBrowserUnavailable(this);
+                    return;
+                }
+                if (string.IsNullOrEmpty(cookie)) return;
+                userId = await _cookieImport.GetAuthenticatedUserIdAsync(cookie);
+                if (userId == null)
+                {
+                    _importStatus.ShowInvalidCookie(this);
+                    return;
+                }
+            }
+
             if (userId == null)
             {
                 _importStatus.ShowWaitingForChromeLogin(this);

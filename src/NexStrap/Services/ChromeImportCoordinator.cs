@@ -1,6 +1,9 @@
 namespace NexStrap.Services;
 
-public sealed record ChromeImportResult(string? Cookie, long? UserId);
+public sealed record ChromeImportResult(
+    string? Cookie,
+    long? UserId,
+    bool RequiresSecureFallback = false);
 
 public sealed class ChromeImportCoordinator(CookieAccountImportService cookieImport)
 {
@@ -8,15 +11,24 @@ public sealed class ChromeImportCoordinator(CookieAccountImportService cookieImp
     {
         string? cookie = null;
         long?   userId = null;
+        var requiresSecureFallback = false;
 
         for (int attempt = 0; attempt < 3 && userId == null; attempt++)
         {
             if (attempt > 0) await Task.Delay(1200);
-            cookie = await BrowserCookieImporter.TryImportAsync(BrowserType.Chrome);
-            if (cookie != null) userId = await cookieImport.GetAuthenticatedUserIdAsync(cookie);
+            var result = await BrowserCookieImporter.TryImportAsync(BrowserType.Chrome);
+            requiresSecureFallback |= result.HasUnsupportedEncryption || result.HasLockedProfile;
+            foreach (var candidate in result.Cookies)
+            {
+                var candidateUserId = await cookieImport.GetAuthenticatedUserIdAsync(candidate);
+                if (candidateUserId == null) continue;
+                cookie = candidate;
+                userId = candidateUserId;
+                break;
+            }
         }
 
-        return new ChromeImportResult(cookie, userId);
+        return new ChromeImportResult(cookie, userId, requiresSecureFallback);
     }
 
     public async Task<ChromeImportResult?> WaitForAuthenticatedCookieAsync(CancellationToken cancellationToken)
@@ -28,8 +40,17 @@ public sealed class ChromeImportCoordinator(CookieAccountImportService cookieImp
         {
             try { await Task.Delay(3000, cancellationToken); }
             catch (OperationCanceledException) { return null; }
-            cookie = await BrowserCookieImporter.TryImportAsync(BrowserType.Chrome);
-            if (cookie != null) userId = await cookieImport.GetAuthenticatedUserIdAsync(cookie);
+            var result = await BrowserCookieImporter.TryImportAsync(BrowserType.Chrome);
+            if (result.HasUnsupportedEncryption || result.HasLockedProfile)
+                return new ChromeImportResult(null, null, true);
+            foreach (var candidate in result.Cookies)
+            {
+                var candidateUserId = await cookieImport.GetAuthenticatedUserIdAsync(candidate);
+                if (candidateUserId == null) continue;
+                cookie = candidate;
+                userId = candidateUserId;
+                break;
+            }
             if (userId != null) break;
         }
 

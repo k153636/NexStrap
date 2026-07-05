@@ -29,6 +29,9 @@ public sealed class AccountImportStatusCoordinator
         vm.StatusMessage     = "Please log in to roblox.com in Chrome";
     }
 
+    public void ShowChromeSecureLoginFallback(AccountViewModel vm)
+        => vm.StatusMessage = "Chrome cookie is protected — continue in the secure login window";
+
     public void ShowAccountAlreadyAdded(AccountViewModel vm)
         => vm.StatusMessage = "Account already added";
 
