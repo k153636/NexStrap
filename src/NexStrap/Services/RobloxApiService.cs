@@ -218,9 +218,9 @@ public class RobloxApiService
         catch { return null; }
     }
 
-    public async Task<string?> GetUserAvatarHeadshotAsync(long userId)
+    public async Task<string?> GetUserAvatarHeadshotAsync(long userId, bool forceRefresh = false)
     {
-        if (_avatarCache.TryGetValue(userId, out var cached)) return cached;
+        if (!forceRefresh && _avatarCache.TryGetValue(userId, out var cached)) return cached;
 
         try
         {

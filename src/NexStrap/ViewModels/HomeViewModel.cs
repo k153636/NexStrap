@@ -35,6 +35,11 @@ public partial class HomeViewModel : ViewModelBase
     private DateTime?         _gameStartTime;
     private double            _accumulatedDurationSeconds;
     private GameHistoryEntry? _sessionEntry;
+    private readonly object   _userRefreshLock = new();
+    private readonly Dictionary<int, long> _slotUserIds = new();
+    private readonly Dictionary<int, Task> _slotUserRefreshes = new();
+    private readonly Dictionary<int, Task> _slotPlaceJoins = new();
+    private readonly Dictionary<int, long> _slotGenerations = new();
 
     // ── フォーカス・Stretch Res ────────────────────────────────────────────
     private bool _robloxHasFocus;
@@ -177,31 +182,18 @@ public partial class HomeViewModel : ViewModelBase
         };
 
         // ── ユーザーID検出 ────────────────────────────────────────────────
-        _logWatcher.UserIdDetected += async (_, e) =>
+        _logWatcher.UserIdDetected += (_, e) =>
         {
-            try
+            _settings.Update(s => s.CachedRobloxUserId = e.UserId);
+            _friendNotifications.Start(e.UserId);
+
+            lock (_userRefreshLock)
             {
-                _settings.Update(s => s.CachedRobloxUserId = e.UserId);
-                _friendNotifications.Start(e.UserId);
-
-                var avatarUrl = await _robloxApi.GetUserAvatarHeadshotAsync(e.UserId);
-                if (e.Slot == 0) { _userAvatarUrl = avatarUrl; _presence.SetUserAvatar(avatarUrl); }
-
-                string? label = null;
-                var userInfo  = await _robloxApi.GetUserInfoAsync(e.UserId);
-                if (userInfo is { } u)
-                {
-                    if (e.Slot == 0)
-                        UserDisplayName = string.IsNullOrEmpty(u.displayName) ? u.username : u.displayName;
-                    if (_settings.Settings.DiscordShowRobloxUsername)
-                        label = _settings.Settings.DiscordUseDisplayNameFormat
-                            ? $"{u.displayName} (@{u.username})" : $"@{u.username}";
-                }
-
-                if (e.Slot == 0) _presence.SetUserLabel(label);
-                _presence.EnqueueUserUpdated(e.Slot, avatarUrl, label);
+                _slotUserIds[e.Slot] = e.UserId;
+                var generation = _slotGenerations.GetValueOrDefault(e.Slot);
+                var refresh = RefreshRobloxAccountAsync(e.Slot, e.UserId, generation);
+                _slotUserRefreshes[e.Slot] = refresh;
             }
-            catch { }
         };
 
         // ── サーバーIP検出 ─────────────────────────────────────────────────
@@ -223,7 +215,13 @@ public partial class HomeViewModel : ViewModelBase
         _logWatcher.PlaceJoined += (_, args) =>
         {
             if (_logWatcher.IsWatchingStudioLog) return;
-            _presence.EnqueuePlaceJoined(args.PlaceId, args.UniverseId, args.Slot);
+
+            lock (_userRefreshLock)
+            {
+                var previous = _slotPlaceJoins.GetValueOrDefault(args.Slot, Task.CompletedTask);
+                var generation = _slotGenerations.GetValueOrDefault(args.Slot);
+                _slotPlaceJoins[args.Slot] = ProcessPlaceJoinedAsync(args, previous, generation);
+            }
         };
 
         // ── DiscordRichPresence → HomeViewModel イベント ──────────────────
@@ -291,6 +289,14 @@ public partial class HomeViewModel : ViewModelBase
         // ── ゲーム退出 ─────────────────────────────────────────────────────
         _logWatcher.GameLeft += (_, e) =>
         {
+            lock (_userRefreshLock)
+            {
+                _slotUserIds.Remove(e.Slot);
+                _slotUserRefreshes.Remove(e.Slot);
+                _slotPlaceJoins.Remove(e.Slot);
+                _slotGenerations[e.Slot] = _slotGenerations.GetValueOrDefault(e.Slot) + 1;
+            }
+
             if (_gameStartTime.HasValue && _sessionEntry != null)
             {
                 var elapsed = (DateTime.UtcNow - _gameStartTime.Value).TotalSeconds;
@@ -404,6 +410,77 @@ public partial class HomeViewModel : ViewModelBase
     // ══════════════════════════════════════════════════════════════════════
 
     public void RefreshPresence() => _presence.EnqueueRefresh();
+
+    private async Task RefreshRobloxAccountAsync(int slot, long userId, long generation)
+    {
+        try
+        {
+            var avatarTask = _robloxApi.GetUserAvatarHeadshotAsync(userId, forceRefresh: true);
+            var userInfoTask = _robloxApi.GetUserInfoAsync(userId);
+            await Task.WhenAll(avatarTask, userInfoTask);
+            var avatarUrl = await avatarTask;
+            var userInfo = await userInfoTask;
+
+            lock (_userRefreshLock)
+            {
+                if (_slotGenerations.GetValueOrDefault(slot) != generation
+                    || !_slotUserIds.TryGetValue(slot, out var currentUserId)
+                    || currentUserId != userId)
+                    return;
+            }
+
+            if (slot == 0)
+            {
+                _userAvatarUrl = avatarUrl;
+                _presence.SetUserAvatar(avatarUrl);
+            }
+
+            string? label = null;
+            if (userInfo is { } u)
+            {
+                if (slot == 0)
+                    UserDisplayName = string.IsNullOrEmpty(u.displayName) ? u.username : u.displayName;
+                if (_settings.Settings.DiscordShowRobloxUsername)
+                    label = _settings.Settings.DiscordUseDisplayNameFormat
+                        ? $"{u.displayName} (@{u.username})" : $"@{u.username}";
+            }
+
+            if (slot == 0) _presence.SetUserLabel(label);
+            _presence.EnqueueUserUpdated(slot, avatarUrl, label);
+        }
+        catch { }
+    }
+
+    private async Task ProcessPlaceJoinedAsync(PlaceJoinedArgs args, Task previous, long generation)
+    {
+        await previous;
+
+        Task? refresh;
+        long userId;
+        lock (_userRefreshLock)
+        {
+            _slotUserRefreshes.TryGetValue(args.Slot, out refresh);
+            _slotUserIds.TryGetValue(args.Slot, out userId);
+            if (refresh == null && userId > 0)
+            {
+                refresh = RefreshRobloxAccountAsync(args.Slot, userId, generation);
+                _slotUserRefreshes[args.Slot] = refresh;
+            }
+        }
+
+        if (refresh != null) await refresh;
+
+        lock (_userRefreshLock)
+        {
+            if (_slotGenerations.GetValueOrDefault(args.Slot) != generation) return;
+            if (refresh != null
+                && _slotUserRefreshes.TryGetValue(args.Slot, out var current)
+                && ReferenceEquals(current, refresh))
+                _slotUserRefreshes.Remove(args.Slot);
+        }
+
+        _presence.EnqueuePlaceJoined(args.PlaceId, args.UniverseId, args.Slot);
+    }
 
     private void UpdateRobloxPresence(RobloxStatus status)
     {
