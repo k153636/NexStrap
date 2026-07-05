@@ -10,7 +10,7 @@ local ScriptEditorService = game:GetService("ScriptEditorService")
 local Selection = game:GetService("Selection")
 local StudioService = game:GetService("StudioService")
 
-local VERSION = "2.2.1"
+local VERSION = "2.2.2"
 local ENDPOINT = "http://localhost:4876/rpc"
 local HTTP_TIMEOUT = 2
 local POLL_INTERVAL = 0.5
@@ -49,6 +49,7 @@ local startupInitialized = false
 local lastPayload: Payload? = nil
 local pendingPayload: Payload? = nil
 local latestRequestId = 0
+local contextPreference: string? = nil
 local studioSnapshot: StudioSnapshot = {
 	name = "Unsaved Project",
 	placeId = 0,
@@ -148,13 +149,23 @@ local function getOpenDocumentCount(): number
 	return #docs
 end
 
+local function isTesting(): boolean
+	local ok, runState = pcall(function()
+		return RunService.RunState
+	end)
+	if ok then
+		return runState ~= Enum.RunState.Stopped
+	end
+	return RunService:IsRunning()
+end
+
 local function buildDetails(): Payload
 	studioSnapshot = fetchStudioSnapshot()
 
 	local activeScript = labelFromInstance(StudioService.ActiveScript)
 	local selectionCount, selectionLabel = getSelectionSummary()
 	local openDocuments = getOpenDocumentCount()
-	local testing = RunService:IsRunning()
+	local testing = isTesting()
 
 	local mode = "Idle"
 	local details = "Studio"
@@ -184,16 +195,16 @@ local function buildDetails(): Payload
 		else
 			target = string.format("Open docs: %d", openDocuments)
 		end
+	elseif selectionCount > 0 and (activeScript == nil or contextPreference == "selection") then
+		mode = "Selecting"
+		action = "Selecting"
+		modeSource = "Selection:Get()"
+		target = selectionLabel ~= nil and ("Selection: " .. selectionLabel) or string.format("Selection: %d selected", selectionCount)
 	elseif activeScript ~= nil then
 		mode = "Editing"
 		action = "Editing"
 		modeSource = "StudioService.ActiveScript"
 		target = "Script: " .. activeScript
-	elseif selectionCount > 0 then
-		mode = "Selecting"
-		action = "Selecting"
-		modeSource = "Selection:Get()"
-		target = selectionLabel ~= nil and ("Selection: " .. selectionLabel) or string.format("Selection: %d selected", selectionCount)
 	elseif openDocuments > 0 then
 		mode = "Browsing"
 		action = "Browsing"
@@ -340,18 +351,26 @@ end
 
 local function wire(): ()
 	table.insert(connections, Selection.SelectionChanged:Connect(function()
+		contextPreference = #Selection:Get() > 0 and "selection" or nil
 		task.defer(updatePresence)
 	end))
 
 	table.insert(connections, StudioService:GetPropertyChangedSignal("ActiveScript"):Connect(function()
+		if StudioService.ActiveScript ~= nil then
+			contextPreference = "script"
+		elseif #Selection:Get() > 0 then
+			contextPreference = "selection"
+		else
+			contextPreference = nil
+		end
 		task.defer(updatePresence)
 	end))
 
 	task.spawn(function()
-		local prev = RunService:IsRunning()
+		local prev = isTesting()
 		while enabled do
 			task.wait(POLL_INTERVAL)
-			local cur = RunService:IsRunning()
+			local cur = isTesting()
 			if cur ~= prev then
 				prev = cur
 				updatePresence(true, false)
