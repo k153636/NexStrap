@@ -34,6 +34,14 @@ public static class StudioPluginInstaller
         var log = NexStrap.Services.Logger.Instance;
         try
         {
+            var embedded = ReadEmbeddedPlugin();
+            if (File.Exists(PluginPath) && embedded is not null)
+            {
+                var installed = await File.ReadAllTextAsync(PluginPath, new UTF8Encoding(false), ct);
+                if (GetVersion(embedded) > GetVersion(installed))
+                    return true;
+            }
+
             DownloadSecurityVerifier.EnsureAllowedHttpsUrl(DownloadUrl, "raw.githubusercontent.com");
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
             var remote = await http.GetStringAsync(DownloadUrl, ct);
@@ -46,7 +54,8 @@ public static class StudioPluginInstaller
             }
 
             var existing = await File.ReadAllTextAsync(PluginPath, new UTF8Encoding(false), ct);
-            var needsUpdate = remote != existing;
+            var desired = GetVersion(embedded) > GetVersion(remote) ? embedded! : remote;
+            var needsUpdate = desired != existing;
             log.Info("StudioPlugin", needsUpdate ? "GitHub と差異あり → 更新あり" : "最新版がインストール済み");
             return needsUpdate;
         }
@@ -82,6 +91,9 @@ public static class StudioPluginInstaller
             var content = await resp.Content.ReadAsStringAsync(ct);
             if (content.Length > MaxPluginBytes)
                 throw new InvalidOperationException("Studio plugin payload is unexpectedly large.");
+            var embedded = ReadEmbeddedPlugin();
+            if (GetVersion(embedded) > GetVersion(content))
+                content = embedded!;
 
             progress?.Report(("Installing Studio plugin...", 80, false));
 
@@ -128,5 +140,18 @@ public static class StudioPluginInstaller
             return content.TrimStart('﻿');
         }
         catch { return null; }
+    }
+
+    private static Version GetVersion(string? content)
+    {
+        if (content is null) return new Version();
+        const string marker = "local VERSION = \"";
+        var start = content.IndexOf(marker, StringComparison.Ordinal);
+        if (start < 0) return new Version();
+        start += marker.Length;
+        var end = content.IndexOf('"', start);
+        return end > start && Version.TryParse(content[start..end], out var version)
+            ? version
+            : new Version();
     }
 }
