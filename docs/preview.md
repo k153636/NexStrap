@@ -1,5 +1,10 @@
 # Preview
 
+<div align="center">
+<a href="#nexstrap"><strong>NexStrap</strong></a> ·
+<a href="#rpc-preview"><strong>RPC Preview</strong></a>
+</div>
+
 ## NexStrap
 
 ### Home
@@ -44,12 +49,6 @@ Mods is still early and not a main focus yet.
 
 ![Discord RPC preview 2](images/preview-rpc-2.png)
 
-### RPC Preview
-
-![RPC standard preview](images/rpc-preview-standard.png)
-
-![RPC party preview](images/rpc-preview-party.png)
-
 ### Party
 
 ![Party preview](images/preview-party.png)
@@ -57,5 +56,11 @@ Mods is still early and not a main focus yet.
 ### Settings
 
 ![Settings preview](images/preview-settings.png)
+
+## RPC Preview
+
+![RPC standard preview](images/rpc-preview-standard.png)
+
+![RPC party preview](images/rpc-preview-party.png)
 
 If you have requests, please reach out on the [Discord server](https://discord.gg/PPrKt97jRn).
