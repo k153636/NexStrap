@@ -117,7 +117,7 @@ public partial class AccountViewModel : ViewModelBase
         Reload();
     }
 
-    private void Reload()
+    private void Reload(bool refreshActivity = true)
     {
         // 既存VMのPropertyChanged購読を解除してからクリア（メモリリーク防止）
         foreach (var vm in Accounts)
@@ -141,10 +141,54 @@ public partial class AccountViewModel : ViewModelBase
         // 前の非同期取得をキャンセルしてから再起動
         _presenceCts.Cancel();
         _presenceCts = new CancellationTokenSource();
+        if (!refreshActivity) return;
+
         var ct = _presenceCts.Token;
         _ = RefreshPresenceAsync(ct);
         _ = RefreshActiveStatsAsync(ct);
         _ = FriendsVm.RefreshAsync();
+    }
+
+    public async Task RefreshAsync()
+    {
+        var profiles = await Task.WhenAll(
+            _accounts.Accounts.Select(RefreshProfileAsync));
+
+        foreach (var profile in profiles)
+        {
+            if (profile == null) continue;
+            _accounts.UpdateProfile(
+                profile.Value.UserId,
+                profile.Value.Username,
+                profile.Value.DisplayName,
+                profile.Value.AvatarUrl);
+        }
+
+        await Dispatcher.UIThread.InvokeAsync(() => Reload(refreshActivity: false));
+        var ct = _presenceCts.Token;
+        await Task.WhenAll(
+            RefreshPresenceAsync(ct),
+            RefreshActiveStatsAsync(ct),
+            FriendsVm.RefreshAsync());
+        await Task.WhenAll(Accounts.Select(account => account.IconLoadTask));
+    }
+
+    private async Task<(long UserId, string Username, string DisplayName, string? AvatarUrl)?> RefreshProfileAsync(
+        RobloxAccount account)
+    {
+        var infoTask = _robloxApi.GetUserInfoAsync(account.UserId);
+        var avatarTask = _robloxApi.GetUserAvatarHeadshotAsync(account.UserId, forceRefresh: true);
+        await Task.WhenAll(infoTask, avatarTask);
+
+        var info = await infoTask;
+        var avatarUrl = await avatarTask;
+        if (info == null && avatarUrl == null) return null;
+
+        return (
+            account.UserId,
+            info?.username ?? account.Username,
+            info?.displayName ?? account.DisplayName,
+            avatarUrl ?? account.AvatarUrl);
     }
 
     private void OnEntryPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

@@ -25,6 +25,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private Lazy<AccountViewModel> _accountVM = null!;
     private Lazy<StretchResolutionViewModel> _stretchVM = null!;
     private Lazy<ShortcutsViewModel> _shortcutsVM = null!;
+    private int _navigationVersion;
 
     [ObservableProperty] private ViewModelBase _currentPage;
     [ObservableProperty] private bool _isDiscordConnected;
@@ -165,10 +166,18 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void NavigateTo(string page)
+    private async Task NavigateTo(string page)
     {
+        var navigationVersion = ++_navigationVersion;
+
         if (page == "Stats")
             StatsVM.Refresh();
+
+        if (page == "Account")
+        {
+            await AccountVM.RefreshAsync();
+            if (navigationVersion != _navigationVersion) return;
+        }
 
         if (page == "Dev")
         {

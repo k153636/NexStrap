@@ -24,6 +24,7 @@ public partial class AccountEntryViewModel : ViewModelBase
     public int     InstanceIndex { get; }
     public string  InstanceLabel => $"Instance {InstanceIndex + 1}";
     public string  LastUsedText  => FormatRelativeTime(Account.LastUsedAt);
+    public Task    IconLoadTask  { get; }
 
     public CommunityToolkit.Mvvm.Input.IRelayCommand SetActiveCommand { get; }
     public CommunityToolkit.Mvvm.Input.IRelayCommand RemoveCommand    { get; }
@@ -57,8 +58,9 @@ public partial class AccountEntryViewModel : ViewModelBase
         SetActiveCommand = new CommunityToolkit.Mvvm.Input.RelayCommand(() => setActive(this));
         RemoveCommand    = new CommunityToolkit.Mvvm.Input.RelayCommand(() => remove(this));
         LaunchAsCommand  = new CommunityToolkit.Mvvm.Input.RelayCommand(() => launchAs(this));
-        if (!string.IsNullOrEmpty(account.AvatarUrl))
-            _ = LoadIconAsync(account.AvatarUrl);
+        IconLoadTask = !string.IsNullOrEmpty(account.AvatarUrl)
+            ? LoadIconAsync(account.AvatarUrl)
+            : Task.CompletedTask;
     }
 
     [RelayCommand]

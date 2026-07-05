@@ -49,6 +49,17 @@ public class AccountService
         Save();
     }
 
+    public void UpdateProfile(long userId, string username, string displayName, string? avatarUrl)
+    {
+        var account = _accounts.FirstOrDefault(a => a.UserId == userId);
+        if (account == null) return;
+
+        account.Username = username;
+        account.DisplayName = displayName;
+        account.AvatarUrl = avatarUrl;
+        Save();
+    }
+
     public string? GetCookieById(Guid id)
     {
         var account = _accounts.FirstOrDefault(a => a.Id == id);
